@@ -310,7 +310,17 @@ svg text {
 
     async function initROI() {
       loans = await loadLoans();
+// Map JSON fields → fields expected by ROI page
+loans = loans.map(l => ({
+  id: l.loanId,
+  purchaseDate: l.purchaseDate,
+  purchasePrice: l.principal,
+  nominalRate: l.rate,
+  termYears: l.termYears,
+  graceYears: l.graceYears
+}));
 
+      
       const loansWithAmort = loans.map(l => {
       const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
       let cumP=0, cumI=0, cumTotal=0;
