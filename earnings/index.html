@@ -596,20 +596,18 @@
     const CURRENT_MONTH = 18; // keep in sync with ROI page if you want
     document.getElementById("currentMonthLabel").textContent = CURRENT_MONTH;
 
-    // Loan metadata: same as ROI, with feePerMonth added.
-    // TODO: Update feePerMonth values from Earnings.xlsx N1:T11 (col T).
-    const loans = [
-      { id:1,  loanName:'Loan 1',  school:'', purchaseDate:'2024-01-01', purchasePrice:7000,  termYears:10, graceYears:0.83, nominalRate:0.0883, feePerMonth:3.00 },
-      { id:2,  loanName:'Loan 2',  school:'', purchaseDate:'2024-02-01', purchasePrice:7500,  termYears:8,  graceYears:2.00, nominalRate:0.0750, feePerMonth:3.00 },
-      { id:3,  loanName:'Loan 3',  school:'', purchaseDate:'2024-03-01', purchasePrice:12000, termYears:12, graceYears:3.00, nominalRate:0.0825, feePerMonth:3.00 },
-      { id:4,  loanName:'Loan 4',  school:'', purchaseDate:'2024-04-01', purchasePrice:6000,  termYears:9,  graceYears:1.50, nominalRate:0.0950, feePerMonth:3.00 },
-      { id:5,  loanName:'Loan 5',  school:'', purchaseDate:'2024-07-01', purchasePrice:5000,  termYears:10, graceYears:1.00, nominalRate:0.0900, feePerMonth:3.00 },
-      { id:6,  loanName:'Loan 6',  school:'', purchaseDate:'2025-01-01', purchasePrice:7500,  termYears:5,  graceYears:0.00, nominalRate:0.0730, feePerMonth:3.00 },
-      { id:7,  loanName:'Loan 7',  school:'', purchaseDate:'2025-06-01', purchasePrice:10000, termYears:8,  graceYears:0.00, nominalRate:0.0900, feePerMonth:3.00 },
-      { id:8,  loanName:'Loan 8',  school:'', purchaseDate:'2025-10-01', purchasePrice:5000,  termYears:9,  graceYears:0.50, nominalRate:0.1100, feePerMonth:3.00 },
-      { id:9,  loanName:'Loan 9',  school:'', purchaseDate:'2025-02-01', purchasePrice:10000, termYears:7,  graceYears:0.25, nominalRate:0.1000, feePerMonth:3.00 },
-      { id:10, loanName:'Loan 10', school:'', purchaseDate:'2025-03-01', purchasePrice:8000,  termYears:3,  graceYears:0.00, nominalRate:0.0600, feePerMonth:3.00 }
-    ];
+    let loans = [];
+
+    async function loadLoansFromBackend() {
+      try {
+        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
+          method: "GET"
+        });
+        loans = await res.json();
+      } catch (err) {
+        console.error("Failed to load loans from backend", err);
+      }
+    }
 
     let stackedBarGroupCounter = 0;
 
@@ -662,29 +660,33 @@
       return { payment, schedule };
     }
 
-    const loansWithEarnings = loans.map(l => {
-      const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
-      let cumP = 0, cumI = 0;
-      const earningsSchedule = amort.schedule.map(row => {
-        cumP = +(cumP + row.principalPaid).toFixed(2);
-        cumI = +(cumI + row.interest).toFixed(2);
-        const m = row.monthIndex;
-        const cumFees = +(l.feePerMonth * m).toFixed(2);  // cumulative flat monthly fees
-        const netEarnings = +(cumP + cumI - cumFees).toFixed(2);
-        return {
-          monthIndex:m,
-          payment:row.payment,
-          principalPaid:row.principalPaid,
-          interest:row.interest,
-          balance:row.balance,
-          cumPrincipal:cumP,
-          cumInterest:cumI,
-          cumFees:cumFees,
-          netEarnings:netEarnings
-        };
+    let loansWithEarnings = [];
+
+    function rebuildLoansWithEarnings() {
+      loansWithEarnings = loans.map(l => {
+        const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
+        let cumP = 0, cumI = 0;
+        const earningsSchedule = amort.schedule.map(row => {
+          cumP = +(cumP + row.principalPaid).toFixed(2);
+          cumI = +(cumI + row.interest).toFixed(2);
+          const m = row.monthIndex;
+          const cumFees = +(l.feePerMonth * m).toFixed(2);
+          const netEarnings = +(cumP + cumI - cumFees).toFixed(2);
+          return {
+            monthIndex:m,
+            payment:row.payment,
+            principalPaid:row.principalPaid,
+            interest:row.interest,
+            balance:row.balance,
+            cumPrincipal:cumP,
+            cumInterest:cumI,
+            cumFees:cumFees,
+            netEarnings:netEarnings
+          };
+        });
+        return { ...l, amort, earningsSchedule };
       });
-      return { ...l, amort, earningsSchedule };
-    });
+    }
 
     // --------------------------
     // KPI calculations
@@ -716,8 +718,8 @@
       };
     }
 
-    const kpis = computeEarningsKPIs(loansWithEarnings);
-    const totalPrincipal = loans.reduce((s,l)=>s+l.purchasePrice,0);
+    let kpis = computeEarningsKPIs(loansWithEarnings);
+    let totalPrincipal = 0;
 
     let miniHtmlTooltip = null;
     function getMiniHtmlTooltip() {
@@ -1117,24 +1119,28 @@
     // Render KPI tiles
     // --------------------------
     const kpisEl = document.getElementById("kpis");
-    kpisEl.innerHTML = `
-      <div class="kpi" data-kpi="netToDate">
-        <h3>Total Net Earnings to Date</h3>
-        <p id="kpiNetToDate">$${kpis.totalNetToDate.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
-      </div>
-      <div class="kpi" data-kpi="projected">
-        <h3>Projected Lifetime Earnings</h3>
-        <p id="kpiNetProj">$${kpis.totalNetProjected.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
-      </div>
-      <div class="kpi" data-kpi="avgMonthly">
-        <h3>Average Monthly Earnings</h3>
-        <p id="kpiAvgMonth">$${kpis.avgMonthlyEarnings.toFixed(2)}</p>
-      </div>
-      <div class="kpi" data-kpi="fees">
-        <h3>Total Fees to Date</h3>
-        <p id="kpiFees">$${kpis.totalFeesToDate.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
-      </div>
-    `;
+    function renderKPIs() {
+      kpis = computeEarningsKPIs(loansWithEarnings);
+      totalPrincipal = loans.reduce((s,l)=>s+l.purchasePrice,0);
+      kpisEl.innerHTML = `
+        <div class="kpi" data-kpi="netToDate">
+          <h3>Total Net Earnings to Date</h3>
+          <p id="kpiNetToDate">$${kpis.totalNetToDate.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
+        </div>
+        <div class="kpi" data-kpi="projected">
+          <h3>Projected Lifetime Earnings</h3>
+          <p id="kpiNetProj">$${kpis.totalNetProjected.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
+        </div>
+        <div class="kpi" data-kpi="avgMonthly">
+          <h3>Average Monthly Earnings</h3>
+          <p id="kpiAvgMonth">$${kpis.avgMonthlyEarnings.toFixed(2)}</p>
+        </div>
+        <div class="kpi" data-kpi="fees">
+          <h3>Total Fees to Date</h3>
+          <p id="kpiFees">$${kpis.totalFeesToDate.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
+        </div>
+      `;
+    }
 
     // --------------------------
     // KPI drawers (shared drawer)
@@ -1226,47 +1232,46 @@
 
     let currentLoan = null;
 
-    loansWithEarnings.forEach(loan => {
-      const lastIdx = loan.earningsSchedule.length - 1;
-      const atCurrent = loan.earningsSchedule[Math.min(CURRENT_MONTH-1, lastIdx)] || loan.earningsSchedule[lastIdx];
+    function renderLoanTiles() {
+      grid.innerHTML = "";
+      loansWithEarnings.forEach(loan => {
+        const lastIdx = loan.earningsSchedule.length - 1;
+        const atCurrent = loan.earningsSchedule[Math.min(CURRENT_MONTH-1, lastIdx)] || loan.earningsSchedule[lastIdx];
 
-      const tile = document.createElement("div");
-      tile.className = "tile";
-      tile.setAttribute("tabindex","0");
-      tile.innerHTML = `
-        <div class="tile-left">
-          <div class="loan-name">${loan.loanName}</div>
-          <div class="loan-sub">${loan.school ? loan.school : "No school listed"}</div>
-          <div class="loan-meta">
-            <div>Term: ${loan.termYears}y</div>
-            <div>Grace: ${loan.graceYears}y</div>
-            <div>Fee: $${loan.feePerMonth.toFixed(2)}/mo</div>
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.innerHTML = `
+          <div class="tile-left">
+            <div class="loan-name">${loan.loanName}</div>
+            <div class="loan-sub">${loan.school || "No school listed"}</div>
+            <div class="loan-meta">
+              <div>Term: ${loan.termYears}y</div>
+              <div>Grace: ${loan.graceYears}y</div>
+              <div>Fee: $${loan.feePerMonth.toFixed(2)}/mo</div>
+            </div>
           </div>
-        </div>
-        <div class="chart-wrap">
-          <div class="mini-label">
-            Net Earnings M${CURRENT_MONTH}: $${atCurrent.netEarnings.toFixed(0)}
+          <div class="chart-wrap">
+            <div class="mini-label">
+              Net Earnings M${CURRENT_MONTH}: $${atCurrent.netEarnings.toFixed(0)}
+            </div>
+            <div class="mini-chart"></div>
           </div>
-          <div class="mini-chart"></div>
-        </div>
-      `;
+        `;
+        tile.addEventListener("click", () => openLoanDrawer(loan));
+        grid.appendChild(tile);
 
-      tile.addEventListener("click", e => {
-        e.stopPropagation();
-        openLoanDrawer(loan);
+        const mini = tile.querySelector('.mini-chart');
+        createMiniStackedEarningsSVG(mini, loan.earningsSchedule);
       });
-      tile.addEventListener("keydown", e => {
-        if(e.key === "Enter" || e.key === " "){
-          e.preventDefault();
-          openLoanDrawer(loan);
-        }
-      });
+    }
 
-      grid.appendChild(tile);
-
-      const miniChartContainer = tile.querySelector(".mini-chart");
-      createMiniStackedEarningsSVG(miniChartContainer, loan.earningsSchedule);
-    });
+    async function initPage() {
+      await loadLoansFromBackend();
+      rebuildLoansWithEarnings();
+      renderKPIs();
+      renderLoanTiles();
+      bindKpiClickHandlers();
+    }
 
     // --------------------------
     // Drawer behavior
@@ -1358,14 +1363,18 @@
       fees:openKpi4
     };
 
-    document.querySelectorAll(".kpi").forEach(k => {
-      k.addEventListener("click", () => {
-        const key = k.getAttribute("data-kpi");
-        if(kpiOpeners[key]){
-          kpiOpeners[key]();
-        }
+    function bindKpiClickHandlers() {
+      document.querySelectorAll(".kpi").forEach(k => {
+        k.addEventListener("click", () => {
+          const key = k.getAttribute("data-kpi");
+          if(kpiOpeners[key]){
+            kpiOpeners[key]();
+          }
+        });
       });
-    });
+    }
+
+    initPage();
 
     // --------------------------
     // Theme toggle
