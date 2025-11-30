@@ -603,7 +603,8 @@
         const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
           method: "GET"
         });
-        loans = await res.json();
+        const data = await res.json();
+loans = data.loans || [];
       } catch (err) {
         console.error("Failed to load loans from backend", err);
       }
