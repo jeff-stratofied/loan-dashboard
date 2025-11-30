@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Loan Admin — Edit Loan Data</title>
+  <title>Loan Admin — Loan Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body {
@@ -13,339 +13,371 @@
       color: #e5e7eb;
     }
     h1 {
-      margin-top: 0;
-      margin-bottom: 0.5rem;
+      margin: 0 0 0.25rem 0;
+      font-size: 1.4rem;
     }
     .sub {
+      font-size: 0.9rem;
       color: #9ca3af;
       margin-bottom: 1rem;
-      font-size: 0.9rem;
     }
     .toolbar {
       display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      align-items: center;
       flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      align-items: center;
     }
     button {
-      border: none;
       border-radius: 999px;
+      border: 1px solid transparent;
       padding: 0.35rem 0.9rem;
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       cursor: pointer;
+      font-weight: 500;
+    }
+    #add-row {
       background: #22c55e;
       color: #022c22;
-      font-weight: 600;
+      border-color: #16a34a;
     }
-    button.secondary {
-      background: #1f2937;
+    #save-btn {
+      background: #0f172a;
       color: #e5e7eb;
-      border: 1px solid #374151;
-    }
-    button.danger {
-      background: #b91c1c;
-      color: #fee2e2;
+      border-color: #374151;
     }
     button:disabled {
       opacity: 0.5;
       cursor: default;
     }
     #status {
+      min-height: 1.1rem;
       font-size: 0.8rem;
-      min-height: 1.2rem;
-    }
-    #status.error {
-      color: #fecaca;
-    }
-    #status.ok {
-      color: #a7f3d0;
+      margin-bottom: 0.5rem;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 0.5rem;
       background: #020617;
       border-radius: 0.75rem;
       overflow: hidden;
-      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+      box-shadow: 0 18px 40px rgba(0,0,0,0.4);
+      font-size: 0.78rem;
     }
     thead {
-      background: #0b1120;
+      background: #020617;
     }
     th, td {
-      padding: 0.45rem 0.55rem;
-      border-bottom: 1px solid #1f2937;
-      font-size: 0.78rem;
+      padding: 0.4rem 0.5rem;
+      border-bottom: 1px solid #111827;
       text-align: left;
     }
     th {
-      font-weight: 600;
       color: #9ca3af;
+      font-weight: 600;
       white-space: nowrap;
     }
-    tbody tr:hover {
+    tbody tr:nth-child(even) {
       background: #020617;
-      outline: 1px solid #1d4ed8;
     }
-    input {
+    tbody tr:hover {
+      background: #030712;
+    }
+    input, select {
       width: 100%;
       box-sizing: border-box;
       border-radius: 0.4rem;
-      border: 1px solid #374151;
+      border: 1px solid #1f2937;
       background: #020617;
       color: #e5e7eb;
       padding: 0.18rem 0.3rem;
       font-size: 0.78rem;
     }
-    input:focus {
+    input:focus, select:focus {
       outline: none;
       border-color: #22c55e;
       box-shadow: 0 0 0 1px #22c55e33;
     }
-    .cell-number {
-      max-width: 80px;
-    }
-    .cell-id {
-      max-width: 60px;
-    }
-    .cell-date {
-      max-width: 130px;
-    }
-    .actions {
-      white-space: nowrap;
+    .cell-id { max-width: 60px; }
+    .cell-number { max-width: 90px; }
+    .cell-date { max-width: 130px; }
+    .cell-school { min-width: 130px; }
+    .cell-name { min-width: 150px; }
+    .actions button {
+      background: #111827;
+      color: #e5e7eb;
+      border-color: #374151;
+      padding: 0.2rem 0.6rem;
     }
     .pill {
+      font-size: 0.75rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      border: 1px solid #374151;
+      color: #9ca3af;
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      padding: 0.15rem 0.45rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      background: #0f172a;
-      border: 1px solid #1f2937;
-      color: #9ca3af;
-      margin-left: auto;
     }
-    .pill span.dot {
+    .pill-dot {
       width: 7px;
       height: 7px;
       border-radius: 999px;
       background: #22c55e;
     }
-    .token-hint {
-      font-size: 0.8rem;
-      color: #9ca3af;
-      margin-top: 0.5rem;
-      max-width: 600px;
-    }
-    .token-hint code {
-      background: #020617;
-      padding: 0.1rem 0.3rem;
-      border-radius: 0.25rem;
-      border: 1px solid #111827;
-    }
   </style>
 </head>
 <body>
+  <h1>Loan Admin</h1>
+  <div class="sub">
+    Edit the loans that power your ROI, Earnings, and Amort dashboards.
+    Data is stored in <code>data/loans.json</code> in the <code>loan-dashboard</code> repo.
+  </div>
 
-<h1>Loan Admin</h1>
-<div class="sub">
-  Edit your loan data here. Changes save directly to
-  <code>data/loans.json</code> in <code>jeff-stratofied/loan-dashboard</code>.
-</div>
+  <div class="toolbar">
+    <button id="add-row">+ Add Loan</button>
+    <button id="save-btn">💾 Save Changes</button>
+    <span class="pill">
+      <span class="pill-dot"></span>
+      Backend: Cloudflare Worker → GitHub
+    </span>
+  </div>
 
-<div class="toolbar">
-  <button id="add-row">+ Add Loan</button>
-  <button id="save-btn">💾 Save Changes</button>
-  <span class="pill">
-    <span class="dot"></span>
-    GitHub JSON backend
-  </span>
-</div>
+  <div id="status"></div>
 
-<div id="status"></div>
+  <table id="loan-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Loan Name</th>
+        <th>School</th>
+        <th>Purchase Date</th>
+        <th>Principal</th>
+        <th>Rate</th>
+        <th>Term (yrs)</th>
+        <th>Grace (yrs)</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="loan-table-body"></tbody>
+  </table>
 
-<table id="loan-table">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Loan Name</th>
-      <th>School</th>
-      <th>Purchase Date</th>
-      <th>Principal</th>
-      <th>Rate</th>
-      <th>Term (yrs)</th>
-      <th>Grace (yrs)</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <script>
+    // Worker URL
+    const WORKER_BASE_URL = "https://loan-dashboard-api.jeff-263.workers.dev";
 
-<div class="token-hint">
-  Insert your GitHub fine-grained token in the code below:
-  <code>const GITHUB_TOKEN = "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"</code>
-</div>
+    // Shared state
+    let loans = [];
+    let currentSha = null;
 
-<script>
-const WORKER_BASE_URL = "https://loan-dashboard-api.jeff-263.workers.dev";
+    // School dropdown options (you can edit this list)
+    const SCHOOL_OPTIONS = [
+      "Select school…",
+      "Penn State",
+      "Ohio State",
+      "Pitt",
+      "Carnegie Mellon",
+      "Michigan",
+      "UCLA",
+      "USC",
+      "NYU",
+      "Community College",
+      "Other"
+    ];
 
-let loans = [];
-let currentSha = null;
-
-// -----------------------------
-// Load loans.json through Worker
-// -----------------------------
-async function loadFromBackend() {
-  setStatus("Loading loans…");
-
-  try {
-    const res = await fetch(`${WORKER_BASE_URL}/loans`);
-    if (!res.ok) throw new Error(`Worker error ${res.status}`);
-
-    const data = await res.json();
-
-    currentSha = data.sha || null;
-    loans = data.loans || [];
-
-    // If file does not exist yet, seed defaults
-    if (!loans.length) {
-      loans = getDefaultLoans();
-      currentSha = null;
+    // -----------------------------
+    // Status helper
+    // -----------------------------
+    function setStatus(msg, type = "ok") {
+      const el = document.getElementById("status");
+      el.textContent = msg;
+      el.style.color = type === "error" ? "#fecaca" : "#a7f3d0";
     }
 
-    renderTable();
-    setStatus("Loans loaded.");
-  } catch (err) {
-    console.error(err);
-    loans = getDefaultLoans();
-    currentSha = null;
-    renderTable();
-    setStatus("Backend error — using defaults.", "error");
-  }
-}
+    // -----------------------------
+    // Backend calls
+    // -----------------------------
+    async function loadFromBackend() {
+      setStatus("Loading loans…");
 
-// -----------------------------
-// Save loans.json through Worker
-// -----------------------------
-async function saveToBackend() {
-  const saveBtn = document.getElementById("save-btn");
-  saveBtn.disabled = true;
+      try {
+        const res = await fetch(`${WORKER_BASE_URL}/loans`, { cache: "no-store" });
+        if (!res.ok) throw new Error("Worker error " + res.status);
 
-  setStatus("Saving…");
+        const data = await res.json();
+        currentSha = data.sha || null;
+        loans = (data.loans || []).map((l, i) => normalizeLoan(l, i));
 
-  const newLoans = collectLoansFromTable();
+        if (!loans.length) {
+          loans = getDefaultLoans();
+          currentSha = null;
+        }
 
-  try {
-    const res = await fetch(`${WORKER_BASE_URL}/loans`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        loans: newLoans,
-        sha: currentSha
-      })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.ok) {
-      throw new Error("Worker save failed");
-    }
-
-    // Update SHA returned by GitHub
-    currentSha = data.content?.sha || currentSha;
-
-    loans = newLoans;
-
-    setStatus("Saved successfully.");
-  } catch (err) {
-    console.error(err);
-    setStatus("Error saving — check Worker logs.", "error");
-  } finally {
-    saveBtn.disabled = false;
-  }
-}
-
-// -----------------------------
-// Render table / create new row
-// Existing code remains unchanged
-// -----------------------------
-function renderTable() {
-  const tbody = document.getElementById("loan-table-body");
-  tbody.innerHTML = "";
-
-  loans.forEach((loan, idx) => {
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td><input type="number" value="${loan.loanId}" data-field="loanId"></td>
-      <td><input type="date" value="${loan.purchaseDate}" data-field="purchaseDate"></td>
-      <td><input type="number" step="0.01" value="${loan.principal}" data-field="principal"></td>
-      <td><input type="number" step="0.01" value="${loan.rate}" data-field="rate"></td>
-      <td><input type="number" step="0.1" value="${loan.termYears}" data-field="termYears"></td>
-      <td><input type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears"></td>
-      <td><button onclick="deleteRow(${idx})">Delete</button></td>
-    `;
-
-    tbody.appendChild(row);
-  });
-}
-
-function collectLoansFromTable() {
-  const rows = [...document.querySelectorAll("#loan-table-body tr")];
-  return rows.map(row => {
-    const fields = row.querySelectorAll("input");
-    const obj = {};
-    fields.forEach(f => {
-      const key = f.dataset.field;
-      let val = f.value;
-
-      if (["loanId", "principal", "rate", "termYears", "graceYears"].includes(key)) {
-        val = Number(val);
+        renderTable();
+        setStatus("Loans loaded.");
+      } catch (err) {
+        console.error(err);
+        loans = getDefaultLoans();
+        currentSha = null;
+        renderTable();
+        setStatus("Error loading from backend — using defaults.", "error");
       }
-      obj[key] = val;
-    });
-    return obj;
-  });
-}
+    }
 
-function addLoanRow() {
-  loans.push({
-    loanId: loans.length + 1,
-    purchaseDate: "2024-01-01",
-    principal: 0,
-    rate: 0,
-    termYears: 10,
-    graceYears: 0
-  });
-  renderTable();
-}
+    async function saveToBackend() {
+      const saveBtn = document.getElementById("save-btn");
+      saveBtn.disabled = true;
+      setStatus("Saving…");
 
-function deleteRow(i) {
-  loans.splice(i, 1);
-  renderTable();
-}
+      const newLoans = collectLoansFromTable();
 
-// Example defaults
-function getDefaultLoans() {
-  return [
-    { loanId: 1, purchaseDate: "2024-01-01", principal: 7000, rate: 0.0883, termYears: 10, graceYears: 0.83 },
-    { loanId: 2, purchaseDate: "2024-02-01", principal: 7500, rate: 0.075, termYears: 8, graceYears: 2 }
-  ];
-}
+      try {
+        const res = await fetch(`${WORKER_BASE_URL}/loans`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ loans: newLoans, sha: currentSha })
+        });
 
-function setStatus(msg, type = "ok") {
-  const el = document.getElementById("status");
-  el.textContent = msg;
-  el.style.color = type === "error" ? "red" : "black";
-}
+        const data = await res.json();
 
-// Load data immediately
-window.addEventListener("DOMContentLoaded", loadFromBackend);
-</script>
+        if (!res.ok || !data.ok) {
+          throw new Error("Worker save failed");
+        }
 
+        currentSha = data.content?.sha || currentSha;
+        loans = newLoans;
+        setStatus("Saved successfully.");
+      } catch (err) {
+        console.error(err);
+        setStatus("Failed to save — check Worker & GitHub.", "error");
+      } finally {
+        saveBtn.disabled = false;
+      }
+    }
 
+    // -----------------------------
+    // Normalization & defaults
+    // -----------------------------
+    function normalizeLoan(l, idx) {
+      return {
+        loanId: l.loanId ?? (idx + 1),
+        loanName: l.loanName ?? `Loan ${l.loanId ?? (idx + 1)}`,
+        school: l.school ?? "Select school…",
+        purchaseDate: l.purchaseDate ?? "2024-01-01",
+        principal: Number(l.principal ?? 0),
+        rate: Number(l.rate ?? 0),
+        termYears: Number(l.termYears ?? 10),
+        graceYears: Number(l.graceYears ?? 0)
+      };
+    }
+
+    function getDefaultLoans() {
+      return [
+        {
+          loanId: 1,
+          loanName: "Loan 1 — Freshman Fall",
+          school: "Penn State",
+          purchaseDate: "2024-01-01",
+          principal: 7000,
+          rate: 0.0883,
+          termYears: 10,
+          graceYears: 0.83
+        },
+        {
+          loanId: 2,
+          loanName: "Loan 2 — Sophomore Fall",
+          school: "Ohio State",
+          purchaseDate: "2024-09-01",
+          principal: 7500,
+          rate: 0.075,
+          termYears: 8,
+          graceYears: 2
+        }
+      ];
+    }
+
+    // -----------------------------
+    // Table rendering
+    // -----------------------------
+    function renderTable() {
+      const tbody = document.getElementById("loan-table-body");
+      if (!tbody) {
+        console.error("No <tbody id='loan-table-body'> found in DOM.");
+        return;
+      }
+      tbody.innerHTML = "";
+
+      loans.forEach((loan, idx) => {
+        const tr = document.createElement("tr");
+
+        const schoolOptionsHtml = SCHOOL_OPTIONS.map(opt => {
+          const sel = opt === loan.school ? "selected" : "";
+          return `<option value="${opt}" ${sel}>${opt}</option>`;
+        }).join("");
+
+        tr.innerHTML = `
+          <td><input class="cell-id" type="number" value="${loan.loanId}" data-field="loanId"></td>
+          <td><input class="cell-name" type="text" value="${loan.loanName}" data-field="loanName"></td>
+          <td>
+            <select class="cell-school" data-field="school">
+              ${schoolOptionsHtml}
+            </select>
+          </td>
+          <td><input class="cell-date" type="date" value="${loan.purchaseDate}" data-field="purchaseDate"></td>
+          <td><input class="cell-number" type="number" step="0.01" value="${loan.principal}" data-field="principal"></td>
+          <td><input class="cell-number" type="number" step="0.0001" value="${loan.rate}" data-field="rate"></td>
+          <td><input class="cell-number" type="number" step="0.1" value="${loan.termYears}" data-field="termYears"></td>
+          <td><input class="cell-number" type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears"></td>
+          <td class="actions"><button type="button" onclick="deleteRow(${idx})">Delete</button></td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function collectLoansFromTable() {
+      const rows = [...document.querySelectorAll("#loan-table-body tr")];
+      return rows.map(row => {
+        const fields = row.querySelectorAll("input, select");
+        const obj = {};
+        fields.forEach(f => {
+          const key = f.dataset.field;
+          let val = f.value;
+          if (["loanId", "principal", "rate", "termYears", "graceYears"].includes(key)) {
+            val = Number(val);
+          }
+          obj[key] = val;
+        });
+        return obj;
+      });
+    }
+
+    function addLoanRow() {
+      const nextId = loans.length ? Math.max(...loans.map(l => l.loanId || 0)) + 1 : 1;
+      loans.push({
+        loanId: nextId,
+        loanName: `Loan ${nextId}`,
+        school: "Select school…",
+        purchaseDate: "2024-01-01",
+        principal: 0,
+        rate: 0,
+        termYears: 10,
+        graceYears: 0
+      });
+      renderTable();
+    }
+
+    function deleteRow(idx) {
+      loans.splice(idx, 1);
+      renderTable();
+    }
+
+    // -----------------------------
+    // Wire up buttons & init
+    // -----------------------------
+    document.getElementById("add-row").addEventListener("click", addLoanRow);
+    document.getElementById("save-btn").addEventListener("click", saveToBackend);
+    window.addEventListener("DOMContentLoaded", loadFromBackend);
+  </script>
 </body>
 </html>
-
