@@ -282,14 +282,15 @@ svg text {
     let loans = [];
 
     async function loadLoans() {
-      const resp = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-      const data = await resp.json();
-
+      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
+      const data = await res.json();
       loans = (data.loans || []).map(l => ({
         ...l,
         id: l.loanId,
-        name: l.loanName || `Loan ${l.loanId}`,
-        school: l.school || "Unknown School"
+        name: l.loanName ?? `Loan ${l.loanId}`,
+        school: l.school ?? "",
+        upfrontFee: Number(l.upfrontFee ?? 150),
+        monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
       }));
     }
 
@@ -321,9 +322,23 @@ svg text {
       let cumP=0, cumI=0, cumTotal=0;
       const cumSchedule = amort.schedule.map(r => { cumP=+(cumP+r.principalPaid).toFixed(2); cumI=+(cumI+r.interest).toFixed(2); cumTotal=+(cumTotal+r.payment).toFixed(2); return {...r, cumPrincipal:cumP, cumInterest:cumI, cumTotal}; });
 
-    // Loan 1 monthly fees (from ROI.xlsx). Index 0 => month 1
-    const loan1FeeSeries = [8.562578,8.624465,8.686342,8.748219,8.810096,8.871973,8.933841,8.995708,9.057576,9.119434,9.733353,9.685593,9.637483,9.589013,9.540192,9.491009,9.441454,9.391548,9.341268,9.290616,9.239599,9.1882,9.136436,9.084276,9.031741,8.97881,8.925502,8.871797,8.817685,8.763185,8.708287,8.652991,8.597273,8.541157,8.484621,8.427674,8.370303,8.31251,8.254297,8.195639,8.136567,8.077051,8.017091,7.956705,7.895874,7.834587,7.772853,7.710671,7.648021,7.584912,7.521343,7.457306,7.392797,7.327808,7.262347,7.196403,7.129967,7.063046,6.995633,6.927725,6.859321,6.790412,6.720986,6.651062,6.580621,6.509651,6.438173,6.366154,6.293616,6.220546,6.146934,6.072779,5.998083,5.922842,5.847037,5.770675,5.693749,5.616266,5.538215,5.459587,5.38037,5.300572,5.220194,5.139227,5.057658,4.975485,4.893381,4.810673,4.727349,4.64342,4.558875,4.473702,4.387901,4.301471,4.214401,4.12669,4.038339,3.949336,3.85968,3.769359,3.678374,3.586724,3.494398,3.401395,3.307703,3.213322,3.118253,3.022483,2.926,2.828816,2.730919,2.632297,2.53295,2.432866,2.332045,2.230487,2.12818,2.025124,1.921306,1.816727,1.711375,1.605249,1.498338,1.390642,1.28216,1.172881,1.062792,0.951893,0.840185,0.727655];
-      const roiSeries = cumSchedule.map(s => { const loanValue = s.balance + s.cumInterest + s.cumTotal; const roi = (loanValue - l.purchasePrice)/l.purchasePrice; return { month:s.monthIndex, roi, loanValue }; });
+      let cumFees = 0;
+      const roiSeries = cumSchedule.map(s => {
+        const m = s.monthIndex;
+
+        let upfrontFee = (m === 1 ? l.upfrontFee : 0);
+
+        let termMonths = l.termYears * 12;
+        let monthlyFee = l.monthlyFeeStart * (1 - (m / termMonths));
+        if (monthlyFee < 0) monthlyFee = 0;
+
+        let feeThisMonth = upfrontFee + monthlyFee;
+        cumFees += feeThisMonth;
+
+        const loanValue = (s.balance + s.cumInterest + s.cumTotal) - cumFees;
+        const roi = (loanValue - l.purchasePrice)/l.purchasePrice;
+        return { month:s.monthIndex, roi, loanValue, cumFees };
+      });
       const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ x:s.month, y:s.roi }));
       return {...l, amort, cumSchedule, roiSeries, miniPts };
     });
@@ -755,7 +770,8 @@ function populateROILoanTable(){
 
 function openDrawerForLoan(loan){
       currentMode='loan'; currentLoan=loan;
-      drawerTitle.textContent = formatLoanLabel(loan);
+      drawerTitle.textContent =
+        `Loan ${loan.id} — ${loan.name} (${loan.school || "No school"})`;
       drawerSub.textContent = 'Purchased: ' + loan.purchaseDate;
       drawerPrimaryTitle.textContent = 'Purchase Price'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
@@ -768,19 +784,16 @@ function openDrawerForLoan(loan){
       drawerAmortContainer.innerHTML = '<h3 style="margin-top:8px">ROI by Month</h3><div class="amort-wrap"><table><thead><tr><th>Month</th><th style="text-align:right">Balance</th><th style="text-align:right">Cum Interest</th><th style="text-align:right">Cum Payments</th><th style="text-align:right">Cum Fees</th><th style="text-align:right">Loan Value</th><th style="text-align:right">ROI</th></tr></thead><tbody id="roiBody"></tbody></table></div>';
       const roiBody = document.getElementById('roiBody');
       roiBody.innerHTML = '';
-      // build rows using cumSchedule and roiSeries, accounting for fees (loan1FeeSeries from embedded Excel; loans 2-10 assume $3/mo)
+      // build rows using cumSchedule and roiSeries, accounting for amortization fees
       loan.roiSeries.forEach(s => {
         const month = s.month;
-        // find cumulative schedule entry
         const cs = loan.cumSchedule.find(r => r.monthIndex === month) || {};
         const balance = (cs.balance !== undefined) ? cs.balance : '';
         const cumInterest = (cs.cumInterest !== undefined) ? cs.cumInterest : '';
         const cumPayments = (cs.cumTotal !== undefined) ? cs.cumTotal : '';
-        // cumulative fees
-        let cumFees = 0;
-cumFees = 3 * month;
-        const loanValueAdj = (s.loanValue || 0) - cumFees;
-        const roiAdj = ((loanValueAdj - loan.purchasePrice) / loan.purchasePrice) || 0;
+        const cumFees = s.cumFees ?? 0;
+        const loanValueAdj = s.loanValue ?? 0;
+        const roiAdj = s.roi || 0;
         const tr = document.createElement('tr');
         tr.innerHTML = `<td style="text-align:left">${month}</td><td style="text-align:right">$${Number(balance).toFixed(2)}</td><td style="text-align:right">$${Number(cumInterest).toFixed(2)}</td><td style="text-align:right">$${Number(cumPayments).toFixed(2)}</td><td style="text-align:right">$${Number(cumFees).toFixed(2)}</td><td style="text-align:right">$${Number(loanValueAdj).toFixed(2)}</td><td style="text-align:right">${(roiAdj*100).toFixed(2)}%</td>`;
         roiBody.appendChild(tr);
