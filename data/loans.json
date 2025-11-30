@@ -1,0 +1,104 @@
+{
+  "loans": [
+    {
+      "loanId": 1,
+      "name": "Loan 1",
+      "school": "School A",
+      "purchaseDate": "2025-01-31",
+      "principal": 10000,
+      "rate": 0.0883,
+      "termYears": 10,
+      "graceYears": 1
+    },
+    {
+      "loanId": 2,
+      "name": "Loan 2",
+      "school": "School B",
+      "purchaseDate": "2025-02-01",
+      "principal": 7500,
+      "rate": 0.08,
+      "termYears": 8,
+      "graceYears": 0.5
+    },
+    {
+      "loanId": 3,
+      "name": "Loan 3",
+      "school": "School C",
+      "purchaseDate": "2025-03-15",
+      "principal": 12000,
+      "rate": 0.0825,
+      "termYears": 12,
+      "graceYears": 1.5
+    },
+    {
+      "loanId": 4,
+      "name": "Loan 4",
+      "school": "School D",
+      "purchaseDate": "2025-04-30",
+      "principal": 6000,
+      "rate": 0.095,
+      "termYears": 9,
+      "graceYears": 1
+    },
+    {
+      "loanId": 5,
+      "name": "Loan 5",
+      "school": "School E",
+      "purchaseDate": "2025-07-31",
+      "principal": 5000,
+      "rate": 0.09,
+      "termYears": 10,
+      "graceYears": 0.5
+    },
+    {
+      "loanId": 6,
+      "name": "Loan 6",
+      "school": "School F",
+      "purchaseDate": "2025-01-31",
+      "principal": 7500,
+      "rate": 0.073,
+      "termYears": 5,
+      "graceYears": 0
+    },
+    {
+      "loanId": 7,
+      "name": "Loan 7",
+      "school": "School G",
+      "purchaseDate": "2025-02-10",
+      "principal": 9000,
+      "rate": 0.079,
+      "termYears": 7,
+      "graceYears": 0.5
+    },
+    {
+      "loanId": 8,
+      "name": "Loan 8",
+      "school": "School H",
+      "purchaseDate": "2025-03-01",
+      "principal": 6500,
+      "rate": 0.081,
+      "termYears": 9,
+      "graceYears": 1
+    },
+    {
+      "loanId": 9,
+      "name": "Loan 9",
+      "school": "School I",
+      "purchaseDate": "2025-03-20",
+      "principal": 5500,
+      "rate": 0.085,
+      "termYears": 8,
+      "graceYears": 0.5
+    },
+    {
+      "loanId": 10,
+      "name": "Loan 10",
+      "school": "School J",
+      "purchaseDate": "2025-04-05",
+      "principal": 8200,
+      "rate": 0.087,
+      "termYears": 10,
+      "graceYears": 1
+    }
+  ]
+}
