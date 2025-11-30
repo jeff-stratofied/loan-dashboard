@@ -600,13 +600,12 @@
 
     async function loadLoansFromBackend() {
       try {
-        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
-          method: "GET"
-        });
+        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
         const data = await res.json();
-loans = data.loans || [];
+        loans = data.loans || [];
       } catch (err) {
         console.error("Failed to load loans from backend", err);
+        loans = [];
       }
     }
 
@@ -665,27 +664,48 @@ loans = data.loans || [];
 
     function rebuildLoansWithEarnings() {
       loansWithEarnings = loans.map(l => {
-        const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
-        let cumP = 0, cumI = 0;
+        const normalizedLoan = {
+          ...l,
+          loanName: l.loanName ?? `Loan ${l.loanId}`,
+          school: l.school ?? "No school listed",
+          upfrontFee: Number(l.upfrontFee ?? 150),
+          monthlyFeeStart: Number(l.monthlyFeeStart ?? 9)
+        };
+
+        const amort = calcAmort(normalizedLoan.purchasePrice, normalizedLoan.nominalRate, normalizedLoan.termYears, normalizedLoan.graceYears);
+
+        let cumP = 0, cumI = 0, cumFees = 0;
+
         const earningsSchedule = amort.schedule.map(row => {
+          let m = row.monthIndex;
+
+          // Upfront fee at month 1
+          let upfrontFee = (m === 1 ? normalizedLoan.upfrontFee : 0);
+
+          // Sliding fee
+          let termMonths = normalizedLoan.termYears * 12;
+          let monthlyFee = normalizedLoan.monthlyFeeStart * (1 - (m / termMonths));
+          if (monthlyFee < 0) monthlyFee = 0;
+
+          let feeThisMonth = upfrontFee + monthlyFee;
+          cumFees += feeThisMonth;
+
+          // Earnings math
           cumP = +(cumP + row.principalPaid).toFixed(2);
           cumI = +(cumI + row.interest).toFixed(2);
-          const m = row.monthIndex;
-          const cumFees = +(l.feePerMonth * m).toFixed(2);
-          const netEarnings = +(cumP + cumI - cumFees).toFixed(2);
+
+          let netEarnings = +(cumP + cumI - cumFees).toFixed(2);
+
           return {
-            monthIndex:m,
-            payment:row.payment,
-            principalPaid:row.principalPaid,
-            interest:row.interest,
-            balance:row.balance,
-            cumPrincipal:cumP,
-            cumInterest:cumI,
-            cumFees:cumFees,
-            netEarnings:netEarnings
+            ...row,
+            cumPrincipal: cumP,
+            cumInterest: cumI,
+            cumFees,
+            netEarnings
           };
         });
-        return { ...l, amort, earningsSchedule };
+
+        return { ...normalizedLoan, amort, earningsSchedule };
       });
     }
 
@@ -1248,7 +1268,7 @@ loans = data.loans || [];
             <div class="loan-meta">
               <div>Term: ${loan.termYears}y</div>
               <div>Grace: ${loan.graceYears}y</div>
-              <div>Fee: $${loan.feePerMonth.toFixed(2)}/mo</div>
+              <div>Fee: $${(loan.monthlyFeeStart || 0).toFixed(2)}/mo</div>
             </div>
           </div>
           <div class="chart-wrap">
@@ -1375,7 +1395,7 @@ loans = data.loans || [];
       });
     }
 
-    initPage();
+    document.addEventListener("DOMContentLoaded", initPage);
 
     // --------------------------
     // Theme toggle
@@ -1716,7 +1736,7 @@ loans = data.loans || [];
           `$${avg.toFixed(2)}`,
           `$${atCur.netEarnings.toFixed(2)}`,
           `${CURRENT_MONTH}`,
-          `$${l.feePerMonth.toFixed(2)}/mo`
+          `$${(l.monthlyFeeStart || 0).toFixed(2)}/mo`
         ];
       });
       renderKpiTable(containerId, ["Loan","Avg / Mo","Net to Date","Months","Fees"], rows);
@@ -1728,7 +1748,7 @@ loans = data.loans || [];
         return [
           `${l.loanName}`,
           l.purchaseDate,
-          `$${l.feePerMonth.toFixed(2)}/mo`,
+          `$${(l.monthlyFeeStart || 0).toFixed(2)}/mo`,
           `-$${atCur.cumFees.toFixed(2)}`,
           `$${atCur.netEarnings.toFixed(2)}`
         ];
