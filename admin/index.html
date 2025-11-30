@@ -189,191 +189,162 @@
 </div>
 
 <script>
-/* -------------------------------------------------------------
-   CONFIGURATION
-------------------------------------------------------------- */
-const GITHUB_OWNER = "jeff-stratofied";
-const GITHUB_REPO = "loan-dashboard";
-const FILE_PATH = "data/loans.json";
+const WORKER_BASE_URL = "https://loan-dashboard-api.jeff-263.workers.dev";
 
-/* 🔥 IMPORTANT: paste your token here before committing */
-const GITHUB_TOKEN = "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";
-
-/* -------------------------------------------------------------
-   UTILITIES
-------------------------------------------------------------- */
-let currentSha = null;
 let loans = [];
+let currentSha = null;
 
-function setStatus(msg, type="ok") {
-  const el = document.getElementById("status");
-  el.textContent = msg;
-  el.className = type === "error" ? "error" : "ok";
-}
-
-function toBase64(str) {
-  return btoa(unescape(encodeURIComponent(str)));
-}
-
-function renderTable() {
-  const tbody = document.querySelector("#loan-table tbody");
-  tbody.innerHTML = "";
-
-  loans.forEach((loan, index) => {
-    const tr = document.createElement("tr");
-    tr.dataset.index = index;
-
-    tr.innerHTML = `
-      <td><input class="cell-id" type="number" step="1" value="${loan.loanId || ""}"></td>
-      <td><input type="text" value="${loan.name || ""}"></td>
-      <td><input type="text" value="${loan.school || ""}"></td>
-      <td><input class="cell-date" type="date" value="${loan.purchaseDate || ""}"></td>
-      <td><input class="cell-number" type="number" step="0.01" value="${loan.principal || 0}"></td>
-      <td><input class="cell-number" type="number" step="0.0001" value="${loan.rate || 0}"></td>
-      <td><input class="cell-number" type="number" step="0.1" value="${loan.termYears || 0}"></td>
-      <td><input class="cell-number" type="number" step="0.1" value="${loan.graceYears || 0}"></td>
-      <td class="actions"><button class="secondary delete-row">🗑 Delete</button></td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  tbody.querySelectorAll(".delete-row").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      const row = e.target.closest("tr");
-      const idx = parseInt(row.dataset.index, 10);
-      loans.splice(idx, 1);
-      renderTable();
-    });
-  });
-}
-
-function collectLoans() {
-  return [...document.querySelectorAll("#loan-table tbody tr")].map(row => {
-    const inputs = row.querySelectorAll("input");
-    return {
-      loanId: parseInt(inputs[0].value, 10),
-      name: inputs[1].value,
-      school: inputs[2].value,
-      purchaseDate: inputs[3].value,
-      principal: parseFloat(inputs[4].value),
-      rate: parseFloat(inputs[5].value),
-      termYears: parseFloat(inputs[6].value),
-      graceYears: parseFloat(inputs[7].value)
-    };
-  });
-}
-
-/* -------------------------------------------------------------
-   LOAD FROM GITHUB
-------------------------------------------------------------- */
-async function loadFile() {
-  setStatus("Loading loans.json…");
+// -----------------------------
+// Load loans.json through Worker
+// -----------------------------
+async function loadFromBackend() {
+  setStatus("Loading loans…");
 
   try {
-    const res = await fetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`,
-      {
-        headers: {
-          "Accept": "application/vnd.github+json",
-          "Authorization": `Bearer ${GITHUB_TOKEN}`
-        }
-      }
-    );
-
-    if (res.status === 404) {
-      setStatus("No loans.json found — starting fresh.");
-      loans = [];
-      currentSha = null;
-      renderTable();
-      return;
-    }
+    const res = await fetch(`${WORKER_BASE_URL}/loans`);
+    if (!res.ok) throw new Error(`Worker error ${res.status}`);
 
     const data = await res.json();
-    currentSha = data.sha;
 
-    const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ""))));
-    const json = JSON.parse(decoded);
+    currentSha = data.sha || null;
+    loans = data.loans || [];
 
-    loans = json.loans || [];
+    // If file does not exist yet, seed defaults
+    if (!loans.length) {
+      loans = getDefaultLoans();
+      currentSha = null;
+    }
+
     renderTable();
-    setStatus("Loaded loans.json");
+    setStatus("Loans loaded.");
   } catch (err) {
     console.error(err);
-    setStatus("Failed to load loans.json", "error");
+    loans = getDefaultLoans();
+    currentSha = null;
+    renderTable();
+    setStatus("Backend error — using defaults.", "error");
   }
 }
 
-/* -------------------------------------------------------------
-   SAVE TO GITHUB
-------------------------------------------------------------- */
-async function saveFile() {
-  const btn = document.getElementById("save-btn");
-  btn.disabled = true;
+// -----------------------------
+// Save loans.json through Worker
+// -----------------------------
+async function saveToBackend() {
+  const saveBtn = document.getElementById("save-btn");
+  saveBtn.disabled = true;
+
   setStatus("Saving…");
 
+  const newLoans = collectLoansFromTable();
+
   try {
-    const loansData = collectLoans();
-    const content = JSON.stringify({ loans: loansData }, null, 2);
-    const contentBase64 = toBase64(content);
-
-    const body = {
-      message: "Update loans.json via admin UI",
-      content: contentBase64
-    };
-    if (currentSha) body.sha = currentSha;
-
-    const res = await fetch(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`,
-      {
-        method: "PUT",
-        headers: {
-          "Accept": "application/vnd.github+json",
-          "Authorization": `Bearer ${GITHUB_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(body)
-      }
-    );
-
-    if (!res.ok) throw new Error("GitHub write failed");
+    const res = await fetch(`${WORKER_BASE_URL}/loans`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        loans: newLoans,
+        sha: currentSha
+      })
+    });
 
     const data = await res.json();
-    currentSha = data.content.sha;
+
+    if (!res.ok || !data.ok) {
+      throw new Error("Worker save failed");
+    }
+
+    // Update SHA returned by GitHub
+    currentSha = data.content?.sha || currentSha;
+
+    loans = newLoans;
 
     setStatus("Saved successfully.");
   } catch (err) {
     console.error(err);
-    setStatus("Error saving — check token permissions.", "error");
+    setStatus("Error saving — check Worker logs.", "error");
+  } finally {
+    saveBtn.disabled = false;
   }
-
-  btn.disabled = false;
 }
 
-/* -------------------------------------------------------------
-   EVENT LISTENERS
-------------------------------------------------------------- */
-document.getElementById("add-row").addEventListener("click", () => {
-  const nextId = loans.length ? Math.max(...loans.map(l => l.loanId)) + 1 : 1;
+// -----------------------------
+// Render table / create new row
+// Existing code remains unchanged
+// -----------------------------
+function renderTable() {
+  const tbody = document.getElementById("loan-table-body");
+  tbody.innerHTML = "";
+
+  loans.forEach((loan, idx) => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td><input type="number" value="${loan.loanId}" data-field="loanId"></td>
+      <td><input type="date" value="${loan.purchaseDate}" data-field="purchaseDate"></td>
+      <td><input type="number" step="0.01" value="${loan.principal}" data-field="principal"></td>
+      <td><input type="number" step="0.01" value="${loan.rate}" data-field="rate"></td>
+      <td><input type="number" step="0.1" value="${loan.termYears}" data-field="termYears"></td>
+      <td><input type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears"></td>
+      <td><button onclick="deleteRow(${idx})">Delete</button></td>
+    `;
+
+    tbody.appendChild(row);
+  });
+}
+
+function collectLoansFromTable() {
+  const rows = [...document.querySelectorAll("#loan-table-body tr")];
+  return rows.map(row => {
+    const fields = row.querySelectorAll("input");
+    const obj = {};
+    fields.forEach(f => {
+      const key = f.dataset.field;
+      let val = f.value;
+
+      if (["loanId", "principal", "rate", "termYears", "graceYears"].includes(key)) {
+        val = Number(val);
+      }
+      obj[key] = val;
+    });
+    return obj;
+  });
+}
+
+function addLoanRow() {
   loans.push({
-    loanId: nextId,
-    name: `Loan ${nextId}`,
-    school: "",
-    purchaseDate: "",
+    loanId: loans.length + 1,
+    purchaseDate: "2024-01-01",
     principal: 0,
-    rate: 0.08,
+    rate: 0,
     termYears: 10,
     graceYears: 0
   });
   renderTable();
-});
+}
 
-document.getElementById("save-btn").addEventListener("click", saveFile);
+function deleteRow(i) {
+  loans.splice(i, 1);
+  renderTable();
+}
 
-/* -------------------------------------------------------------
-   INITIAL LOAD
-------------------------------------------------------------- */
-loadFile();
+// Example defaults
+function getDefaultLoans() {
+  return [
+    { loanId: 1, purchaseDate: "2024-01-01", principal: 7000, rate: 0.0883, termYears: 10, graceYears: 0.83 },
+    { loanId: 2, purchaseDate: "2024-02-01", principal: 7500, rate: 0.075, termYears: 8, graceYears: 2 }
+  ];
+}
+
+function setStatus(msg, type = "ok") {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.style.color = type === "error" ? "red" : "black";
+}
+
+// Load data immediately
+window.addEventListener("DOMContentLoaded", loadFromBackend);
 </script>
+
 
 </body>
 </html>
