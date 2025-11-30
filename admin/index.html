@@ -1,1 +1,380 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Loan Admin — Edit Loan Data</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 1.5rem;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    h1 {
+      margin-top: 0;
+      margin-bottom: 0.5rem;
+    }
+    .sub {
+      color: #9ca3af;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 0.9rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      background: #22c55e;
+      color: #022c22;
+      font-weight: 600;
+    }
+    button.secondary {
+      background: #1f2937;
+      color: #e5e7eb;
+      border: 1px solid #374151;
+    }
+    button.danger {
+      background: #b91c1c;
+      color: #fee2e2;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+    #status {
+      font-size: 0.8rem;
+      min-height: 1.2rem;
+    }
+    #status.error {
+      color: #fecaca;
+    }
+    #status.ok {
+      color: #a7f3d0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0.5rem;
+      background: #020617;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+    }
+    thead {
+      background: #0b1120;
+    }
+    th, td {
+      padding: 0.45rem 0.55rem;
+      border-bottom: 1px solid #1f2937;
+      font-size: 0.78rem;
+      text-align: left;
+    }
+    th {
+      font-weight: 600;
+      color: #9ca3af;
+      white-space: nowrap;
+    }
+    tbody tr:hover {
+      background: #020617;
+      outline: 1px solid #1d4ed8;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 0.4rem;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #e5e7eb;
+      padding: 0.18rem 0.3rem;
+      font-size: 0.78rem;
+    }
+    input:focus {
+      outline: none;
+      border-color: #22c55e;
+      box-shadow: 0 0 0 1px #22c55e33;
+    }
+    .cell-number {
+      max-width: 80px;
+    }
+    .cell-id {
+      max-width: 60px;
+    }
+    .cell-date {
+      max-width: 130px;
+    }
+    .actions {
+      white-space: nowrap;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: #0f172a;
+      border: 1px solid #1f2937;
+      color: #9ca3af;
+      margin-left: auto;
+    }
+    .pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+    .token-hint {
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 0.5rem;
+      max-width: 600px;
+    }
+    .token-hint code {
+      background: #020617;
+      padding: 0.1rem 0.3rem;
+      border-radius: 0.25rem;
+      border: 1px solid #111827;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Loan Admin</h1>
+<div class="sub">
+  Edit your loan data here. Changes save directly to
+  <code>data/loans.json</code> in <code>jeff-stratofied/loan-dashboard</code>.
+</div>
+
+<div class="toolbar">
+  <button id="add-row">+ Add Loan</button>
+  <button id="save-btn">💾 Save Changes</button>
+  <span class="pill">
+    <span class="dot"></span>
+    GitHub JSON backend
+  </span>
+</div>
+
+<div id="status"></div>
+
+<table id="loan-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Loan Name</th>
+      <th>School</th>
+      <th>Purchase Date</th>
+      <th>Principal</th>
+      <th>Rate</th>
+      <th>Term (yrs)</th>
+      <th>Grace (yrs)</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div class="token-hint">
+  Insert your GitHub fine-grained token in the code below:
+  <code>const GITHUB_TOKEN = "YOUR_TOKEN_HERE"</code>
+</div>
+
+<script>
+/* -------------------------------------------------------------
+   CONFIGURATION
+------------------------------------------------------------- */
+const GITHUB_OWNER = "jeff-stratofied";
+const GITHUB_REPO = "loan-dashboard";
+const FILE_PATH = "data/loans.json";
+
+/* 🔥 IMPORTANT: paste your token here before committing */
+const GITHUB_TOKEN = "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";
+
+/* -------------------------------------------------------------
+   UTILITIES
+------------------------------------------------------------- */
+let currentSha = null;
+let loans = [];
+
+function setStatus(msg, type="ok") {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = type === "error" ? "error" : "ok";
+}
+
+function toBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function renderTable() {
+  const tbody = document.querySelector("#loan-table tbody");
+  tbody.innerHTML = "";
+
+  loans.forEach((loan, index) => {
+    const tr = document.createElement("tr");
+    tr.dataset.index = index;
+
+    tr.innerHTML = `
+      <td><input class="cell-id" type="number" step="1" value="${loan.loanId || ""}"></td>
+      <td><input type="text" value="${loan.name || ""}"></td>
+      <td><input type="text" value="${loan.school || ""}"></td>
+      <td><input class="cell-date" type="date" value="${loan.purchaseDate || ""}"></td>
+      <td><input class="cell-number" type="number" step="0.01" value="${loan.principal || 0}"></td>
+      <td><input class="cell-number" type="number" step="0.0001" value="${loan.rate || 0}"></td>
+      <td><input class="cell-number" type="number" step="0.1" value="${loan.termYears || 0}"></td>
+      <td><input class="cell-number" type="number" step="0.1" value="${loan.graceYears || 0}"></td>
+      <td class="actions"><button class="secondary delete-row">🗑 Delete</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll(".delete-row").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const row = e.target.closest("tr");
+      const idx = parseInt(row.dataset.index, 10);
+      loans.splice(idx, 1);
+      renderTable();
+    });
+  });
+}
+
+function collectLoans() {
+  return [...document.querySelectorAll("#loan-table tbody tr")].map(row => {
+    const inputs = row.querySelectorAll("input");
+    return {
+      loanId: parseInt(inputs[0].value, 10),
+      name: inputs[1].value,
+      school: inputs[2].value,
+      purchaseDate: inputs[3].value,
+      principal: parseFloat(inputs[4].value),
+      rate: parseFloat(inputs[5].value),
+      termYears: parseFloat(inputs[6].value),
+      graceYears: parseFloat(inputs[7].value)
+    };
+  });
+}
+
+/* -------------------------------------------------------------
+   LOAD FROM GITHUB
+------------------------------------------------------------- */
+async function loadFile() {
+  setStatus("Loading loans.json…");
+
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`,
+      {
+        headers: {
+          "Accept": "application/vnd.github+json",
+          "Authorization": `Bearer ${GITHUB_TOKEN}`
+        }
+      }
+    );
+
+    if (res.status === 404) {
+      setStatus("No loans.json found — starting fresh.");
+      loans = [];
+      currentSha = null;
+      renderTable();
+      return;
+    }
+
+    const data = await res.json();
+    currentSha = data.sha;
+
+    const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g, ""))));
+    const json = JSON.parse(decoded);
+
+    loans = json.loans || [];
+    renderTable();
+    setStatus("Loaded loans.json");
+  } catch (err) {
+    console.error(err);
+    setStatus("Failed to load loans.json", "error");
+  }
+}
+
+/* -------------------------------------------------------------
+   SAVE TO GITHUB
+------------------------------------------------------------- */
+async function saveFile() {
+  const btn = document.getElementById("save-btn");
+  btn.disabled = true;
+  setStatus("Saving…");
+
+  try {
+    const loansData = collectLoans();
+    const content = JSON.stringify({ loans: loansData }, null, 2);
+    const contentBase64 = toBase64(content);
+
+    const body = {
+      message: "Update loans.json via admin UI",
+      content: contentBase64
+    };
+    if (currentSha) body.sha = currentSha;
+
+    const res = await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${FILE_PATH}`,
+      {
+        method: "PUT",
+        headers: {
+          "Accept": "application/vnd.github+json",
+          "Authorization": `Bearer ${GITHUB_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+      }
+    );
+
+    if (!res.ok) throw new Error("GitHub write failed");
+
+    const data = await res.json();
+    currentSha = data.content.sha;
+
+    setStatus("Saved successfully.");
+  } catch (err) {
+    console.error(err);
+    setStatus("Error saving — check token permissions.", "error");
+  }
+
+  btn.disabled = false;
+}
+
+/* -------------------------------------------------------------
+   EVENT LISTENERS
+------------------------------------------------------------- */
+document.getElementById("add-row").addEventListener("click", () => {
+  const nextId = loans.length ? Math.max(...loans.map(l => l.loanId)) + 1 : 1;
+  loans.push({
+    loanId: nextId,
+    name: `Loan ${nextId}`,
+    school: "",
+    purchaseDate: "",
+    principal: 0,
+    rate: 0.08,
+    termYears: 10,
+    graceYears: 0
+  });
+  renderTable();
+});
+
+document.getElementById("save-btn").addEventListener("click", saveFile);
+
+/* -------------------------------------------------------------
+   INITIAL LOAD
+------------------------------------------------------------- */
+loadFile();
+</script>
+
+</body>
+</html>
 
