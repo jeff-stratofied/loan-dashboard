@@ -289,6 +289,10 @@ svg text {
         id: l.loanId,
         name: l.loanName ?? `Loan ${l.loanId}`,
         school: l.school ?? "",
+        termYears: Number(l.termYears ?? 0),
+        graceYears: Number(l.graceYears ?? 0),
+        purchasePrice: Number(l.purchasePrice ?? 0),
+        nominalRate: Number(l.nominalRate ?? 0),
         upfrontFee: Number(l.upfrontFee ?? 150),
         monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
       }));
@@ -313,8 +317,8 @@ svg text {
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
       const formattedLoans = loans.map(l => ({
         ...l,
-        purchasePrice: l.principal,
-        nominalRate: l.rate
+        purchasePrice: Number(l.principal ?? l.purchasePrice ?? 0),
+        nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
       }));
 
       const loansWithAmort = formattedLoans.map(l => {
@@ -328,9 +332,9 @@ svg text {
 
         let upfrontFee = (m === 1 ? l.upfrontFee : 0);
 
-        let termMonths = l.termYears * 12;
-        let monthlyFee = l.monthlyFeeStart * (1 - (m / termMonths));
-        if (monthlyFee < 0) monthlyFee = 0;
+        let termMonths = Number(l.termYears * 12) || 1;   // prevent divide by zero
+        let monthlyFee = Number(l.monthlyFeeStart) * (1 - (m / termMonths));
+        if (isNaN(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
 
         let feeThisMonth = upfrontFee + monthlyFee;
         cumFees += feeThisMonth;
