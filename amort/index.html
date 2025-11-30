@@ -450,6 +450,10 @@
           ...l,
           loanName: l.loanName ?? `Loan ${l.loanId}`,
           school: l.school ?? "",
+          termYears: Number(l.termYears ?? 0),
+          graceYears: Number(l.graceYears ?? 0),
+          purchasePrice: Number(l.purchasePrice ?? 0),
+          nominalRate: Number(l.nominalRate ?? 0),
           upfrontFee: Number(l.upfrontFee ?? 150),
           monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
         };
@@ -463,9 +467,9 @@
 
           let upfrontFee = (m === 1 ? loanData.upfrontFee : 0);
 
-          let termMonths = loanData.termYears * 12;
-          let monthlyFee = loanData.monthlyFeeStart * (1 - (m / termMonths));
-          if (monthlyFee < 0) monthlyFee = 0;
+          let termMonths = Number(loanData.termYears * 12) || 1;   // prevent divide by zero
+          let monthlyFee = Number(loanData.monthlyFeeStart) * (1 - (m / termMonths));
+          if (isNaN(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
 
           let feeThisMonth = upfrontFee + monthlyFee;
           cumFees += feeThisMonth;
@@ -921,8 +925,8 @@
         const y = h - pad - barH;
 
         const rect = document.createElementNS(svgNS, 'rect');
-        rect.setAttribute('x', x); rect.setAttribute('y', y);
-        rect.setAttribute('width', barW); rect.setAttribute('height', barH);
+        rect.setAttribute('x', x); rect.setAttribute('y', isNaN(y) ? 0 : y);
+        rect.setAttribute('width', barW); rect.setAttribute('height', isNaN(barH) ? 0 : barH);
         rect.setAttribute('fill', '#06b6d4');
         svg.appendChild(rect);
 
@@ -1144,9 +1148,9 @@
 
         const rect = document.createElementNS(svgNS, 'rect');
         rect.setAttribute('x', x);
-        rect.setAttribute('y', y);
+        rect.setAttribute('y', isNaN(y) ? 0 : y);
         rect.setAttribute('width', barW);
-        rect.setAttribute('height', barH);
+        rect.setAttribute('height', isNaN(barH) ? 0 : barH);
         rect.setAttribute('fill', '#7c3aed');
         svg.appendChild(rect);
 

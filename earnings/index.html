@@ -668,6 +668,10 @@
           ...l,
           loanName: l.loanName ?? `Loan ${l.loanId}`,
           school: l.school ?? "No school listed",
+          termYears: Number(l.termYears ?? 0),
+          graceYears: Number(l.graceYears ?? 0),
+          purchasePrice: Number(l.purchasePrice ?? 0),
+          nominalRate: Number(l.nominalRate ?? 0),
           upfrontFee: Number(l.upfrontFee ?? 150),
           monthlyFeeStart: Number(l.monthlyFeeStart ?? 9)
         };
@@ -683,9 +687,9 @@
           let upfrontFee = (m === 1 ? normalizedLoan.upfrontFee : 0);
 
           // Sliding fee
-          let termMonths = normalizedLoan.termYears * 12;
-          let monthlyFee = normalizedLoan.monthlyFeeStart * (1 - (m / termMonths));
-          if (monthlyFee < 0) monthlyFee = 0;
+          let termMonths = Number(normalizedLoan.termYears * 12) || 1;   // prevent divide by zero
+          let monthlyFee = Number(normalizedLoan.monthlyFeeStart) * (1 - (m / termMonths));
+          if (isNaN(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
 
           let feeThisMonth = upfrontFee + monthlyFee;
           cumFees += feeThisMonth;
