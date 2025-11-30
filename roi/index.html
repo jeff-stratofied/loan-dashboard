@@ -278,18 +278,20 @@ svg text {
 
     function monthDiff(d1,d2){ const a=new Date(d1); const b=new Date(d2); return (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth()); }
 
-    const loans = [
-      { id:1, purchaseDate:'2024-01-01', purchasePrice:7000, termYears:10, graceYears:0.83, nominalRate:0.0883 },
-      { id:2, purchaseDate:'2024-02-01', purchasePrice:7500, termYears:8, graceYears:2, nominalRate:0.075 },
-      { id:3, purchaseDate:'2024-03-01', purchasePrice:12000, termYears:12, graceYears:3, nominalRate:0.0825 },
-      { id:4, purchaseDate:'2024-04-01', purchasePrice:6000, termYears:9, graceYears:1.5, nominalRate:0.095 },
-      { id:5, purchaseDate:'2024-07-01', purchasePrice:5000, termYears:10, graceYears:1, nominalRate:0.09 },
-      { id:6, purchaseDate:'2025-01-01', purchasePrice:7500, termYears:5, graceYears:0, nominalRate:0.073 },
-      { id:7, purchaseDate:'2025-06-01', purchasePrice:10000, termYears:8, graceYears:0, nominalRate:0.09 },
-      { id:8, purchaseDate:'2025-10-01', purchasePrice:5000, termYears:9, graceYears:0.5, nominalRate:0.11 },
-      { id:9, purchaseDate:'2025-02-01', purchasePrice:10000, termYears:7, graceYears:0.25, nominalRate:0.10 },
-      { id:10,purchaseDate:'2025-03-01', purchasePrice:8000, termYears:3, graceYears:0, nominalRate:0.06 }
-    ];
+    // Load loans.json dynamically from GitHub repo
+    async function loadLoans() {
+      try {
+        const res = await fetch("../data/loans.json", { cache: "no-store" });
+        if (!res.ok) throw new Error("Unable to load loans.json");
+        const data = await res.json();
+        return data.loans || [];
+      } catch (err) {
+        console.error("Failed to load loans:", err);
+        return [];
+      }
+    }
+
+    let loans = [];
 
     /* -------------------------
        Amortization logic
@@ -306,7 +308,10 @@ svg text {
       return { payment, schedule };
     }
 
-    const loansWithAmort = loans.map(l => {
+    async function initROI() {
+      loans = await loadLoans();
+
+      const loansWithAmort = loans.map(l => {
       const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
       let cumP=0, cumI=0, cumTotal=0;
       const cumSchedule = amort.schedule.map(r => { cumP=+(cumP+r.principalPaid).toFixed(2); cumI=+(cumI+r.interest).toFixed(2); cumTotal=+(cumTotal+r.payment).toFixed(2); return {...r, cumPrincipal:cumP, cumInterest:cumI, cumTotal}; });
@@ -1093,10 +1098,12 @@ function renderPaymentsDrawer(){
     /* -------------------------
        End
        ------------------------- */
-  
 
 
-// theme toggle
+
+    } // END initROI()
+
+    // theme toggle
 window.addEventListener("DOMContentLoaded", () => {
   const toggle = document.getElementById("themeToggle");
   if (!toggle) return;
@@ -1119,6 +1126,8 @@ window.addEventListener("DOMContentLoaded", () => {
     applyTheme(nextTheme);
   });
 });
+
+    initROI();
 
 
 </script>
