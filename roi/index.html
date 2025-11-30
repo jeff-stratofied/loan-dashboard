@@ -278,20 +278,20 @@ svg text {
 
     function monthDiff(d1,d2){ const a=new Date(d1); const b=new Date(d2); return (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth()); }
 
-    // Load loans.json dynamically from GitHub repo
-    async function loadLoans() {
-      try {
-        const res = await fetch("../data/loans.json", { cache: "no-store" });
-        if (!res.ok) throw new Error("Unable to load loans.json");
-        const data = await res.json();
-        return data.loans || [];
-      } catch (err) {
-        console.error("Failed to load loans:", err);
-        return [];
-      }
-    }
-
+    // Dynamic loans loaded from backend
     let loans = [];
+
+    async function loadLoans() {
+      const resp = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
+      const data = await resp.json();
+
+      loans = (data.loans || []).map(l => ({
+        ...l,
+        id: l.loanId,
+        name: l.loanName || `Loan ${l.loanId}`,
+        school: l.school || "Unknown School"
+      }));
+    }
 
     /* -------------------------
        Amortization logic
@@ -309,19 +309,14 @@ svg text {
     }
 
     async function initROI() {
-      loans = await loadLoans();
-// Map JSON fields → fields expected by ROI page
-loans = loans.map(l => ({
-  id: l.loanId,
-  purchaseDate: l.purchaseDate,
-  purchasePrice: l.principal,
-  nominalRate: l.rate,
-  termYears: l.termYears,
-  graceYears: l.graceYears
-}));
+      const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
+      const formattedLoans = loans.map(l => ({
+        ...l,
+        purchasePrice: l.principal,
+        nominalRate: l.rate
+      }));
 
-      
-      const loansWithAmort = loans.map(l => {
+      const loansWithAmort = formattedLoans.map(l => {
       const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
       let cumP=0, cumI=0, cumTotal=0;
       const cumSchedule = amort.schedule.map(r => { cumP=+(cumP+r.principalPaid).toFixed(2); cumI=+(cumI+r.interest).toFixed(2); cumTotal=+(cumTotal+r.payment).toFixed(2); return {...r, cumPrincipal:cumP, cumInterest:cumI, cumTotal}; });
@@ -677,7 +672,7 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       const tile = document.createElement('div'); tile.className='tile'; tile.setAttribute('tabindex','0');
       tile.innerHTML = `
         <div class="tile-left">
-          <div class="loan-name">Loan ${loan.id}</div>
+          <div class="loan-name">${formatLoanLabel(loan)}</div>
           <div class="loan-sub">$${loan.purchasePrice.toLocaleString()}</div>
           <div class="loan-meta"><div>Term: ${loan.termYears}y</div><div>Grace: ${loan.graceYears}y</div></div>
         </div>
@@ -749,7 +744,7 @@ function populateROILoanTable(){
     const roiPct = (roiEntry.roi || 0) * 100;
     const color = palette[(l.id-1) % palette.length];
     return `<tr>
-      <td style="text-align:left;"><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;margin-right:8px;vertical-align:middle;"></span>Loan ${l.id}</td>
+      <td style="text-align:left;"><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;margin-right:8px;vertical-align:middle;"></span>${formatLoanLabel(l)}</td>
       <td style="text-align:left;">${l.purchaseDate}</td>
       <td style="text-align:left;">${matStr}</td>
       <td style="text-align:right;color:${color};font-weight:700">${roiPct.toFixed(2)}%</td>
@@ -760,7 +755,7 @@ function populateROILoanTable(){
 
 function openDrawerForLoan(loan){
       currentMode='loan'; currentLoan=loan;
-      drawerTitle.textContent = 'Loan ' + loan.id;
+      drawerTitle.textContent = formatLoanLabel(loan);
       drawerSub.textContent = 'Purchased: ' + loan.purchaseDate;
       drawerPrimaryTitle.textContent = 'Purchase Price'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
@@ -816,7 +811,7 @@ const portfolioValue = loansWithAmort.reduce((sum, l) => {
 drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
 
       createBarChart(drawerChartArea, keys, values, { color:'#0ea5e9' });
-      drawerExtra.innerHTML = `<h3 style="margin-top:12px;margin-bottom:8px">Loans</h3><div style="border:1px solid rgba(15,23,42,0.06);border-radius:8px;max-height:260px;overflow:auto;background:var(--card);padding:6px;"><table style="width:100%;font-size:13px"><thead><tr><th style="text-align:left">Loan</th><th style="text-align:left">Purchase</th><th>Amount</th><th>Rate</th></tr></thead><tbody>${loansWithAmort.map(l=>`<tr><td style="text-align:left">Loan ${l.id}</td><td>${l.purchaseDate}</td><td>$${l.purchasePrice.toLocaleString()}</td><td>${(l.nominalRate*100).toFixed(2)}%</td></tr>`).join('')}</tbody></table></div>`;
+      drawerExtra.innerHTML = `<h3 style="margin-top:12px;margin-bottom:8px">Loans</h3><div style="border:1px solid rgba(15,23,42,0.06);border-radius:8px;max-height:260px;overflow:auto;background:var(--card);padding:6px;"><table style="width:100%;font-size:13px"><thead><tr><th style="text-align:left">Loan</th><th style="text-align:left">Purchase</th><th>Amount</th><th>Rate</th></tr></thead><tbody>${loansWithAmort.map(l=>`<tr><td style="text-align:left">${formatLoanLabel(l)}</td><td>${l.purchaseDate}</td><td>$${l.purchasePrice.toLocaleString()}</td><td>${(l.nominalRate*100).toFixed(2)}%</td></tr>`).join('')}</tbody></table></div>`;
       drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false');
     }
 
@@ -840,7 +835,7 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
         const loanSeriesList = loansWithAmort.map((l, idx) => {
           const pts = [];
           for(let m=1;m<=upTo;m++){ const e = l.roiSeries.find(r=>r.month===m); pts.push({x:m, y: e ? e.roi : 0}); }
-          return { name: 'Loan '+l.id, color: palette[(l.id-1) % palette.length], data: pts };
+          return { name: formatLoanLabel(l), color: palette[(l.id-1) % palette.length], data: pts };
         });
         createMultiSeriesChart(drawerChartArea, loanSeriesList, weightedSeries, { weightedColor: '#000', weightedWidth: 2.6 });
         // build legend (click to toggle visibility)
@@ -848,8 +843,9 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
         const wk = document.createElement('div'); wk.className='legend-item'; wk.style.marginRight='12px'; wk.innerHTML = '<span style="display:inline-block;width:12px;height:12px;background:#000;margin-right:8px;border-radius:2px;"></span><span style="font-weight:700">Weighted ROI</span>';
         drawerLegend.appendChild(wk);
         loanSeriesList.forEach((ls, i) => {
+          const loan = loansWithAmort[i];
           const it = document.createElement('div'); it.className='legend-item'; it.style.marginRight='8px'; it.style.cursor='pointer';
-          it.innerHTML = `<span style="display:inline-block;width:10px;height:10px;background:${ls.color};margin-right:6px;border-radius:2px;vertical-align:middle;"></span><span style="font-size:13px">Loan ${i+1}</span>`;
+          it.innerHTML = `<span style="display:inline-block;width:10px;height:10px;background:${ls.color};margin-right:6px;border-radius:2px;vertical-align:middle;"></span><span style="font-size:13px">${formatLoanLabel(loan)}</span>`;
           drawerLegend.appendChild(it);
         });
       })();
@@ -909,7 +905,7 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
                    '#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
   const loanSeriesList = loansWithAmort.map(l=>{
     const pts = l.roiSeries.map(p=>({x:p.month,y:p.roi}));
-    return {name:'Loan '+l.id, color:palette[(l.id-1)%palette.length], data:pts};
+    return {name:formatLoanLabel(l), color:palette[(l.id-1)%palette.length], data:pts};
   });
 
   // Render chart
@@ -964,7 +960,7 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
           <span style="display:inline-block;width:10px;height:10px;
             background:${color};border-radius:2px;margin-right:8px;
             vertical-align:middle;"></span>
-          Loan ${l.id}
+          ${formatLoanLabel(l)}
         </td>
         <td style="text-align:left;">${l.purchaseDate}</td>
         <td style="text-align:left;">${matStr}</td>
@@ -1058,7 +1054,7 @@ function renderPaymentsDrawer(){
         tbody.insertAdjacentHTML('beforeend',`
         <tr>
           <td><span style="display:inline-block;width:10px;height:10px;background:${b.color};border-radius:2px;margin-right:6px;"></span>${b.label}</td>
-          <td>Loan ${l.id}</td>
+          <td>${formatLoanLabel(l)}</td>
           <td>${l.purchaseDate}</td>
           <td style="text-align:right;">${(l.nominalRate*100).toFixed(2)}%</td>
         </tr>`);
@@ -1093,7 +1089,7 @@ function renderPaymentsDrawer(){
     /* -------------------------
        CSV / clipboard / download / print
        ------------------------- */
-    function copyPortfolioCSV(){ let rows=[['Loan','Purchase Date','Amount','Rate']]; loansWithAmort.forEach(l=>rows.push(['Loan '+l.id,l.purchaseDate,l.purchasePrice,(l.nominalRate*100).toFixed(2)+'%'])); const csv=rows.map(r=>r.join(',')).join('\n'); navigator.clipboard.writeText(csv); alert('CSV copied to clipboard'); }
+    function copyPortfolioCSV(){ let rows=[['Loan','Purchase Date','Amount','Rate']]; loansWithAmort.forEach(l=>rows.push([formatLoanLabel(l),l.purchaseDate,l.purchasePrice,(l.nominalRate*100).toFixed(2)+'%'])); const csv=rows.map(r=>r.join(',')).join('\n'); navigator.clipboard.writeText(csv); alert('CSV copied to clipboard'); }
     function amortToCSV(loan){ const rows=[['Month','Payment','Principal','Interest','Balance']]; loan.amort.schedule.forEach(r=>rows.push([r.monthIndex,r.payment.toFixed(2),r.principalPaid.toFixed(2),r.interest.toFixed(2),r.balance.toFixed(2)])); return rows.map(r=>r.join(',')).join('\n'); }
     document.getElementById('copyCsvBtn')?.addEventListener('click', async ()=>{ if(currentMode!=='loan' || !currentLoan) return alert('Open an individual loan drawer to copy CSV'); const csv=amortToCSV(currentLoan); try{ await navigator.clipboard.writeText(csv); alert('CSV copied to clipboard'); }catch(e){ alert('Copy failed — browser denied clipboard access'); } });
     document.getElementById('downloadCsvBtn')?.addEventListener('click', ()=>{ if(currentMode==='loan' && currentLoan){ const csv=amortToCSV(currentLoan); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='loan-'+currentLoan.id+'-amort.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); } else alert('Download CSV is supported for individual loan drawers only.'); });
@@ -1112,6 +1108,11 @@ function renderPaymentsDrawer(){
 
 
     } // END initROI()
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadLoans();
+      initROI();
+    });
 
     // theme toggle
 window.addEventListener("DOMContentLoaded", () => {
@@ -1136,9 +1137,6 @@ window.addEventListener("DOMContentLoaded", () => {
     applyTheme(nextTheme);
   });
 });
-
-    initROI();
-
 
 </script>
 </body>
