@@ -1012,17 +1012,22 @@
         svg.appendChild(rFee);
       });
 
-      const loanStart = new Date(loan.loanStartDate);
+      // Vertical line at today's date relative to the loan's full timeline
       const TODAY = new Date();
 
-      // Number of months since loan start (loanDate), not ownership
-      let todayIndexRaw = monthDiff(loanStart, TODAY);
+      const firstDate = new Date(data[0].loanDate);
+      const lastDate  = new Date(data[data.length - 1].loanDate);
 
-      // Clamp to valid range
-      if (!Number.isFinite(todayIndexRaw)) todayIndexRaw = 0;
-      const todayIndex = Math.max(0, Math.min(todayIndexRaw, data.length - 1));
+      let totalMonthsRaw = monthDiff(firstDate, lastDate);
+      if (!Number.isFinite(totalMonthsRaw) || totalMonthsRaw <= 0) totalMonthsRaw = 1;
 
-      const currentX = padL + todayIndex * barW;
+      let monthsToTodayRaw = monthDiff(firstDate, TODAY);
+      if (!Number.isFinite(monthsToTodayRaw)) monthsToTodayRaw = 0;
+
+      const monthsToToday = Math.max(0, Math.min(monthsToTodayRaw, totalMonthsRaw));
+      const ratio = monthsToToday / totalMonthsRaw;
+
+      const currentX = padL + ratio * (w - padL - padR);
 
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
@@ -1222,15 +1227,23 @@
         }
       });
 
-      const loanStart = new Date(loan.loanStartDate);
+      // Vertical line at today's date relative to the loan's full timeline
       const TODAY = new Date();
 
-      let todayIndexRaw = monthDiff(loanStart, TODAY);
+      const firstDate = new Date(data[0].loanDate);
+      const lastDate  = new Date(data[data.length - 1].loanDate);
 
-      if (!Number.isFinite(todayIndexRaw)) todayIndexRaw = 0;
-      const todayIndex = Math.max(0, Math.min(todayIndexRaw, data.length - 1));
+      let totalMonthsRaw = monthDiff(firstDate, lastDate);
+      if (!Number.isFinite(totalMonthsRaw) || totalMonthsRaw <= 0) totalMonthsRaw = 1;
 
-      const currentX = padL + todayIndex * barW;
+      let monthsToTodayRaw = monthDiff(firstDate, TODAY);
+      if (!Number.isFinite(monthsToTodayRaw)) monthsToTodayRaw = 0;
+
+      // Clamp to [0, totalMonthsRaw]
+      const monthsToToday = Math.max(0, Math.min(monthsToTodayRaw, totalMonthsRaw));
+      const ratio = monthsToToday / totalMonthsRaw;
+
+      const currentX = padL + ratio * (w - padL - padR);
 
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
