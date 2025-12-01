@@ -556,6 +556,16 @@
 
         const balanceAtPurchase = amort.schedule[Math.max(0, monthsSinceStart - 1)]?.balance ?? 0;
 
+        amort.schedule = amort.schedule.map((row, i) => {
+          row.monthIndex = i + 1;
+          row.loanDate = addMonths(loanStart, row.monthIndex - 1);
+          row.ownershipDate = row.isOwned
+            ? addMonths(purchaseDt, row.ownershipMonthIndex - 1)
+            : null;
+
+          return row;
+        });
+
         const cumSchedule = amort.schedule.map(row => {
           const m = row.monthIndex;
 
