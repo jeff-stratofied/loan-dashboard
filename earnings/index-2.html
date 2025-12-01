@@ -713,6 +713,7 @@
         loanId: id,
         loanName: raw.loanName || `Loan ${id}`,
         school: raw.school || "No school listed",
+        loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
         purchaseDate: raw.purchaseDate || "2025-01-31",
         purchasePrice,
         principal: purchasePrice,

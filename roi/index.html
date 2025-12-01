@@ -289,6 +289,7 @@ svg text {
         id: l.loanId,
         name: l.loanName ?? `Loan ${l.loanId}`,
         school: l.school ?? "",
+        loanStartDate: l.loanStartDate || "",
         termYears: Number(l.termYears ?? 0),
         graceYears: Number(l.graceYears ?? 0),
         purchasePrice: Number(l.purchasePrice ?? 0),

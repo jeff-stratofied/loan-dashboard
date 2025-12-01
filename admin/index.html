@@ -231,8 +231,12 @@
       setStatus("Saving…");
 
       const newLoans = collectLoansFromTable();
+      const sanitizedLoans = newLoans.map(loan => ({
+        ...loan,
+        loanStartDate: loan.loanStartDate || "",
+      }));
 
-      for (const loan of newLoans) {
+      for (const loan of sanitizedLoans) {
         const loanStartDate = loan.loanStartDate;
         const purchaseDate = loan.purchaseDate;
         if (new Date(loanStartDate) > new Date(purchaseDate)) {
@@ -246,7 +250,7 @@
         const res = await fetch(`${WORKER_BASE_URL}/loans`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ loans: newLoans, sha: currentSha })
+          body: JSON.stringify({ loans: sanitizedLoans, sha: currentSha })
         });
 
         const data = await res.json();
@@ -256,7 +260,7 @@
         }
 
         currentSha = data.content?.sha || currentSha;
-        loans = newLoans;
+        loans = sanitizedLoans;
         setStatus("Saved successfully.");
       } catch (err) {
         console.error(err);
@@ -274,7 +278,7 @@
         loanId: l.loanId ?? (idx + 1),
         loanName: l.loanName ?? `Loan ${l.loanId ?? (idx + 1)}`,
         school: l.school ?? "Select school…",
-        loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "2024-01-01",
+        loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "",
         purchaseDate: l.purchaseDate ?? "2024-01-01",
         principal: Number(l.principal ?? 0),
         rate: Number(l.rate ?? 0),
