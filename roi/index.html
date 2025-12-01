@@ -355,7 +355,7 @@ svg text {
       cumSchedule.forEach(s => {
         if (!s.isOwned) return;
 
-        const m = s.monthIndex;
+        const m = s.ownershipMonthIndex;
 
         let upfrontFee = (m === 1 ? l.upfrontFee : 0);
 
@@ -366,8 +366,14 @@ svg text {
         let feeThisMonth = upfrontFee + monthlyFee;
         cumFees += feeThisMonth;
 
-        const loanValue = (s.balance + s.cumInterest + s.cumTotal) - cumFees;
-        const roi = (loanValue - l.purchasePrice)/l.purchasePrice;
+        const cashCollected = s.cumPrincipal + s.cumInterest;
+        const loanValue = cashCollected - cumFees;
+        // ROI based ONLY on ownership timeline
+        const roi = (
+            s.cumPrincipal +
+            s.cumInterest -
+            l.purchasePrice
+        ) / l.purchasePrice;
         roiSeries.push({ month:s.ownershipMonthIndex, roi, loanValue, cumFees });
       });
       const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ x:s.month, y:s.roi }));
@@ -377,9 +383,29 @@ svg text {
     /* -------------------------
        KPI computations
        ------------------------- */
+    function getOwnedIndexForCurrentMonth(loan){
+      const ownedMonth = CURRENT_MONTH - loan.monthsSinceStart;
+      if (ownedMonth <= 0) return -1;
+      return Math.min(ownedMonth - 1, loan.roiSeries.length - 1);
+    }
+
+    function getCurrentOwnedRoiEntry(loan){
+      const idx = getOwnedIndexForCurrentMonth(loan);
+      if (idx < 0) return { roi: 0, loanValue: loan.purchasePrice };
+      return loan.roiSeries[idx] || { roi: 0, loanValue: loan.purchasePrice };
+    }
+
+    function getLastOwnedRoiEntry(loan){
+      if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
+      return loan.roiSeries[loan.roiSeries.length - 1];
+    }
+
     function computeKPIs(list){
       const total = list.reduce((s,l)=>s + l.purchasePrice,0);
-      const weightedROI = list.reduce((s,l)=> s + l.purchasePrice * ( (l.roiSeries[Math.min(CURRENT_MONTH-1, l.roiSeries.length-1)] || {}).roi || 0 ), 0) / Math.max(1, total);
+      const weightedROI = list.reduce((s,l)=>{
+        const entry = getCurrentOwnedRoiEntry(l);
+        return s + l.purchasePrice * (entry.roi || 0);
+      }, 0) / Math.max(1, total);
       const projectedWeightedROI = list.reduce((s,l)=> s + l.purchasePrice * ( (l.roiSeries[l.roiSeries.length-1] || {}).roi || 0 ), 0) / Math.max(1, total);
       const avgRate = list.reduce((s,l)=> s + l.nominalRate * l.purchasePrice, 0) / Math.max(1, total);
       return { total, weightedROI, projectedWeightedROI, avgRate };
@@ -715,6 +741,7 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
     const tooltip = document.getElementById('tooltip');
 
     loansWithAmort.forEach((loan, idx) => {
+      const currentRoiEntry = getCurrentOwnedRoiEntry(loan);
       const tile = document.createElement('div'); tile.className='tile'; tile.setAttribute('tabindex','0');
       tile.innerHTML = `
         <div class="tile-left">
@@ -724,7 +751,7 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
         </div>
         <div class="chart-wrap">
           <div class="mini-label">
-  ROI ${(((loan.roiSeries[Math.min(CURRENT_MONTH - 1, loan.roiSeries.length - 1)] || {}).roi || 0) * 100).toFixed(2)}%
+  ROI ${(currentRoiEntry.roi * 100).toFixed(2)}%
 </div>
           <svg class="sparkline" viewBox="0 0 170 48" preserveAspectRatio="none" data-idx="${idx}" aria-hidden="true"></svg>
         </div>
@@ -742,7 +769,9 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       let d=''; pts.forEach((p,i)=>{ const x=pad + i*stepX; const y = pad + (h - pad*2) - ((p.y - minY)/rangeY)*(h - pad*2); d += (i===0?('M '+x+' '+y):(' L '+x+' '+y)); });
       svg.innerHTML = `<path d="${d}" fill="none" stroke="#0ea5e9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><g class="mini-hover"></g>`;
       // current date vertical line per-loan
-      const earliestDate = "2024-01-01"; const diff = monthDiff(earliestDate, loan.purchaseDate); let curIdxForLoan = CURRENT_MONTH - diff; curIdxForLoan = Math.max(1, Math.min(loan.roiSeries.length, curIdxForLoan)); const dashX = pad + (curIdxForLoan-1)*((w-pad*2)/Math.max(1,loan.roiSeries.length-1));
+      let curIdxForLoan = getOwnedIndexForCurrentMonth(loan) + 1;
+      curIdxForLoan = Math.max(1, Math.min(loan.roiSeries.length, Math.max(curIdxForLoan, 1)));
+      const dashX = pad + (curIdxForLoan-1)*((w-pad*2)/Math.max(1,loan.roiSeries.length-1));
       const line = document.createElementNS('http://www.w3.org/2000/svg','line'); line.setAttribute('x1',dashX); line.setAttribute('x2',dashX); line.setAttribute('y1',2); line.setAttribute('y2',h-2); line.setAttribute('stroke','#111827'); line.setAttribute('stroke-dasharray','3 3'); line.setAttribute('stroke-opacity','0.6'); svg.appendChild(line);
       svg.addEventListener('mousemove', ev=>{ const rect=svg.getBoundingClientRect(); const relX=ev.clientX-rect.left; const step = (w-pad*2)/Math.max(1,pts.length-1); let idxNearest=Math.round((relX-pad)/step); idxNearest=Math.max(0,Math.min(pts.length-1,idxNearest)); const pt=pts[idxNearest]; const p = loan.roiSeries[pt.x-1]||loan.roiSeries[idxNearest]; tooltip.style.left=ev.clientX+'px'; tooltip.style.top=(ev.clientY-10)+'px'; tooltip.style.display='block'; tooltip.innerHTML = 'M'+p.month+' • ROI '+(p.roi*100).toFixed(2)+'%'; const hoverG = svg.querySelector('g.mini-hover'); hoverG.innerHTML=''; const cx = pad + idxNearest*step; const cy = pad + (h - pad*2) - ((pt.y - minY)/rangeY)*(h - pad*2); const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',3.6); c.setAttribute('fill','#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); });
       svg.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; const hoverG = svg.querySelector('g.mini-hover'); if(hoverG) hoverG.innerHTML=''; });
@@ -776,8 +805,7 @@ function populateROILoanTable(){
   if(!tbody) return;
   const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16','#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
   tbody.innerHTML = loansWithAmort.map(l => {
-    const idx = Math.min(CURRENT_MONTH-1, (l.roiSeries||[]).length-1);
-    const roiEntry = (l.roiSeries && l.roiSeries[idx]) ? l.roiSeries[idx] : {roi:0, loanValue:l.purchasePrice};
+    const roiEntry = getCurrentOwnedRoiEntry(l);
     let matStr = '';
     try {
       const pd = new Date(l.purchaseDate);
@@ -803,7 +831,7 @@ function openDrawerForLoan(loan){
       currentMode='loan'; currentLoan=loan;
       drawerTitle.textContent =
         `Loan ${loan.id} — ${loan.name} (${loan.school || "No school"})`;
-      drawerSub.textContent = 'Purchased: ' + loan.purchaseDate;
+      drawerSub.textContent = 'Purchased: ' + loan.purchaseDate + ' • Balance at Purchase: $' + loan.balanceAtPurchase.toLocaleString();
       drawerPrimaryTitle.textContent = 'Purchase Price'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
       drawerExtra.innerHTML=''; drawerLegend.style.display='flex'; drawerLegend.innerHTML = '<div class=\"item\"><span class=\"sw\" style=\"background:#0f172a\"></span>Balance</div><div class=\"item\"><span class=\"sw\" style=\"background:#0ea5e9\"></span>ROI</div>';
@@ -847,8 +875,7 @@ function openDrawerForLoan(loan){
       drawerSecondaryTitle.textContent = 'Current Portfolio Value';
 
 const portfolioValue = loansWithAmort.reduce((sum, l) => {
-  const idx = Math.min(CURRENT_MONTH - 1, l.roiSeries.length - 1);
-  const row = l.roiSeries[idx] || { loanValue: l.purchasePrice };
+  const row = getCurrentOwnedRoiEntry(l);
   return sum + (row.loanValue || l.purchasePrice);
 }, 0);
 
@@ -863,16 +890,17 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
       currentMode='kpi'; currentLoan=null;
       drawerAmortContainer.innerHTML = '';
       drawerTitle.textContent='Portfolio — Weighted ROI (To Date)'; drawerSub.textContent='Snapshot';
-      const monthsMax = Math.max(...loansWithAmort.map(l=>l.roiSeries.length)); const upTo = Math.min(monthsMax, Math.max(CURRENT_MONTH,1));
+      const monthsMax = Math.max(...loansWithAmort.map(l=>l.roiSeries.length));
+      const ownedUpTo = Math.max(...loansWithAmort.map(l=>getOwnedIndexForCurrentMonth(l) + 1), 0);
+      const upTo = Math.max(1, Math.min(monthsMax, Math.max(ownedUpTo, 0)));
       const series=[]; for(let m=1;m<=upTo;m++){ let totalInvested=0, weightedSum=0; loansWithAmort.forEach(l=>{ const entry=l.roiSeries.find(r=>r.month===m); if(entry){ weightedSum += l.purchasePrice*entry.roi; totalInvested += l.purchasePrice; } }); series.push({x:m,y: totalInvested?weightedSum/totalInvested:0}); }
-      drawerPrimaryTitle.textContent='Weighted ROI to Date'; drawerPrimary.textContent=(kpis.weightedROI*100).toFixed(2)+'%';
-      const portfolioValue = loansWithAmort.reduce((s,l)=>{ const idx=Math.min(CURRENT_MONTH-1,l.roiSeries.length-1); const row=l.roiSeries[idx]||{loanValue:l.purchasePrice}; return s + (row.loanValue||l.purchasePrice); },0);
+      const lastOwnedWeighted = series[series.length - 1] || { y: 0 };
+      drawerPrimaryTitle.textContent='Weighted ROI to Date'; drawerPrimary.textContent=((lastOwnedWeighted.y || 0)*100).toFixed(2)+'%';
+      const portfolioValue = loansWithAmort.reduce((s,l)=>{ const row=getCurrentOwnedRoiEntry(l); return s + (row.loanValue||l.purchasePrice); },0);
       drawerSecondaryTitle.textContent='Portfolio Value'; drawerSecondary.textContent='$'+portfolioValue.toLocaleString();
       
       // build loan series and weighted series for multi-chart
       (function(){
-        const monthsMax = Math.max(...loansWithAmort.map(l=>l.roiSeries.length));
-        const upTo = Math.min(monthsMax, Math.max(CURRENT_MONTH,1));
         const weightedSeries = [];
         for(let m=1;m<=upTo;m++){ let total=0, weighted=0; loansWithAmort.forEach(l=>{ const e=l.roiSeries.find(r=>r.month===m); if(e){ weighted += l.purchasePrice*e.roi; total += l.purchasePrice; } }); weightedSeries.push({x:m, y: total?weighted/total:0}); }
         const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16','#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
@@ -881,7 +909,7 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
           for(let m=1;m<=upTo;m++){ const e = l.roiSeries.find(r=>r.month===m); pts.push({x:m, y: e ? e.roi : 0}); }
           return { name: formatLoanLabel(l), color: palette[(l.id-1) % palette.length], data: pts };
         });
-        createMultiSeriesChart(drawerChartArea, loanSeriesList, weightedSeries, { weightedColor: '#000', weightedWidth: 2.6 });
+        createMultiSeriesChart(drawerChartArea, loanSeriesList, weightedSeries, { weightedColor: '#000', weightedWidth: 2.6, currentMonthLine: series.length });
         // build legend (click to toggle visibility)
         drawerLegend.style.display='flex'; drawerLegend.innerHTML = '';
         const wk = document.createElement('div'); wk.className='legend-item'; wk.style.marginRight='12px'; wk.innerHTML = '<span style="display:inline-block;width:12px;height:12px;background:#000;margin-right:8px;border-radius:2px;"></span><span style="font-weight:700">Weighted ROI</span>';
@@ -934,9 +962,9 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
     projectedSeries.push({x:m,y: total?weighted/total:0});
   }
 
-  const projectedPortfolioValue = loansWithAmort.reduce((s,l)=>{ 
-      const last=l.roiSeries[l.roiSeries.length-1]||{loanValue:l.purchasePrice};
-      return s + (last.loanValue||l.purchasePrice); 
+  const projectedPortfolioValue = loansWithAmort.reduce((s,l)=>{
+      const last=getLastOwnedRoiEntry(l);
+      return s + (last.loanValue||l.purchasePrice);
   },0);
 
   drawerPrimaryTitle.textContent='Projected Weighted ROI';
@@ -986,7 +1014,7 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
   tbody.innerHTML='';
 
   loansWithAmort.forEach(l=>{
-    const last = l.roiSeries[l.roiSeries.length-1] || {roi:0};
+    const last = getLastOwnedRoiEntry(l);
     let matStr='';
     try{
       const pd=new Date(l.purchaseDate);
