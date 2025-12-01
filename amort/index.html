@@ -634,18 +634,20 @@
     /* ============================
        Small helper — create SVG path from points
        ============================ */
-    function buildPathFromPoints(points, w, h, pad = 6) {
+    function buildPathFromPoints(points, w, h, pad = 6, xForIndex) {
       if (!points.length) return '';
 
       const ys = points.map(p => p.y);
       const minY = Math.min(...ys);
       const maxY = Math.max(...ys);
       const range = Math.max(1, maxY - minY);
-      const stepX = (w - pad * 2) / Math.max(1, points.length - 1);
+
+      const stepX = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+      const xForIndexFn = xForIndex || ((i) => pad + i * stepX);
 
       let d = '';
       points.forEach((p, i) => {
-        const x = pad + i * stepX;
+        const x = xForIndexFn(i);
         const y = pad + (h - pad * 2) - ((p.y - minY) / range) * (h - pad * 2);
         d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
       });
@@ -747,23 +749,20 @@
         const ownedRows = fullSched.filter(r => r.isOwned);
         const loanStart = new Date(loan.loanStartDate);
         const w = 170, h = 48, pad = 6;
+        const stepX = fullSched.length > 1 ? (w - pad * 2) / (fullSched.length - 1) : 0;
+        const xForIndex = (i) => pad + i * stepX;
         const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
         const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
 
         const ownedPrincipal = ownedRows.map(r => r.cumPrincipal);
         const ownedInterest = ownedRows.map(r => r.cumInterest);
 
-        const pathP = buildPathFromPoints(pPoints, w, h, pad);
-        const pathI = buildPathFromPoints(iPoints, w, h, pad);
+        const pathP = buildPathFromPoints(pPoints, w, h, pad, xForIndex);
+        const pathI = buildPathFromPoints(iPoints, w, h, pad, xForIndex);
         const diffMonthsFromStart = monthDiff(loanStart, new Date());
+        const monthsToToday = Math.max(0, Math.min(fullSched.length - 1, diffMonthsFromStart));
 
-        // helper for vertical line position
-        const maxMonth = Math.max(1, fullSched.length);
-        const xForMonth = (month) => {
-          const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
-          const safe = Math.min(Math.max(month, 1), maxMonth);
-          return pad + (safe - 1) * stepX;
-        };
+        const todayX = xForIndex(monthsToToday);
 
         svg.innerHTML = `
           <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -774,8 +773,8 @@
 
           <!-- current date vertical marker (aligned to loanStartDate) -->
           <line
-  x1="${xForMonth(diffMonthsFromStart)}"
-  x2="${xForMonth(diffMonthsFromStart)}"
+  x1="${todayX}"
+  x2="${todayX}"
   y1="0"
   y2="${h}"
   stroke="#94a3b8"
@@ -807,8 +806,7 @@
           const hoverG = svg.querySelector('g.mini-hover');
           hoverG.innerHTML = '';
           const svgNS = 'http://www.w3.org/2000/svg';
-          const stepX = (w - pad * 2) / Math.max(1, fullSched.length - 1);
-          const iX = pad + idxNearest * stepX;
+          const hx = xForIndex(idxNearest);
 
           const minP = ownedPrincipal.length ? Math.min(...ownedPrincipal) : 0;
           const maxP = ownedPrincipal.length ? Math.max(...ownedPrincipal) : 1;
@@ -821,7 +819,7 @@
           const cyI = pad + (h - pad * 2) - ((p.cumInterest - minI) / rangeI) * (h - pad * 2);
 
           const cP = document.createElementNS(svgNS, 'circle');
-          cP.setAttribute('cx', iX);
+          cP.setAttribute('cx', hx);
           cP.setAttribute('cy', cyP);
           cP.setAttribute('r', 3.4);
           cP.setAttribute('fill', '#06b6d4');
@@ -830,7 +828,7 @@
           hoverG.appendChild(cP);
 
           const cI = document.createElementNS(svgNS, 'circle');
-          cI.setAttribute('cx', iX);
+          cI.setAttribute('cx', hx);
           cI.setAttribute('cy', cyI);
           cI.setAttribute('r', 3.4);
           cI.setAttribute('fill', '#a78bfa');
@@ -954,7 +952,8 @@
       const minY = Math.min(...allYs);
       const range = Math.max(1, maxY - minY);
 
-      const stepX = (w - pad * 2) / Math.max(1, schedule.length - 1);
+      const stepX = schedule.length > 1 ? (w - pad * 2) / (schedule.length - 1) : 0;
+      const xForIndex = (i) => pad + i * stepX;
 
       const labels = [];
       loan.amort.schedule.forEach(row => {
@@ -962,7 +961,7 @@
       });
 
       function toXY(point, i) {
-        const x = pad + i * stepX;
+        const x = xForIndex(i);
         const y = pad + (h - pad * 2) - ((point.y - minY) / range) * (h - pad * 2);
         return [x, y];
       }
@@ -987,7 +986,7 @@
       }
 
       for (let i = 0; i < labels.length; i += Math.max(1, Math.floor(labels.length / 6))) {
-        const x = pad + i * stepX;
+        const x = xForIndex(i);
         const text = document.createElementNS(svgNS, 'text');
         text.setAttribute('x', x);
         text.setAttribute('y', h - pad + 14);
@@ -1033,11 +1032,8 @@
 
       // current date marker
       const loanStart = new Date(currentLoan.loanStartDate);
-      const safeMonth = Math.max(
-        1,
-        Math.min(schedule.length, monthDiff(loanStart, new Date()))
-      );
-      const curX = pad + (safeMonth - 1) * stepX;
+      const monthsToToday = Math.max(0, Math.min(schedule.length - 1, monthDiff(loanStart, new Date())));
+      const curX = xForIndex(monthsToToday);
       const curLine = document.createElementNS(svgNS, 'line');
       curLine.setAttribute('x1', curX);
       curLine.setAttribute('x2', curX);
@@ -1065,7 +1061,7 @@
         const x = ev.clientX - rect.left;
         let idx = Math.round((x - pad) / stepX);
         idx = Math.max(0, Math.min(schedule.length - 1, idx));
-        const px = pad + idx * stepX;
+        const px = xForIndex(idx);
         const row = schedule[idx];
 
         if (!row.isOwned) {
