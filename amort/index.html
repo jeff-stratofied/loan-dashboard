@@ -241,6 +241,8 @@
     }
     td{ padding:8px; border-bottom:1px dashed rgba(15,23,42,0.04); text-align:right; transition:color .25s ease, border-color .25s ease; }
     td:first-child, th:first-child{ text-align:left }
+    .not-owned { opacity: 0.45; }
+    .purchase-highlight { border-top: 2px solid #4ade80; }
 
     .actions{ display:flex; gap:8px; margin-top:12px }
     .btn{ padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; cursor:pointer; font-weight:600; transition:background-color .25s ease, color .25s ease, border-color .25s ease; }
@@ -356,6 +358,8 @@
           <div id="drawerSecondary" style="font-weight:800;font-size:16px"></div>
         </div>
       </div>
+
+      <div class="drawer-detail" id="drawerBalanceAtPurchase" style="font-weight:700;margin-bottom:6px"></div>
 
       <div id="drawerExtra"></div>
 
@@ -706,9 +710,13 @@
 
         const svg = tile.querySelector("svg.sparkline");
         const fullSched = loan.cumSchedule;
+        const ownedRows = fullSched.filter(r => r.isOwned);
         const w = 170, h = 48, pad = 6;
         const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
         const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
+
+        const ownedPrincipal = ownedRows.map(r => r.cumPrincipal);
+        const ownedInterest = ownedRows.map(r => r.cumInterest);
 
         const pathP = buildPathFromPoints(pPoints, w, h, pad);
         const pathI = buildPathFromPoints(iPoints, w, h, pad);
@@ -746,10 +754,17 @@
           const idxNearest = Math.round(frac * (fullSched.length - 1));
           const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
 
+          if (!p.isOwned) {
+            tooltip.style.display = 'none';
+            const hoverG = svg.querySelector('g.mini-hover');
+            hoverG.innerHTML = '';
+            return;
+          }
+
           tooltip.style.left = (ev.clientX) + 'px';
           tooltip.style.top = (ev.clientY - 10) + 'px';
           tooltip.style.display = 'block';
-          tooltip.innerHTML = `M${p.monthIndex} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
+          tooltip.innerHTML = `Owned M${p.ownershipMonthIndex} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
 
           const hoverG = svg.querySelector('g.mini-hover');
           hoverG.innerHTML = '';
@@ -757,10 +772,12 @@
           const stepX = (w - pad * 2) / Math.max(1, fullSched.length - 1);
           const iX = pad + idxNearest * stepX;
 
-          const valsP = pPoints.map(pp => pp.y);
-          const valsI = iPoints.map(pp => pp.y);
-          const minP = Math.min(...valsP), maxP = Math.max(...valsP), rangeP = Math.max(1, maxP - minP);
-          const minI = Math.min(...valsI), maxI = Math.max(...valsI), rangeI = Math.max(1, maxI - minI);
+          const minP = ownedPrincipal.length ? Math.min(...ownedPrincipal) : 0;
+          const maxP = ownedPrincipal.length ? Math.max(...ownedPrincipal) : 1;
+          const rangeP = Math.max(1, maxP - minP);
+          const minI = ownedInterest.length ? Math.min(...ownedInterest) : 0;
+          const maxI = ownedInterest.length ? Math.max(...ownedInterest) : 1;
+          const rangeI = Math.max(1, maxI - minI);
 
           const cyP = pad + (h - pad * 2) - ((p.cumPrincipal - minP) / rangeP) * (h - pad * 2);
           const cyI = pad + (h - pad * 2) - ((p.cumInterest - minI) / rangeI) * (h - pad * 2);
@@ -812,6 +829,7 @@
     const drawerSecondary = document.getElementById('drawerSecondary');
     const drawerPrimaryTitle = document.getElementById('drawerPrimaryTitle');
     const drawerSecondaryTitle = document.getElementById('drawerSecondaryTitle');
+    const drawerBalanceAtPurchase = document.getElementById('drawerBalanceAtPurchase');
     const drawerBody = document.getElementById('drawerBody');
     const amortBody = document.getElementById('amortBody');
     const drawerChartArea = document.getElementById('drawerChartArea');
@@ -845,6 +863,7 @@
       drawerSecondaryTitle.textContent = 'Rate';
       drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
       drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
+      drawerBalanceAtPurchase.textContent = `Balance at Purchase: $${loan.balanceAtPurchase.toLocaleString()}`;
 
       /* render amort rows */
       drawerAmortContainer.style.display = 'block';
@@ -858,7 +877,8 @@
           <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
         `;
-        tr.classList.toggle('not-owned', !r.isOwned);
+        if (!r.isOwned) tr.classList.add('not-owned');
+        if (r.ownershipMonthIndex === 1) tr.classList.add('purchase-highlight');
         amortBody.appendChild(tr);
       });
 
@@ -985,18 +1005,26 @@
         let idx = Math.round((x - pad) / stepX);
         idx = Math.max(0, Math.min(schedule.length - 1, idx));
         const px = pad + idx * stepX;
+        const row = schedule[idx];
+
+        if (!row.isOwned) {
+          tooltip.style.display = 'none';
+          circles.innerHTML = '';
+          vLine.setAttribute('x1', 0); vLine.setAttribute('x2', 0);
+          return;
+        }
 
         vLine.setAttribute('x1', px); vLine.setAttribute('x2', px);
         vLine.setAttribute('y1', pad); vLine.setAttribute('y2', h - pad);
         circles.innerHTML = '';
 
-          const pointVals = {
-            month: schedule[idx].monthIndex,
-            balance: balances[idx].y,
-            cumP: cumP[idx].y,
-            cumI: cumI[idx].y,
-            cumF: cumF[idx].y
-          };
+        const pointVals = {
+          month: row.ownershipMonthIndex,
+          balance: balances[idx].y,
+          cumP: cumP[idx].y,
+          cumI: cumI[idx].y,
+          cumF: cumF[idx].y
+        };
 
           const series = [
             { val: pointVals.balance, color: '#0f172a' },
@@ -1020,7 +1048,7 @@
           tooltip.style.display = 'block';
           tooltip.style.left = (rect.left + px) + 'px';
           tooltip.style.top = (rect.top + 16) + 'px';
-          tooltip.innerHTML = `M${pointVals.month} — Balance $${pointVals.balance.toLocaleString()}<br>Principal $${pointVals.cumP.toLocaleString()} • Interest $${pointVals.cumI.toLocaleString()} • Fees $${pointVals.cumF.toLocaleString()}`;
+          tooltip.innerHTML = `Owned Month ${pointVals.month}: Balance $${pointVals.balance.toLocaleString()}<br>Principal $${pointVals.cumP.toLocaleString()} • Interest $${pointVals.cumI.toLocaleString()} • Fees $${pointVals.cumF.toLocaleString()}`;
         });
 
       svg.addEventListener('mouseleave', () => {
@@ -1049,6 +1077,7 @@
     function renderDistributionDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
+      drawerBalanceAtPurchase.textContent = '';
 
       drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
       drawerSub.textContent = 'Number of loans purchased by month';
@@ -1153,6 +1182,7 @@
     function renderTPVDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
+      drawerBalanceAtPurchase.textContent = '';
 
       drawerTitle.textContent = 'Total Portfolio Value';
       drawerSub.textContent = 'Purchase + accrued interest (grace) + cumulative payments';
@@ -1268,6 +1298,7 @@
     function renderRatesDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
+      drawerBalanceAtPurchase.textContent = '';
 
       drawerTitle.textContent = 'Rates Distribution';
       drawerSub.textContent = 'Histogram of loan nominal rates';
@@ -1366,6 +1397,7 @@
     function renderPaymentsDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
+      drawerBalanceAtPurchase.textContent = '';
 
       drawerTitle.textContent = 'Total Expected Payments (monthly)';
       drawerSub.textContent = 'Sum of scheduled payments across loans';
