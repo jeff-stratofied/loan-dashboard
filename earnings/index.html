@@ -624,92 +624,128 @@
       const totalMonths = Math.round(termYears * 12);
       const graceMonths = Math.round(graceYears * 12);
       const repayMonths = Math.max(1, totalMonths - graceMonths);
+
       let balance = principal;
       const schedule = [];
 
-      // grace period: interest only
-      for(let m=1; m<=graceMonths; m++){
+      // Grace period: interest-only, interest accrues on balance
+      for (let m = 1; m <= graceMonths; m++) {
         const interest = +(balance * monthlyRate).toFixed(2);
         balance = +(balance + interest).toFixed(2);
         schedule.push({
-          monthIndex:m,
-          payment:0,
-          principalPaid:0,
+          monthIndex: m,
+          payment: 0,
+          principalPaid: 0,
           interest,
           balance
         });
       }
 
-      // repayment period
+      // Repayment period: standard amortization
       const payment = monthlyRate === 0
         ? +(balance / repayMonths).toFixed(2)
-        : +((balance * monthlyRate) / (1 - Math.pow(1+monthlyRate, -repayMonths))).toFixed(2);
+        : +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -repayMonths))).toFixed(2);
 
-      for(let m=1; m<=repayMonths; m++){
+      for (let m = 1; m <= repayMonths; m++) {
         const interest = +(balance * monthlyRate).toFixed(2);
-        const principalPaid = +Math.min(balance, +(payment - interest).toFixed(2));
+        const principalPaid = +Math.min(
+          balance,
+          +(payment - interest).toFixed(2)
+        );
         balance = +(Math.max(0, balance - principalPaid).toFixed(2));
+
         schedule.push({
           monthIndex: graceMonths + m,
-          payment:+payment.toFixed(2),
+          payment: +payment.toFixed(2),
           principalPaid,
           interest,
           balance
         });
       }
+
       return { payment, schedule };
     }
 
     let loansWithEarnings = [];
 
     function rebuildLoansWithEarnings() {
-      loansWithEarnings = loans.map(l => {
+      loansWithEarnings = loans.map((raw, idx) => {
+        // Normalize fields from backend
+        const id = raw.loanId ?? raw.id ?? (idx + 1);
+        const purchasePrice = Number(raw.purchasePrice ?? raw.principal ?? 0);
+        const nominalRate = Number(raw.nominalRate ?? raw.rate ?? 0);
+        const termYears = Number(raw.termYears ?? 0);
+        const graceYears = Number(raw.graceYears ?? 0);
+
+        const upfrontFee = Number(raw.upfrontFee ?? 150);           // flat fee in month 1
+        const monthlyFeeStart = Number(raw.monthlyFeeStart ??       // starting monthly fee
+                                       raw.feePerMonth ?? 9);
+
         const normalizedLoan = {
-          ...l,
-          loanName: l.loanName ?? `Loan ${l.loanId}`,
-          school: l.school ?? "No school listed",
-          termYears: Number(l.termYears ?? 0),
-          graceYears: Number(l.graceYears ?? 0),
-          purchasePrice: Number(l.purchasePrice ?? 0),
-          nominalRate: Number(l.nominalRate ?? 0),
-          upfrontFee: Number(l.upfrontFee ?? 150),
-          monthlyFeeStart: Number(l.monthlyFeeStart ?? 9)
+          ...raw,
+          loanId: id,
+          id,
+          loanName: raw.loanName ?? `Loan ${id}`,
+          school: raw.school ?? "No school listed",
+          purchasePrice,
+          nominalRate,
+          termYears,
+          graceYears,
+          upfrontFee,
+          monthlyFeeStart
         };
 
-        const amort = calcAmort(normalizedLoan.purchasePrice, normalizedLoan.nominalRate, normalizedLoan.termYears, normalizedLoan.graceYears);
+        const amort = calcAmort(
+          normalizedLoan.purchasePrice,
+          normalizedLoan.nominalRate,
+          normalizedLoan.termYears,
+          normalizedLoan.graceYears
+        );
 
-        let cumP = 0, cumI = 0, cumFees = 0;
+        let cumPrincipal = 0;
+        let cumInterest  = 0;
+        let cumFees      = 0;
+
+        const termMonths = Math.max(
+          1,
+          Math.round(normalizedLoan.termYears * 12)
+        );
 
         const earningsSchedule = amort.schedule.map(row => {
-          let m = row.monthIndex;
+          const m = row.monthIndex;
 
-          // Upfront fee at month 1
-          let upfrontFee = (m === 1 ? normalizedLoan.upfrontFee : 0);
+          // Upfront fee only at month 1
+          const upfront = (m === 1 ? normalizedLoan.upfrontFee : 0);
 
-          // Sliding fee
-          let termMonths = Number(normalizedLoan.termYears * 12) || 1;   // prevent divide by zero
-          let monthlyFee = Number(normalizedLoan.monthlyFeeStart) * (1 - (m / termMonths));
-          if (isNaN(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
+          // Sliding monthly fee from monthlyFeeStart → 0 over the term
+          let monthlyFee = normalizedLoan.monthlyFeeStart * (1 - m / termMonths);
+          if (!Number.isFinite(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
 
-          let feeThisMonth = upfrontFee + monthlyFee;
-          cumFees += feeThisMonth;
+          const feeThisMonth = upfront + monthlyFee;
+          cumFees = +(cumFees + feeThisMonth).toFixed(2);
 
-          // Earnings math
-          cumP = +(cumP + row.principalPaid).toFixed(2);
-          cumI = +(cumI + row.interest).toFixed(2);
+          // Cumulative principal & interest from schedule
+          cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
+          cumInterest  = +(cumInterest + row.interest).toFixed(2);
 
-          let netEarnings = +(cumP + cumI - cumFees).toFixed(2);
+          // Net earnings = principal + interest – fees
+          const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
 
           return {
             ...row,
-            cumPrincipal: cumP,
-            cumInterest: cumI,
+            feeThisMonth,
+            cumPrincipal,
+            cumInterest,
             cumFees,
             netEarnings
           };
         });
 
-        return { ...normalizedLoan, amort, earningsSchedule };
+        return {
+          ...normalizedLoan,
+          amort,
+          earningsSchedule
+        };
       });
     }
 
