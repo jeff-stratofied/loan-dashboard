@@ -151,6 +151,7 @@
         <th>ID</th>
         <th>Loan Name</th>
         <th>School</th>
+        <th>Loan Start Date</th>
         <th>Purchase Date</th>
         <th>Principal</th>
         <th>Rate</th>
@@ -231,6 +232,16 @@
 
       const newLoans = collectLoansFromTable();
 
+      for (const loan of newLoans) {
+        const loanStartDate = loan.loanStartDate;
+        const purchaseDate = loan.purchaseDate;
+        if (new Date(loanStartDate) > new Date(purchaseDate)) {
+          alert("Purchase Date cannot be before Loan Start Date.");
+          saveBtn.disabled = false;
+          return;
+        }
+      }
+
       try {
         const res = await fetch(`${WORKER_BASE_URL}/loans`, {
           method: "POST",
@@ -263,6 +274,7 @@
         loanId: l.loanId ?? (idx + 1),
         loanName: l.loanName ?? `Loan ${l.loanId ?? (idx + 1)}`,
         school: l.school ?? "Select school…",
+        loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "2024-01-01",
         purchaseDate: l.purchaseDate ?? "2024-01-01",
         principal: Number(l.principal ?? 0),
         rate: Number(l.rate ?? 0),
@@ -277,6 +289,7 @@
           loanId: 1,
           loanName: "Loan 1 — Freshman Fall",
           school: "Penn State",
+          loanStartDate: "2024-01-01",
           purchaseDate: "2024-01-01",
           principal: 7000,
           rate: 0.0883,
@@ -287,6 +300,7 @@
           loanId: 2,
           loanName: "Loan 2 — Sophomore Fall",
           school: "Ohio State",
+          loanStartDate: "2024-08-01",
           purchaseDate: "2024-09-01",
           principal: 7500,
           rate: 0.075,
@@ -323,6 +337,7 @@
               ${schoolOptionsHtml}
             </select>
           </td>
+          <td><input class="cell-date" type="date" value="${loan.loanStartDate}" data-field="loanStartDate"></td>
           <td><input class="cell-date" type="date" value="${loan.purchaseDate}" data-field="purchaseDate"></td>
           <td><input class="cell-number" type="number" step="0.01" value="${loan.principal}" data-field="principal"></td>
           <td><input class="cell-number" type="number" step="0.0001" value="${loan.rate}" data-field="rate"></td>
@@ -358,6 +373,7 @@
         loanId: nextId,
         loanName: `Loan ${nextId}`,
         school: "Select school…",
+        loanStartDate: "2024-01-01",
         purchaseDate: "2024-01-01",
         principal: 0,
         rate: 0,
