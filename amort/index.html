@@ -389,6 +389,33 @@
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
   <script>
+    // Generic helpers
+    function addMonths(date, months) {
+      const d = new Date(date);
+      d.setMonth(d.getMonth() + months);
+      return d;
+    }
+
+    function formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    function formatMonthYear(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short"
+      });
+    }
+
+    function monthDiff(d1, d2) {
+      return (d2.getFullYear() - d1.getFullYear()) * 12 +
+             (d2.getMonth() - d1.getMonth());
+    }
+
     /* ============================
        Settings & Current Month
        ============================ */
@@ -419,11 +446,6 @@
     /* ============================
        Amortization (grace interest capitalized)
        ============================ */
-    function monthDiff(d1, d2) {
-      return (d2.getFullYear() - d1.getFullYear()) * 12 +
-             (d2.getMonth() - d1.getMonth());
-    }
-
     function calcAmort(principal, annualRate, termYears, graceYears) {
       const monthlyRate = annualRate / 12;
       const totalMonths = Math.round(termYears * 12);
