@@ -276,7 +276,10 @@ svg text {
     const CURRENT_MONTH = 18;
     document.getElementById('currentMonthLabel').textContent = CURRENT_MONTH;
 
-    function monthDiff(d1,d2){ const a=new Date(d1); const b=new Date(d2); return (b.getFullYear()-a.getFullYear())*12 + (b.getMonth()-a.getMonth()); }
+    function monthDiff(d1, d2) {
+      return (d2.getFullYear() - d1.getFullYear()) * 12 +
+             (d2.getMonth() - d1.getMonth());
+    }
 
     // Dynamic loans loaded from backend
     let loans = [];
@@ -323,12 +326,35 @@ svg text {
       }));
 
       const loansWithAmort = formattedLoans.map(l => {
-      const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
+      const loanStart = new Date(l.loanStartDate);
+      const purchaseDt = new Date(l.purchaseDate);
+      const monthsSinceStart = monthDiff(loanStart, purchaseDt);
+
+      amort.schedule = amort.schedule.map(row => {
+        const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
+        return {
+          ...row,
+          ownershipMonthIndex,
+          isOwned: ownershipMonthIndex >= 1
+        };
+      });
+
       let cumP=0, cumI=0, cumTotal=0;
-      const cumSchedule = amort.schedule.map(r => { cumP=+(cumP+r.principalPaid).toFixed(2); cumI=+(cumI+r.interest).toFixed(2); cumTotal=+(cumTotal+r.payment).toFixed(2); return {...r, cumPrincipal:cumP, cumInterest:cumI, cumTotal}; });
+      const balanceAtPurchase = amort.schedule[Math.max(0, monthsSinceStart - 1)]?.balance ?? 0;
+      const cumSchedule = amort.schedule.map(r => {
+        if (r.isOwned) {
+          cumP = +(cumP + r.principalPaid).toFixed(2);
+          cumI = +(cumI + r.interest).toFixed(2);
+          cumTotal = +(cumTotal + r.payment).toFixed(2);
+        }
+        return {...r, cumPrincipal:cumP, cumInterest:cumI, cumTotal};
+      });
 
       let cumFees = 0;
-      const roiSeries = cumSchedule.map(s => {
+      const roiSeries = [];
+      cumSchedule.forEach(s => {
+        if (!s.isOwned) return;
+
         const m = s.monthIndex;
 
         let upfrontFee = (m === 1 ? l.upfrontFee : 0);
@@ -342,10 +368,10 @@ svg text {
 
         const loanValue = (s.balance + s.cumInterest + s.cumTotal) - cumFees;
         const roi = (loanValue - l.purchasePrice)/l.purchasePrice;
-        return { month:s.monthIndex, roi, loanValue, cumFees };
+        roiSeries.push({ month:s.ownershipMonthIndex, roi, loanValue, cumFees });
       });
       const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ x:s.month, y:s.roi }));
-      return {...l, amort, cumSchedule, roiSeries, miniPts };
+      return {...l, amort, schedule: amort.schedule, monthsSinceStart, balanceAtPurchase, cumSchedule, roiSeries, miniPts };
     });
 
     /* -------------------------
@@ -792,7 +818,7 @@ function openDrawerForLoan(loan){
       // build rows using cumSchedule and roiSeries, accounting for amortization fees
       loan.roiSeries.forEach(s => {
         const month = s.month;
-        const cs = loan.cumSchedule.find(r => r.monthIndex === month) || {};
+        const cs = loan.cumSchedule.find(r => r.ownershipMonthIndex === month) || {};
         const balance = (cs.balance !== undefined) ? cs.balance : '';
         const cumInterest = (cs.cumInterest !== undefined) ? cs.cumInterest : '';
         const cumPayments = (cs.cumTotal !== undefined) ? cs.cumTotal : '';

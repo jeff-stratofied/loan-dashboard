@@ -198,6 +198,10 @@
     #drawerBody{ overflow-x:hidden; }
 
     .drawer-footer{ flex-shrink:0; padding:20px; }
+
+    .not-owned {
+      opacity: 0.45;
+    }
     .drawer-footer .actions{ justify-content:flex-start; }
 
     .drawer-chart{
@@ -411,6 +415,11 @@
     /* ============================
        Amortization (grace interest capitalized)
        ============================ */
+    function monthDiff(d1, d2) {
+      return (d2.getFullYear() - d1.getFullYear()) * 12 +
+             (d2.getMonth() - d1.getMonth());
+    }
+
     function calcAmort(principal, annualRate, termYears, graceYears) {
       const monthlyRate = annualRate / 12;
       const totalMonths = Math.round(termYears * 12);
@@ -496,6 +505,19 @@
           loanData.graceYears
         );
 
+        const loanStart = new Date(loanData.loanStartDate);
+        const purchaseDt = new Date(loanData.purchaseDate);
+        const monthsSinceStart = monthDiff(loanStart, purchaseDt);
+
+        amort.schedule = amort.schedule.map(row => {
+          const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
+          return {
+            ...row,
+            ownershipMonthIndex,
+            isOwned: ownershipMonthIndex >= 1
+          };
+        });
+
         // Build cumulative principal, interest, and fees
         let cumPrincipal = 0;
         let cumInterest  = 0;
@@ -505,6 +527,8 @@
           1,
           Math.round(loanData.termYears * 12)
         );
+
+        const balanceAtPurchase = amort.schedule[Math.max(0, monthsSinceStart - 1)]?.balance ?? 0;
 
         const cumSchedule = amort.schedule.map(row => {
           const m = row.monthIndex;
@@ -519,10 +543,11 @@
           }
 
           const feeThisMonth = upfront + monthlyFee;
-          cumFees = +(cumFees + feeThisMonth).toFixed(2);
-
-          cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
-          cumInterest  = +(cumInterest  + row.interest).toFixed(2);
+          if (row.isOwned) {
+            cumFees = +(cumFees + feeThisMonth).toFixed(2);
+            cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
+            cumInterest  = +(cumInterest  + row.interest).toFixed(2);
+          }
 
           return {
             ...row,
@@ -534,17 +559,24 @@
         });
 
         // Mini-chart points (first 24 months)
+        const ownedRows = cumSchedule.filter(r => r.isOwned);
         const miniPts = cumSchedule.slice(0, 24).map(s => ({
           x: s.monthIndex,
           cumP: s.cumPrincipal,
           cumI: s.cumInterest
         }));
 
+        const ownedP = ownedRows.map(r => r.cumPrincipal);
+        const ownedI = ownedRows.map(r => r.cumInterest);
+
         return {
           ...loanData,
           amort,
+          schedule: amort.schedule,
           cumSchedule,
-          miniPts
+          miniPts,
+          monthsSinceStart,
+          balanceAtPurchase
         };
       });
     }
@@ -826,6 +858,7 @@
           <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
         `;
+        tr.classList.toggle('not-owned', !r.isOwned);
         amortBody.appendChild(tr);
       });
 
