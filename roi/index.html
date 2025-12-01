@@ -200,7 +200,7 @@ svg text {
       <p class="lead">Unified design, dark mode, animations, KPI drawers with primary/secondary cards.</p>
 
       <div class="current-date" style="margin-top:4px;">
-        Current Month: <strong id="currentMonthLabel">18</strong>
+        <div class="current-date">Current Date: <span id="currentDate"></span></div>
       </div>
     </div>
 
@@ -270,17 +270,35 @@ svg text {
        Script (organized with sections)
        ==================================== -->
   <script>
-    /* -------------------------
-       Settings & data
-       ------------------------- */
-    const CURRENT_MONTH = 18;
-    document.getElementById('currentMonthLabel').textContent = CURRENT_MONTH;
+    function addMonths(date, months) {
+      const d = new Date(date);
+      d.setMonth(d.getMonth() + months);
+      return d;
+    }
+
+    function formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    function formatMonthYear(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short"
+      });
+    }
 
     function monthDiff(d1, d2) {
       return (d2.getFullYear() - d1.getFullYear()) * 12 +
              (d2.getMonth() - d1.getMonth());
     }
 
+    /* -------------------------
+       Settings & data
+       ------------------------- */
     // Dynamic loans loaded from backend
     let loans = [];
 
@@ -337,10 +355,17 @@ svg text {
         // compute ownership fields
         const scheduleWithOwnership = schedule.map(row => {
           const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
+          const isOwned = ownershipMonthIndex >= 1;
+          const loanDate = addMonths(loanStart, row.monthIndex - 1);
+          const ownershipDate = isOwned
+            ? addMonths(purchaseDt, ownershipMonthIndex - 1)
+            : null;
           return {
             ...row,
             ownershipMonthIndex,
-            isOwned: ownershipMonthIndex >= 1
+            isOwned,
+            loanDate,
+            ownershipDate
           };
         });
 
@@ -388,9 +413,15 @@ svg text {
               s.cumInterest -
               l.purchasePrice
           ) / l.purchasePrice;
-          roiSeries.push({ month:s.ownershipMonthIndex, roi, loanValue, cumFees });
+          roiSeries.push({
+            month: s.ownershipMonthIndex,
+            ownershipDate: s.ownershipDate,
+            roi,
+            loanValue,
+            cumFees
+          });
         });
-        const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ x:s.month, y:s.roi }));
+        const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ y:s.roi, ownershipDate: s.ownershipDate }));
 
         // return updated loan object
         return {
@@ -409,16 +440,11 @@ svg text {
     /* -------------------------
        KPI computations
        ------------------------- */
-    function getOwnedIndexForCurrentMonth(loan){
-      const ownedMonth = CURRENT_MONTH - loan.monthsSinceStart;
-      if (ownedMonth <= 0) return -1;
-      return Math.min(ownedMonth - 1, loan.roiSeries.length - 1);
-    }
-
     function getCurrentOwnedRoiEntry(loan){
-      const idx = getOwnedIndexForCurrentMonth(loan);
-      if (idx < 0) return { roi: 0, loanValue: loan.purchasePrice };
-      return loan.roiSeries[idx] || { roi: 0, loanValue: loan.purchasePrice };
+      const today = new Date();
+      const ownedEntries = loan.roiSeries.filter(r => r.ownershipDate && r.ownershipDate <= today);
+      if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
+      return ownedEntries[ownedEntries.length - 1];
     }
 
     function getLastOwnedRoiEntry(loan){
@@ -449,41 +475,97 @@ svg text {
       const h = opts.h || 260;
       const pad = opts.pad || 28;
       const svg = document.createElementNS(svgNS, "svg");
-      svg.setAttribute("viewBox", `0 0 ${w} ${h}`); svg.setAttribute("width", "100%"); svg.setAttribute("height", "100%"); svg.style.display="block";
-      const data = series.length ? series.slice() : [{x:0,y:0}];
-      const ys = data.map(d=>d.y); const xs = data.map(d=>d.x);
-      const minY = Math.min(...ys); const maxY = Math.max(...ys); const rangeY = Math.max(1e-6, maxY - minY);
-      const stepX = (w - pad*2) / Math.max(1, data.length - 1);
-      function toXY(d,i){ const x = pad + i*stepX; const y = pad + (h - pad*2) - ((d.y - minY)/rangeY)*(h - pad*2); return [x,y]; }
-      // grid
-      for(let gy=0;gy<5;gy++){ const y=pad+gy*((h-pad*2)/4); const line=document.createElementNS(svgNS,'line'); line.setAttribute('x1',pad); line.setAttribute('x2',w-pad); line.setAttribute('y1',y); line.setAttribute('y2',y); line.setAttribute('stroke','#eef2f7'); svg.appendChild(line); }
-      // path
-      let path=''; data.forEach((p,i)=>{ const xy=toXY(p,i); path += (i===0?('M '+xy[0]+' '+xy[1]):(' L '+xy[0]+' '+xy[1])); });
-      const el=document.createElementNS(svgNS,'path'); el.setAttribute('d',path); el.setAttribute('fill','none'); el.setAttribute('stroke',opts.color||'#0ea5e9'); el.setAttribute('stroke-width','2'); svg.appendChild(el);
-      // === Add vertical line for CURRENT_MONTH (global) ===
-if (typeof CURRENT_MONTH !== "undefined") {
-  const monthIndex = CURRENT_MONTH - 1; 
-  if (monthIndex >= 0 && monthIndex < data.length) {
-    const [cx] = toXY(data[monthIndex], monthIndex);
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "100%");
+      svg.style.display = "block";
 
-    const vLine = document.createElementNS(svgNS, "line");
-    vLine.setAttribute("x1", cx);
-    vLine.setAttribute("x2", cx);
-    vLine.setAttribute("y1", pad);
-    vLine.setAttribute("y2", h - pad);
-    vLine.setAttribute("stroke", "#111827");
-    vLine.setAttribute("stroke-dasharray", "3 3");
-    vLine.setAttribute("stroke-opacity", "0.6");
+      const data = series.length ? series.slice() : [{ x: 0, y: 0 }];
+      const ys = data.map(d => d.y);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      const rangeY = Math.max(1e-6, maxY - minY);
+      const stepX = (w - pad * 2) / Math.max(1, data.length - 1);
+      const xForMonth = month => pad + (Math.min(Math.max(month, 1), data.length) - 1) * stepX;
+      function toXY(d, i) {
+        const x = pad + i * stepX;
+        const y = pad + (h - pad * 2) - ((d.y - minY) / rangeY) * (h - pad * 2);
+        return [x, y];
+      }
 
-    svg.appendChild(vLine);
-  }
-}
+      for (let gy = 0; gy < 5; gy++) {
+        const y = pad + gy * ((h - pad * 2) / 4);
+        const line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', pad);
+        line.setAttribute('x2', w - pad);
+        line.setAttribute('y1', y);
+        line.setAttribute('y2', y);
+        line.setAttribute('stroke', '#eef2f7');
+        svg.appendChild(line);
+      }
 
-      // hover
-      const vLine=document.createElementNS(svgNS,'line'); vLine.setAttribute('stroke','#111827'); vLine.setAttribute('stroke-dasharray','3 4'); vLine.setAttribute('stroke-opacity','0.6'); svg.appendChild(vLine);
-      const hoverG=document.createElementNS(svgNS,'g'); hoverG.setAttribute('class','hover'); svg.appendChild(hoverG);
-      svg.addEventListener('mousemove', function(ev){ const rect=svg.getBoundingClientRect(); const svgX=ev.clientX-rect.left; let idx=Math.round((svgX-pad)/stepX); idx=Math.max(0,Math.min(data.length-1,idx)); const point=data[idx]; const [cx,cy]=toXY(point,idx); vLine.setAttribute('x1',cx); vLine.setAttribute('x2',cx); vLine.setAttribute('y1',pad); vLine.setAttribute('y2',h-pad); hoverG.innerHTML=''; const c=document.createElementNS(svgNS,'circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',4); c.setAttribute('fill',opts.color||'#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); tooltip.style.display='block'; tooltip.style.left=(rect.left+cx)+'px'; tooltip.style.top=(rect.top+cy-28)+'px'; tooltip.innerHTML = (opts.labelFn?opts.labelFn(point, idx):(`M${point.x} • ${(point.y*100).toFixed(2)}%`)); });
-      svg.addEventListener('mouseleave', function(){ hoverG.innerHTML=''; tooltip.style.display='none'; });
+      let path = '';
+      data.forEach((p, i) => {
+        const xy = toXY(p, i);
+        path += (i === 0 ? ('M ' + xy[0] + ' ' + xy[1]) : (' L ' + xy[0] + ' ' + xy[1]));
+      });
+      const el = document.createElementNS(svgNS, 'path');
+      el.setAttribute('d', path);
+      el.setAttribute('fill', 'none');
+      el.setAttribute('stroke', opts.color || '#0ea5e9');
+      el.setAttribute('stroke-width', '2');
+      svg.appendChild(el);
+
+      const today = new Date();
+      if (opts.loanStartDate) {
+        const diffMonthsFromStart = monthDiff(new Date(opts.loanStartDate), today);
+        const cx = xForMonth(diffMonthsFromStart);
+        const vLine = document.createElementNS(svgNS, "line");
+        vLine.setAttribute("x1", cx);
+        vLine.setAttribute("x2", cx);
+        vLine.setAttribute("y1", pad);
+        vLine.setAttribute("y2", h - pad);
+        vLine.setAttribute("stroke", "#111827");
+        vLine.setAttribute("stroke-dasharray", "3 3");
+        vLine.setAttribute("stroke-opacity", "0.6");
+
+        svg.appendChild(vLine);
+      }
+
+      const vLine = document.createElementNS(svgNS, 'line');
+      vLine.setAttribute('stroke', '#111827');
+      vLine.setAttribute('stroke-dasharray', '3 4');
+      vLine.setAttribute('stroke-opacity', '0.6');
+      svg.appendChild(vLine);
+      const hoverG = document.createElementNS(svgNS, 'g');
+      hoverG.setAttribute('class', 'hover');
+      svg.appendChild(hoverG);
+      svg.addEventListener('mousemove', function (ev) {
+        const rect = svg.getBoundingClientRect();
+        const svgX = ev.clientX - rect.left;
+        let idx = Math.round((svgX - pad) / stepX);
+        idx = Math.max(0, Math.min(data.length - 1, idx));
+        const point = data[idx];
+        const [cx, cy] = toXY(point, idx);
+        vLine.setAttribute('x1', cx);
+        vLine.setAttribute('x2', cx);
+        vLine.setAttribute('y1', pad);
+        vLine.setAttribute('y2', h - pad);
+        hoverG.innerHTML = '';
+        const c = document.createElementNS(svgNS, 'circle');
+        c.setAttribute('cx', cx);
+        c.setAttribute('cy', cy);
+        c.setAttribute('r', 4);
+        c.setAttribute('fill', opts.color || '#0ea5e9');
+        c.setAttribute('stroke', 'var(--card)');
+        c.setAttribute('stroke-width', '1');
+        hoverG.appendChild(c);
+        tooltip.style.display = 'block';
+        tooltip.style.left = (rect.left + cx) + 'px';
+        tooltip.style.top = (rect.top + cy - 28) + 'px';
+        tooltip.innerHTML = (opts.labelFn ? opts.labelFn(point, idx) : (point.ownershipDate ? `Date: ${formatDate(point.ownershipDate)} • ${(point.y * 100).toFixed(2)}%` : (`M${point.x} • ${(point.y * 100).toFixed(2)}%`)));
+      });
+      svg.addEventListener('mouseleave', function () { hoverG.innerHTML = ''; tooltip.style.display = 'none'; });
       containerEl.appendChild(svg); return svg;
     }
 // --- Multi-series chart (loan lines + weighted line) ---
@@ -509,6 +591,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   const maxY = Math.max(...ys);
   const rangeY = Math.max(1e-6, maxY - minY);
   const stepX = (w - pad*2) / Math.max(1, xCount - 1);
+  const xForMonth = month => pad + (Math.min(Math.max(month, 1), xCount) - 1) * stepX;
   function toXY(pt, i){ const x = pad + (i)*stepX; const y = pad + (h - pad*2) - ((pt.y - minY)/rangeY)*(h - pad*2); return [x,y]; }
 
   // grid
@@ -545,21 +628,19 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     wPath.dataset.name = 'Weighted ROI';
   }
 
-  // current date vertical line (opt-in for matching loan drawer style)
-  if(opts.currentMonthLine && weightedSeries && weightedSeries.length){
-    const monthIndex = opts.currentMonthLine - 1;
-    if(monthIndex >= 0 && monthIndex < weightedSeries.length){
-      const [cx] = toXY(weightedSeries[monthIndex], monthIndex);
-      const curLine = document.createElementNS(svgNS,'line');
-      curLine.setAttribute('x1', cx);
-      curLine.setAttribute('x2', cx);
-      curLine.setAttribute('y1', pad);
-      curLine.setAttribute('y2', h - pad);
-      curLine.setAttribute('stroke', '#111827');
-      curLine.setAttribute('stroke-dasharray', '3 3');
-      curLine.setAttribute('stroke-opacity', '0.6');
-      svg.appendChild(curLine);
-    }
+  if (opts.startDate && weightedSeries && weightedSeries.length) {
+    const today = new Date();
+    const diffMonthsFromStart = monthDiff(new Date(opts.startDate), today);
+    const cx = xForMonth(diffMonthsFromStart);
+    const curLine = document.createElementNS(svgNS,'line');
+    curLine.setAttribute('x1', cx);
+    curLine.setAttribute('x2', cx);
+    curLine.setAttribute('y1', pad);
+    curLine.setAttribute('y2', h - pad);
+    curLine.setAttribute('stroke', '#111827');
+    curLine.setAttribute('stroke-dasharray', '3 3');
+    curLine.setAttribute('stroke-opacity', '0.6');
+    svg.appendChild(curLine);
   }
 
   // vertical marker + hover circle
@@ -604,7 +685,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
       tooltipEl.style.left = (rectBox.left + cx) + 'px';
       tooltipEl.style.top = (rectBox.top + cy - 28) + 'px';
       const pct = (pt.y * 100).toFixed(2);
-      tooltipEl.innerHTML = `M${pt.x} • Weighted ROI ${pct}%`;
+      tooltipEl.innerHTML = `Date: ${pt.x} • Weighted ROI ${pct}%`;
     }
   });
 
@@ -789,17 +870,20 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       // render mini chart: cumulative ROI points
       const svg = tile.querySelector('svg.sparkline');
       const w=170,h=48,pad=6;
-      const pts = loan.miniPts && loan.miniPts.length ? loan.miniPts : loan.roiSeries.map(s=>({x:s.month,y:s.roi}));
+      const pts = loan.miniPts && loan.miniPts.length ? loan.miniPts : loan.roiSeries.map(s=>({ y: s.roi, ownershipDate: s.ownershipDate }));
       const ys = pts.map(p=>p.y); const minY=Math.min(...ys); const maxY=Math.max(...ys); const rangeY=Math.max(1e-6,maxY-minY);
       const stepX=(w-pad*2)/Math.max(1,pts.length-1);
       let d=''; pts.forEach((p,i)=>{ const x=pad + i*stepX; const y = pad + (h - pad*2) - ((p.y - minY)/rangeY)*(h - pad*2); d += (i===0?('M '+x+' '+y):(' L '+x+' '+y)); });
       svg.innerHTML = `<path d="${d}" fill="none" stroke="#0ea5e9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><g class="mini-hover"></g>`;
       // current date vertical line per-loan
-      let curIdxForLoan = getOwnedIndexForCurrentMonth(loan) + 1;
-      curIdxForLoan = Math.max(1, Math.min(loan.roiSeries.length, Math.max(curIdxForLoan, 1)));
-      const dashX = pad + (curIdxForLoan-1)*((w-pad*2)/Math.max(1,loan.roiSeries.length-1));
+      const loanStart = new Date(loan.loanStartDate);
+      const diffMonthsFromStart = monthDiff(loanStart, new Date());
+      const xForMonth = month => {
+        return pad + (Math.min(Math.max(month, 1), pts.length) - 1) * ((w - pad * 2) / Math.max(1, pts.length - 1));
+      };
+      const dashX = xForMonth(diffMonthsFromStart);
       const line = document.createElementNS('http://www.w3.org/2000/svg','line'); line.setAttribute('x1',dashX); line.setAttribute('x2',dashX); line.setAttribute('y1',2); line.setAttribute('y2',h-2); line.setAttribute('stroke','#111827'); line.setAttribute('stroke-dasharray','3 3'); line.setAttribute('stroke-opacity','0.6'); svg.appendChild(line);
-      svg.addEventListener('mousemove', ev=>{ const rect=svg.getBoundingClientRect(); const relX=ev.clientX-rect.left; const step = (w-pad*2)/Math.max(1,pts.length-1); let idxNearest=Math.round((relX-pad)/step); idxNearest=Math.max(0,Math.min(pts.length-1,idxNearest)); const pt=pts[idxNearest]; const p = loan.roiSeries[pt.x-1]||loan.roiSeries[idxNearest]; tooltip.style.left=ev.clientX+'px'; tooltip.style.top=(ev.clientY-10)+'px'; tooltip.style.display='block'; tooltip.innerHTML = 'M'+p.month+' • ROI '+(p.roi*100).toFixed(2)+'%'; const hoverG = svg.querySelector('g.mini-hover'); hoverG.innerHTML=''; const cx = pad + idxNearest*step; const cy = pad + (h - pad*2) - ((pt.y - minY)/rangeY)*(h - pad*2); const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',3.6); c.setAttribute('fill','#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); });
+      svg.addEventListener('mousemove', ev=>{ const rect=svg.getBoundingClientRect(); const relX=ev.clientX-rect.left; const step = (w-pad*2)/Math.max(1,pts.length-1); let idxNearest=Math.round((relX-pad)/step); idxNearest=Math.max(0,Math.min(pts.length-1,idxNearest)); const p = loan.roiSeries[idxNearest]; tooltip.style.left=ev.clientX+'px'; tooltip.style.top=(ev.clientY-10)+'px'; tooltip.style.display='block'; tooltip.innerHTML = 'Date: '+formatDate(p.ownershipDate)+' • ROI '+(p.roi*100).toFixed(2)+'%'; const hoverG = svg.querySelector('g.mini-hover'); hoverG.innerHTML=''; const cx = pad + idxNearest*step; const cy = pad + (h - pad*2) - ((p.roi - minY)/rangeY)*(h - pad*2); const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',3.6); c.setAttribute('fill','#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); });
       svg.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; const hoverG = svg.querySelector('g.mini-hover'); if(hoverG) hoverG.innerHTML=''; });
     });
 
@@ -862,8 +946,8 @@ function openDrawerForLoan(loan){
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
       drawerExtra.innerHTML=''; drawerLegend.style.display='flex'; drawerLegend.innerHTML = '<div class=\"item\"><span class=\"sw\" style=\"background:#0f172a\"></span>Balance</div><div class=\"item\"><span class=\"sw\" style=\"background:#0ea5e9\"></span>ROI</div>';
 
-      const series = loan.roiSeries.map(s=>({x:s.month,y:s.roi}));
-      createLineChart(drawerChartArea, series, { color:'#0ea5e9', labelFn:(pt)=>`M${pt.x} • ROI ${(pt.y*100).toFixed(2)}%` });
+      const series = loan.roiSeries.map(s=>({x: formatMonthYear(s.ownershipDate), y:s.roi, ownershipDate: s.ownershipDate}));
+      createLineChart(drawerChartArea, series, { color:'#0ea5e9', loanStartDate: loan.loanStartDate, labelFn:(pt)=>`Date: ${formatDate(pt.ownershipDate)} • ROI ${(pt.y*100).toFixed(2)}%` });
 
       // ROI-by-month table (replaces amort table)
       drawerAmortContainer.innerHTML = '<h3 style="margin-top:8px">ROI by Month</h3><div class="amort-wrap"><table><thead><tr><th>Month</th><th style="text-align:right">Balance</th><th style="text-align:right">Cum Interest</th><th style="text-align:right">Cum Payments</th><th style="text-align:right">Cum Fees</th><th style="text-align:right">Loan Value</th><th style="text-align:right">ROI</th></tr></thead><tbody id="roiBody"></tbody></table></div>';
@@ -880,7 +964,8 @@ function openDrawerForLoan(loan){
         const loanValueAdj = s.loanValue ?? 0;
         const roiAdj = s.roi || 0;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td style="text-align:left">${month}</td><td style="text-align:right">$${Number(balance).toFixed(2)}</td><td style="text-align:right">$${Number(cumInterest).toFixed(2)}</td><td style="text-align:right">$${Number(cumPayments).toFixed(2)}</td><td style="text-align:right">$${Number(cumFees).toFixed(2)}</td><td style="text-align:right">$${Number(loanValueAdj).toFixed(2)}</td><td style="text-align:right">${(roiAdj*100).toFixed(2)}%</td>`;
+        const loanDate = cs.loanDate ? formatDate(cs.loanDate) : '';
+        tr.innerHTML = `<td style="text-align:left">${loanDate}</td><td style="text-align:right">$${Number(balance).toFixed(2)}</td><td style="text-align:right">$${Number(cumInterest).toFixed(2)}</td><td style="text-align:right">$${Number(cumPayments).toFixed(2)}</td><td style="text-align:right">$${Number(cumFees).toFixed(2)}</td><td style="text-align:right">$${Number(loanValueAdj).toFixed(2)}</td><td style="text-align:right">${(roiAdj*100).toFixed(2)}%</td>`;
         roiBody.appendChild(tr);
       });
 
@@ -916,26 +1001,41 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
       currentMode='kpi'; currentLoan=null;
       drawerAmortContainer.innerHTML = '';
       drawerTitle.textContent='Portfolio — Weighted ROI (To Date)'; drawerSub.textContent='Snapshot';
+      const today = new Date();
       const monthsMax = Math.max(...loansWithAmort.map(l=>l.roiSeries.length));
-      const ownedUpTo = Math.max(...loansWithAmort.map(l=>getOwnedIndexForCurrentMonth(l) + 1), 0);
+      const ownedUpTo = Math.max(...loansWithAmort.map(l=>l.roiSeries.filter(r=>r.ownershipDate && r.ownershipDate <= today).length), 0);
       const upTo = Math.max(1, Math.min(monthsMax, Math.max(ownedUpTo, 0)));
-      const series=[]; for(let m=1;m<=upTo;m++){ let totalInvested=0, weightedSum=0; loansWithAmort.forEach(l=>{ const entry=l.roiSeries.find(r=>r.month===m); if(entry){ weightedSum += l.purchasePrice*entry.roi; totalInvested += l.purchasePrice; } }); series.push({x:m,y: totalInvested?weightedSum/totalInvested:0}); }
-      const lastOwnedWeighted = series[series.length - 1] || { y: 0 };
+      const weightedSeries = [];
+      for(let m=1;m<=upTo;m++){
+        let totalInvested=0, weightedSum=0;
+        let labelDate=null;
+        loansWithAmort.forEach(l=>{
+          const entry=l.roiSeries.find(r=>r.month===m);
+          if(entry){
+            weightedSum += l.purchasePrice*entry.roi;
+            totalInvested += l.purchasePrice;
+            if(!labelDate && entry.ownershipDate) labelDate = entry.ownershipDate;
+          }
+        });
+        const label = labelDate ? formatMonthYear(labelDate) : `M${m}`;
+        weightedSeries.push({x: label, y: totalInvested?weightedSum/totalInvested:0});
+      }
+      const lastOwnedWeighted = weightedSeries[weightedSeries.length - 1] || { y: 0 };
       drawerPrimaryTitle.textContent='Weighted ROI to Date'; drawerPrimary.textContent=((lastOwnedWeighted.y || 0)*100).toFixed(2)+'%';
       const portfolioValue = loansWithAmort.reduce((s,l)=>{ const row=getCurrentOwnedRoiEntry(l); return s + (row.loanValue||l.purchasePrice); },0);
       drawerSecondaryTitle.textContent='Portfolio Value'; drawerSecondary.textContent='$'+portfolioValue.toLocaleString();
       
       // build loan series and weighted series for multi-chart
       (function(){
-        const weightedSeries = [];
-        for(let m=1;m<=upTo;m++){ let total=0, weighted=0; loansWithAmort.forEach(l=>{ const e=l.roiSeries.find(r=>r.month===m); if(e){ weighted += l.purchasePrice*e.roi; total += l.purchasePrice; } }); weightedSeries.push({x:m, y: total?weighted/total:0}); }
+        const startTimes = loansWithAmort.map(l => new Date(l.loanStartDate).getTime()).filter(t => !Number.isNaN(t));
+        const earliestStart = startTimes.length ? new Date(Math.min(...startTimes)) : new Date();
         const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16','#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
         const loanSeriesList = loansWithAmort.map((l, idx) => {
           const pts = [];
-          for(let m=1;m<=upTo;m++){ const e = l.roiSeries.find(r=>r.month===m); pts.push({x:m, y: e ? e.roi : 0}); }
+          for(let m=1;m<=upTo;m++){ const e = l.roiSeries.find(r=>r.month===m); const label = e?.ownershipDate ? formatMonthYear(e.ownershipDate) : `M${m}`; pts.push({x: label, y: e ? e.roi : 0, ownershipDate: e?.ownershipDate}); }
           return { name: formatLoanLabel(l), color: palette[(l.id-1) % palette.length], data: pts };
         });
-        createMultiSeriesChart(drawerChartArea, loanSeriesList, weightedSeries, { weightedColor: '#000', weightedWidth: 2.6, currentMonthLine: series.length });
+        createMultiSeriesChart(drawerChartArea, loanSeriesList, weightedSeries, { weightedColor: '#000', weightedWidth: 2.6, startDate: earliestStart });
         // build legend (click to toggle visibility)
         drawerLegend.style.display='flex'; drawerLegend.innerHTML = '';
         const wk = document.createElement('div'); wk.className='legend-item'; wk.style.marginRight='12px'; wk.innerHTML = '<span style="display:inline-block;width:12px;height:12px;background:#000;margin-right:8px;border-radius:2px;"></span><span style="font-weight:700">Weighted ROI</span>';
@@ -981,11 +1081,16 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
   const monthsMax = Math.max(...loansWithAmort.map(l=>l.roiSeries.length));
   for(let m=1;m<=monthsMax;m++){
     let total=0, weighted=0;
+    let labelDate=null;
     loansWithAmort.forEach(l=>{
       const e=l.roiSeries.find(r=>r.month===m);
-      if(e){ weighted += l.purchasePrice*e.roi; total += l.purchasePrice; }
+      if(e){
+        weighted += l.purchasePrice*e.roi; total += l.purchasePrice;
+        if(!labelDate && e.ownershipDate) labelDate = e.ownershipDate;
+      }
     });
-    projectedSeries.push({x:m,y: total?weighted/total:0});
+    const label = labelDate ? formatMonthYear(labelDate) : `M${m}`;
+    projectedSeries.push({x:label,y: total?weighted/total:0});
   }
 
   const projectedPortfolioValue = loansWithAmort.reduce((s,l)=>{
@@ -1002,16 +1107,18 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
   const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16','#10b981',
                    '#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
   const loanSeriesList = loansWithAmort.map(l=>{
-    const pts = l.roiSeries.map(p=>({x:p.month,y:p.roi}));
+    const pts = l.roiSeries.map(p=>({x: formatMonthYear(p.ownershipDate), y:p.roi, ownershipDate: p.ownershipDate}));
     return {name:formatLoanLabel(l), color:palette[(l.id-1)%palette.length], data:pts};
   });
+  const startTimes = loansWithAmort.map(l => new Date(l.loanStartDate).getTime()).filter(t => !Number.isNaN(t));
+  const earliestStart = startTimes.length ? new Date(Math.min(...startTimes)) : new Date();
 
   // Render chart
   createMultiSeriesChart(
     drawerChartArea,
     loanSeriesList,
     projectedSeries,
-    {weightedColor:'#000', weightedWidth:2.8, currentMonthLine: CURRENT_MONTH}
+    {weightedColor:'#000', weightedWidth:2.8, startDate: earliestStart}
   );
 
   // Build table
@@ -1209,6 +1316,7 @@ function renderPaymentsDrawer(){
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
+      document.getElementById("currentDate").textContent = formatDate(new Date());
       initROI();
     });
 
