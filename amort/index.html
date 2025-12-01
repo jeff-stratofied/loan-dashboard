@@ -759,9 +759,10 @@
 
         // helper for vertical line position
         const maxMonth = Math.max(1, fullSched.length);
-        const xForMonth = month => {
+        const xForMonth = (month) => {
           const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
-          return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
+          const safe = Math.min(Math.max(month, 1), maxMonth);
+          return pad + (safe - 1) * stepX;
         };
 
         svg.innerHTML = `
@@ -771,15 +772,16 @@
           <!-- hover layer -->
           <g class="mini-hover"></g>
 
-          <!-- vertical line for current date -->
+          <!-- current date vertical marker (aligned to loanStartDate) -->
           <line
   x1="${xForMonth(diffMonthsFromStart)}"
   x2="${xForMonth(diffMonthsFromStart)}"
   y1="0"
   y2="${h}"
-  stroke="#64748b"
+  stroke="#94a3b8"
   stroke-width="1"
-  stroke-dasharray="4, 3"
+  stroke-dasharray="4,3"
+  stroke-opacity="0.8"
 />
         `;
 
@@ -1030,17 +1032,20 @@
       svg.appendChild(elF);
 
       // current date marker
-      const maxMonth = schedule.length;
       const loanStart = new Date(currentLoan.loanStartDate);
-      const diffMonthsFromStart = Math.max(1, Math.min(monthDiff(loanStart, new Date()), maxMonth));
-      const curX = pad + (diffMonthsFromStart - 1) * stepX;
+      const safeMonth = Math.max(
+        1,
+        Math.min(schedule.length, monthDiff(loanStart, new Date()))
+      );
+      const curX = pad + (safeMonth - 1) * stepX;
       const curLine = document.createElementNS(svgNS, 'line');
       curLine.setAttribute('x1', curX);
       curLine.setAttribute('x2', curX);
       curLine.setAttribute('y1', pad);
       curLine.setAttribute('y2', h - pad);
-      curLine.setAttribute('stroke', '#111827');
-      curLine.setAttribute('stroke-dasharray', '3 4');
+      curLine.setAttribute('stroke', '#64748b');
+      curLine.setAttribute('stroke-width', '1');
+      curLine.setAttribute('stroke-dasharray', '4,3');
       curLine.setAttribute('stroke-opacity', '0.6');
       svg.appendChild(curLine);
 
