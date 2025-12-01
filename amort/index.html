@@ -631,8 +631,20 @@
       const total = list.reduce((s, l) => s + l.purchasePrice, 0);
       const weightedRate = list.reduce((s, l) => s + l.nominalRate * l.purchasePrice, 0) / Math.max(1, total);
       const weightedDuration = list.reduce((s, l) => s + (l.termYears * 12) * l.purchasePrice, 0) / Math.max(1, total);
-      // monthly income ≈ sum of first scheduled payment across loans
-      const monthlyIncome = list.reduce((s, l) => s + (l.amort.schedule.length ? l.amort.schedule[0].payment : 0), 0);
+      // Calculate Monthly Income = expected payments in NEXT calendar month
+      const TODAY = new Date();
+      const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
+
+      function sameMonthYear(d1, d2) {
+        return d1.getFullYear() === d2.getFullYear() &&
+               d1.getMonth() === d2.getMonth();
+      }
+
+      const monthlyIncome = loansWithAmort.reduce((sum, loan) => {
+        return sum + loan.amort.schedule
+          .filter(r => r.isOwned && r.ownershipDate && sameMonthYear(new Date(r.ownershipDate), nextMonthDate))
+          .reduce((s, r) => s + r.payment, 0);
+      }, 0);
       return { total, weightedRate: weightedRate * 100, weightedDuration, monthlyIncome };
     }
     let kpis;
@@ -1475,115 +1487,125 @@
 
       drawerTitle.textContent = 'Total Expected Payments (monthly)';
       drawerSub.textContent = 'Sum of scheduled payments across loans';
+
+      // Primary KPI (top)
       drawerPrimaryTitle.textContent = 'Monthly Income';
       drawerPrimary.textContent = `$${Math.round(kpis.monthlyIncome).toLocaleString()}`;
       drawerSecondaryTitle.textContent = 'Total Invested';
       drawerSecondary.textContent = `$${kpis.total.toLocaleString()}`;
 
       drawerAmortContainer.style.display = 'none';
-      drawerExtra.innerHTML = '';
-      drawerChartArea.innerHTML = '';
       drawerLegend.style.display = 'none';
+      drawerChartArea.innerHTML = '';
+      drawerExtra.innerHTML = '';
 
-      // -----------------------------------
-      // 1) Aggregate payments by ownership month
-      // -----------------------------------
-      const totalsByMonth = new Map();
+      // --------------------------------------------------
+      // Build portfolio-wide monthly expected income timeline
+      // --------------------------------------------------
 
-      loansWithAmort.forEach(loan => {
-        loan.amort.schedule.forEach(row => {
-          // only months where we actually own the loan and have a payment
-          if (!row.isOwned || !row.ownershipDate || !row.payment) return;
+      const TODAY = new Date();
+      const startDate = new Date(
+        Math.min(...loansWithAmort.map(l => new Date(l.loanStartDate)))
+      );
 
-          const d = new Date(row.ownershipDate);
-          const key = d.toISOString().slice(0, 7); // YYYY-MM
-          totalsByMonth.set(key, (totalsByMonth.get(key) || 0) + row.payment);
+      // Build a 15-year window (or until last loan matures)
+      const lastOwnership = Math.max(...loansWithAmort.map(l =>
+        l.amort.schedule.length
+      ));
+
+      const monthKeys = [];
+      const payments = [];
+
+      for (let i = 0; i < lastOwnership; i++) {
+        const d = new Date(startDate);
+        d.setMonth(d.getMonth() + i);
+        const key = d.toISOString().slice(0, 7); // YYYY-MM
+        monthKeys.push(key);
+
+        let total = 0;
+        loansWithAmort.forEach(loan => {
+          const row = loan.amort.schedule[i];
+          if (row && row.isOwned) total += row.payment;
         });
-      });
 
-      const months = Array.from(totalsByMonth.keys()).sort();
-      if (months.length === 0) {
-        drawerChartArea.textContent = 'No future payments — all loans are paid off.';
-        drawerExtra.innerHTML = '';
-        drawer.classList.add('open');
-        drawer.setAttribute('aria-hidden', 'false');
-        drawerBody.scrollTop = 0;
-        return;
+        payments.push(total);
       }
 
-      const prettyLabels = months.map(m => {
-        const [y, mm] = m.split('-').map(Number);
-        const d = new Date(y, mm - 1, 1);
-        return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      });
+      // --------------------------------------------------
+      // Chart SVG
+      // --------------------------------------------------
 
-      const paymentsByMonth = months.map(m => totalsByMonth.get(m) || 0);
-
-      // -----------------------------------
-      // 2) Build SVG line chart
-      // -----------------------------------
       const svgNS = 'http://www.w3.org/2000/svg';
-      const w = 480, h = 220, pad = 32;
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', '100%');
-
-      const maxPay = Math.max(...paymentsByMonth, 0);
-      const minPay = 0;
-      const range = Math.max(1, maxPay - minPay);
+      const w = 600, h = 230, pad = 32;
       const innerW = w - pad * 2;
       const innerH = h - pad * 2;
-      const stepX = innerW / Math.max(1, months.length - 1);
 
-      let pathD = '';
-      paymentsByMonth.forEach((p, i) => {
-        const x = pad + i * stepX;
-        const y = pad + innerH - ((p - minPay) / range) * innerH;
-        pathD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('width', '100%');
+      svg.setAttribute('height', h);
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+      const maxY = Math.max(...payments);
+      const rangeY = Math.max(1, maxY);
+      const stepX = innerW / Math.max(1, payments.length - 1);
+
+      // Draw line
+      let dPath = '';
+      payments.forEach((val, idx) => {
+        const x = pad + idx * stepX;
+        const y = pad + innerH - (val / rangeY) * innerH;
+        dPath += idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
       });
 
       const path = document.createElementNS(svgNS, 'path');
-      path.setAttribute('d', pathD);
-      path.setAttribute('fill', 'none');
+      path.setAttribute('d', dPath);
       path.setAttribute('stroke', '#ef4444');
       path.setAttribute('stroke-width', '2.5');
+      path.setAttribute('fill', 'none');
       svg.appendChild(path);
 
-      // -----------------------------------
-      // 3) X-axis labels (sparse, readable)
-      // -----------------------------------
-      const labelEvery = Math.max(1, Math.floor(months.length / 8)); // aim for ~8 labels
-      prettyLabels.forEach((label, i) => {
-        if (i % labelEvery !== 0 && i !== months.length - 1) return;
-        const x = pad + i * stepX;
-        const text = document.createElementNS(svgNS, 'text');
-        text.setAttribute('x', x);
-        text.setAttribute('y', h - 6);
-        text.setAttribute('font-size', '11');
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('fill', '#475569');
-        text.textContent = label;
-        svg.appendChild(text);
+      // --------------------------------------------------
+      // X-axis readable labels (about 8 evenly spaced)
+      // --------------------------------------------------
+      const prettyLabels = monthKeys.map(key => {
+        const [year, month] = key.split('-').map(Number);
+        return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
+          month: 'short',
+          year: 'numeric'
+        });
       });
 
-      // -----------------------------------
-      // 4) Hover zones aligned with points
-      // -----------------------------------
-      paymentsByMonth.forEach((p, i) => {
+      const labelEvery = Math.max(1, Math.floor(prettyLabels.length / 7));
+      prettyLabels.forEach((label, i) => {
+        if (i % labelEvery !== 0 && i !== prettyLabels.length - 1) return;
+        const x = pad + i * stepX;
+        const t = document.createElementNS(svgNS, 'text');
+        t.setAttribute('x', x);
+        t.setAttribute('y', h - 6);
+        t.setAttribute('text-anchor', 'middle');
+        t.setAttribute('font-size', '11');
+        t.setAttribute('fill', '#475569');
+        t.textContent = label;
+        svg.appendChild(t);
+      });
+
+      // --------------------------------------------------
+      // Hover
+      // --------------------------------------------------
+      payments.forEach((p, i) => {
         const x = pad + i * stepX;
         const hit = document.createElementNS(svgNS, 'rect');
-        hit.setAttribute('x', x - stepX * 0.5);
-        hit.setAttribute('y', pad);
+        hit.setAttribute('x', x - stepX / 2);
         hit.setAttribute('width', stepX);
+        hit.setAttribute('y', pad);
         hit.setAttribute('height', innerH);
         hit.setAttribute('fill', 'transparent');
 
-        hit.addEventListener('mousemove', ev => {
+        hit.addEventListener('mousemove', e => {
           tooltip.style.display = 'block';
-          tooltip.style.left = ev.clientX + 'px';
-          tooltip.style.top = (ev.clientY - 12) + 'px';
-          tooltip.innerHTML = `${prettyLabels[i]} • $${Math.round(p).toLocaleString()}`;
+          tooltip.style.left = e.clientX + 'px';
+          tooltip.style.top = (e.clientY - 12) + 'px';
+          tooltip.innerHTML = `${prettyLabels[i]} • $${p.toLocaleString()}`;
         });
         hit.addEventListener('mouseleave', () => {
           tooltip.style.display = 'none';
@@ -1594,27 +1616,26 @@
 
       drawerChartArea.appendChild(svg);
 
-      // -----------------------------------
-      // 5) Monthly table under the chart
-      // -----------------------------------
+      // --------------------------------------------------
+      // Monthly table
+      // --------------------------------------------------
       drawerExtra.innerHTML = `
-        <div style="margin-top:10px">
-          <strong class="small">Monthly expected payments</strong>
-          <div style="max-height:220px;overflow:auto;margin-top:8px;border-radius:8px;padding:6px;border:1px solid var(--border);background:var(--card)">
+        <div style="margin-top:14px">
+          <div class="small" style="margin-bottom:6px;"><strong>Monthly expected payments</strong></div>
+          <div style="max-height:220px;overflow:auto;border-radius:8px;border:1px solid var(--border);background:var(--card)">
             <table style="width:100%;font-size:13px;border-collapse:collapse">
               <thead>
                 <tr>
-                  <th style="text-align:left;padding:4px 6px;">Month</th>
-                  <th style="text-align:right;padding:4px 6px;">Payments</th>
+                  <th style="padding:6px;text-align:left;">Month</th>
+                  <th style="padding:6px;text-align:right;">Payments</th>
                 </tr>
               </thead>
               <tbody>
-                ${months.map((m, i) => `
+                ${prettyLabels.map((lab, i) => `
                   <tr>
-                    <td style="padding:4px 6px;">${prettyLabels[i]}</td>
-                    <td style="padding:4px 6px;text-align:right;">$${Math.round(paymentsByMonth[i]).toLocaleString()}</td>
-                  </tr>
-                `).join('')}
+                    <td style="padding:6px;">${lab}</td>
+                    <td style="padding:6px;text-align:right;">$${Math.round(payments[i]).toLocaleString()}</td>
+                  </tr>`).join('')}
               </tbody>
             </table>
           </div>
@@ -1622,7 +1643,6 @@
       `;
 
       drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
       drawerBody.scrollTop = 0;
     }
 
