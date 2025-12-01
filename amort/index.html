@@ -1459,43 +1459,53 @@
 
       drawerTitle.textContent = 'Total Expected Payments (monthly)';
       drawerSub.textContent = 'Sum of scheduled payments across loans';
+
       drawerPrimaryTitle.textContent = 'Monthly Income';
-      drawerPrimary.textContent = `$${Math.round(kpis.monthlyIncome).toLocaleString()}`;
       drawerSecondaryTitle.textContent = 'Total Invested';
       drawerSecondary.textContent = `$${kpis.total.toLocaleString()}`;
 
       drawerAmortContainer.style.display = 'none';
       drawerExtra.innerHTML = '';
       drawerChartArea.innerHTML = '';
+      drawerLegend.style.display = 'none';
 
-      // --- FIX START: recompute monthly payments properly ---
+      // -----------------------------
+      // FIX 1: Align portfolio timeline
+      // -----------------------------
+      const earliestStart = new Date(
+        Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate)))
+      );
+
+      // Build months up to max schedule length
       const maxMonths = Math.max(...loansWithAmort.map(l => l.amort.schedule.length));
-      const months = [];
+
+      const monthLabels = [];
       const payments = [];
 
       for (let m = 1; m <= maxMonths; m++) {
-        months.push(m);
-        let monthlyTotal = 0;
+        // build actual calendar month label
+        const dt = new Date(earliestStart);
+        dt.setMonth(dt.getMonth() + (m - 1));
+        monthLabels.push(
+          dt.toLocaleDateString("en-US", { year: "numeric", month: "short" })
+        );
 
+        // -----------------------------
+        // FIX 2: Correct portfolio payments:
+        // only include payments AFTER the loan is owned
+        // -----------------------------
+        let sum = 0;
         loansWithAmort.forEach(l => {
           const row = l.amort.schedule.find(s => s.monthIndex === m);
-          if (row) monthlyTotal += row.payment;
+          if (row && row.isOwned) sum += row.payment;
         });
 
-        payments.push(monthlyTotal);
+        payments.push(sum);
       }
-      // --- FIX END ---
 
-      // Pretty month labels
-      const portfolioStartDate = new Date(Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate + 'T00:00:00'))));
-      portfolioStartDate.setDate(1);
-      const monthLabels = months.map(m => {
-        const d = new Date(portfolioStartDate);
-        d.setMonth(d.getMonth() + (m - 1));
-        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-      });
-
-      // draw chart
+      // -----------------------------
+      // Draw line chart
+      // -----------------------------
       const svgNS = 'http://www.w3.org/2000/svg';
       const w = 780, h = 220, pad = 30;
       const svg = document.createElementNS(svgNS, "svg");
@@ -1507,9 +1517,8 @@
       const minY = 0;
       const rangeY = maxY - minY || 1;
 
-      const stepX = (w - pad * 2) / Math.max(1, months.length - 1);
+      const stepX = (w - pad * 2) / Math.max(1, payments.length - 1);
 
-      // DRAW LINE
       let d = "";
       payments.forEach((p, i) => {
         const x = pad + i * stepX;
@@ -1524,11 +1533,11 @@
       path.setAttribute("fill", "none");
       svg.appendChild(path);
 
-      // --- FIX: properly aligned hover hit zones ---
-      months.forEach((m, i) => {
+      // -----------------------------
+      // FIX 3: Proper hover and labels alignment
+      // -----------------------------
+      payments.forEach((p, i) => {
         const x = pad + i * stepX;
-        const y = pad;
-        const label = monthLabels[i];
 
         const text = document.createElementNS(svgNS, 'text');
         text.setAttribute('x', x);
@@ -1536,12 +1545,12 @@
         text.setAttribute('font-size', '11');
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('fill', '#475569');
-        text.textContent = label;
+        text.textContent = monthLabels[i];
         svg.appendChild(text);
 
         const hit = document.createElementNS(svgNS, "rect");
-        hit.setAttribute("x", x - stepX * 0.5);   // FIX: accurate hit-box alignment
-        hit.setAttribute("y", y);
+        hit.setAttribute("x", x - stepX * 0.5);
+        hit.setAttribute("y", pad);
         hit.setAttribute("width", stepX);
         hit.setAttribute("height", h - pad * 2);
         hit.setAttribute("fill", "transparent");
@@ -1550,7 +1559,7 @@
           tooltip.style.display = "block";
           tooltip.style.left = ev.clientX + "px";
           tooltip.style.top = (ev.clientY - 12) + "px";
-          tooltip.innerHTML = `${label} • $${Math.round(payments[i]).toLocaleString()}`;
+          tooltip.innerHTML = `${monthLabels[i]} • $${Math.round(p).toLocaleString()}`;
         });
         hit.addEventListener("mouseleave", () => tooltip.style.display = "none");
 

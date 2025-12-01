@@ -1204,110 +1204,122 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
 }
 
 
-function renderPaymentsDrawer(){
-  currentMode='kpi'; currentLoan=null;
-  drawerAmortContainer.innerHTML='';
-  drawerTitle.textContent='Average & Rate Distribution';
-  drawerSub.textContent='Rate buckets across portfolio';
+function renderPaymentsDrawer() {
+  currentMode = 'kpi';
+  currentLoan = null;
+  drawerBalanceAtPurchase.textContent = '';
 
-  const rates = loansWithAmort.map(l=>l.nominalRate);
-  const avgRate = rates.reduce((a,b)=>a+b,0)/rates.length;
-  const wAvgRate = loansWithAmort.reduce((s,l)=>s+l.nominalRate*l.purchasePrice,0)/loansWithAmort.reduce((s,l)=>s+l.purchasePrice,0);
+  drawerTitle.textContent = 'Total Expected Payments (monthly)';
+  drawerSub.textContent = 'Sum of scheduled payments across loans';
 
-  drawerPrimaryTitle.textContent='Avg Rate';
-  drawerPrimary.textContent=(avgRate*100).toFixed(2)+'%';
-  drawerSecondaryTitle.textContent='Weighted Avg Rate';
-  drawerSecondary.textContent=(wAvgRate*100).toFixed(2)+'%';
+  drawerPrimaryTitle.textContent = 'Monthly Income';
+  drawerSecondaryTitle.textContent = 'Total Invested';
+  drawerSecondary.textContent = `$${kpis.total.toLocaleString()}`;
 
-  const minR = Math.min(...rates);
-  const maxR = Math.max(...rates);
-  const bins = 6;
-  const range = maxR - minR;
-  const binSize = range / bins;
+  drawerAmortContainer.style.display = 'none';
+  drawerExtra.innerHTML = '';
+  drawerChartArea.innerHTML = '';
+  drawerLegend.style.display = 'none';
 
-  const palette = ['#e11d48','#f97316','#f59e0b','#84cc16','#10b981','#3b82f6'];
+  // -----------------------------
+  // FIX 1: Align portfolio timeline
+  // -----------------------------
+  const earliestStart = new Date(
+    Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate)))
+  );
 
-  // build buckets
-  const buckets = [];
-  for(let i=0;i<bins;i++){
-    const low=minR+i*binSize, high=minR+(i+1)*binSize;
-    buckets.push({low,high,label:`${(low*100).toFixed(1)}%–${(high*100).toFixed(1)}%`,color:palette[i],loans:[]});
-  }
-  loansWithAmort.forEach(l=>{
-    let idx=Math.floor((l.nominalRate-minR)/binSize); if(idx===bins) idx=bins-1;
-    buckets[idx].loans.push(l);
-  });
-  buckets.forEach(b=>b.loans.sort((a,b)=>a.nominalRate-b.nominalRate));
+  // Build months up to max schedule length
+  const maxMonths = Math.max(...loansWithAmort.map(l => l.amort.schedule.length));
 
-  // histogram values = counts
-  const counts = buckets.map(b=>b.loans.length);
-  const labels = buckets.map(b=>b.label);
-  createBarChart(drawerChartArea, labels, counts, {colors:palette, yIsCount:true});
+  const monthLabels = [];
+  const payments = [];
 
-  // legend
-  let legendHTML = '<div style="display:flex;gap:12px;margin:8px 0;">';
-  buckets.forEach((b,i)=>{
-    legendHTML += `<div class="bucket-legend" data-idx="${i}" style="cursor:pointer;">
-      <span style="display:inline-block;width:12px;height:12px;background:${b.color};border-radius:3px;margin-right:4px;"></span>${b.label}
-    </div>`;
-  });
-  legendHTML += '</div>';
+  for (let m = 1; m <= maxMonths; m++) {
+    // build actual calendar month label
+    const dt = new Date(earliestStart);
+    dt.setMonth(dt.getMonth() + (m - 1));
+    monthLabels.push(
+      dt.toLocaleDateString("en-US", { year: "numeric", month: "short" })
+    );
 
-  // table
-  let table = `
-  <div style="margin-top:12px;">
-    <h3 style="margin:0 0 8px 0">Loans by Rate Bucket</h3>
-    ${legendHTML}
-    <div id="bucketCounts" style="font-size:13px;margin-bottom:6px;">
-      ${buckets.map(b=>`${b.label}: ${b.loans.length}`).join(' | ')}
-    </div>
-    <div style="max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--card);">
-      <table style="width:100%;font-size:13px;">
-        <thead><tr>
-          <th>Bucket</th><th>Loan</th><th>Purchase Date</th><th style="text-align:right;">Rate</th>
-        </tr></thead>
-        <tbody id="rateBucketBody"></tbody>
-      </table>
-    </div>
-  </div>`;
-  drawerExtra.innerHTML = table;
-
-  function renderRows(filterIdx=null){
-    const tbody=document.getElementById('rateBucketBody');
-    tbody.innerHTML='';
-    buckets.forEach((b,i)=>{
-      if(filterIdx!==null && i!==filterIdx) return;
-      b.loans.forEach(l=>{
-        tbody.insertAdjacentHTML('beforeend',`
-        <tr>
-          <td><span style="display:inline-block;width:10px;height:10px;background:${b.color};border-radius:2px;margin-right:6px;"></span>${b.label}</td>
-          <td>${formatLoanLabel(l)}</td>
-          <td>${l.purchaseDate}</td>
-          <td style="text-align:right;">${(l.nominalRate*100).toFixed(2)}%</td>
-        </tr>`);
-      });
+    // -----------------------------
+    // FIX 2: Correct portfolio payments:
+    // only include payments AFTER the loan is owned
+    // -----------------------------
+    let sum = 0;
+    loansWithAmort.forEach(l => {
+      const row = l.amort.schedule.find(s => s.monthIndex === m);
+      if (row && row.isOwned) sum += row.payment;
     });
-  }
-  renderRows();
 
-  // legend click
-  document.querySelectorAll('.bucket-legend').forEach(el=>{
-    el.addEventListener('click',()=>{
-      const idx=parseInt(el.dataset.idx);
-      renderRows(idx);
-      // highlight bars
-      drawerChartArea.querySelectorAll('rect').forEach((r,i)=>{
-        r.style.opacity = Math.floor(i)===idx ? '1' : '0.3';
-      });
-    });
+    payments.push(sum);
+  }
+
+  // -----------------------------
+  // Draw line chart
+  // -----------------------------
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const w = 780, h = 220, pad = 30;
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+
+  const maxY = Math.max(...payments);
+  const minY = 0;
+  const rangeY = maxY - minY || 1;
+
+  const stepX = (w - pad * 2) / Math.max(1, payments.length - 1);
+
+  let d = "";
+  payments.forEach((p, i) => {
+    const x = pad + i * stepX;
+    const y = pad + (h - pad * 2) - ((p - minY) / rangeY) * (h - pad * 2);
+    d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
   });
 
-  // hover stats by tooltip using existing bar chart logic (yIsCount)
-  drawerLegend.style.display='none';
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden','false');
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute("d", d);
+  path.setAttribute("stroke", "#ef4444");
+  path.setAttribute("stroke-width", "2.5");
+  path.setAttribute("fill", "none");
+  svg.appendChild(path);
+
+  // -----------------------------
+  // FIX 3: Proper hover and labels alignment
+  // -----------------------------
+  payments.forEach((p, i) => {
+    const x = pad + i * stepX;
+
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', x);
+    text.setAttribute('y', h - pad + 14);
+    text.setAttribute('font-size', '11');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#475569');
+    text.textContent = monthLabels[i];
+    svg.appendChild(text);
+
+    const hit = document.createElementNS(svgNS, "rect");
+    hit.setAttribute("x", x - stepX * 0.5);
+    hit.setAttribute("y", pad);
+    hit.setAttribute("width", stepX);
+    hit.setAttribute("height", h - pad * 2);
+    hit.setAttribute("fill", "transparent");
+
+    hit.addEventListener("mousemove", ev => {
+      tooltip.style.display = "block";
+      tooltip.style.left = ev.clientX + "px";
+      tooltip.style.top = (ev.clientY - 12) + "px";
+      tooltip.innerHTML = `${monthLabels[i]} • $${Math.round(p).toLocaleString()}`;
+    });
+    hit.addEventListener("mouseleave", () => tooltip.style.display = "none");
+
+    svg.appendChild(hit);
+  });
+
+  drawerChartArea.appendChild(svg);
 }
-
     /* -------------------------
        KPI wiring & interactions
        ------------------------- */
