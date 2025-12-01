@@ -1014,10 +1014,15 @@
 
       const loanStart = new Date(loan.loanStartDate);
       const TODAY = new Date();
-      const diffRaw = monthDiff(loanStart, TODAY);
-      const diffMonthsFromStart = Number.isFinite(diffRaw) ? Math.max(1, diffRaw) : 1;
-      const idx = Math.min(diffMonthsFromStart - 1, data.length - 1);
-      const currentX = padL + idx * barW;
+
+      // Number of months since loan start (loanDate), not ownership
+      let todayIndexRaw = monthDiff(loanStart, TODAY);
+
+      // Clamp to valid range
+      if (!Number.isFinite(todayIndexRaw)) todayIndexRaw = 0;
+      const todayIndex = Math.max(0, Math.min(todayIndexRaw, data.length - 1));
+
+      const currentX = padL + todayIndex * barW;
 
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
@@ -1219,10 +1224,13 @@
 
       const loanStart = new Date(loan.loanStartDate);
       const TODAY = new Date();
-      const diffRaw = monthDiff(loanStart, TODAY);
-      const diffMonthsFromStart = Number.isFinite(diffRaw) ? Math.max(1, diffRaw) : 1;
-      const idx = Math.min(diffMonthsFromStart - 1, data.length - 1);
-      const currentX = padL + idx * barW;
+
+      let todayIndexRaw = monthDiff(loanStart, TODAY);
+
+      if (!Number.isFinite(todayIndexRaw)) todayIndexRaw = 0;
+      const todayIndex = Math.max(0, Math.min(todayIndexRaw, data.length - 1));
+
+      const currentX = padL + todayIndex * barW;
 
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
