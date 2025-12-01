@@ -631,7 +631,7 @@
       const total = list.reduce((s, l) => s + l.purchasePrice, 0);
       const weightedRate = list.reduce((s, l) => s + l.nominalRate * l.purchasePrice, 0) / Math.max(1, total);
       const weightedDuration = list.reduce((s, l) => s + (l.termYears * 12) * l.purchasePrice, 0) / Math.max(1, total);
-      // Calculate Monthly Income = expected payments in NEXT calendar month
+      // Monthly Income = sum of next month's scheduled payments (Option A)
       const TODAY = new Date();
       const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
 
@@ -645,7 +645,7 @@
           .filter(r => r.isOwned && r.ownershipDate && sameMonthYear(new Date(r.ownershipDate), nextMonthDate))
           .reduce((s, r) => s + r.payment, 0);
       }, 0);
-      return { total, weightedRate: weightedRate * 100, weightedDuration, monthlyIncome };
+      return { total, weightedRate: weightedRate * 100, weightedDuration, monthlyIncome, nextMonthDate };
     }
     let kpis;
 
@@ -683,7 +683,7 @@
       kpisEl.innerHTML = `
         <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$0</p></div>
         <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${kpis.weightedRate.toFixed(2)}%</p></div>
-        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
+        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3>${kpis.nextMonthDate.toLocaleDateString("en-US", { month: "short" })} Expected Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
         <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${loansWithAmort.length}</p></div>
       `;
 
@@ -1489,8 +1489,8 @@
       drawerSub.textContent = 'Sum of scheduled payments across loans';
 
       // Primary KPI (top)
-      drawerPrimaryTitle.textContent = 'Monthly Income';
-      drawerPrimary.textContent = `$${Math.round(kpis.monthlyIncome).toLocaleString()}`;
+      drawerPrimaryTitle.textContent = `${kpis.nextMonthDate.toLocaleDateString('en-US', { month: 'short' })} Expected Income`;
+      drawerPrimary.textContent = `$${kpis.monthlyIncome.toFixed(2)}`;
       drawerSecondaryTitle.textContent = 'Total Invested';
       drawerSecondary.textContent = `$${kpis.total.toLocaleString()}`;
 
@@ -1500,36 +1500,11 @@
       drawerExtra.innerHTML = '';
 
       // --------------------------------------------------
-      // Build portfolio-wide monthly expected income timeline
+      // Build next month's expected income snapshot
       // --------------------------------------------------
-
-      const TODAY = new Date();
-      const startDate = new Date(
-        Math.min(...loansWithAmort.map(l => new Date(l.loanStartDate)))
-      );
-
-      // Build a 15-year window (or until last loan matures)
-      const lastOwnership = Math.max(...loansWithAmort.map(l =>
-        l.amort.schedule.length
-      ));
-
-      const monthKeys = [];
-      const payments = [];
-
-      for (let i = 0; i < lastOwnership; i++) {
-        const d = new Date(startDate);
-        d.setMonth(d.getMonth() + i);
-        const key = d.toISOString().slice(0, 7); // YYYY-MM
-        monthKeys.push(key);
-
-        let total = 0;
-        loansWithAmort.forEach(loan => {
-          const row = loan.amort.schedule[i];
-          if (row && row.isOwned) total += row.payment;
-        });
-
-        payments.push(total);
-      }
+      const monthlyIncome = kpis.monthlyIncome;
+      const monthLabel = kpis.nextMonthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const payments = [monthlyIncome];
 
       // --------------------------------------------------
       // Chart SVG
@@ -1567,13 +1542,7 @@
       // --------------------------------------------------
       // X-axis readable labels (about 8 evenly spaced)
       // --------------------------------------------------
-      const prettyLabels = monthKeys.map(key => {
-        const [year, month] = key.split('-').map(Number);
-        return new Date(year, month - 1, 1).toLocaleDateString('en-US', {
-          month: 'short',
-          year: 'numeric'
-        });
-      });
+      const prettyLabels = [monthLabel];
 
       const labelEvery = Math.max(1, Math.floor(prettyLabels.length / 7));
       prettyLabels.forEach((label, i) => {
@@ -1605,7 +1574,7 @@
           tooltip.style.display = 'block';
           tooltip.style.left = e.clientX + 'px';
           tooltip.style.top = (e.clientY - 12) + 'px';
-          tooltip.innerHTML = `${prettyLabels[i]} • $${p.toLocaleString()}`;
+          tooltip.innerHTML = `${prettyLabels[i]} • $${p.toFixed(2)}`;
         });
         hit.addEventListener('mouseleave', () => {
           tooltip.style.display = 'none';
@@ -1634,7 +1603,7 @@
                 ${prettyLabels.map((lab, i) => `
                   <tr>
                     <td style="padding:6px;">${lab}</td>
-                    <td style="padding:6px;text-align:right;">$${Math.round(payments[i]).toLocaleString()}</td>
+                    <td style="padding:6px;text-align:right;">$${payments[i].toFixed(2)}</td>
                   </tr>`).join('')}
               </tbody>
             </table>
