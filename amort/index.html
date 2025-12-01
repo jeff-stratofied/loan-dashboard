@@ -320,7 +320,7 @@
         </div>
       </div>
 
-      <div class="current-date">Current Month: <strong id="currentMonthLabel">18</strong> (months since first purchase)</div>
+      <div class="current-date">Current Date: <span id="currentDate"></span></div>
     </header>
 
     <section class="kpis" id="kpis"></section>
@@ -1669,6 +1669,7 @@
     });
 
     document.addEventListener("DOMContentLoaded", initPage);
+    document.getElementById("currentDate").textContent = formatDate(new Date());
   </script>
 </body>
 </html>
