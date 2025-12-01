@@ -174,8 +174,14 @@
       border-left:1px solid var(--border);
       display:flex;
       flex-direction:column;
+      opacity:0;
+      pointer-events:none;
     }
-    .drawer.open{ transform:translateX(0) }
+    .drawer.open{
+      transform:translateX(0);
+      opacity:1;
+      pointer-events:auto;
+    }
 
     .drawer-header{ padding:20px; flex-shrink:0; }
     .drawer-head{ display:flex; align-items:start; justify-content:space-between; gap:8px }
@@ -594,9 +600,17 @@
       kpisEl.innerHTML = `
         <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$0</p></div>
         <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${kpis.weightedRate.toFixed(2)}%</p></div>
-        <div class="kpi" data-kpi="payments"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
+        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
         <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${loansWithAmort.length}</p></div>
       `;
+
+      const kpiMonthlyIncome = document.getElementById('kpiMonthlyIncome');
+      if (kpiMonthlyIncome) {
+        kpiMonthlyIncome.addEventListener('click', () => {
+          renderPaymentsDrawer();
+          drawer.classList.add('open');
+        });
+      }
       wireKpiClicks();
     }
 
@@ -1258,6 +1272,8 @@
     function renderPaymentsDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
       drawerBalanceAtPurchase.textContent = '';
 
       drawerTitle.textContent = 'Total Expected Payments (monthly)';
@@ -1387,7 +1403,6 @@
           if (key === 'distribution') renderDistributionDrawer();
           if (key === 'tpv') renderTPVDrawer();
           if (key === 'rates') renderRatesDrawer();
-          if (key === 'payments') renderPaymentsDrawer();
         });
       });
     }
