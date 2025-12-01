@@ -445,53 +445,102 @@
     let loansWithAmort = [];
 
     function rebuildLoansWithAmort() {
-      loansWithAmort = loans.map(l => {
+      loansWithAmort = loans.map((raw, idx) => {
+        // Normalize fields coming from the backend
+        const id = raw.loanId ?? raw.id ?? (idx + 1);
+
+        const purchasePrice = Number(
+          raw.purchasePrice ?? raw.principal ?? 0
+        );
+        const nominalRate = Number(
+          raw.nominalRate ?? raw.rate ?? 0
+        );
+        const termYears = Number(
+          raw.termYears ?? raw.term ?? 0
+        );
+        const graceYears = Number(
+          raw.graceYears ?? raw.grace ?? 0
+        );
+
+        const upfrontFee = Number(
+          raw.upfrontFee ?? 150
+        );
+        const monthlyFeeStart = Number(
+          raw.monthlyFeeStart ?? raw.feePerMonth ?? 9
+        );
+
         const loanData = {
-          ...l,
-          loanName: l.loanName ?? `Loan ${l.loanId}`,
-          school: l.school ?? "",
-          termYears: Number(l.termYears ?? 0),
-          graceYears: Number(l.graceYears ?? 0),
-          purchasePrice: Number(l.purchasePrice ?? 0),
-          nominalRate: Number(l.nominalRate ?? 0),
-          upfrontFee: Number(l.upfrontFee ?? 150),
-          monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
+          ...raw,
+          id,
+          loanId: id,
+          loanName: raw.loanName ?? `Loan ${id}`,
+          school: raw.school ?? "",
+          termYears,
+          graceYears,
+          purchasePrice,
+          nominalRate,
+          upfrontFee,
+          monthlyFeeStart
         };
 
-        const amort = calcAmort(loanData.purchasePrice, loanData.nominalRate, loanData.termYears, loanData.graceYears);
+        // Amortization schedule (grace interest capitalized)
+        const amort = calcAmort(
+          loanData.purchasePrice,
+          loanData.nominalRate,
+          loanData.termYears,
+          loanData.graceYears
+        );
 
-        let cumP = 0, cumI = 0, cumFees = 0;
+        // Build cumulative principal, interest, and fees
+        let cumPrincipal = 0;
+        let cumInterest  = 0;
+        let cumFees      = 0;
+
+        const termMonths = Math.max(
+          1,
+          Math.round(loanData.termYears * 12)
+        );
 
         const cumSchedule = amort.schedule.map(row => {
-          let m = row.monthIndex;
+          const m = row.monthIndex;
 
-          let upfrontFee = (m === 1 ? loanData.upfrontFee : 0);
+          // Upfront fee only in month 1
+          const upfront = (m === 1 ? loanData.upfrontFee : 0);
 
-          let termMonths = Number(loanData.termYears * 12) || 1;   // prevent divide by zero
-          let monthlyFee = Number(loanData.monthlyFeeStart) * (1 - (m / termMonths));
-          if (isNaN(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
+          // Sliding monthly fee from monthlyFeeStart → 0 over the term
+          let monthlyFee = loanData.monthlyFeeStart * (1 - m / termMonths);
+          if (!Number.isFinite(monthlyFee) || monthlyFee < 0) {
+            monthlyFee = 0;
+          }
 
-          let feeThisMonth = upfrontFee + monthlyFee;
-          cumFees += feeThisMonth;
+          const feeThisMonth = upfront + monthlyFee;
+          cumFees = +(cumFees + feeThisMonth).toFixed(2);
 
-          cumP = +(cumP + row.principalPaid).toFixed(2);
-          cumI = +(cumI + row.interest).toFixed(2);
+          cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
+          cumInterest  = +(cumInterest  + row.interest).toFixed(2);
 
           return {
             ...row,
-            cumPrincipal: cumP,
-            cumInterest: cumI,
+            feeThisMonth,
+            cumPrincipal,
+            cumInterest,
             cumFees
           };
         });
 
+        // Mini-chart points (first 24 months)
         const miniPts = cumSchedule.slice(0, 24).map(s => ({
           x: s.monthIndex,
           cumP: s.cumPrincipal,
           cumI: s.cumInterest
         }));
 
-        return { ...loanData, amort, cumSchedule, miniPts };
+        return {
+          ...loanData,
+          amort,
+          cumSchedule,
+          miniPts
+        };
       });
     }
 
