@@ -1499,12 +1499,31 @@
       drawerChartArea.innerHTML = '';
       drawerExtra.innerHTML = '';
 
-      // --------------------------------------------------
-      // Build next month's expected income snapshot
-      // --------------------------------------------------
-      const monthlyIncome = kpis.monthlyIncome;
-      const monthLabel = kpis.nextMonthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      const payments = [monthlyIncome];
+      // Build 24-month expected income projection
+      const monthsAhead = 24;
+
+      function calcExpectedIncomeFor(date) {
+        return loansWithAmort.reduce((sum, loan) => {
+          return sum + loan.amort.schedule
+            .filter(r => r.isOwned && r.ownershipDate &&
+              r.ownershipDate.getFullYear() === date.getFullYear() &&
+              r.ownershipDate.getMonth() === date.getMonth())
+            .reduce((s, r) => s + r.payment, 0);
+        }, 0);
+      }
+
+      const payments = [];
+      const prettyLabels = [];
+
+      for (let i = 0; i < monthsAhead; i++) {
+        const d = new Date(kpis.nextMonthDate);
+        d.setMonth(d.getMonth() + i);
+
+        prettyLabels.push(
+          d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        );
+        payments.push(calcExpectedIncomeFor(d));
+      }
 
       // --------------------------------------------------
       // Chart SVG
@@ -1522,7 +1541,7 @@
 
       const maxY = Math.max(...payments);
       const rangeY = Math.max(1, maxY);
-      const stepX = innerW / Math.max(1, payments.length - 1);
+      const stepX = payments.length > 1 ? innerW / (payments.length - 1) : innerW;
 
       // Draw line
       let dPath = '';
@@ -1542,8 +1561,6 @@
       // --------------------------------------------------
       // X-axis readable labels (about 8 evenly spaced)
       // --------------------------------------------------
-      const prettyLabels = [monthLabel];
-
       const labelEvery = Math.max(1, Math.floor(prettyLabels.length / 7));
       prettyLabels.forEach((label, i) => {
         if (i % labelEvery !== 0 && i !== prettyLabels.length - 1) return;
@@ -1563,10 +1580,11 @@
       // --------------------------------------------------
       payments.forEach((p, i) => {
         const x = pad + i * stepX;
+
         const hit = document.createElementNS(svgNS, 'rect');
-        hit.setAttribute('x', x - stepX / 2);
-        hit.setAttribute('width', stepX);
+        hit.setAttribute('x', x - stepX * 0.5);
         hit.setAttribute('y', pad);
+        hit.setAttribute('width', stepX);
         hit.setAttribute('height', innerH);
         hit.setAttribute('fill', 'transparent');
 
@@ -1576,6 +1594,7 @@
           tooltip.style.top = (e.clientY - 12) + 'px';
           tooltip.innerHTML = `${prettyLabels[i]} • $${p.toFixed(2)}`;
         });
+
         hit.addEventListener('mouseleave', () => {
           tooltip.style.display = 'none';
         });
@@ -1602,9 +1621,10 @@
               <tbody>
                 ${prettyLabels.map((lab, i) => `
                   <tr>
-                    <td style="padding:6px;">${lab}</td>
-                    <td style="padding:6px;text-align:right;">$${payments[i].toFixed(2)}</td>
-                  </tr>`).join('')}
+                    <td>${lab}</td>
+                    <td style="text-align:right;">$${payments[i].toFixed(2)}</td>
+                  </tr>
+                `).join('')}
               </tbody>
             </table>
           </div>
