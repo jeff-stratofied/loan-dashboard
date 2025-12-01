@@ -1012,13 +1012,13 @@
         svg.appendChild(rFee);
       });
 
-      const loanStart = loan ? new Date(loan.loanStartDate) : (data[0]?.loanDate || new Date());
+      const loanStart = new Date(loan.loanStartDate);
       const TODAY = new Date();
-      const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
-      const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
-        ? Math.max(1, diffMonthsFromStartRaw)
-        : 1;
-      const currentX = padL + (diffMonthsFromStart - 1) * barW;
+      const diffRaw = monthDiff(loanStart, TODAY);
+      const diffMonthsFromStart = Number.isFinite(diffRaw) ? Math.max(1, diffRaw) : 1;
+      const idx = Math.min(diffMonthsFromStart - 1, data.length - 1);
+      const currentX = padL + idx * barW;
+
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
       vline.setAttribute("x2", currentX);
@@ -1054,8 +1054,10 @@
 
         const idx = Math.max(0, Math.min(data.length - 1, Math.floor((x - padL) / barW)));
         const row = data[idx];
+        const loanStart = new Date(loan.loanStartDate);
+        const tooltipDate = addMonths(loanStart, idx);
         const tooltipLines = [
-          `Date: ${formatDate(row.ownershipDate || row.loanDate)}`,
+          `Date: ${formatDate(tooltipDate)}`,
           `Principal: $${row.cumPrincipal.toFixed(2)}`,
           `Interest: $${row.cumInterest.toFixed(2)}`,
           `Fees: -$${row.cumFees.toFixed(2)}`,
@@ -1215,19 +1217,19 @@
         }
       });
 
-      const loanStart = loan ? new Date(loan.loanStartDate) : (data[0]?.loanDate || new Date());
+      const loanStart = new Date(loan.loanStartDate);
       const TODAY = new Date();
-      const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
-      const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
-        ? Math.max(1, diffMonthsFromStartRaw)
-        : 1;
-      const currentX = padL + (diffMonthsFromStart - 1) * barW;
+      const diffRaw = monthDiff(loanStart, TODAY);
+      const diffMonthsFromStart = Number.isFinite(diffRaw) ? Math.max(1, diffRaw) : 1;
+      const idx = Math.min(diffMonthsFromStart - 1, data.length - 1);
+      const currentX = padL + idx * barW;
+
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
       vline.setAttribute("x2", currentX);
       vline.setAttribute("y1", 0);
       vline.setAttribute("y2", h);
-      vline.setAttribute("stroke", "var(--muted)");
+      vline.setAttribute("stroke", "#64748b");
       vline.setAttribute("stroke-dasharray", "4,3");
       vline.setAttribute("stroke-width", "1");
       svg.appendChild(vline);
