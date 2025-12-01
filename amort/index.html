@@ -668,87 +668,90 @@
         grid.appendChild(tile);
 
         const svg = tile.querySelector("svg.sparkline");
-        const pPoints = loan.cumSchedule.map(s => ({ y: s.cumPrincipal }));
-        const iPoints = loan.cumSchedule.map(s => ({ y: s.cumInterest }));
+        const fullSched = loan.cumSchedule;
+        const w = 170, h = 48, pad = 6;
+        const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
+        const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
 
-        const pathP = buildPathFromPoints(pPoints, 170, 48);
-        const pathI = buildPathFromPoints(iPoints, 170, 48);
+        const pathP = buildPathFromPoints(pPoints, w, h, pad);
+        const pathI = buildPathFromPoints(iPoints, w, h, pad);
 
-        
+        // helper for vertical line position
+        const maxMonth = Math.max(1, fullSched.length);
+        const xForMonth = month => {
+          const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
+          return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
+        };
 
-// helper for vertical line
-const maxMonth = Math.max(1, fullSched.length);
-const xForMonth = month => {
-  const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
-  return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
-};
+        svg.innerHTML = `
+          <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="${pathP}" fill="none" stroke="#06b6d4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
 
-svg.innerHTML = `
-  <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
-  <path d="${pathP}" fill="none" stroke="#06b6d4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
-  <g class="mini-hover"></g>
-  <line class="current-line"
-    x1="${xForMonth(CURRENT_MONTH)}"
-    y1="2"
-    x2="${xForMonth(CURRENT_MONTH)}"
-    y2="${h - 2}"
-    stroke="#111827"
-    stroke-dasharray="3 3"
-    stroke-opacity="0.6"
-  />
-`;
+          <!-- hover layer -->
+          <g class="mini-hover"></g>
 
-// hover logic
-svg.addEventListener('mousemove', ev => {
-  const rect = svg.getBoundingClientRect();
-  const relativeX = ev.clientX - rect.left;
-  const frac = relativeX / rect.width;
-  const idxNearest = Math.round(frac * (fullSched.length - 1));
-  const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
+          <!-- vertical line for current month -->
+          <line class="current-line"
+            x1="${xForMonth(CURRENT_MONTH)}"
+            y1="2"
+            x2="${xForMonth(CURRENT_MONTH)}"
+            y2="${h - 2}"
+            stroke="#111827"
+            stroke-dasharray="3 3"
+            stroke-opacity="0.6"
+          />
+        `;
 
-  tooltip.style.left = (ev.clientX) + 'px';
-  tooltip.style.top = (ev.clientY - 10) + 'px';
-  tooltip.style.display = 'block';
-  tooltip.innerHTML = `M${p.monthIndex} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
+        svg.addEventListener('mousemove', ev => {
+          const rect = svg.getBoundingClientRect();
+          const relativeX = ev.clientX - rect.left;
+          const frac = relativeX / rect.width;
+          const idxNearest = Math.round(frac * (fullSched.length - 1));
+          const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
 
-  const hoverG = svg.querySelector('g.mini-hover');
-  hoverG.innerHTML = '';
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const stepX = (w - pad * 2) / Math.max(1, fullSched.length - 1);
-  const iX = pad + idxNearest * stepX;
+          tooltip.style.left = (ev.clientX) + 'px';
+          tooltip.style.top = (ev.clientY - 10) + 'px';
+          tooltip.style.display = 'block';
+          tooltip.innerHTML = `M${p.monthIndex} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
 
-  const valsP = pPoints.map(pp => pp.y);
-  const valsI = iPoints.map(pp => pp.y);
-  const minP = Math.min(...valsP), maxP = Math.max(...valsP), rangeP = Math.max(1, maxP - minP);
-  const minI = Math.min(...valsI), maxI = Math.max(...valsI), rangeI = Math.max(1, maxI - minI);
+          const hoverG = svg.querySelector('g.mini-hover');
+          hoverG.innerHTML = '';
+          const svgNS = 'http://www.w3.org/2000/svg';
+          const stepX = (w - pad * 2) / Math.max(1, fullSched.length - 1);
+          const iX = pad + idxNearest * stepX;
 
-  const cyP = pad + (h - pad * 2) - ((p.cumPrincipal - minP) / rangeP) * (h - pad * 2);
-  const cyI = pad + (h - pad * 2) - ((p.cumInterest - minI) / rangeI) * (h - pad * 2);
+          const valsP = pPoints.map(pp => pp.y);
+          const valsI = iPoints.map(pp => pp.y);
+          const minP = Math.min(...valsP), maxP = Math.max(...valsP), rangeP = Math.max(1, maxP - minP);
+          const minI = Math.min(...valsI), maxI = Math.max(...valsI), rangeI = Math.max(1, maxI - minI);
 
-  const cP = document.createElementNS(svgNS, 'circle');
-  cP.setAttribute('cx', iX);
-  cP.setAttribute('cy', cyP);
-  cP.setAttribute('r', 3.4);
-  cP.setAttribute('fill', '#06b6d4');
-  cP.setAttribute('stroke', '#fff');
-  cP.setAttribute('stroke-width', '1');
-  hoverG.appendChild(cP);
+          const cyP = pad + (h - pad * 2) - ((p.cumPrincipal - minP) / rangeP) * (h - pad * 2);
+          const cyI = pad + (h - pad * 2) - ((p.cumInterest - minI) / rangeI) * (h - pad * 2);
 
-  const cI = document.createElementNS(svgNS, 'circle');
-  cI.setAttribute('cx', iX);
-  cI.setAttribute('cy', cyI);
-  cI.setAttribute('r', 3.4);
-  cI.setAttribute('fill', '#a78bfa');
-  cI.setAttribute('stroke', '#fff');
-  cI.setAttribute('stroke-width', '1');
-  hoverG.appendChild(cI);
-});
+          const cP = document.createElementNS(svgNS, 'circle');
+          cP.setAttribute('cx', iX);
+          cP.setAttribute('cy', cyP);
+          cP.setAttribute('r', 3.4);
+          cP.setAttribute('fill', '#06b6d4');
+          cP.setAttribute('stroke', '#fff');
+          cP.setAttribute('stroke-width', '1');
+          hoverG.appendChild(cP);
 
-svg.addEventListener('mouseleave', () => {
-  tooltip.style.display = 'none';
-  const hoverG = svg.querySelector('g.mini-hover');
-  if (hoverG) hoverG.innerHTML = '';
-});
+          const cI = document.createElementNS(svgNS, 'circle');
+          cI.setAttribute('cx', iX);
+          cI.setAttribute('cy', cyI);
+          cI.setAttribute('r', 3.4);
+          cI.setAttribute('fill', '#a78bfa');
+          cI.setAttribute('stroke', '#fff');
+          cI.setAttribute('stroke-width', '1');
+          hoverG.appendChild(cI);
+        });
+
+        svg.addEventListener('mouseleave', () => {
+          tooltip.style.display = 'none';
+          const hoverG = svg.querySelector('g.mini-hover');
+          if (hoverG) hoverG.innerHTML = '';
+        });
 
       });
     }
