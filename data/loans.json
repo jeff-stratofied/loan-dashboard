@@ -4,111 +4,111 @@
       "loanId": 1,
       "loanName": "Loan 1",
       "school": "Penn State",
-      "purchaseDate": "2025-01-31",
+      "loanStartDate": "2024-01-31",
+      "purchaseDate": "2024-01-31",
       "principal": 10000,
       "rate": 0.0883,
       "termYears": 10,
-      "graceYears": 1,
-      "loanStartDate": "2025-01-31"
+      "graceYears": 1
     },
     {
       "loanId": 2,
       "loanName": "Loan 2",
       "school": "Ohio State",
-      "purchaseDate": "2025-02-01",
+      "loanStartDate": "2024-02-01",
+      "purchaseDate": "2024-02-01",
       "principal": 7500,
       "rate": 0.08,
       "termYears": 8,
-      "graceYears": 0.5,
-      "loanStartDate": "2025-02-01"
+      "graceYears": 0.5
     },
     {
       "loanId": 3,
       "loanName": "Loan 3",
       "school": "Pitt",
-      "purchaseDate": "2025-03-15",
+      "loanStartDate": "2024-03-15",
+      "purchaseDate": "2024-06-15",
       "principal": 12000,
       "rate": 0.0825,
       "termYears": 12,
-      "graceYears": 1.5,
-      "loanStartDate": "2025-03-15"
+      "graceYears": 1.5
     },
     {
       "loanId": 4,
       "loanName": "Loan 4",
       "school": "Carnegie Mellon",
-      "purchaseDate": "2025-04-30",
+      "loanStartDate": "2024-06-30",
+      "purchaseDate": "2024-09-30",
       "principal": 6000,
       "rate": 0.095,
       "termYears": 9,
-      "graceYears": 1,
-      "loanStartDate": "2025-04-30"
+      "graceYears": 1
     },
     {
       "loanId": 5,
       "loanName": "Loan 5",
       "school": "Michigan",
-      "purchaseDate": "2025-07-31",
+      "loanStartDate": "2024-07-31",
+      "purchaseDate": "2024-12-31",
       "principal": 5000,
       "rate": 0.09,
       "termYears": 10,
-      "graceYears": 0.5,
-      "loanStartDate": "2025-07-31"
+      "graceYears": 0.5
     },
     {
       "loanId": 6,
       "loanName": "Loan 6",
       "school": "UCLA",
+      "loanStartDate": "2025-01-31",
       "purchaseDate": "2025-01-31",
       "principal": 7500,
       "rate": 0.073,
       "termYears": 5,
-      "graceYears": 0,
-      "loanStartDate": "2025-01-31"
+      "graceYears": 0
     },
     {
       "loanId": 7,
       "loanName": "Loan 7",
       "school": "USC",
+      "loanStartDate": "2025-02-10",
       "purchaseDate": "2025-02-10",
       "principal": 9000,
       "rate": 0.079,
       "termYears": 7,
-      "graceYears": 0.5,
-      "loanStartDate": "2025-02-10"
+      "graceYears": 0.5
     },
     {
       "loanId": 8,
       "loanName": "Loan 8",
       "school": "Penn State",
-      "purchaseDate": "2025-03-01",
+      "loanStartDate": "2025-03-01",
+      "purchaseDate": "2025-06-01",
       "principal": 6500,
       "rate": 0.081,
       "termYears": 9,
-      "graceYears": 1,
-      "loanStartDate": "2025-03-01"
+      "graceYears": 1
     },
     {
       "loanId": 9,
       "loanName": "Loan 9",
       "school": "Michigan",
-      "purchaseDate": "2025-03-20",
+      "loanStartDate": "2025-03-20",
+      "purchaseDate": "2025-06-20",
       "principal": 5500,
       "rate": 0.085,
       "termYears": 8,
-      "graceYears": 0.5,
-      "loanStartDate": "2025-03-20"
+      "graceYears": 0.5
     },
     {
       "loanId": 10,
       "loanName": "Loan 10",
       "school": "NYU",
-      "purchaseDate": "2025-04-05",
+      "loanStartDate": "2025-04-05",
+      "purchaseDate": "2025-09-05",
       "principal": 8200,
       "rate": 0.087,
       "termYears": 10,
-      "graceYears": 1,
-      "loanStartDate": "2025-04-05"
+      "graceYears": 1
     }
   ]
 }
