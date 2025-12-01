@@ -9,7 +9,12 @@ async function loadLoans() {
   }
 
   const json = await res.json();
-  return json.loans || [];
+  const loans = json.loans || [];
+
+  return loans.map(loan => ({
+    ...loan,
+    loanStartDate: loan.loanStartDate || "",
+  }));
 }
 
 window.loadLoans = loadLoans;

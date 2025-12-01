@@ -397,7 +397,11 @@
       try {
         const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
         const data = await res.json();
-        loans = data.loans || [];
+        const arr = data.loans || [];
+        loans = arr.map(l => ({
+          ...l,
+          loanStartDate: l.loanStartDate || "",
+        }));
       } catch (err) {
         console.error("Failed to load loans", err);
         loans = [];
@@ -475,6 +479,7 @@
           loanId: id,
           loanName: raw.loanName ?? `Loan ${id}`,
           school: raw.school ?? "",
+          loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
           termYears,
           graceYears,
           purchasePrice,

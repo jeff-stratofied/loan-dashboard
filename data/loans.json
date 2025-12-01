@@ -8,7 +8,8 @@
       "principal": 10000,
       "rate": 0.0883,
       "termYears": 10,
-      "graceYears": 1
+      "graceYears": 1,
+      "loanStartDate": "2025-01-31"
     },
     {
       "loanId": 2,
@@ -18,7 +19,8 @@
       "principal": 7500,
       "rate": 0.08,
       "termYears": 8,
-      "graceYears": 0.5
+      "graceYears": 0.5,
+      "loanStartDate": "2025-02-01"
     },
     {
       "loanId": 3,
@@ -28,7 +30,8 @@
       "principal": 12000,
       "rate": 0.0825,
       "termYears": 12,
-      "graceYears": 1.5
+      "graceYears": 1.5,
+      "loanStartDate": "2025-03-15"
     },
     {
       "loanId": 4,
@@ -38,7 +41,8 @@
       "principal": 6000,
       "rate": 0.095,
       "termYears": 9,
-      "graceYears": 1
+      "graceYears": 1,
+      "loanStartDate": "2025-04-30"
     },
     {
       "loanId": 5,
@@ -48,7 +52,8 @@
       "principal": 5000,
       "rate": 0.09,
       "termYears": 10,
-      "graceYears": 0.5
+      "graceYears": 0.5,
+      "loanStartDate": "2025-07-31"
     },
     {
       "loanId": 6,
@@ -58,7 +63,8 @@
       "principal": 7500,
       "rate": 0.073,
       "termYears": 5,
-      "graceYears": 0
+      "graceYears": 0,
+      "loanStartDate": "2025-01-31"
     },
     {
       "loanId": 7,
@@ -68,7 +74,8 @@
       "principal": 9000,
       "rate": 0.079,
       "termYears": 7,
-      "graceYears": 0.5
+      "graceYears": 0.5,
+      "loanStartDate": "2025-02-10"
     },
     {
       "loanId": 8,
@@ -78,7 +85,8 @@
       "principal": 6500,
       "rate": 0.081,
       "termYears": 9,
-      "graceYears": 1
+      "graceYears": 1,
+      "loanStartDate": "2025-03-01"
     },
     {
       "loanId": 9,
@@ -88,7 +96,8 @@
       "principal": 5500,
       "rate": 0.085,
       "termYears": 8,
-      "graceYears": 0.5
+      "graceYears": 0.5,
+      "loanStartDate": "2025-03-20"
     },
     {
       "loanId": 10,
@@ -98,7 +107,8 @@
       "principal": 8200,
       "rate": 0.087,
       "termYears": 10,
-      "graceYears": 1
+      "graceYears": 1,
+      "loanStartDate": "2025-04-05"
     }
   ]
 }
