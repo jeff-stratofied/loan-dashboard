@@ -200,7 +200,7 @@ svg text {
       <p class="lead">Unified design, dark mode, animations, KPI drawers with primary/secondary cards.</p>
 
       <div class="current-date" style="margin-top:4px;">
-        Current Month: <strong id="currentMonthLabel">18</strong>
+        Current Date: <span id="currentDate"></span>
       </div>
     </div>
 
@@ -274,7 +274,17 @@ svg text {
        Settings & data
        ------------------------- */
     const CURRENT_MONTH = 18;
-    document.getElementById('currentMonthLabel').textContent = CURRENT_MONTH;
+    const currentMonthLabel = document.getElementById('currentMonthLabel');
+    if (currentMonthLabel) currentMonthLabel.textContent = CURRENT_MONTH;
+    document.getElementById("currentDate").textContent = formatDate(new Date());
+
+    function formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+    }
 
     function monthDiff(d1, d2) {
       return (d2.getFullYear() - d1.getFullYear()) * 12 +

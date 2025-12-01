@@ -320,7 +320,7 @@
         </div>
       </div>
 
-      <div class="current-date">Current Month: <strong id="currentMonthLabel">18</strong> (months since first purchase)</div>
+      <div class="current-date">Current Date: <span id="currentDate"></span></div>
     </header>
 
     <section class="kpis" id="kpis"></section>
@@ -420,7 +420,9 @@
        Settings & Current Month
        ============================ */
     const CURRENT_MONTH = 18;
-    document.getElementById('currentMonthLabel').textContent = CURRENT_MONTH;
+    const currentMonthLabel = document.getElementById('currentMonthLabel');
+    if (currentMonthLabel) currentMonthLabel.textContent = CURRENT_MONTH;
+    document.getElementById("currentDate").textContent = formatDate(new Date());
 
     /* ============================
        Loan data loaded from backend

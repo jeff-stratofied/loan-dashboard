@@ -615,7 +615,7 @@
           <span class="pill"><span>View</span><strong>Tiles + Drawer</strong></span>
         </div>
         <div class="current-date">
-          Current Month: <strong id="currentMonthLabel">18</strong>
+          Current Date: <span id="currentDate"></span>
         </div>
       </div>
       <div class="header-right">
@@ -686,11 +686,21 @@
   <div id="tooltip"></div>
 
 <script>
+    function formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+    }
+
     // --------------------------
     // Settings & base data
     // --------------------------
     const CURRENT_MONTH = 18; // keep in sync with ROI page if you want
-    document.getElementById("currentMonthLabel").textContent = CURRENT_MONTH;
+    const currentMonthLabel = document.getElementById("currentMonthLabel");
+    if (currentMonthLabel) currentMonthLabel.textContent = CURRENT_MONTH;
+    document.getElementById("currentDate").textContent = formatDate(new Date());
     const WORKER_URL = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
 
     function clampNumber(v, fallback = 0) {

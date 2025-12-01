@@ -397,7 +397,7 @@
           <h1>Loan Portfolio — Earnings</h1>
           <p class="lead">Cumulative principal, interest, and fees, with stacked earnings visuals.</p>
           <div class="current-date">
-            Current Month Index: <strong id="currentMonthLabel">18</strong>
+            Current Date: <span id="currentDate"></span>
           </div>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
@@ -595,11 +595,21 @@
   </aside>
 
   <script>
+    function formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+    }
+
     // --------------------------
     // Settings & base data
     // --------------------------
     const CURRENT_MONTH = 18; // keep in sync with ROI page if you want
-    document.getElementById("currentMonthLabel").textContent = CURRENT_MONTH;
+    const currentMonthLabel = document.getElementById("currentMonthLabel");
+    if (currentMonthLabel) currentMonthLabel.textContent = CURRENT_MONTH;
+    document.getElementById("currentDate").textContent = formatDate(new Date());
 
     function monthDiff(d1, d2) {
       return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
