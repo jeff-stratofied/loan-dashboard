@@ -771,15 +771,16 @@
           <!-- hover layer -->
           <g class="mini-hover"></g>
 
-          <!-- vertical line for current month -->
-          <line class="current-line"
-            x1="${xForMonth(diffMonthsFromStart)}"
-            x2="${xForMonth(diffMonthsFromStart)}"
-            y1="0"
-            y2="${h}"
-            stroke="#ef4444"
-            stroke-width="2"
-          />
+          <!-- vertical line for current date -->
+          <line
+  x1="${xForMonth(diffMonthsFromStart)}"
+  x2="${xForMonth(diffMonthsFromStart)}"
+  y1="0"
+  y2="${h}"
+  stroke="#cbd5e1"
+  stroke-width="1"
+  stroke-dasharray="4 4"
+/>
         `;
 
         svg.addEventListener('mousemove', ev => {
