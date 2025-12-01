@@ -949,6 +949,12 @@
       const range = Math.max(1, maxY - minY);
 
       const stepX = (w - pad * 2) / Math.max(1, schedule.length - 1);
+
+      const labels = [];
+      loan.amort.schedule.forEach(row => {
+        labels.push(formatMonthYear(row.loanDate));
+      });
+
       function toXY(point, i) {
         const x = pad + i * stepX;
         const y = pad + (h - pad * 2) - ((point.y - minY) / range) * (h - pad * 2);
@@ -972,6 +978,18 @@
         line.setAttribute('stroke', '#eef2f7');
         line.setAttribute('stroke-width', '1');
         svg.appendChild(line);
+      }
+
+      for (let i = 0; i < labels.length; i += Math.max(1, Math.floor(labels.length / 6))) {
+        const x = pad + i * stepX;
+        const text = document.createElementNS(svgNS, 'text');
+        text.setAttribute('x', x);
+        text.setAttribute('y', h - pad + 14);
+        text.setAttribute('font-size', '11');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#475569');
+        text.textContent = labels[i];
+        svg.appendChild(text);
       }
 
       const pathBal = buildPath(balances);
