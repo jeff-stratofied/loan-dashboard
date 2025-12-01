@@ -796,7 +796,7 @@
           tooltip.style.left = (ev.clientX) + 'px';
           tooltip.style.top = (ev.clientY - 10) + 'px';
           tooltip.style.display = 'block';
-          tooltip.innerHTML = `Owned M${p.ownershipMonthIndex} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
+          tooltip.innerHTML = `Date: ${formatDate(p.loanDate)} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
 
           const hoverG = svg.querySelector('g.mini-hover');
           hoverG.innerHTML = '';
