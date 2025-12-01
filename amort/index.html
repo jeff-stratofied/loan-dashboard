@@ -416,6 +416,12 @@
              (d2.getMonth() - d1.getMonth());
     }
 
+    function monthsSincePortfolioStart() {
+      if (!loansWithAmort.length) return 1;
+      const earliestStart = Math.min(...loansWithAmort.map(l => new Date(l.loanStartDate).getTime()));
+      return Math.max(1, monthDiff(new Date(earliestStart), new Date()));
+    }
+
 
     /* ============================
        Loan data loaded from backend
@@ -698,8 +704,9 @@
     function renderTPVTile() {
       tpvSeriesData = tpvSeries(loansWithAmort);
       if (!tpvSeriesData.length) return;
+      const diffMonthsFromStart = monthsSincePortfolioStart();
       document.getElementById('tpvTile').textContent =
-        `$${Math.round(tpvSeriesData[Math.min(CURRENT_MONTH - 1, tpvSeriesData.length - 1)].value).toLocaleString()}`;
+        `$${Math.round(tpvSeriesData[Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1)].value).toLocaleString()}`;
     }
 
     /* ============================
@@ -738,6 +745,7 @@
         const svg = tile.querySelector("svg.sparkline");
         const fullSched = loan.cumSchedule;
         const ownedRows = fullSched.filter(r => r.isOwned);
+        const loanStart = new Date(loan.loanStartDate);
         const w = 170, h = 48, pad = 6;
         const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
         const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
@@ -747,6 +755,7 @@
 
         const pathP = buildPathFromPoints(pPoints, w, h, pad);
         const pathI = buildPathFromPoints(iPoints, w, h, pad);
+        const diffMonthsFromStart = monthDiff(loanStart, new Date());
 
         // helper for vertical line position
         const maxMonth = Math.max(1, fullSched.length);
@@ -764,13 +773,12 @@
 
           <!-- vertical line for current month -->
           <line class="current-line"
-            x1="${xForMonth(CURRENT_MONTH)}"
-            y1="2"
-            x2="${xForMonth(CURRENT_MONTH)}"
-            y2="${h - 2}"
-            stroke="#111827"
-            stroke-dasharray="3 3"
-            stroke-opacity="0.6"
+            x1="${xForMonth(diffMonthsFromStart)}"
+            x2="${xForMonth(diffMonthsFromStart)}"
+            y1="0"
+            y2="${h}"
+            stroke="#ef4444"
+            stroke-width="2"
           />
         `;
 
@@ -1022,7 +1030,9 @@
 
       // current date marker
       const maxMonth = schedule.length;
-      const curX = pad + (Math.max(1, Math.min(CURRENT_MONTH, maxMonth)) - 1) * stepX;
+      const loanStart = new Date(currentLoan.loanStartDate);
+      const diffMonthsFromStart = Math.max(1, Math.min(monthDiff(loanStart, new Date()), maxMonth));
+      const curX = pad + (diffMonthsFromStart - 1) * stepX;
       const curLine = document.createElementNS(svgNS, 'line');
       curLine.setAttribute('x1', curX);
       curLine.setAttribute('x2', curX);
@@ -1233,7 +1243,8 @@
       drawerSub.textContent = 'Purchase + accrued interest (grace) + cumulative payments';
 
       drawerPrimaryTitle.textContent = 'Current TPV';
-      const curVal = tpvSeriesData[Math.min(CURRENT_MONTH - 1, tpvSeriesData.length - 1)].value;
+      const diffMonthsFromStart = monthsSincePortfolioStart();
+      const curVal = tpvSeriesData[Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1)].value;
       drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
 
       drawerSecondaryTitle.textContent = 'Total Invested';
@@ -1286,7 +1297,7 @@
       }
 
       // current month marker
-      const curIdx = Math.min(CURRENT_MONTH - 1, tpvSeriesData.length - 1);
+      const curIdx = Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1);
       const curX = pad + curIdx * stepX;
       const curLine = document.createElementNS(svgNS, 'line');
       curLine.setAttribute('x1', curX); curLine.setAttribute('x2', curX);
@@ -1327,7 +1338,7 @@
               <thead><tr><th>Month</th><th style="text-align:right">TPV</th></tr></thead>
               <tbody>
                 <tr><td style="text-align:left">Start (M1)</td><td style="text-align:right">$${Math.round(tpvSeriesData[0].value).toLocaleString()}</td></tr>
-                <tr><td style="text-align:left">Current (M${CURRENT_MONTH})</td><td style="text-align:right">$${curValRounded.toLocaleString()}</td></tr>
+                <tr><td style="text-align:left">Current (M${diffMonthsFromStart})</td><td style="text-align:right">$${curValRounded.toLocaleString()}</td></tr>
                 <tr><td style="text-align:left">End (M${tpvSeriesData[tpvSeriesData.length - 1].month})</td><td style="text-align:right">$${Math.round(tpvSeriesData[tpvSeriesData.length - 1].value).toLocaleString()}</td></tr>
               </tbody>
             </table>
