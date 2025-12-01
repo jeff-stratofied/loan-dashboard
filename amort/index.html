@@ -1502,12 +1502,23 @@
       // Build 24-month expected income projection
       const monthsAhead = 24;
 
-      function calcExpectedIncomeFor(date) {
+      function calcExpectedIncomeFor(targetMonthDate) {
         return loansWithAmort.reduce((sum, loan) => {
+          const ownershipStart = new Date(loan.purchaseDate);
+
           return sum + loan.amort.schedule
-            .filter(r => r.isOwned && r.ownershipDate &&
-              r.ownershipDate.getFullYear() === date.getFullYear() &&
-              r.ownershipDate.getMonth() === date.getMonth())
+            // real payment date
+            .filter(r => {
+              const payDate = r.loanDate;
+              const sameMonth =
+                payDate.getFullYear() === targetMonthDate.getFullYear() &&
+                payDate.getMonth() === targetMonthDate.getMonth();
+
+              // customer must own the loan before the payment happens
+              const owned = payDate >= ownershipStart;
+
+              return sameMonth && owned;
+            })
             .reduce((s, r) => s + r.payment, 0);
         }, 0);
       }
