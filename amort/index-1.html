@@ -1117,7 +1117,7 @@
       tpvSeriesData.forEach((d, i) => {
         const x = pad + i * stepX;
         const hit = document.createElementNS(svgNS, 'rect');
-        hit.setAttribute('x', x - stepX / 2);
+        hit.setAttribute('x', x - stepX * 0.5);
         hit.setAttribute('y', pad);
         hit.setAttribute('width', Math.max(1, stepX));
         hit.setAttribute('height', h - pad * 2);
@@ -1268,112 +1268,98 @@
 
       drawerAmortContainer.style.display = 'none';
       drawerExtra.innerHTML = '';
+      drawerChartArea.innerHTML = '';
 
-      // Build months from earliest purchase to last schedule end
-      const monthIndex = d => new Date(d + 'T00:00:00').getTime();
-      const minDate = Math.min(...loansWithAmort.map(l => monthIndex(l.purchaseDate)));
-      const maxDate = Math.max(...loansWithAmort.map(l => {
-        const lastMonth = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
-        const pd = new Date(l.purchaseDate + 'T00:00:00');
-        pd.setMonth(pd.getMonth() + lastMonth);
-        return pd.getTime();
-      }));
-
+      // --- FIX START: recompute monthly payments properly ---
+      const maxMonths = Math.max(...loansWithAmort.map(l => l.amort.schedule.length));
       const months = [];
-      const cursor = new Date(minDate);
-      cursor.setDate(1);
-      while (cursor.getTime() <= maxDate) {
-        months.push(new Date(cursor.getTime()).toISOString().slice(0, 7));
-        cursor.setMonth(cursor.getMonth() + 1);
-      }
+      const payments = [];
 
-      // compute total payments by month
-      const paymentsByMonth = months.map(m => {
-        return loansWithAmort.reduce((s, l) => {
-          const pd = new Date(l.purchaseDate + 'T00:00:00');
-          const ym = m.split('-');
-          const md = new Date(parseInt(ym[0]), parseInt(ym[1]) - 1, 1);
-          const monthsSince = (md.getFullYear() - pd.getFullYear()) * 12 + (md.getMonth() - pd.getMonth());
-          const idx = Math.max(0, monthsSince);
-          const entry = l.amort.schedule[Math.min(l.amort.schedule.length - 1, idx)];
-          s += entry ? entry.payment : 0;
-          return s;
-        }, 0);
+      for (let m = 1; m <= maxMonths; m++) {
+        months.push(m);
+        let monthlyTotal = 0;
+
+        loansWithAmort.forEach(l => {
+          const row = l.amort.schedule.find(s => s.monthIndex === m);
+          if (row) monthlyTotal += row.payment;
+        });
+
+        payments.push(monthlyTotal);
+      }
+      // --- FIX END ---
+
+      // Pretty month labels
+      const portfolioStartDate = new Date(Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate + 'T00:00:00'))));
+      portfolioStartDate.setDate(1);
+      const monthLabels = months.map(m => {
+        const d = new Date(portfolioStartDate);
+        d.setMonth(d.getMonth() + (m - 1));
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
       });
 
-      // timeseries chart
-      drawerChartArea.innerHTML = '';
-      drawerLegend.style.display = 'none';
+      // draw chart
       const svgNS = 'http://www.w3.org/2000/svg';
-      const w = 480, h = 220, pad = 30;
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', '100%');
+      const w = 780, h = 220, pad = 30;
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("width", w);
+      svg.setAttribute("height", h);
+      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
 
-      const maxPay = Math.max(...paymentsByMonth);
-      const minPay = Math.min(...paymentsByMonth);
-      const range = Math.max(1, maxPay - minPay);
+      const maxY = Math.max(...payments);
+      const minY = 0;
+      const rangeY = maxY - minY || 1;
+
       const stepX = (w - pad * 2) / Math.max(1, months.length - 1);
 
-      let pts = '';
-      paymentsByMonth.forEach((p, i) => {
+      // DRAW LINE
+      let d = "";
+      payments.forEach((p, i) => {
         const x = pad + i * stepX;
-        const y = pad + (h - pad * 2) - ((p - minPay) / range) * (h - pad * 2);
-        pts += `${x},${y} `;
+        const y = pad + (h - pad * 2) - ((p - minY) / rangeY) * (h - pad * 2);
+        d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
       });
 
-      const poly = document.createElementNS(svgNS, 'polyline');
-      poly.setAttribute('points', pts);
-      poly.setAttribute('fill', 'none');
-      poly.setAttribute('stroke', '#fb7185');
-      poly.setAttribute('stroke-width', '2');
-      svg.appendChild(poly);
+      const path = document.createElementNS(svgNS, "path");
+      path.setAttribute("d", d);
+      path.setAttribute("stroke", "#ef4444");
+      path.setAttribute("stroke-width", "2.5");
+      path.setAttribute("fill", "none");
+      svg.appendChild(path);
 
+      // --- FIX: properly aligned hover hit zones ---
       months.forEach((m, i) => {
         const x = pad + i * stepX;
+        const y = pad;
+        const label = monthLabels[i];
+
         const text = document.createElementNS(svgNS, 'text');
         text.setAttribute('x', x);
         text.setAttribute('y', h - pad + 14);
         text.setAttribute('font-size', '11');
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('fill', '#475569');
-        text.textContent = m;
+        text.textContent = label;
         svg.appendChild(text);
 
-        const hit = document.createElementNS(svgNS, 'rect');
-        hit.setAttribute('x', x - stepX / 2);
-        hit.setAttribute('y', pad);
-        hit.setAttribute('width', Math.max(1, stepX));
-        hit.setAttribute('height', h - pad * 2);
-        hit.setAttribute('fill', 'transparent');
+        const hit = document.createElementNS(svgNS, "rect");
+        hit.setAttribute("x", x - stepX * 0.5);   // FIX: accurate hit-box alignment
+        hit.setAttribute("y", y);
+        hit.setAttribute("width", stepX);
+        hit.setAttribute("height", h - pad * 2);
+        hit.setAttribute("fill", "transparent");
 
-        hit.addEventListener('mousemove', (ev) => {
-          tooltip.style.display = 'block';
-          tooltip.style.left = ev.clientX + 'px';
-          tooltip.style.top = (ev.clientY - 12) + 'px';
-          tooltip.innerHTML = `${m} • $${Math.round(paymentsByMonth[i]).toLocaleString()}`;
+        hit.addEventListener("mousemove", ev => {
+          tooltip.style.display = "block";
+          tooltip.style.left = ev.clientX + "px";
+          tooltip.style.top = (ev.clientY - 12) + "px";
+          tooltip.innerHTML = `${label} • $${Math.round(payments[i]).toLocaleString()}`;
         });
-        hit.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+        hit.addEventListener("mouseleave", () => tooltip.style.display = "none");
 
         svg.appendChild(hit);
       });
 
       drawerChartArea.appendChild(svg);
-
-      drawerExtra.innerHTML = `
-        <div style="margin-top:10px">
-          <strong class="small">Monthly expected payments</strong>
-          <div style="max-height:220px;overflow:auto;margin-top:6px;border-radius:6px;padding:6px;border:1px solid var(--border);background:var(--card)">
-            <table style="width:100%;font-size:13px">
-              <thead><tr><th>Month</th><th style="text-align:right">Payments</th></tr></thead>
-              <tbody>
-                ${months.map((m, i) => `<tr><td style="text-align:left">${m}</td><td style="text-align:right">$${Math.round(paymentsByMonth[i]).toLocaleString()}</td></tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
 
       drawer.classList.add('open');
       drawer.setAttribute('aria-hidden', 'false');
