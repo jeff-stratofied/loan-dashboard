@@ -336,6 +336,7 @@ svg text {
     }
 
     async function initROI() {
+      const TODAY = new Date();
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
       const formattedLoans = loans.map(l => ({
         ...l,
@@ -516,13 +517,14 @@ svg text {
       el.setAttribute('stroke-width', '2');
       svg.appendChild(el);
 
-      const today = new Date();
       if (opts.loanStartDate) {
-        const diffMonthsFromStart = monthDiff(new Date(opts.loanStartDate), today);
-        const cx = xForMonth(diffMonthsFromStart);
+        const loanStart = new Date(opts.loanStartDate);
+        const diffMonthsFromStart = monthDiff(loanStart, TODAY);
+        const clamped = Math.max(1, Math.min(data.length, diffMonthsFromStart));
+        const dashX = xForMonth(clamped);
         const vLine = document.createElementNS(svgNS, "line");
-        vLine.setAttribute("x1", cx);
-        vLine.setAttribute("x2", cx);
+        vLine.setAttribute("x1", dashX);
+        vLine.setAttribute("x2", dashX);
         vLine.setAttribute("y1", pad);
         vLine.setAttribute("y2", h - pad);
         vLine.setAttribute("stroke", "#111827");
@@ -877,11 +879,12 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       svg.innerHTML = `<path d="${d}" fill="none" stroke="#0ea5e9" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path><g class="mini-hover"></g>`;
       // current date vertical line per-loan
       const loanStart = new Date(loan.loanStartDate);
-      const diffMonthsFromStart = monthDiff(loanStart, new Date());
+      const diffMonthsFromStart = monthDiff(loanStart, TODAY);
       const xForMonth = month => {
         return pad + (Math.min(Math.max(month, 1), pts.length) - 1) * ((w - pad * 2) / Math.max(1, pts.length - 1));
       };
-      const dashX = xForMonth(diffMonthsFromStart);
+      const clamped = Math.max(1, Math.min(pts.length, diffMonthsFromStart));
+      const dashX = xForMonth(clamped);
       const line = document.createElementNS('http://www.w3.org/2000/svg','line'); line.setAttribute('x1',dashX); line.setAttribute('x2',dashX); line.setAttribute('y1',2); line.setAttribute('y2',h-2); line.setAttribute('stroke','#111827'); line.setAttribute('stroke-dasharray','3 3'); line.setAttribute('stroke-opacity','0.6'); svg.appendChild(line);
       svg.addEventListener('mousemove', ev=>{ const rect=svg.getBoundingClientRect(); const relX=ev.clientX-rect.left; const step = (w-pad*2)/Math.max(1,pts.length-1); let idxNearest=Math.round((relX-pad)/step); idxNearest=Math.max(0,Math.min(pts.length-1,idxNearest)); const p = loan.roiSeries[idxNearest]; tooltip.style.left=ev.clientX+'px'; tooltip.style.top=(ev.clientY-10)+'px'; tooltip.style.display='block'; tooltip.innerHTML = 'Date: '+formatDate(p.ownershipDate)+' • ROI '+(p.roi*100).toFixed(2)+'%'; const hoverG = svg.querySelector('g.mini-hover'); hoverG.innerHTML=''; const cx = pad + idxNearest*step; const cy = pad + (h - pad*2) - ((p.roi - minY)/rangeY)*(h - pad*2); const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',3.6); c.setAttribute('fill','#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); });
       svg.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; const hoverG = svg.querySelector('g.mini-hover'); if(hoverG) hoverG.innerHTML=''; });
