@@ -397,7 +397,7 @@
           <h1>Loan Portfolio — Earnings</h1>
           <p class="lead">Cumulative principal, interest, and fees, with stacked earnings visuals.</p>
           <div class="current-date">
-            Current Month Index: <strong id="currentMonthLabel">18</strong>
+            Current Date: <span id="currentDate"></span>
           </div>
         </div>
         <div style="display:flex; gap:10px; align-items:center;">
@@ -598,11 +598,30 @@
     // --------------------------
     // Settings & base data
     // --------------------------
-    const CURRENT_MONTH = 18; // keep in sync with ROI page if you want
-    document.getElementById("currentMonthLabel").textContent = CURRENT_MONTH;
+    function addMonths(date, months) {
+      const d = new Date(date);
+      d.setMonth(d.getMonth() + months);
+      return d;
+    }
+
+    function formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+      });
+    }
+
+    function formatMonthYear(date) {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short"
+      });
+    }
 
     function monthDiff(d1, d2) {
-      return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+      return (d2.getFullYear() - d1.getFullYear()) * 12 +
+             (d2.getMonth() - d1.getMonth());
     }
 
     let loans = [];
@@ -621,6 +640,8 @@
         loans = [];
       }
     }
+
+    document.getElementById("currentDate").textContent = formatDate(new Date());
 
     let stackedBarGroupCounter = 0;
 
@@ -724,10 +745,17 @@
 
         amort.schedule = amort.schedule.map(row => {
           const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
+          const loanDate = addMonths(loanStart, row.monthIndex - 1);
+          const ownershipDate = ownershipMonthIndex >= 1
+            ? addMonths(purchaseDt, ownershipMonthIndex - 1)
+            : null;
+
           return {
             ...row,
             ownershipMonthIndex,
-            isOwned: ownershipMonthIndex >= 1
+            isOwned: ownershipMonthIndex >= 1,
+            loanDate,
+            ownershipDate
           };
         });
 
@@ -770,7 +798,9 @@
             cumFees,
             netEarnings,
             interestPaid: row.interest,
-            principalPaid: row.principalPaid
+            principalPaid: row.principalPaid,
+            loanDate: row.loanDate,
+            ownershipDate: row.ownershipDate
           };
         }).filter(r => r.isOwned);
 
@@ -792,27 +822,33 @@
       let totalNetProjected = 0;
       let totalFeesToDate = 0;
       let totalPrincipal = 0;
+      let monthsCounted = 1;
+
+      const TODAY = new Date();
 
       list.forEach(l => {
         if (!l.earningsSchedule.length) return;
 
         const lastIdx = l.earningsSchedule.length - 1;
-        const atCurrent = l.earningsSchedule[Math.min(CURRENT_MONTH-1, lastIdx)] || l.earningsSchedule[lastIdx];
+        const loanStart = new Date(l.loanStartDate);
+        const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
+        const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+          ? Math.max(1, diffMonthsFromStartRaw)
+          : 1;
+        const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
+        const atCurrent = l.earningsSchedule[currentIdx] || l.earningsSchedule[lastIdx];
         const atEnd = l.earningsSchedule[lastIdx];
 
         totalNetToDate += atCurrent.netEarnings || 0;
         totalFeesToDate += atCurrent.cumFees || 0;
         totalNetProjected += atEnd.netEarnings || 0;
         totalPrincipal += l.purchasePrice;
-      });
 
-      const monthsCounted = Math.max(
-        1,
-        Math.min(
-          CURRENT_MONTH,
-          Math.max(...list.map(l => l.earningsSchedule.length || 0), 0)
-        )
-      );
+        monthsCounted = Math.max(
+          monthsCounted,
+          Math.min(diffMonthsFromStart, l.earningsSchedule.length)
+        );
+      });
 
       const avgMonthlyEarnings = monthsCounted > 0 ? totalNetToDate / monthsCounted : 0;
 
@@ -820,7 +856,27 @@
         totalNetToDate,
         totalNetProjected,
         totalFeesToDate,
-        avgMonthlyEarnings
+        avgMonthlyEarnings,
+        monthsCounted
+      };
+    }
+
+    function getCurrentEarningsRow(loan) {
+      const fallbackRow = { netEarnings: 0, cumPrincipal: 0, cumInterest: 0, cumFees: 0 };
+      const lastIdx = loan.earningsSchedule.length - 1;
+      const loanStart = new Date(loan.loanStartDate);
+      const diffMonthsFromStartRaw = monthDiff(loanStart, new Date());
+      const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+        ? Math.max(1, diffMonthsFromStartRaw)
+        : 1;
+      const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
+      const row = lastIdx >= 0
+        ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
+        : fallbackRow;
+
+      return {
+        row,
+        monthsCounted: Math.min(diffMonthsFromStart, loan.earningsSchedule.length || 1)
       };
     }
 
@@ -867,7 +923,7 @@
     // --------------------------
     // Mini stacked earnings chart (per tile)
     // --------------------------
-    function createMiniStackedEarningsSVG(containerEl, earningsSchedule){
+    function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan){
       containerEl.innerHTML = "";
       const svgNS = "http://www.w3.org/2000/svg";
       const w = 170;
@@ -956,7 +1012,13 @@
         svg.appendChild(rFee);
       });
 
-      const currentX = padL + (CURRENT_MONTH - 1) * barW;
+      const loanStart = loan ? new Date(loan.loanStartDate) : (data[0]?.loanDate || new Date());
+      const TODAY = new Date();
+      const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
+      const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+        ? Math.max(1, diffMonthsFromStartRaw)
+        : 1;
+      const currentX = padL + (diffMonthsFromStart - 1) * barW;
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
       vline.setAttribute("x2", currentX);
@@ -992,9 +1054,8 @@
 
         const idx = Math.max(0, Math.min(data.length - 1, Math.floor((x - padL) / barW)));
         const row = data[idx];
-        const month = row.ownershipMonthIndex || row.monthIndex || idx + 1;
         const tooltipLines = [
-          `Month M${month}`,
+          `Date: ${formatDate(row.ownershipDate || row.loanDate)}`,
           `Principal: $${row.cumPrincipal.toFixed(2)}`,
           `Interest: $${row.cumInterest.toFixed(2)}`,
           `Fees: -$${row.cumFees.toFixed(2)}`,
@@ -1024,7 +1085,7 @@
     // --------------------------
     // Drawer stacked chart (larger)
     // --------------------------
-    function createDrawerStackedChart(containerEl, earningsSchedule){
+    function createDrawerStackedChart(containerEl, earningsSchedule, loan){
       containerEl.innerHTML = "";
       const svgNS = "http://www.w3.org/2000/svg";
       const rect = containerEl.getBoundingClientRect();
@@ -1143,7 +1204,8 @@
 
         if(((d.ownershipMonthIndex || d.monthIndex) % 12) === 0 || (d.ownershipMonthIndex || d.monthIndex) === 1){
           const lbl = document.createElementNS(svgNS,"text");
-          lbl.textContent = "M"+(d.ownershipMonthIndex || d.monthIndex);
+          const dateLabel = d.ownershipDate || d.loanDate;
+          lbl.textContent = formatMonthYear(dateLabel);
           lbl.setAttribute("x", x+barWidth/2);
           lbl.setAttribute("y", h-padB+16);
           lbl.setAttribute("font-size","11");
@@ -1153,7 +1215,13 @@
         }
       });
 
-      const currentX = padL + (CURRENT_MONTH - 1) * barW;
+      const loanStart = loan ? new Date(loan.loanStartDate) : (data[0]?.loanDate || new Date());
+      const TODAY = new Date();
+      const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
+      const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+        ? Math.max(1, diffMonthsFromStartRaw)
+        : 1;
+      const currentX = padL + (diffMonthsFromStart - 1) * barW;
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
       vline.setAttribute("x2", currentX);
@@ -1194,10 +1262,8 @@
 
         const idx = Math.max(0, Math.min(data.length - 1, Math.floor((x - padL) / barW)));
         const row = data[idx];
-        const month = row.ownershipMonthIndex || row.monthIndex || idx + 1;
-
         const tooltipLines = [
-          `${currentLoan ? currentLoan.loanName : "Loan"} • M${month}`,
+          `${currentLoan ? currentLoan.loanName : "Loan"} • ${formatDate(row.ownershipDate || row.loanDate)}`,
           `Principal: $${row.cumPrincipal.toFixed(2)}`,
           `Interest: $${row.cumInterest.toFixed(2)}`,
           `Fees: -$${row.cumFees.toFixed(2)}`,
@@ -1295,11 +1361,11 @@
     function openKpi3(){
       currentLoan = null;
       drawerTitle.textContent = "Average Monthly Earnings";
-      drawerSub.textContent = `Based on net earnings through month ${CURRENT_MONTH}.`;
+      drawerSub.textContent = `Based on net earnings through ${formatDate(new Date())}.`;
       drawerPrimaryTitle.textContent = "Avg Monthly Earnings";
       drawerPrimary.textContent = `$${kpis.avgMonthlyEarnings.toFixed(2)}`;
       drawerSecondaryTitle.textContent = "Months Counted";
-      drawerSecondary.textContent = `${CURRENT_MONTH} months`;
+      drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
       resetDrawerContent();
       renderKPI3Chart(loansWithEarnings, "drawerChartArea");
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -1343,11 +1409,18 @@
       loansWithEarnings.forEach(loan => {
         const hasSchedule = loan.earningsSchedule.length > 0;
         const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
-        const fallbackRow = { netEarnings: 0 };
+        const fallbackRow = { netEarnings: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
+        const loanStart = new Date(loan.loanStartDate);
+        const TODAY = new Date();
+        const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
+        const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+          ? Math.max(1, diffMonthsFromStartRaw)
+          : 1;
+        const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
         const atCurrent = hasSchedule
-          ? loan.earningsSchedule[Math.min(CURRENT_MONTH-1, lastIdx)] || loan.earningsSchedule[lastIdx]
+          ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
           : fallbackRow;
-        const currentMonthLabel = atCurrent.ownershipMonthIndex || Math.min(CURRENT_MONTH, loan.earningsSchedule.length) || CURRENT_MONTH;
+        const currentMonthLabel = formatMonthYear(atCurrent.ownershipDate || atCurrent.loanDate);
 
         const tile = document.createElement("div");
         tile.className = "tile";
@@ -1363,7 +1436,7 @@
           </div>
           <div class="chart-wrap">
             <div class="mini-label">
-              Net Earnings M${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
+              Net Earnings ${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
             </div>
             <div class="mini-chart"></div>
           </div>
@@ -1372,7 +1445,7 @@
         grid.appendChild(tile);
 
         const mini = tile.querySelector('.mini-chart');
-        createMiniStackedEarningsSVG(mini, loan.earningsSchedule);
+        createMiniStackedEarningsSVG(mini, loan.earningsSchedule, loan);
       });
     }
 
@@ -1413,9 +1486,16 @@
       resetDrawerContent();
       const hasSchedule = loan.earningsSchedule.length > 0;
       const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
-      const fallbackRow = { netEarnings: 0, cumFees: 0 };
+      const fallbackRow = { netEarnings: 0, cumFees: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
+      const loanStart = new Date(loan.loanStartDate);
+      const TODAY = new Date();
+      const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
+      const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+        ? Math.max(1, diffMonthsFromStartRaw)
+        : 1;
+      const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
       const atCurrent = hasSchedule
-        ? loan.earningsSchedule[Math.min(CURRENT_MONTH-1, lastIdx)] || loan.earningsSchedule[lastIdx]
+        ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
         : fallbackRow;
       const atEnd = hasSchedule ? loan.earningsSchedule[lastIdx] : fallbackRow;
 
@@ -1429,14 +1509,15 @@
       drawerSecondaryTitle.textContent = "Fees to Date";
       drawerSecondary.textContent = `$${atCurrent.cumFees.toFixed(2)}`;
 
-      createDrawerStackedChart(drawerChartArea, loan.earningsSchedule);
+      createDrawerStackedChart(drawerChartArea, loan.earningsSchedule, loan);
 
       // table
       let rowsHtml = "";
       loan.earningsSchedule.forEach(r => {
         rowsHtml += `
           <tr>
-            <td>${r.ownershipMonthIndex || r.monthIndex}</td>
+            <td>${formatDate(r.loanDate)}</td>
+            <td>${r.isOwned ? formatDate(r.ownershipDate) : ""}</td>
             <td>$${r.cumPrincipal.toFixed(2)}</td>
             <td>$${r.cumInterest.toFixed(2)}</td>
             <td>-$${r.cumFees.toFixed(2)}</td>
@@ -1454,7 +1535,8 @@
           <table>
             <thead>
               <tr>
-                <th>Month</th>
+                <th>Loan Date</th>
+                <th>Ownership Date</th>
                 <th>Cumulative Principal</th>
                 <th>Cumulative Interest</th>
                 <th>Cumulative Fees</th>
@@ -1533,6 +1615,11 @@
       container.innerHTML = "";
 
       const key = mode || containerId;
+      const TODAY = new Date();
+      const startTimes = data.map(l => new Date(l.loanStartDate).getTime()).filter(t => Number.isFinite(t));
+      const earliestLoanStart = startTimes.length
+        ? new Date(Math.min(...startTimes))
+        : new Date();
 
       const svgNS = "http://www.w3.org/2000/svg";
       const rect = container.getBoundingClientRect();
@@ -1540,10 +1627,11 @@
       const h = 260;
       const padL = 50, padR = 20, padT = 20, padB = 16;
 
-      const maxMonths = Math.max(CURRENT_MONTH, ...data.map(l => l.earningsSchedule.length));
+      const maxMonths = Math.max(1, ...data.map(l => l.earningsSchedule.length));
       const months = Array.from({length:maxMonths}, (_,i) => {
         const sampleRow = data.find(l => l.earningsSchedule[i])?.earningsSchedule[i];
         const month = sampleRow?.ownershipMonthIndex || i+1;
+        const monthDate = addMonths(earliestLoanStart, i);
         const contributions = data.map(loan => {
           const row = loan.earningsSchedule[Math.min(i, loan.earningsSchedule.length-1)];
           const value = valueGetter(row || {}, month, loan);
@@ -1555,7 +1643,7 @@
         });
         const posTotal = contributions.reduce((sum,c) => c.value > 0 ? sum + c.value : sum, 0);
         const negTotal = contributions.reduce((sum,c) => c.value < 0 ? sum + c.value : sum, 0);
-        return { month, contributions, posTotal, negTotal };
+        return { month, monthDate, contributions, posTotal, negTotal };
       });
 
       let maxValue = 0;
@@ -1660,7 +1748,11 @@
       });
 
       if(showCurrentLine){
-        const currentX = padL + (CURRENT_MONTH - 1) * barW;
+        const currentMonthFromStartRaw = monthDiff(earliestLoanStart, TODAY);
+        const currentMonthFromStart = Number.isFinite(currentMonthFromStartRaw)
+          ? Math.max(1, currentMonthFromStartRaw)
+          : 1;
+        const currentX = padL + (Math.min(currentMonthFromStart, months.length) - 1) * barW;
         const vline = document.createElementNS(svgNS, "line");
         vline.setAttribute("x1", currentX);
         vline.setAttribute("x2", currentX);
@@ -1716,7 +1808,7 @@
         let tooltipLines = [];
         if(key === "kpi1"){ // Net earnings to date
           tooltipLines = [
-            `Month M${month}`,
+            `Date: ${formatMonthYear(monthRow.monthDate)}`,
   `Net: $${aggregates.net.toFixed(2)}`,
   `Principal: $${aggregates.principal.toFixed(2)}`,
   `Interest: $${aggregates.interest.toFixed(2)}`,
@@ -1724,19 +1816,19 @@
           ];
         } else if(key === "kpi2"){ // Projected lifetime
           tooltipLines = [
-            `Month M${month}`,
+            `Date: ${formatMonthYear(monthRow.monthDate)}`,
   `Projected Net: $${(monthRow.posTotal + monthRow.negTotal).toFixed(2)}`
           ];
         } else if(key === "kpi3"){ // Average monthly
           const avg = month > 0 ? aggregates.net / month : 0;
           tooltipLines = [
-             `Month M${month}`,
+             `Date: ${formatMonthYear(monthRow.monthDate)}`,
   `Avg / Month: $${avg.toFixed(2)}`,
   `Net to Date: $${aggregates.net.toFixed(2)}`
           ];
         } else if(key === "kpi4"){ // Fees
           tooltipLines = [
-            `Month M${month}`,
+            `Date: ${formatMonthYear(monthRow.monthDate)}`,
   `Fees: -$${aggregates.fees.toFixed(2)}`,
   `Net: $${aggregates.net.toFixed(2)}`
           ];
@@ -1798,11 +1890,7 @@
 
     function renderKPI1Table(data, containerId = "kpi1Table"){
       const rows = data.map(l => {
-        const fallbackRow = { netEarnings: 0, cumPrincipal: 0, cumInterest: 0, cumFees: 0 };
-        const lastIdx = l.earningsSchedule.length-1;
-        const atCur = lastIdx >= 0
-          ? l.earningsSchedule[Math.min(CURRENT_MONTH-1,lastIdx)] || l.earningsSchedule[lastIdx]
-          : fallbackRow;
+        const { row: atCur } = getCurrentEarningsRow(l);
         return [
           `${l.loanName}`,
           `$${atCur.netEarnings.toFixed(2)}`,
@@ -1828,12 +1916,8 @@
     }
     function renderKPI3Table(data, containerId = "kpi3Table"){
       const rows = data.map(l => {
-        const fallbackRow = { netEarnings: 0 };
-        const lastIdx = l.earningsSchedule.length-1;
-        const atCur = lastIdx >= 0
-          ? l.earningsSchedule[Math.min(CURRENT_MONTH-1,lastIdx)] || l.earningsSchedule[lastIdx]
-          : fallbackRow;
-        const monthsForAvg = Math.max(1, Math.min(CURRENT_MONTH, l.earningsSchedule.length));
+        const { row: atCur, monthsCounted } = getCurrentEarningsRow(l);
+        const monthsForAvg = Math.max(1, monthsCounted);
         const avg = monthsForAvg > 0 ? atCur.netEarnings / monthsForAvg : 0;
         return [
           `${l.loanName}`,
@@ -1847,11 +1931,7 @@
     }
     function renderKPI4Table(data, containerId = "kpi4Table"){
       const rows = data.map(l => {
-        const fallbackRow = { cumFees: 0, netEarnings: 0 };
-        const lastIdx = l.earningsSchedule.length-1;
-        const atCur = lastIdx >= 0
-          ? l.earningsSchedule[Math.min(CURRENT_MONTH-1,lastIdx)] || l.earningsSchedule[lastIdx]
-          : fallbackRow;
+        const { row: atCur } = getCurrentEarningsRow(l);
         return [
           `${l.loanName}`,
           l.purchaseDate,
