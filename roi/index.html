@@ -275,7 +275,7 @@ svg text {
     /* -------------------------
    Imports
     ------------------------- */
-    import { loadloans } from "../js/loadloans.js";
+    import { loadLoans } from "../js/loadLoans.js";
    
     import {
       addMonths,
@@ -1107,7 +1107,7 @@ function renderPaymentsDrawer() {
     } // END initROI()
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const loaded = await loadloans();
+      const loaded = await loadLoans();
 
       if (!loadedLoans.length) {
         console.error("No loan data loaded");
