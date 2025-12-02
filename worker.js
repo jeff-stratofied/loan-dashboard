@@ -6,7 +6,7 @@ export default {
     const raw = await res.json();
 
     // Normalize schema
-    const loans = (raw.loans || []).map(l => ({
+    const parsed_data_array = (raw.loans || []).map(l => ({
       id: l.loanId,
       name: l.loanName,
       school: l.school,
@@ -18,8 +18,8 @@ export default {
       graceYears: Number(l.graceYears)
     }));
 
-    return new Response(JSON.stringify(loans), {
-      headers: { "Content-Type": "application/json" }
-    });
+    const loans = parsed_data_array;
+
+    return Response.json(loans);
   }
 };
