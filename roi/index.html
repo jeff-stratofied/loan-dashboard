@@ -1107,7 +1107,7 @@ function renderPaymentsDrawer() {
     } // END initROI()
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const loaded = await loadLoans();
+      const loadedLoans = await loadLoans();
 
       if (!loadedLoans.length) {
         console.error("No loan data loaded");
