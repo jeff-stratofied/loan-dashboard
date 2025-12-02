@@ -1081,7 +1081,7 @@ function renderPaymentsDrawer() {
     /* -------------------------
        KPI wiring & interactions
        ------------------------- */
-    document.querySelectorAll('.kpi').forEach(k=>{ k.addEventListener('click', ev=>{ ev.stopPropagation(); const key=k.getAttribute('data-kpi'); if(key==='distribution') renderDistributionDrawer(); if(key==='tpv') renderTPVDrawer(); if(key==='rates') renderRatesDrawer(); if(key==='payments') renderPaymentsDrawer(); }); });
+    document.querySelectorAll('.kpi').forEach(k=>{ k.addEventListener('click', ev=>{ ev.stopPropagation(); const key=k.getAttribute('data-kpi'); if(key==='distribution') renderDistributionDrawer(); if(key==='tpv') renderTPVDrawer(); if(key==='rates') renderRatesDrawer(); if(key==='payments') renderPaymentsDrawer(); }); 
 
     /* -------------------------
        CSV / clipboard / download / print
