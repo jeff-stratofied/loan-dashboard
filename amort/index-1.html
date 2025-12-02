@@ -386,7 +386,8 @@
 
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
-  <script>
+  <script type="module">
+    import { loadLoans as fetchLoans } from "../js/loadloans.js";
     /* ============================
        Settings & Current Month
        ============================ */
@@ -401,9 +402,8 @@
 
     async function loadLoans() {
       try {
-        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-        const data = await res.json();
-        const arr = data.loans || [];
+        const data = await fetchLoans();
+        const arr = data || [];
         loans = arr.map(l => ({
           ...l,
           loanStartDate: l.loanStartDate || "",

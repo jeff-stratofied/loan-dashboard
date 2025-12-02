@@ -685,7 +685,8 @@
 
   <div id="tooltip"></div>
 
-<script>
+<script type="module">
+  import { loadLoans as fetchLoans } from "../js/loadloans.js";
     // --------------------------
     // Settings & base data
     // --------------------------
@@ -732,9 +733,8 @@
 
     async function loadLoansFromBackend() {
       try {
-        const res = await fetch(WORKER_URL, { cache: "no-store" });
-        const data = await res.json();
-        const arr = Array.isArray(data) ? data : (data.loans || []);
+        const data = await fetchLoans({ cache: "no-store" });
+        const arr = Array.isArray(data) ? data : (data?.loans || []);
         loans = arr.map(normalizeLoan);
       } catch (err) {
         console.error("Failed to load loans from backend", err);
