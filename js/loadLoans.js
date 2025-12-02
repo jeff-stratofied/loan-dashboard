@@ -1,21 +1,27 @@
-const LOANS_ENDPOINT = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
-const requestLoans = (...args) => globalThis["fetch"](...args);
+// js/loadLoans.js
 
-export async function loadLoans(init) {
-  const requestOptions = { method: "GET", ...(init || {}) };
+export async function loadLoans() {
+  const API_URL = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
 
   try {
-    const res = await requestLoans(LOANS_ENDPOINT, requestOptions);
+    const res = await fetch(API_URL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
 
-    if (requestOptions.method && requestOptions.method !== "GET") {
-      return res;
+    if (!res.ok) {
+      console.error("API Error:", res.status, res.statusText);
+      throw new Error(`API error: ${res.status}`);
     }
 
-    if (!res.ok) throw new Error("API error: " + res.status);
     const data = await res.json();
+
+    // Worker returns: { loans: [...], sha: "..." }
     return data.loans || [];
   } catch (err) {
     console.error("Error loading loans:", err);
-    return requestOptions.method && requestOptions.method !== "GET" ? null : [];
+    return [];
   }
 }
