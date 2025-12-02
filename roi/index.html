@@ -270,16 +270,34 @@ svg text {
        Script (organized with sections)
        ==================================== -->
   <script type="module">
-    /* -------------------------
+ /* -------------------------
    Backend API Endpoint
    ------------------------- */
-    const API_URL = "https://loan-dashboard-github-app.jeff-263.workers.dev";
+const API_URL = "https://loan-dashboard-github-app.jeff-263.workers.dev";
+
+/* -------------------------
+   Load loans from Worker API
+   ------------------------- */
+async function loadLoansFromAPI() {
+  try {
+    const res = await fetch(`${API_URL}/loans`);
+    if (!res.ok) {
+      console.error("API fetch error:", res.status, res.statusText);
+      return [];
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("Network error while loading loan data:", err);
+    return [];
+  }
+}
+
 
     /* -------------------------
    Imports
     ------------------------- */
     
-    import { loadLoans } from "/loan-dashboard/js/loadLoans.js";
+   
     import {
       addMonths,
       monthDiff,
