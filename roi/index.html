@@ -271,6 +271,7 @@ svg text {
        ==================================== -->
   <script type="module">
     import {
+      loadLoans,
       addMonths,
       monthDiff,
       formatDate,
@@ -292,10 +293,8 @@ svg text {
     let portfolio = {};
     let roiStartDate = new Date();
 
-    async function loadLoans() {
-      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-      loans = await res.json();
-
+    async function loadLoanData() {
+      loans = await loadLoans();
       loansWithAmort = attachSchedules(loans);
       portfolio = buildPortfolioViews(loansWithAmort);
 
@@ -1102,7 +1101,7 @@ function renderPaymentsDrawer() {
     } // END initROI()
 
     document.addEventListener("DOMContentLoaded", async () => {
-      await loadLoans();
+      await loadLoanData();
       document.getElementById("currentDate").textContent = formatDate(new Date());
       initROI();
     });
