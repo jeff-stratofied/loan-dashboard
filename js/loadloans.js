@@ -1,25 +1,14 @@
-// /js/loadLoans.js
+const API_URL = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
 
 export async function loadLoans() {
-  const API = "https://loan-dashboard-github-app.jeff-263.workers.dev/";
-
   try {
-    const res = await fetch(API, { cache: "no-store" });
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error("Network error");
 
-    if (!res.ok) {
-      throw new Error(`API returned ${res.status}`);
-    }
-
-    const loans = await res.json();
-
-    if (!Array.isArray(loans)) {
-      throw new Error("API did not return an array");
-    }
-
-    return loans;
-  }
-  catch (err) {
-    console.error("loadLoans() error:", err);
+    const data = await res.json();
+    return data.loans || [];
+  } catch (err) {
+    console.error("Error loading loans:", err);
     return [];
   }
 }
