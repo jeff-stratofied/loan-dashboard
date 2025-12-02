@@ -225,7 +225,8 @@
       const newLoans = collectLoansFromTable();
       const sanitizedLoans = newLoans.map(loan => ({
         ...loan,
-        loanStartDate: loan.loanStartDate || "",
+        loanStartDate: loan.loanStartDate || loan.purchaseDate || "",
+        purchaseDate: loan.purchaseDate || loan.loanStartDate || "",
       }));
 
       for (const loan of sanitizedLoans) {
@@ -269,40 +270,47 @@
     // Normalization & defaults
     // -----------------------------
     function normalizeLoan(l, idx) {
+      const purchasePrice = Number(l.purchasePrice ?? l.principal ?? 0);
+      const nominalRate = Number(l.nominalRate ?? l.rate ?? 0);
+      const termYears = Number(l.termYears ?? 10);
+      const graceYears = Number(l.graceYears ?? 0);
+      const purchaseDate = l.purchaseDate ?? l.loanStartDate ?? "";
+      const loanStartDate = l.loanStartDate ?? l.purchaseDate ?? "";
+
       return {
-        loanId: l.loanId ?? (idx + 1),
-        loanName: l.loanName ?? `Loan ${l.loanId ?? (idx + 1)}`,
+        id: l.id ?? l.loanId ?? (idx + 1),
+        name: l.name ?? l.loanName ?? `Loan ${l.loanId ?? (idx + 1)}`,
         school: l.school ?? "Select school…",
-        loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "",
-        purchaseDate: l.purchaseDate ?? "2024-01-01",
-        principal: Number(l.principal ?? 0),
-        rate: Number(l.rate ?? 0),
-        termYears: Number(l.termYears ?? 10),
-        graceYears: Number(l.graceYears ?? 0)
+        loanStartDate,
+        purchaseDate,
+        purchasePrice,
+        nominalRate,
+        termYears,
+        graceYears
       };
     }
 
     function getDefaultLoans() {
       return [
         {
-          loanId: 1,
-          loanName: "Loan 1 — Freshman Fall",
+          id: 1,
+          name: "Loan 1 — Freshman Fall",
           school: "Penn State",
           loanStartDate: "2024-01-01",
           purchaseDate: "2024-01-01",
-          principal: 7000,
-          rate: 0.0883,
+          purchasePrice: 7000,
+          nominalRate: 0.0883,
           termYears: 10,
           graceYears: 0.83
         },
         {
-          loanId: 2,
-          loanName: "Loan 2 — Sophomore Fall",
+          id: 2,
+          name: "Loan 2 — Sophomore Fall",
           school: "Ohio State",
           loanStartDate: "2024-08-01",
           purchaseDate: "2024-09-01",
-          principal: 7500,
-          rate: 0.075,
+          purchasePrice: 7500,
+          nominalRate: 0.075,
           termYears: 8,
           graceYears: 2
         }
@@ -329,8 +337,8 @@
         }).join("");
 
         tr.innerHTML = `
-          <td><input class="cell-id" type="number" value="${loan.loanId}" data-field="loanId"></td>
-          <td><input class="cell-name" type="text" value="${loan.loanName}" data-field="loanName"></td>
+          <td><input class="cell-id" type="number" value="${loan.id}" data-field="id"></td>
+          <td><input class="cell-name" type="text" value="${loan.name}" data-field="name"></td>
           <td>
             <select class="cell-school" data-field="school">
               ${schoolOptionsHtml}
@@ -338,8 +346,8 @@
           </td>
           <td><input class="cell-date" type="date" value="${loan.loanStartDate}" data-field="loanStartDate"></td>
           <td><input class="cell-date" type="date" value="${loan.purchaseDate}" data-field="purchaseDate"></td>
-          <td><input class="cell-number" type="number" step="0.01" value="${loan.principal}" data-field="principal"></td>
-          <td><input class="cell-number" type="number" step="0.0001" value="${loan.rate}" data-field="rate"></td>
+          <td><input class="cell-number" type="number" step="0.01" value="${loan.purchasePrice}" data-field="purchasePrice"></td>
+          <td><input class="cell-number" type="number" step="0.0001" value="${loan.nominalRate}" data-field="nominalRate"></td>
           <td><input class="cell-number" type="number" step="0.1" value="${loan.termYears}" data-field="termYears"></td>
           <td><input class="cell-number" type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears"></td>
           <td class="actions"><button type="button" onclick="deleteRow(${idx})">Delete</button></td>
@@ -357,7 +365,7 @@
         fields.forEach(f => {
           const key = f.dataset.field;
           let val = f.value;
-          if (["loanId", "principal", "rate", "termYears", "graceYears"].includes(key)) {
+          if (["id", "purchasePrice", "nominalRate", "termYears", "graceYears"].includes(key)) {
             val = Number(val);
           }
           obj[key] = val;
@@ -367,15 +375,15 @@
     }
 
     function addLoanRow() {
-      const nextId = loans.length ? Math.max(...loans.map(l => l.loanId || 0)) + 1 : 1;
+      const nextId = loans.length ? Math.max(...loans.map(l => l.id || 0)) + 1 : 1;
       loans.push({
-        loanId: nextId,
-        loanName: `Loan ${nextId}`,
+        id: nextId,
+        name: `Loan ${nextId}`,
         school: "Select school…",
         loanStartDate: "2024-01-01",
         purchaseDate: "2024-01-01",
-        principal: 0,
-        rate: 0,
+        purchasePrice: 0,
+        nominalRate: 0,
         termYears: 10,
         graceYears: 0
       });

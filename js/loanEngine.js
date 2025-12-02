@@ -13,18 +13,28 @@ export async function loadLoans() {
   // Cloudflare Worker returns { loans:[...], sha:"..." }
   const items = raw.loans || [];
 
-  // Normalize the backend fields into the shape the dashboards expect
-  const normalized = items.map((l, idx) => ({
-    id: l.loanId ?? idx + 1,
-    name: l.loanName,
-    school: l.school,
-    loanStartDate: l.loanStartDate,
-    purchaseDate: l.purchaseDate,
-    purchasePrice: Number(l.principal),
-    nominalRate: Number(l.rate),
-    termYears: Number(l.termYears),
-    graceYears: Number(l.graceYears),
-  }));
+  // Normalize backend fields into the unified shape
+  const normalized = items.map((l, idx) => {
+    const purchasePrice = Number(l.purchasePrice ?? l.principal ?? 0);
+    const nominalRate = Number(l.nominalRate ?? l.rate ?? 0);
+    const termYears = Number(l.termYears ?? 0);
+    const graceYears = Number(l.graceYears ?? 0);
+
+    const purchaseDate = l.purchaseDate || l.loanStartDate || "";
+    const loanStartDate = l.loanStartDate || l.purchaseDate || "";
+
+    return {
+      id: l.id ?? l.loanId ?? idx + 1,
+      name: l.name ?? l.loanName ?? `Loan ${l.loanId ?? idx + 1}`,
+      school: l.school ?? "Unknown",
+      loanStartDate,
+      purchaseDate,
+      purchasePrice,
+      nominalRate,
+      termYears,
+      graceYears,
+    };
+  });
 
   return normalized;
 }
@@ -68,13 +78,15 @@ export function formatMonthYear(date) {
 
 export function buildAmortSchedule(loan) {
   const {
-    principal,
+    purchasePrice,
     nominalRate,
     termYears,
     graceYears,
     loanStartDate,
     purchaseDate
   } = loan;
+
+  const principal = purchasePrice;
 
   const monthlyRate = nominalRate / 12;
   const totalMonths = termYears * 12;
@@ -229,8 +241,8 @@ export function buildPortfolioViews(loansWithAmort) {
         cumInterest += r.interest;
         currentValue = r.balance + cumInterest;
 
-        const roi = loan.principal
-          ? (currentValue - loan.principal) / loan.principal
+        const roi = loan.purchasePrice
+          ? (currentValue - loan.purchasePrice) / loan.purchasePrice
           : 0;
 
         return {
@@ -286,7 +298,7 @@ export function buildPortfolioViews(loansWithAmort) {
   // ----------------------------------------------
 
   const totalInvested = loansWithAmort.reduce((sum, loan) => {
-    return sum + loan.principal;
+    return sum + loan.purchasePrice;
   }, 0);
 
   const portfolioValue = loansWithAmort.reduce((sum, loan) => {
