@@ -1107,16 +1107,32 @@ function renderPaymentsDrawer() {
     } // END initROI()
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const loadedLoans = await loadLoans();
+  let rawLoans = await loadLoans();
 
-      if (!loadedLoans.length) {
-        console.error("No loan data loaded");
-        return;
-      }
+  if (!rawLoans.length) {
+    console.error("No loan data loaded");
+    return;
+  }
 
-      document.getElementById("currentDate").textContent = formatDate(new Date());
-      initROI(loadedLoans);
-    });
+  // --- NORMALIZE FIELDS FOR ROI ENGINE ---
+  const loadedLoans = rawLoans.map((l, idx) => ({
+    id: l.loanId ?? idx + 1,
+    name: l.loanName ?? `Loan ${idx + 1}`,
+    school: l.school ?? "",
+    purchasePrice: l.principal ?? 0,
+    purchaseDate: l.purchaseDate,
+    loanStartDate: l.loanStartDate,
+    nominalRate: l.rate ?? 0,
+    termYears: l.termYears ?? 10,
+    graceYears: l.graceYears ?? 0,
+  }));
+
+  document.getElementById("currentDate")
+    .textContent = formatDate(new Date());
+
+  initROI(loadedLoans);
+});
+
 
     // theme toggle
 window.addEventListener("DOMContentLoaded", () => {
