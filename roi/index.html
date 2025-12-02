@@ -1242,6 +1242,21 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 </script>
+
+<div id="chartTooltip"
+     style="position:fixed;display:none;
+            background:var(--card);
+            padding:6px 10px;
+            border-radius:6px;
+            font-size:12px;
+            box-shadow:0 2px 6px rgba(0,0,0,0.2);
+            pointer-events:none;
+            z-index:9999;">
+</div>
+
+<script>
+  window.chartTooltip = document.getElementById("chartTooltip");
+</script>
 </body>
 </html>
 
