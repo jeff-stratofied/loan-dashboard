@@ -429,55 +429,41 @@
        ============================ */
     // Dynamic loan loading from backend API
     let loans = [];
+    let portfolio = null;
 
     async function loadLoans() {
       try {
+        // Unified loan fetch (Cloudflare Worker)
         const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
         const data = await res.json();
-        const arr = data.loans || [];
-        loans = arr.map(l => ({
+        const arr = data.loans || data || [];
+
+        loans = arr.map((l, idx) => ({
           ...l,
-          loanStartDate: l.loanStartDate || "",
+          id: l.loanId ?? l.id ?? (idx + 1),
+          loanId: l.loanId ?? l.id ?? (idx + 1),
+          loanName: l.loanName ?? `Loan ${idx + 1}`,
+          principal: Number(l.purchasePrice ?? l.principal ?? 0),
+          purchasePrice: Number(l.purchasePrice ?? l.principal ?? 0),
+          nominalRate: Number(l.nominalRate ?? l.rate ?? 0),
+          termYears: Number(l.termYears ?? l.term ?? 0),
+          graceYears: Number(l.graceYears ?? l.grace ?? 0),
+          loanStartDate: l.loanStartDate || l.purchaseDate || "",
+          purchaseDate: l.purchaseDate || l.loanStartDate || "",
+          upfrontFee: Number(l.upfrontFee ?? 150),
+          monthlyFeeStart: Number(l.monthlyFeeStart ?? l.feePerMonth ?? 9)
         }));
+
+        // Build amort schedules + ownership logic using loanEngine
+        loansWithAmort = attachSchedules(loans);
+
+        // Build shared portfolio view (added in Phase C)
+        portfolio = buildPortfolioViews(loansWithAmort);
       } catch (err) {
         console.error("Failed to load loans", err);
         loans = [];
+        loansWithAmort = [];
       }
-    }
-
-    /* ============================
-       Amortization (grace interest capitalized)
-       ============================ */
-    function calcAmort(principal, annualRate, termYears, graceYears) {
-      const monthlyRate = annualRate / 12;
-      const totalMonths = Math.round(termYears * 12);
-      const graceMonths = Math.round(graceYears * 12);
-      const repayMonths = Math.max(1, totalMonths - graceMonths);
-
-      let balance = principal;
-      const schedule = [];
-
-      // Grace months — interest accrues and capitalizes (payment = 0)
-      for (let m = 1; m <= graceMonths; m++) {
-        const interest = +(balance * monthlyRate).toFixed(2);
-        balance = +(balance + interest).toFixed(2); // capitalize
-        schedule.push({ monthIndex: m, payment: 0, principalPaid: 0, interest, balance });
-      }
-
-      // Payment computed on capitalized balance after grace
-      const payment = monthlyRate === 0
-        ? +(balance / repayMonths).toFixed(2)
-        : +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -repayMonths))).toFixed(2);
-
-      // Repayment months
-      for (let m = 1; m <= repayMonths; m++) {
-        const interest = +(balance * monthlyRate).toFixed(2);
-        const principalPaid = +Math.min(balance, +(payment - interest).toFixed(2));
-        balance = +(Math.max(0, balance - principalPaid).toFixed(2));
-        schedule.push({ monthIndex: graceMonths + m, payment: +payment.toFixed(2), principalPaid, interest, balance });
-      }
-
-      return { payment, schedule };
     }
 
     /* ============================
@@ -486,65 +472,29 @@
     let loansWithAmort = [];
 
     function rebuildLoansWithAmort() {
-      loansWithAmort = loans.map((raw, idx) => {
-        // Normalize fields coming from the backend
-        const id = raw.loanId ?? raw.id ?? (idx + 1);
+      loansWithAmort = loansWithAmort.map((loan) => {
+        // We now rely on loansWithAmort[i].amort.schedule
+        // NO inline amortization logic should remain here.
 
-        const purchasePrice = Number(
-          raw.purchasePrice ?? raw.principal ?? 0
-        );
-        const nominalRate = Number(
-          raw.nominalRate ?? raw.rate ?? 0
-        );
-        const termYears = Number(
-          raw.termYears ?? raw.term ?? 0
-        );
-        const graceYears = Number(
-          raw.graceYears ?? raw.grace ?? 0
-        );
-
-        const upfrontFee = Number(
-          raw.upfrontFee ?? 150
-        );
-        const monthlyFeeStart = Number(
-          raw.monthlyFeeStart ?? raw.feePerMonth ?? 9
-        );
-
-        const loanData = {
-          ...raw,
-          id,
-          loanId: id,
-          loanName: raw.loanName ?? `Loan ${id}`,
-          school: raw.school ?? "",
-          loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
-          termYears,
-          graceYears,
-          purchasePrice,
-          nominalRate,
-          upfrontFee,
-          monthlyFeeStart
-        };
-
-        // Amortization schedule (grace interest capitalized)
-        const amort = calcAmort(
-          loanData.purchasePrice,
-          loanData.nominalRate,
-          loanData.termYears,
-          loanData.graceYears
-        );
-
-        const loanStart = new Date(loanData.loanStartDate);
-        const purchaseDt = new Date(loanData.purchaseDate);
+        const loanStart = new Date(loan.loanStartDate);
+        const purchaseDt = new Date(loan.purchaseDate);
         const monthsSinceStart = monthDiff(loanStart, purchaseDt);
 
-        amort.schedule = amort.schedule.map(row => {
+        const schedule = loan.amort.schedule.map((row, i) => {
           const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
           return {
             ...row,
-            ownershipMonthIndex,
-            isOwned: ownershipMonthIndex >= 1
+            monthIndex: i + 1,
+            loanDate: addMonths(loanStart, i),
+            ownershipDate: row.isOwned ? addMonths(purchaseDt, ownershipMonthIndex - 1) : null,
+            ownershipMonthIndex
           };
         });
+
+        const firstOwnedIdx = schedule.findIndex(r => r.isOwned);
+        const balanceAtPurchase = firstOwnedIdx >= 0
+          ? (schedule[firstOwnedIdx - 1]?.balance ?? schedule[firstOwnedIdx]?.balance ?? 0)
+          : 0;
 
         // Build cumulative principal, interest, and fees
         let cumPrincipal = 0;
@@ -553,29 +503,17 @@
 
         const termMonths = Math.max(
           1,
-          Math.round(loanData.termYears * 12)
+          Math.round(loan.termYears * 12)
         );
 
-        const balanceAtPurchase = amort.schedule[Math.max(0, monthsSinceStart - 1)]?.balance ?? 0;
-
-        amort.schedule = amort.schedule.map((row, i) => {
-          row.monthIndex = i + 1;
-          row.loanDate = addMonths(loanStart, row.monthIndex - 1);
-          row.ownershipDate = row.isOwned
-            ? addMonths(purchaseDt, row.ownershipMonthIndex - 1)
-            : null;
-
-          return row;
-        });
-
-        const cumSchedule = amort.schedule.map(row => {
+        const cumSchedule = schedule.map(row => {
           const m = row.monthIndex;
 
           // Upfront fee only in month 1
-          const upfront = (m === 1 ? loanData.upfrontFee : 0);
+          const upfront = (m === 1 ? loan.upfrontFee : 0);
 
           // Sliding monthly fee from monthlyFeeStart → 0 over the term
-          let monthlyFee = loanData.monthlyFeeStart * (1 - m / termMonths);
+          let monthlyFee = loan.monthlyFeeStart * (1 - m / termMonths);
           if (!Number.isFinite(monthlyFee) || monthlyFee < 0) {
             monthlyFee = 0;
           }
@@ -608,13 +546,15 @@
         const ownedI = ownedRows.map(r => r.cumInterest);
 
         return {
-          ...loanData,
-          amort,
-          schedule: amort.schedule,
+          ...loan,
+          amort: { ...loan.amort, schedule },
+          schedule,
           cumSchedule,
           miniPts,
           monthsSinceStart,
-          balanceAtPurchase
+          balanceAtPurchase,
+          ownedP,
+          ownedI
         };
       });
     }
