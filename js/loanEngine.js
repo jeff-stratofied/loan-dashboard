@@ -6,6 +6,29 @@
 //  Helpers
 // -------------------------------
 
+export async function loadLoans() {
+  const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
+  const raw = await res.json();
+
+  // Cloudflare Worker returns { loans:[...], sha:"..." }
+  const items = raw.loans || [];
+
+  // Normalize the backend fields into the shape the dashboards expect
+  const normalized = items.map((l, idx) => ({
+    id: l.loanId ?? idx + 1,
+    name: l.loanName,
+    school: l.school,
+    loanStartDate: l.loanStartDate,
+    purchaseDate: l.purchaseDate,
+    purchasePrice: Number(l.principal),
+    nominalRate: Number(l.rate),
+    termYears: Number(l.termYears),
+    graceYears: Number(l.graceYears),
+  }));
+
+  return normalized;
+}
+
 export function addMonths(date, n) {
   const d = new Date(date);
   d.setMonth(d.getMonth() + n);

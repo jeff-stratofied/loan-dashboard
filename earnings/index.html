@@ -596,6 +596,7 @@
 
   <script type="module">
     import {
+      loadLoans,
       addMonths,
       monthDiff,
       formatDate,
@@ -627,25 +628,7 @@
 
     async function loadLoansFromBackend() {
       try {
-        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-        const data = await res.json();
-        const arr = data.loans || data || [];
-        loans = arr.map((l, idx) => ({
-          ...l,
-          id: l.loanId ?? l.id ?? (idx + 1),
-          loanId: l.loanId ?? l.id ?? (idx + 1),
-          loanName: l.loanName ?? `Loan ${idx + 1}`,
-          principal: Number(l.purchasePrice ?? l.principal ?? 0),
-          purchasePrice: Number(l.purchasePrice ?? l.principal ?? 0),
-          nominalRate: Number(l.nominalRate ?? l.rate ?? 0),
-          termYears: Number(l.termYears ?? l.term ?? 0),
-          graceYears: Number(l.graceYears ?? l.grace ?? 0),
-          loanStartDate: l.loanStartDate || l.purchaseDate || "",
-          purchaseDate: l.purchaseDate || l.loanStartDate || "",
-          upfrontFee: Number(l.upfrontFee ?? 150),
-          monthlyFeeStart: Number(l.monthlyFeeStart ?? l.feePerMonth ?? 9)
-        }));
-
+        loans = await loadLoans();
         const loansWithAmort = attachSchedules(loans);
         portfolio = buildPortfolioViews(loansWithAmort);
 
