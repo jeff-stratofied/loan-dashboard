@@ -1,0 +1,6 @@
+name = "loan-dashboard-github-app"
+main = "worker.js"
+compatibility_date = "2025-12-02"
+
+[vars]
+# nothing needed yet
