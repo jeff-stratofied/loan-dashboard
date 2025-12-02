@@ -595,8 +595,8 @@
   </aside>
 
   <script type="module">
+    import { loadLoans } from "../js/loadLoans.js";
     import {
-      loadLoans,
       addMonths,
       monthDiff,
       formatDate,
@@ -625,30 +625,6 @@
     let earningsSeries = [];
     let earningsKpis = { ...defaultEarningsKpis };
     let earningsStartDate = new Date();
-
-    async function loadLoansFromBackend() {
-      try {
-        loans = await loadLoans();
-        const loansWithAmort = attachSchedules(loans);
-        portfolio = buildPortfolioViews(loansWithAmort);
-
-        earningsSeries = portfolio.earningsSeries || [];
-        earningsKpis = portfolio.earningsKpis || { ...defaultEarningsKpis };
-
-        loansWithEarnings = (portfolio.loans || loansWithAmort).map(l => ({
-          ...l,
-          earningsSchedule: l.earningsSchedule || []
-        }));
-
-        earningsStartDate = computeEarliestDate(earningsSeries);
-      } catch (err) {
-        console.error("Failed to load loans from backend", err);
-        loans = [];
-        loansWithEarnings = [];
-        earningsSeries = [];
-        earningsKpis = { ...defaultEarningsKpis };
-      }
-    }
 
     function computeEarliestDate(seriesMap){
       const timestamps = Object.values(seriesMap || {}).flatMap(arr =>
@@ -1281,7 +1257,28 @@
     }
 
     async function initPage() {
-      await loadLoansFromBackend();
+      try {
+        loans = await loadLoans();
+        const loansWithAmort = attachSchedules(loans);
+        portfolio = buildPortfolioViews(loansWithAmort);
+
+        earningsSeries = portfolio.earningsSeries || [];
+        earningsKpis = portfolio.earningsKpis || { ...defaultEarningsKpis };
+
+        loansWithEarnings = (portfolio.loans || loansWithAmort).map(l => ({
+          ...l,
+          earningsSchedule: l.earningsSchedule || []
+        }));
+
+        earningsStartDate = computeEarliestDate(earningsSeries);
+      } catch (err) {
+        console.error("Failed to load loans", err);
+        loans = [];
+        loansWithEarnings = [];
+        earningsSeries = [];
+        earningsKpis = { ...defaultEarningsKpis };
+      }
+
       renderKPIs();
       renderLoanTiles();
       bindKpiClickHandlers();
