@@ -1200,32 +1200,3 @@ window.addEventListener("DOMContentLoaded", () => {
 </body>
 </html>
 
-<!-- Added customTooltip function -->
-<script>
-function customTooltip(context) {
-    let tooltipEl = document.getElementById('chartjs-tooltip');
-    if (!tooltipEl) {
-        tooltipEl = document.createElement('div');
-        tooltipEl.id = 'chartjs-tooltip';
-        tooltipEl.style.position = 'absolute';
-        tooltipEl.style.background = 'rgba(0,0,0,0.85)';
-        tooltipEl.style.color = 'var(--card)';
-        tooltipEl.style.padding = '8px 12px';
-        tooltipEl.style.borderRadius = '6px';
-        tooltipEl.style.pointerEvents = 'none';
-        tooltipEl.style.transition = '0.1s ease';
-        tooltipEl.style.zIndex = '9999';
-        document.body.appendChild(tooltipEl);
-    }
-    const tooltip = context.tooltip;
-    if (tooltip.opacity === 0) {
-        tooltipEl.style.opacity = 0;
-        return;
-    }
-    tooltipEl.style.opacity = 1;
-    tooltipEl.innerHTML = `<div style="font-weight:600;font-size:13px;">${tooltip.dataPoints[0].formattedValue}</div>`;
-    const { offsetLeft, offsetTop } = context.chart.canvas;
-    tooltipEl.style.left = offsetLeft + tooltip.caretX + 15 + 'px';
-    tooltipEl.style.top = offsetTop + tooltip.caretY + 'px';
-}
-</script>
