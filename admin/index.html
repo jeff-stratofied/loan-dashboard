@@ -164,12 +164,8 @@
   </table>
 
   <script>
-    // Worker URL
-    const WORKER_BASE_URL = "https://loan-dashboard-api.jeff-263.workers.dev";
-
     // Shared state
     let loans = [];
-    let currentSha = null;
 
     // School dropdown options (you can edit this list)
     const SCHOOL_OPTIONS = [
@@ -202,16 +198,13 @@
       setStatus("Loading loans…");
 
       try {
-        const res = await fetch(`${WORKER_BASE_URL}/loans`, { cache: "no-store" });
-        if (!res.ok) throw new Error("Worker error " + res.status);
-
+        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
         const data = await res.json();
-        currentSha = data.sha || null;
-        loans = (data.loans || []).map((l, i) => normalizeLoan(l, i));
+        const arr = data.loans || data || [];
+        loans = arr.map((l, i) => normalizeLoan(l, i));
 
         if (!loans.length) {
           loans = getDefaultLoans();
-          currentSha = null;
         }
 
         renderTable();
@@ -219,13 +212,12 @@
       } catch (err) {
         console.error(err);
         loans = getDefaultLoans();
-        currentSha = null;
         renderTable();
         setStatus("Error loading from backend — using defaults.", "error");
       }
     }
 
-    async function saveToBackend() {
+    async function handleSave() {
       const saveBtn = document.getElementById("save-btn");
       saveBtn.disabled = true;
       setStatus("Saving…");
@@ -247,19 +239,7 @@
       }
 
       try {
-        const res = await fetch(`${WORKER_BASE_URL}/loans`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ loans: sanitizedLoans, sha: currentSha })
-        });
-
-        const data = await res.json();
-
-        if (!res.ok || !data.ok) {
-          throw new Error("Worker save failed");
-        }
-
-        currentSha = data.content?.sha || currentSha;
+        await saveLoans(sanitizedLoans);
         loans = sanitizedLoans;
         setStatus("Saved successfully.");
       } catch (err) {
@@ -267,6 +247,21 @@
         setStatus("Failed to save — check Worker & GitHub.", "error");
       } finally {
         saveBtn.disabled = false;
+      }
+    }
+
+    async function saveLoans(updatedLoans) {
+      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedLoans)
+      });
+
+      if (!res.ok) {
+        alert("Error saving loans!");
+        throw new Error("Error saving loans");
+      } else {
+        alert("Loans updated!");
       }
     }
 
@@ -396,7 +391,7 @@
     // Wire up buttons & init
     // -----------------------------
     document.getElementById("add-row").addEventListener("click", addLoanRow);
-    document.getElementById("save-btn").addEventListener("click", saveToBackend);
+    document.getElementById("save-btn").addEventListener("click", handleSave);
     window.addEventListener("DOMContentLoaded", loadFromBackend);
   </script>
 </body>

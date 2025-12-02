@@ -608,17 +608,6 @@
     // --------------------------
     // Settings & base data
     // --------------------------
-    function OLD_addMonths(date, months) {
-      const d = new Date(date);
-      d.setMonth(d.getMonth() + months);
-      return d;
-    }
-
-    function OLD_monthDiff(d1, d2) {
-      return (d2.getFullYear() - d1.getFullYear()) * 12 +
-             (d2.getMonth() - d1.getMonth());
-    }
-
     const defaultEarningsKpis = {
       totalNetToDate: 0,
       totalNetProjected: 0,
@@ -684,11 +673,6 @@
     // --------------------------
     // Amortization + earnings
     // --------------------------
-    function OLD_calcAmort(){ return null; }
-    function OLD_rebuildLoansWithEarnings(){ return null; }
-    function OLD_computeEarningsKPIs(){ return null; }
-    function OLD_getCurrentEarningsRow(){ return null; }
-
     let totalPrincipal = 0;
 
     let miniHtmlTooltip = null;

@@ -405,18 +405,6 @@
       buildPortfolioViews
     } from "../js/loanEngine.js";
 
-    // Generic helpers
-    function OLD_addMonths(date, months) {
-      const d = new Date(date);
-      d.setMonth(d.getMonth() + months);
-      return d;
-    }
-
-    function OLD_monthDiff(d1, d2) {
-      return (d2.getFullYear() - d1.getFullYear()) * 12 +
-             (d2.getMonth() - d1.getMonth());
-    }
-
     function monthsSincePortfolioStart() {
       if (!loansWithAmort.length) return 1;
       const earliestStart = Math.min(...loansWithAmort.map(l => new Date(l.loanStartDate).getTime()));
