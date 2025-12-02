@@ -124,5 +124,3 @@ export function createLineChart({
   return svg;
 }
 
-
-// This gives you perfectly aligned hovers, dotted vertical lines, consistent axis scaling, and matching charts across all pages.
