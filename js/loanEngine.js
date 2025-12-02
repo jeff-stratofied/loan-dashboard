@@ -6,7 +6,7 @@
 //  Helpers
 // -------------------------------
 
-import { loadLoans as fetchLoans } from "./loadloans.js";
+import { loadLoans as fetchLoans } from "./loadLoans.js";
 
 export async function loadLoans() {
   const raw = await fetchLoans();
