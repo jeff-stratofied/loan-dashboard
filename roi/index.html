@@ -965,7 +965,6 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
 function renderPaymentsDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
-  drawerBalanceAtPurchase.textContent = '';
 
   drawerTitle.textContent = 'Total Expected Payments (monthly)';
   drawerSub.textContent = 'Sum of scheduled payments across loans';
@@ -986,24 +985,18 @@ function renderPaymentsDrawer() {
     Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate)))
   );
 
-  // Build months up to max schedule length
   const maxMonths = Math.max(...loansWithAmort.map(l => l.amort.schedule.length));
 
   const monthLabels = [];
   const payments = [];
 
   for (let m = 1; m <= maxMonths; m++) {
-    // build actual calendar month label
     const dt = new Date(earliestStart);
     dt.setMonth(dt.getMonth() + (m - 1));
     monthLabels.push(
       dt.toLocaleDateString("en-US", { year: "numeric", month: "short" })
     );
 
-    // -----------------------------
-    // FIX 2: Correct portfolio payments:
-    // only include payments AFTER the loan is owned
-    // -----------------------------
     let sum = 0;
     loansWithAmort.forEach(l => {
       const row = l.amort.schedule.find(s => s.monthIndex === m);
@@ -1043,9 +1036,6 @@ function renderPaymentsDrawer() {
   path.setAttribute("fill", "none");
   svg.appendChild(path);
 
-  // -----------------------------
-  // FIX 3: Proper hover and labels alignment
-  // -----------------------------
   payments.forEach((p, i) => {
     const x = pad + i * stepX;
 
@@ -1078,6 +1068,7 @@ function renderPaymentsDrawer() {
 
   drawerChartArea.appendChild(svg);
 }
+
     /* -------------------------
        KPI wiring & interactions
        ------------------------- */
