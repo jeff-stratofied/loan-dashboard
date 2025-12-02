@@ -296,22 +296,22 @@ svg text {
        ------------------------- */
     // Dynamic loans loaded from backend
     let loans = [];
+    let loansWithAmort = [];
+    let portfolio = {};
 
     async function loadLoans() {
       const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-      const data = await res.json();
-      loans = (data.loans || []).map(l => ({
+      loans = await res.json();
+
+      loansWithAmort = attachSchedules(loans);
+      portfolio = buildPortfolioViews(loansWithAmort);
+
+      loansWithAmort = (portfolio.loans || loansWithAmort).map(l => ({
         ...l,
-        id: l.loanId,
-        name: l.loanName ?? `Loan ${l.loanId}`,
-        school: l.school ?? "",
-        loanStartDate: l.loanStartDate || "",
-        termYears: Number(l.termYears ?? 0),
-        graceYears: Number(l.graceYears ?? 0),
-        purchasePrice: Number(l.purchasePrice ?? 0),
-        nominalRate: Number(l.nominalRate ?? 0),
-        upfrontFee: Number(l.upfrontFee ?? 150),
-        monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
+        roiSeries: l.roiSeries || [],
+        cumSchedule: l.cumSchedule || [],
+        miniPts: l.miniPts || [],
+        balanceAtPurchase: l.balanceAtPurchase ?? 0
       }));
     }
 
@@ -333,105 +333,9 @@ svg text {
     async function initROI() {
       const TODAY = new Date();
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-      const formattedLoans = loans.map(l => ({
-        ...l,
-        purchasePrice: Number(l.principal ?? l.purchasePrice ?? 0),
-        nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-      }));
 
-      const loansWithAmort = formattedLoans.map(l => {
-        // compute amortization schedule for this loan
-        const amortData = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);   // or the correct amortization function used in your project
-        const schedule = amortData.schedule;
-
-        const loanStart = new Date(l.loanStartDate);
-        const purchaseDt = new Date(l.purchaseDate);
-        const monthsSinceStart = monthDiff(loanStart, purchaseDt);
-
-        // compute ownership fields
-        const scheduleWithOwnership = schedule.map(row => {
-          const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
-          const isOwned = ownershipMonthIndex >= 1;
-          const loanDate = addMonths(loanStart, row.monthIndex - 1);
-          const ownershipDate = isOwned
-            ? addMonths(purchaseDt, ownershipMonthIndex - 1)
-            : null;
-          return {
-            ...row,
-            ownershipMonthIndex,
-            isOwned,
-            loanDate,
-            ownershipDate
-          };
-        });
-
-        // compute cumulative values ONLY for owned rows
-        let cumP = 0, cumI = 0, cumTotal = 0;
-        const cumSchedule = scheduleWithOwnership.map(r => {
-          if (r.isOwned) {
-            cumP += r.principalPaid;
-            cumI += r.interest;
-            cumTotal += r.payment;
-          }
-          return {
-            ...r,
-            cumPrincipal: Number(cumP.toFixed(2)),
-            cumInterest: Number(cumI.toFixed(2)),
-            cumTotal: Number(cumTotal.toFixed(2))
-          };
-        });
-
-        // compute balance at purchase
-        const balanceAtPurchase =
-          schedule[Math.max(0, monthsSinceStart - 1)]?.balance ?? 0;
-
-        let cumFees = 0;
-        const roiSeries = [];
-        cumSchedule.forEach(s => {
-          if (!s.isOwned) return;
-
-          const m = s.ownershipMonthIndex;
-
-          let upfrontFee = (m === 1 ? l.upfrontFee : 0);
-
-          let termMonths = Number(l.termYears * 12) || 1;   // prevent divide by zero
-          let monthlyFee = Number(l.monthlyFeeStart) * (1 - (m / termMonths));
-          if (isNaN(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
-
-          let feeThisMonth = upfrontFee + monthlyFee;
-          cumFees += feeThisMonth;
-
-          const cashCollected = s.cumPrincipal + s.cumInterest;
-          const loanValue = cashCollected - cumFees;
-          // ROI based ONLY on ownership timeline
-          const roi = (
-              s.cumPrincipal +
-              s.cumInterest -
-              l.purchasePrice
-          ) / l.purchasePrice;
-          roiSeries.push({
-            month: s.ownershipMonthIndex,
-            ownershipDate: s.ownershipDate,
-            roi,
-            loanValue,
-            cumFees
-          });
-        });
-        const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ y:s.roi, ownershipDate: s.ownershipDate }));
-
-        // return updated loan object
-        return {
-          ...l,
-          amort: amortData,
-          amortSchedule: schedule,
-          monthsSinceStart,
-          scheduleWithOwnership,
-          cumSchedule,
-          balanceAtPurchase,
-          roiSeries,
-          miniPts
-        };
-      });
+      const roiSeries = portfolio.roiSeries;
+      const roiKpis   = portfolio.roiKpis;
 
     /* -------------------------
        KPI computations
@@ -448,17 +352,7 @@ svg text {
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
 
-    function computeKPIs(list){
-      const total = list.reduce((s,l)=>s + l.purchasePrice,0);
-      const weightedROI = list.reduce((s,l)=>{
-        const entry = getCurrentOwnedRoiEntry(l);
-        return s + l.purchasePrice * (entry.roi || 0);
-      }, 0) / Math.max(1, total);
-      const projectedWeightedROI = list.reduce((s,l)=> s + l.purchasePrice * ( (l.roiSeries[l.roiSeries.length-1] || {}).roi || 0 ), 0) / Math.max(1, total);
-      const avgRate = list.reduce((s,l)=> s + l.nominalRate * l.purchasePrice, 0) / Math.max(1, total);
-      return { total, weightedROI, projectedWeightedROI, avgRate };
-    }
-    const kpis = computeKPIs(loansWithAmort);
+    const kpis = roiKpis || { weightedROI: 0, projectedWeightedROI: 0, avgRate: 0, total: 0 };
 
     /* -------------------------
        Small chart utilities (line & bar with hover)
