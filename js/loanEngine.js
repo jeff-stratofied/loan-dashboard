@@ -132,8 +132,174 @@ export function attachSchedules(loans) {
 //
 
 export function buildPortfolioViews(loansWithAmort) {
+  
+  const TODAY = new Date();
+  const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
+
+  // ----------------------------------------------
+  // 1) Next-Month Expected Income (Option A)
+  // ----------------------------------------------
+  function sameMonthYear(d1, d2) {
+    return (
+      d1.getFullYear() === d2.getFullYear() &&
+      d1.getMonth() === d2.getMonth()
+    );
+  }
+
+  function calcMonthlyExpectedIncome(targetMonthDate) {
+    return loansWithAmort.reduce((sum, loan) => {
+      const purchaseDate = new Date(loan.purchaseDate);
+
+      return sum + loan.amort.schedule
+        .filter(r => {
+          const payDate = r.loanDate;
+          const sameMonth = sameMonthYear(payDate, targetMonthDate);
+          const owned = payDate >= purchaseDate;
+          return sameMonth && owned;
+        })
+        .reduce((s, r) => s + r.payment, 0);
+    }, 0);
+  }
+
+  // Default: 24-month forward projection
+  const forwardMonths = 24;
+  const incomeLabels = [];
+  const incomePayments = [];
+
+  for (let i = 0; i < forwardMonths; i++) {
+    const d = new Date(nextMonthDate);
+    d.setMonth(d.getMonth() + i);
+
+    incomeLabels.push(
+      d.toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    );
+    incomePayments.push(calcMonthlyExpectedIncome(d));
+  }
+
+  const monthlyIncomeKpi = calcMonthlyExpectedIncome(nextMonthDate);
+
+
+  // ----------------------------------------------
+  // 2) ROI Series (per-loan & portfolio)
+  // ----------------------------------------------
+  //
+  // ROI definition:
+  //
+  //   ROI = (CurrentValue - PurchasePrice) / PurchasePrice
+  //
+  // CurrentValue = principal remaining + cumulative interest earned
+  //
+  // Everything aligned to loanDate.
+
+
+  const roiSeries = {};
+  const roiKpis = {};
+
+  loansWithAmort.forEach(loan => {
+    const purchase = new Date(loan.purchaseDate);
+    let cumInterest = 0;
+    let currentValue = 0;
+
+    roiSeries[loan.id] = loan.amort.schedule
+      .filter(r => r.loanDate >= purchase)
+      .map(r => {
+        cumInterest += r.interest;
+        currentValue = r.balance + cumInterest;
+
+        const roi = loan.principal
+          ? (currentValue - loan.principal) / loan.principal
+          : 0;
+
+        return {
+          date: r.loanDate,
+          roi: roi,
+          balance: r.balance,
+          cumInterest: cumInterest
+        };
+      });
+
+    // Latest ROI KPI
+    roiKpis[loan.id] =
+      roiSeries[loan.id].length > 0
+        ? roiSeries[loan.id][roiSeries[loan.id].length - 1].roi
+        : 0;
+  });
+
+
+  // ----------------------------------------------
+  // 3) Earnings Timeline (per-loan & portfolio)
+  // ----------------------------------------------
+  //
+  // Earnings = cumulative interest (owned months only).
+  //
+
+  const earningsSeries = {};
+  const earningsKpis = {};
+
+  loansWithAmort.forEach(loan => {
+    const purchase = new Date(loan.purchaseDate);
+    let cum = 0;
+
+    earningsSeries[loan.id] = loan.amort.schedule
+      .filter(r => r.loanDate >= purchase)
+      .map(r => {
+        cum += r.interest;
+        return {
+          date: r.loanDate,
+          interest: r.interest,
+          cumulative: cum
+        };
+      });
+
+    earningsKpis[loan.id] =
+      earningsSeries[loan.id].length > 0
+        ? earningsSeries[loan.id][earningsSeries[loan.id].length - 1].cumulative
+        : 0;
+  });
+
+
+  // ----------------------------------------------
+  // 4) Amort KPIs (Total Invested, Portfolio Value, etc.)
+  // ----------------------------------------------
+
+  const totalInvested = loansWithAmort.reduce((sum, loan) => {
+    return sum + loan.principal;
+  }, 0);
+
+  const portfolioValue = loansWithAmort.reduce((sum, loan) => {
+    const last = loan.amort.schedule[loan.amort.schedule.length - 1];
+    return sum + last.balance;
+  }, 0);
+
+  const amortKpis = {
+    totalInvested,
+    portfolioValue,
+    monthlyIncomeKpi,
+    nextMonthLabel: nextMonthDate.toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric"
+    })
+  };
+
+
+  // ----------------------------------------------
+  // Return unified views
+  // ----------------------------------------------
+
   return {
-    // placeholder — filled in PHASE C
-    loans: loansWithAmort
+    loans: loansWithAmort,
+
+    // amort page data
+    incomeLabels,
+    incomePayments,
+    amortKpis,
+
+    // ROI page data
+    roiSeries,
+    roiKpis,
+
+    // earnings page data
+    earningsSeries,
+    earningsKpis
   };
 }
