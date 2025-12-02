@@ -270,6 +270,15 @@ svg text {
        Script (organized with sections)
        ==================================== -->
   <script type="module">
+    /* -------------------------
+   Backend API Endpoint
+   ------------------------- */
+    const API_URL = "https://loan-dashboard-github-app.jeff-263.workers.dev";
+
+    /* -------------------------
+   Imports
+    ------------------------- */
+    
     import { loadLoans } from "/loan-dashboard/js/loadLoans.js";
     import {
       addMonths,
@@ -1101,7 +1110,7 @@ function renderPaymentsDrawer() {
     } // END initROI()
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const loadedLoans = await loadLoans();
+      const loadedLoans = await loadLoansFromAPI();
 
       if (!loadedLoans.length) {
         console.error("No loan data loaded");
