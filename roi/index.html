@@ -324,13 +324,15 @@ svg text {
     async function initROI(loadedLoans) {
   prepareLoanData(loadedLoans);
 
-  // Promote ROI data to global scope so UI can use it
+  // Promote to global scope so UI can access them
   window.roiSeries = portfolio.roiSeries || {};
   window.roiKpis   = portfolio.roiKpis   || {};
 
-  const formatLoanLabel = (loan) =>
+  // Helper label formatter
+  window.formatLoanLabel = (loan) =>
     `Loan ${loan.id} — ${loan.name} (${loan.school})`;
 }
+
 
     /* -------------------------
        KPI computations
