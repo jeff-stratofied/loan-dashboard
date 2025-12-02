@@ -6,12 +6,13 @@
 //  Helpers
 // -------------------------------
 
+import { loadLoans as fetchLoans } from "./loadloans.js";
+
 export async function loadLoans() {
-  const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-  const raw = await res.json();
+  const raw = await fetchLoans();
 
   // Cloudflare Worker returns { loans:[...], sha:"..." }
-  const items = raw.loans || [];
+  const items = raw || [];
 
   // Normalize the backend fields into the shape the dashboards expect
   const normalized = items.map((l, idx) => ({

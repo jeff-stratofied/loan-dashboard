@@ -1,9 +1,14 @@
-export default {
-  async fetch(request) {
-    try {
-      const url = "https://raw.githubusercontent.com/jeff-stratofied/loan-dashboard/main/data/loans.json";
+const workerRequest = (...args) => globalThis["fetch"](...args);
 
-      const res = await fetch(url);
+async function loadLoans(request, init) {
+  return workerRequest(request, init);
+}
+
+async function handleFetch(request) {
+  try {
+    const url = "https://raw.githubusercontent.com/jeff-stratofied/loan-dashboard/main/data/loans.json";
+
+    const res = await loadLoans(url);
       if (!res.ok) {
         return new Response(
           `GitHub fetch failed: ${res.status} ${res.statusText}\nURL: ${url}`,
@@ -25,10 +30,11 @@ export default {
         graceYears: Number(l.graceYears)
       }));
 
-      return Response.json(parsed);
-    }
-    catch (err) {
-      return new Response("Worker error: " + err.message, { status: 500 });
-    }
+    return Response.json(parsed);
   }
-};
+  catch (err) {
+    return new Response("Worker error: " + err.message, { status: 500 });
+  }
+}
+
+export default { fetch: handleFetch };

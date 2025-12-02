@@ -163,7 +163,8 @@
     <tbody id="loan-table-body"></tbody>
   </table>
 
-  <script>
+  <script type="module">
+    import { loadLoans as fetchLoans } from "../js/loadloans.js";
     // Shared state
     let loans = [];
 
@@ -198,9 +199,8 @@
       setStatus("Loading loans…");
 
       try {
-        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-        const data = await res.json();
-        const arr = data.loans || data || [];
+        const data = await fetchLoans();
+        const arr = Array.isArray(data) ? data : (data?.loans || data || []);
         loans = arr.map((l, i) => normalizeLoan(l, i));
 
         if (!loans.length) {
@@ -251,13 +251,13 @@
     }
 
     async function saveLoans(updatedLoans) {
-      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
+      const res = await fetchLoans({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedLoans)
       });
 
-      if (!res.ok) {
+      if (!res || !res.ok) {
         alert("Error saving loans!");
         throw new Error("Error saving loans");
       } else {
