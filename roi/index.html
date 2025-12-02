@@ -1102,61 +1102,20 @@ function renderPaymentsDrawer() {
        End
        ------------------------- */
 
-
-
-    } // END initROI()
-
-    const loadedLoans = rawLoans.map((l, idx) => {
-  const principal = Number(l.principal ?? l.purchasePrice ?? 0);
-  const rate = Number(l.rate ?? 0);
-  const termYears = Number(l.termYears ?? 10);
-  const graceYears = Number(l.graceYears ?? 0);
-
-  const r = rate / 12;
-  const n = termYears * 12;
-  const monthlyPayment =
-    r === 0 ? principal / n : (principal * r) / (1 - Math.pow(1 + r, -n));
-
-  return {
-    id: l.loanId ?? idx + 1,
-    name: l.loanName ?? `Loan ${idx + 1}`,
-    school: l.school ?? "",
-
-    // 👇 NEW: principal field that loanEngine.js expects
-    principal,
-
-    purchasePrice: principal,
-    balanceAtPurchase: principal,
-
-    purchaseDate: l.purchaseDate,
-    loanStartDate: l.loanStartDate,
-
-    nominalRate: rate,
-    termYears,
-    graceYears,
-
-    // required for amort + ROI
-    payment: monthlyPayment,
-  };
-});
-
-/* ---------------------------------------------
-   ROI Page Initialization (missing from your file)
---------------------------------------------- */
+/* ------------------------------------------------
+   ROI PAGE INITIALIZATION
+-------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("ROI page starting…");
 
-  // 1. Load loan data from your Cloudflare Worker API
+  // 1. Load loans from API
   const rawLoans = await loadLoans();
-
   if (!rawLoans || !rawLoans.length) {
-    console.error("No loan data received from API");
+    console.error("No loan data returned from API");
     return;
   }
 
-  console.log("Loaded raw loans:", rawLoans);
-
-  // 2. Normalize loan data for loanEngine.js
+  // 2. Normalize and calculate payment
   const loadedLoans = rawLoans.map((l, idx) => {
     const principal = Number(l.principal ?? l.purchasePrice ?? 0);
     const rate = Number(l.rate ?? 0);
@@ -1173,30 +1132,29 @@ document.addEventListener("DOMContentLoaded", async () => {
       id: l.loanId ?? idx + 1,
       name: l.loanName ?? `Loan ${idx + 1}`,
       school: l.school ?? "",
-
       principal,
       purchasePrice: principal,
       balanceAtPurchase: principal,
-
       purchaseDate: l.purchaseDate,
       loanStartDate: l.loanStartDate,
-
       nominalRate: rate,
       termYears,
       graceYears,
-
       payment: monthlyPayment,
     };
   });
 
-  console.log("Normalized loadedLoans:", loadedLoans);
+  console.log("Normalized loans:", loadedLoans);
 
-  // 3. Set the Current Date in the header
+  // 3. Set date in header
   document.getElementById("currentDate").textContent = formatDate(new Date());
 
-  // 4. Run the full ROI engine
+  // 4. Run ROI engine
   initROI(loadedLoans);
 });
+
+
+    
 
 
     // theme toggle
