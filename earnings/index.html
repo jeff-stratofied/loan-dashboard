@@ -595,7 +595,7 @@
   </aside>
 
   <script type="module">
-    import { loadLoans } from "../js/loadLoans.js";
+    import { loadLoans } from "../js/loadloans.js";
     import {
       addMonths,
       monthDiff,
@@ -1258,7 +1258,7 @@
 
     async function initPage() {
       try {
-        loans = await loadLoans();
+        loans = await loadloans();
         const loansWithAmort = attachSchedules(loans);
         portfolio = buildPortfolioViews(loansWithAmort);
 
