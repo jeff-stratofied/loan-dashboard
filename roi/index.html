@@ -1106,31 +1106,24 @@ function renderPaymentsDrawer() {
 
     } // END initROI()
 
-    document.addEventListener("DOMContentLoaded", async () => {
-  let rawLoans = await loadLoans();
+    const loadedLoans = rawLoans.map((l, idx) => {
+  const principal = Number(l.principal ?? l.purchasePrice ?? 0);
+  const rate = Number(l.rate ?? 0);
+  const termYears = Number(l.termYears ?? 10);
+  const graceYears = Number(l.graceYears ?? 0);
 
-  if (!rawLoans.length) {
-    console.error("No loan data loaded");
-    return;
-  }
-
-  // --- NORMALIZE FIELDS FOR ROI ENGINE ---
- const loadedLoans = rawLoans.map((l, idx) => {
-  const principal = l.principal ?? l.purchasePrice ?? 0;
-  const rate = l.rate ?? 0;
-  const termYears = l.termYears ?? 10;
-
-  // Calculate MONTHLY PAYMENT (required for amort + ROI)
   const r = rate / 12;
   const n = termYears * 12;
-  const monthlyPayment = r === 0
-    ? principal / n
-    : (principal * r) / (1 - Math.pow(1 + r, -n));
+  const monthlyPayment =
+    r === 0 ? principal / n : (principal * r) / (1 - Math.pow(1 + r, -n));
 
   return {
     id: l.loanId ?? idx + 1,
     name: l.loanName ?? `Loan ${idx + 1}`,
     school: l.school ?? "",
+
+    // 👇 NEW: principal field that loanEngine.js expects
+    principal,
 
     purchasePrice: principal,
     balanceAtPurchase: principal,
@@ -1140,20 +1133,13 @@ function renderPaymentsDrawer() {
 
     nominalRate: rate,
     termYears,
-    graceYears: l.graceYears ?? 0,
+    graceYears,
 
-    // REQUIRED FOR AMORTIZATION + ROI
+    // required for amort + ROI
     payment: monthlyPayment,
   };
 });
 
-
-
-  document.getElementById("currentDate")
-    .textContent = formatDate(new Date());
-
-  initROI(loadedLoans);
-});
 
 
     // theme toggle
