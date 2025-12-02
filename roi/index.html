@@ -300,6 +300,13 @@ svg text {
     let roiStartDate = new Date();
 
     function prepareLoanData(loadedLoans) {
+      window.roiKpis = window.roiKpis || { 
+  weightedROI: 0, 
+  projectedWeightedROI: 0, 
+  avgRate: 0, 
+  total: 0 
+};
+
       loans = loadedLoans;
       loansWithAmort = attachSchedules(loans);
       portfolio = buildPortfolioViews(loansWithAmort);
