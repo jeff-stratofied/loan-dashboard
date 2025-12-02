@@ -1115,24 +1115,38 @@ function renderPaymentsDrawer() {
   }
 
   // --- NORMALIZE FIELDS FOR ROI ENGINE ---
-  const loadedLoans = rawLoans.map((l, idx) => ({
-  id: l.loanId ?? idx + 1,
-  name: l.loanName ?? `Loan ${idx + 1}`,
-  school: l.school ?? "",
+ const loadedLoans = rawLoans.map((l, idx) => {
+  const principal = l.principal ?? l.purchasePrice ?? 0;
+  const rate = l.rate ?? 0;
+  const termYears = l.termYears ?? 10;
 
-  // *** REQUIRED FIELD ***
-  purchasePrice: l.purchasePrice ?? l.principal ?? 0,
+  // Calculate MONTHLY PAYMENT (required for amort + ROI)
+  const r = rate / 12;
+  const n = termYears * 12;
+  const monthlyPayment = r === 0
+    ? principal / n
+    : (principal * r) / (1 - Math.pow(1 + r, -n));
 
-  // *** REQUIRED FIELD for ROI math ***
-  balanceAtPurchase: l.principal ?? l.purchasePrice ?? 0,
+  return {
+    id: l.loanId ?? idx + 1,
+    name: l.loanName ?? `Loan ${idx + 1}`,
+    school: l.school ?? "",
 
-  purchaseDate: l.purchaseDate,
-  loanStartDate: l.loanStartDate,
+    purchasePrice: principal,
+    balanceAtPurchase: principal,
 
-  nominalRate: l.rate ?? 0,
-  termYears: l.termYears ?? 10,
-  graceYears: l.graceYears ?? 0,
-}));
+    purchaseDate: l.purchaseDate,
+    loanStartDate: l.loanStartDate,
+
+    nominalRate: rate,
+    termYears,
+    graceYears: l.graceYears ?? 0,
+
+    // REQUIRED FOR AMORTIZATION + ROI
+    payment: monthlyPayment,
+  };
+});
+
 
 
   document.getElementById("currentDate")
