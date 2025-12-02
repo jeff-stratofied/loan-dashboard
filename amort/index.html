@@ -396,21 +396,13 @@
 
   <script type="module">
     import {
-      addMonths,
-      monthDiff,
       formatDate,
       formatMonthYear,
-      buildAmortSchedule,
+      addMonths,
+      monthDiff,
       attachSchedules,
       buildPortfolioViews
     } from "../js/loanEngine.js";
-
-    function monthsSincePortfolioStart() {
-      if (!loansWithAmort.length) return 1;
-      const earliestStart = Math.min(...loansWithAmort.map(l => new Date(l.loanStartDate).getTime()));
-      return Math.max(1, monthDiff(new Date(earliestStart), new Date()));
-    }
-
 
     /* ============================
        Loan data loaded from backend
@@ -418,6 +410,9 @@
     // Dynamic loan loading from backend API
     let loans = [];
     let portfolio = null;
+    let incomeLabels = [];
+    let incomePayments = [];
+    let amortKpis = {};
 
     async function loadLoans() {
       try {
@@ -445,8 +440,11 @@
         // Build amort schedules + ownership logic using loanEngine
         loansWithAmort = attachSchedules(loans);
 
-        // Build shared portfolio view (added in Phase C)
+        // Build shared portfolio view (Phase C unified values)
         portfolio = buildPortfolioViews(loansWithAmort);
+        incomeLabels = portfolio.incomeLabels;
+        incomePayments = portfolio.incomePayments;
+        amortKpis = portfolio.amortKpis;
       } catch (err) {
         console.error("Failed to load loans", err);
         loans = [];
@@ -550,27 +548,7 @@
     /* ============================
        KPIs
        ============================ */
-    function computeKPIs(list) {
-      const total = list.reduce((s, l) => s + l.purchasePrice, 0);
-      const weightedRate = list.reduce((s, l) => s + l.nominalRate * l.purchasePrice, 0) / Math.max(1, total);
-      const weightedDuration = list.reduce((s, l) => s + (l.termYears * 12) * l.purchasePrice, 0) / Math.max(1, total);
-      // Monthly Income = sum of next month's scheduled payments (Option A)
-      const TODAY = new Date();
-      const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
-
-      function sameMonthYear(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() &&
-               d1.getMonth() === d2.getMonth();
-      }
-
-      const monthlyIncome = loansWithAmort.reduce((sum, loan) => {
-        return sum + loan.amort.schedule
-          .filter(r => r.isOwned && r.ownershipDate && sameMonthYear(new Date(r.ownershipDate), nextMonthDate))
-          .reduce((s, r) => s + r.payment, 0);
-      }, 0);
-      return { total, weightedRate: weightedRate * 100, weightedDuration, monthlyIncome, nextMonthDate };
-    }
-    let kpis;
+    let kpis = {};
 
     /* ============================
        Small helper — create SVG path from points
@@ -602,17 +580,25 @@
     const kpisEl = document.getElementById('kpis');
 
     function renderKPI() {
-      kpis = computeKPIs(loansWithAmort);
+      kpis = amortKpis || {};
       kpisEl.innerHTML = `
-        <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$0</p></div>
-        <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${kpis.weightedRate.toFixed(2)}%</p></div>
-        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3>${kpis.nextMonthDate.toLocaleDateString("en-US", { month: "short" })} Expected Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
+        <div class="kpi" data-kpi="tpv"><h3>Total Invested</h3><p id="tpvTile">$${(kpis.totalInvested || 0).toLocaleString()}</p></div>
+        <div class="kpi" data-kpi="rates"><h3>Portfolio Value</h3><p>$${(kpis.portfolioValue || 0).toLocaleString()}</p></div>
+        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3 id="kpiMonthlyIncomeLabel"></h3><p id="kpiMonthlyIncomeValue">$0</p></div>
         <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${loansWithAmort.length}</p></div>
       `;
 
-      const kpiMonthlyIncome = document.getElementById('kpiMonthlyIncome');
-      if (kpiMonthlyIncome) {
-        kpiMonthlyIncome.addEventListener('click', () => {
+      const kpiMonthlyIncomeTile = document.getElementById('kpiMonthlyIncome');
+      const kpiMonthlyIncomeValue = document.getElementById('kpiMonthlyIncomeValue');
+      const kpiMonthlyIncomeLabel = document.getElementById('kpiMonthlyIncomeLabel');
+
+      if (kpiMonthlyIncomeValue && kpiMonthlyIncomeLabel) {
+        kpiMonthlyIncomeValue.textContent = `$${(kpis.monthlyIncomeKpi || 0).toFixed(2)}`;
+        kpiMonthlyIncomeLabel.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
+      }
+
+      if (kpiMonthlyIncomeTile) {
+        kpiMonthlyIncomeTile.addEventListener('click', () => {
           renderPaymentsDrawer();
           drawer.classList.add('open');
         });
@@ -1412,52 +1398,18 @@
       drawerSub.textContent = 'Sum of scheduled payments across loans';
 
       // Primary KPI (top)
-      drawerPrimaryTitle.textContent = `${kpis.nextMonthDate.toLocaleDateString('en-US', { month: 'short' })} Expected Income`;
-      drawerPrimary.textContent = `$${kpis.monthlyIncome.toFixed(2)}`;
+      drawerPrimaryTitle.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
+      drawerPrimary.textContent = `$${(kpis.monthlyIncomeKpi || 0).toFixed(2)}`;
       drawerSecondaryTitle.textContent = 'Total Invested';
-      drawerSecondary.textContent = `$${kpis.total.toLocaleString()}`;
+      drawerSecondary.textContent = `$${(kpis.totalInvested || 0).toLocaleString()}`;
 
       drawerAmortContainer.style.display = 'none';
       drawerLegend.style.display = 'none';
       drawerChartArea.innerHTML = '';
       drawerExtra.innerHTML = '';
 
-      // Build 24-month expected income projection
-      const monthsAhead = 24;
-
-      function calcExpectedIncomeFor(targetMonthDate) {
-        return loansWithAmort.reduce((sum, loan) => {
-          const ownershipStart = new Date(loan.purchaseDate);
-
-          return sum + loan.amort.schedule
-            // real payment date
-            .filter(r => {
-              const payDate = r.loanDate;
-              const sameMonth =
-                payDate.getFullYear() === targetMonthDate.getFullYear() &&
-                payDate.getMonth() === targetMonthDate.getMonth();
-
-              // customer must own the loan before the payment happens
-              const owned = payDate >= ownershipStart;
-
-              return sameMonth && owned;
-            })
-            .reduce((s, r) => s + r.payment, 0);
-        }, 0);
-      }
-
-      const payments = [];
-      const prettyLabels = [];
-
-      for (let i = 0; i < monthsAhead; i++) {
-        const d = new Date(kpis.nextMonthDate);
-        d.setMonth(d.getMonth() + i);
-
-        prettyLabels.push(
-          d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-        );
-        payments.push(calcExpectedIncomeFor(d));
-      }
+      const payments = incomePayments;
+      const prettyLabels = incomeLabels;
 
       // --------------------------------------------------
       // Chart SVG
