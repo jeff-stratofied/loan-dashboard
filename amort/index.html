@@ -395,7 +395,7 @@
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
   <script type="module">
-    import { loadLoans } from "../js/loadloans.js";
+    import { loadLoans } from "../js/loadLoans.js";
     import {
       formatDate,
       formatMonthYear,
@@ -422,7 +422,7 @@
 
     async function loadLoanData() {
       try {
-        loans = await loadloans();
+        loans = await loadLoans();
         loansWithAmort = attachSchedules(loans);
 
         // Build shared portfolio view (Phase C unified values)
