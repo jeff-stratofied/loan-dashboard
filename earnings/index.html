@@ -604,10 +604,13 @@
       attachSchedules,
       buildPortfolioViews
     } from "../js/loanEngine.js";
+    import { createLineChart } from "../js/chartEngine.js";
 
     // --------------------------
     // Settings & base data
     // --------------------------
+    const TODAY = new Date();
+    const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
     const defaultEarningsKpis = {
       totalNetToDate: 0,
       totalNetProjected: 0,
@@ -620,6 +623,7 @@
     let portfolio = null;
     let earningsSeries = [];
     let earningsKpis = { ...defaultEarningsKpis };
+    let earningsStartDate = new Date();
 
     async function loadLoansFromBackend() {
       try {
@@ -652,6 +656,8 @@
           ...l,
           earningsSchedule: l.earningsSchedule || []
         }));
+
+        earningsStartDate = computeEarliestDate(earningsSeries);
       } catch (err) {
         console.error("Failed to load loans from backend", err);
         loans = [];
@@ -659,6 +665,13 @@
         earningsSeries = [];
         earningsKpis = { ...defaultEarningsKpis };
       }
+    }
+
+    function computeEarliestDate(seriesMap){
+      const timestamps = Object.values(seriesMap || {}).flatMap(arr =>
+        arr.map(p => new Date(p.date).getTime()).filter(t => !Number.isNaN(t))
+      );
+      return timestamps.length ? new Date(Math.min(...timestamps)) : new Date();
     }
 
     document.getElementById("currentDate").textContent = formatDate(new Date());
@@ -1268,7 +1281,19 @@
         grid.appendChild(tile);
 
         const mini = tile.querySelector('.mini-chart');
-        createMiniStackedEarningsSVG(mini, loan.earningsSchedule, loan);
+        const loanStartDate = new Date(loan.loanStartDate);
+        const series = earningsSeries[loan.id] || [];
+        createLineChart({
+          container: mini,
+          width: 170,
+          height: 48,
+          pad: 6,
+          labels: series.map(p => formatMonthYear(p.date)),
+          values: series.map(p => p.cumulative),
+          todayLineDate: TODAY,
+          nextMonthLineDate: nextMonthDate,
+          dateToMonthIndex: date => monthDiff(loanStartDate, date)
+        });
       });
     }
 
@@ -1331,7 +1356,15 @@
       drawerSecondaryTitle.textContent = "Fees to Date";
       drawerSecondary.textContent = `$${atCurrent.cumFees.toFixed(2)}`;
 
-      createDrawerStackedChart(drawerChartArea, loan.earningsSchedule, loan);
+      const series = earningsSeries[loan.id] || [];
+      createLineChart({
+        container: drawerChartArea,
+        labels: series.map(p => formatMonthYear(p.date)),
+        values: series.map(p => p.cumulative),
+        todayLineDate: TODAY,
+        nextMonthLineDate: nextMonthDate,
+        dateToMonthIndex: date => monthDiff(earningsStartDate, date)
+      });
 
       // table
       let rowsHtml = "";
