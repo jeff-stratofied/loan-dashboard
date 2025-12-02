@@ -270,8 +270,8 @@ svg text {
        Script (organized with sections)
        ==================================== -->
   <script type="module">
+    import { loadLoans } from "../js/loadLoans.js";
     import {
-      loadLoans,
       addMonths,
       monthDiff,
       formatDate,
@@ -293,8 +293,8 @@ svg text {
     let portfolio = {};
     let roiStartDate = new Date();
 
-    async function loadLoanData() {
-      loans = await loadLoans();
+    function prepareLoanData(loadedLoans) {
+      loans = loadedLoans;
       loansWithAmort = attachSchedules(loans);
       portfolio = buildPortfolioViews(loansWithAmort);
 
@@ -305,7 +305,6 @@ svg text {
         miniPts: l.miniPts || [],
         balanceAtPurchase: l.balanceAtPurchase ?? 0
       }));
-
       roiStartDate = computeEarliestDate(portfolio.roiSeries || {});
     }
 
@@ -316,7 +315,8 @@ svg text {
       return timestamps.length ? new Date(Math.min(...timestamps)) : new Date();
     }
 
-    async function initROI() {
+    async function initROI(loadedLoans) {
+      prepareLoanData(loadedLoans);
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
 
       const roiSeries = portfolio.roiSeries;
@@ -1101,9 +1101,15 @@ function renderPaymentsDrawer() {
     } // END initROI()
 
     document.addEventListener("DOMContentLoaded", async () => {
-      await loadLoanData();
+      const loadedLoans = await loadLoans();
+
+      if (!loadedLoans.length) {
+        console.error("No loan data loaded");
+        return;
+      }
+
       document.getElementById("currentDate").textContent = formatDate(new Date());
-      initROI();
+      initROI(loadedLoans);
     });
 
     // theme toggle
