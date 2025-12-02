@@ -394,30 +394,25 @@
 
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
-  <script>
+  <script type="module">
+    import {
+      addMonths,
+      monthDiff,
+      formatDate,
+      formatMonthYear,
+      buildAmortSchedule,
+      attachSchedules,
+      buildPortfolioViews
+    } from "../js/loanEngine.js";
+
     // Generic helpers
-    function addMonths(date, months) {
+    function OLD_addMonths(date, months) {
       const d = new Date(date);
       d.setMonth(d.getMonth() + months);
       return d;
     }
 
-    function formatDate(date) {
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-      });
-    }
-
-    function formatMonthYear(date) {
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short"
-      });
-    }
-
-    function monthDiff(d1, d2) {
+    function OLD_monthDiff(d1, d2) {
       return (d2.getFullYear() - d1.getFullYear()) * 12 +
              (d2.getMonth() - d1.getMonth());
     }
