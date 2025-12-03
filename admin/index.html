@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Loan Admin</title>
 
- <style>
+<style>
 
 /* ===========================================
    THEME VARIABLES — MATCH EXACTLY WITH ROI
@@ -138,7 +138,67 @@ button:hover {
 
 /* ===========================================
    TABLE (matches ROI card/table style)
-   =========
+   =========================================== */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--card);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  font-size: 0.78rem;
+}
+
+thead {
+  background: var(--card);
+}
+
+th, td {
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+tbody tr:hover {
+  background: color-mix(in srgb, var(--card) 90%, var(--text) 10%);
+}
+
+/* ===========================================
+   INPUTS + SELECTS
+   =========================================== */
+
+input, select {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 0.45rem;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
+  padding: 0.25rem 0.3rem;
+  font-size: 0.78rem;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent);
+}
+
+/* Column widths */
+.cell-id { max-width: 50px; }
+.cell-number { max-width: 100px; }
+.cell-date { max-width: 130px; }
+.cell-school { min-width: 140px; }
+.cell-name { min-width: 150px; }
+
+</style>
+
 
 </head>
 
