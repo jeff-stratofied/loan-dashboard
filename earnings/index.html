@@ -608,56 +608,31 @@
     // --------------------------
     // Settings & base data
     // --------------------------
-    const defaultEarningsKpis = {
-      totalNetToDate: 0,
-      totalNetProjected: 0,
-      totalFeesToDate: 0,
-      avgMonthlyEarnings: 0,
-      monthsCounted: 0
-    };
+    function OLD_addMonths(date, months) {
+      const d = new Date(date);
+      d.setMonth(d.getMonth() + months);
+      return d;
+    }
+
+    function OLD_monthDiff(d1, d2) {
+      return (d2.getFullYear() - d1.getFullYear()) * 12 +
+             (d2.getMonth() - d1.getMonth());
+    }
+
     let loans = [];
-    let loansWithEarnings = [];
-    let portfolio = null;
-    let earningsSeries = [];
-    let earningsKpis = { ...defaultEarningsKpis };
 
     async function loadLoansFromBackend() {
       try {
         const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
         const data = await res.json();
-        const arr = data.loans || data || [];
-        loans = arr.map((l, idx) => ({
+        const arr = data.loans || [];
+        loans = arr.map(l => ({
           ...l,
-          id: l.loanId ?? l.id ?? (idx + 1),
-          loanId: l.loanId ?? l.id ?? (idx + 1),
-          loanName: l.loanName ?? `Loan ${idx + 1}`,
-          principal: Number(l.purchasePrice ?? l.principal ?? 0),
-          purchasePrice: Number(l.purchasePrice ?? l.principal ?? 0),
-          nominalRate: Number(l.nominalRate ?? l.rate ?? 0),
-          termYears: Number(l.termYears ?? l.term ?? 0),
-          graceYears: Number(l.graceYears ?? l.grace ?? 0),
-          loanStartDate: l.loanStartDate || l.purchaseDate || "",
-          purchaseDate: l.purchaseDate || l.loanStartDate || "",
-          upfrontFee: Number(l.upfrontFee ?? 150),
-          monthlyFeeStart: Number(l.monthlyFeeStart ?? l.feePerMonth ?? 9)
-        }));
-
-        const loansWithAmort = attachSchedules(loans);
-        portfolio = buildPortfolioViews(loansWithAmort);
-
-        earningsSeries = portfolio.earningsSeries || [];
-        earningsKpis = portfolio.earningsKpis || { ...defaultEarningsKpis };
-
-        loansWithEarnings = (portfolio.loans || loansWithAmort).map(l => ({
-          ...l,
-          earningsSchedule: l.earningsSchedule || []
+          loanStartDate: l.loanStartDate || "",
         }));
       } catch (err) {
         console.error("Failed to load loans from backend", err);
         loans = [];
-        loansWithEarnings = [];
-        earningsSeries = [];
-        earningsKpis = { ...defaultEarningsKpis };
       }
     }
 
@@ -673,6 +648,234 @@
     // --------------------------
     // Amortization + earnings
     // --------------------------
+    function calcAmort(principal, annualRate, termYears, graceYears){
+      const monthlyRate = annualRate / 12;
+      const totalMonths = Math.round(termYears * 12);
+      const graceMonths = Math.round(graceYears * 12);
+      const repayMonths = Math.max(1, totalMonths - graceMonths);
+
+      let balance = principal;
+      const schedule = [];
+
+      // Grace period: interest-only, interest accrues on balance
+      for (let m = 1; m <= graceMonths; m++) {
+        const interest = +(balance * monthlyRate).toFixed(2);
+        balance = +(balance + interest).toFixed(2);
+        schedule.push({
+          monthIndex: m,
+          payment: 0,
+          principalPaid: 0,
+          interest,
+          balance
+        });
+      }
+
+      // Repayment period: standard amortization
+      const payment = monthlyRate === 0
+        ? +(balance / repayMonths).toFixed(2)
+        : +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -repayMonths))).toFixed(2);
+
+      for (let m = 1; m <= repayMonths; m++) {
+        const interest = +(balance * monthlyRate).toFixed(2);
+        const principalPaid = +Math.min(
+          balance,
+          +(payment - interest).toFixed(2)
+        );
+        balance = +(Math.max(0, balance - principalPaid).toFixed(2));
+
+        schedule.push({
+          monthIndex: graceMonths + m,
+          payment: +payment.toFixed(2),
+          principalPaid,
+          interest,
+          balance
+        });
+      }
+
+      return { payment, schedule };
+    }
+
+    let loansWithEarnings = [];
+
+    function rebuildLoansWithEarnings() {
+      loansWithEarnings = loans.map((raw, idx) => {
+        // Normalize fields from backend
+        const id = raw.loanId ?? raw.id ?? (idx + 1);
+        const purchasePrice = Number(raw.purchasePrice ?? raw.principal ?? 0);
+        const nominalRate = Number(raw.nominalRate ?? raw.rate ?? 0);
+        const termYears = Number(raw.termYears ?? 0);
+        const graceYears = Number(raw.graceYears ?? 0);
+
+        const upfrontFee = Number(raw.upfrontFee ?? 150);           // flat fee in month 1
+        const monthlyFeeStart = Number(raw.monthlyFeeStart ??       // starting monthly fee
+                                       raw.feePerMonth ?? 9);
+
+        const normalizedLoan = {
+          ...raw,
+          loanId: id,
+          id,
+          loanName: raw.loanName ?? `Loan ${id}`,
+          school: raw.school ?? "No school listed",
+          loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
+          purchaseDate: raw.purchaseDate || "",
+          purchasePrice,
+          nominalRate,
+          termYears,
+          graceYears,
+          upfrontFee,
+          monthlyFeeStart
+        };
+
+        const amort = calcAmort(
+          normalizedLoan.purchasePrice,
+          normalizedLoan.nominalRate,
+          normalizedLoan.termYears,
+          normalizedLoan.graceYears
+        );
+
+        const loanStart = new Date(normalizedLoan.loanStartDate);
+        const purchaseDt = new Date(normalizedLoan.purchaseDate);
+        const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
+        const monthsSinceStart = Number.isFinite(monthsSinceStartRaw) ? monthsSinceStartRaw : 0;
+
+        amort.schedule = amort.schedule.map(row => {
+          const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
+          const loanDate = addMonths(loanStart, row.monthIndex - 1);
+          const ownershipDate = ownershipMonthIndex >= 1
+            ? addMonths(purchaseDt, ownershipMonthIndex - 1)
+            : null;
+
+          return {
+            ...row,
+            ownershipMonthIndex,
+            isOwned: ownershipMonthIndex >= 1,
+            loanDate,
+            ownershipDate
+          };
+        });
+
+        let cumPrincipal = 0;
+        let cumInterest  = 0;
+        let cumFees      = 0;
+
+        const termMonths = Math.max(
+          1,
+          Math.round(normalizedLoan.termYears * 12)
+        );
+
+        const balanceAtPurchase = amort.schedule[Math.max(0, monthsSinceStart - 1)]?.balance || 0;
+
+        const earningsSchedule = amort.schedule.map(row => {
+          const m = row.monthIndex;
+
+          // Upfront fee only at ownership month 1
+          const upfront = (row.isOwned && row.ownershipMonthIndex === 1 ? normalizedLoan.upfrontFee : 0);
+
+          // Sliding monthly fee from monthlyFeeStart → 0 over the term
+          let monthlyFee = normalizedLoan.monthlyFeeStart * (1 - m / termMonths);
+          if (!Number.isFinite(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
+
+          const feeThisMonth = row.isOwned ? upfront + monthlyFee : 0;
+          if (row.isOwned) {
+            cumFees      = +(cumFees + feeThisMonth).toFixed(2);
+            cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
+            cumInterest  = +(cumInterest + row.interest).toFixed(2);
+          }
+
+          // Net earnings = principal + interest – fees
+          const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
+
+          return {
+            ...row,
+            feeThisMonth,
+            cumPrincipal,
+            cumInterest,
+            cumFees,
+            netEarnings,
+            interestPaid: row.interest,
+            principalPaid: row.principalPaid,
+            loanDate: row.loanDate,
+            ownershipDate: row.ownershipDate
+          };
+        }).filter(r => r.isOwned);
+
+        return {
+          ...normalizedLoan,
+          amort,
+          earningsSchedule,
+          balanceAtPurchase,
+          monthsSinceStart
+        };
+      });
+    }
+
+    // --------------------------
+    // KPI calculations
+    // --------------------------
+    function computeEarningsKPIs(list){
+      let totalNetToDate = 0;
+      let totalNetProjected = 0;
+      let totalFeesToDate = 0;
+      let totalPrincipal = 0;
+      let monthsCounted = 1;
+
+      const TODAY = new Date();
+
+      list.forEach(l => {
+        if (!l.earningsSchedule.length) return;
+
+        const lastIdx = l.earningsSchedule.length - 1;
+        const loanStart = new Date(l.loanStartDate);
+        const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
+        const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+          ? Math.max(1, diffMonthsFromStartRaw)
+          : 1;
+        const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
+        const atCurrent = l.earningsSchedule[currentIdx] || l.earningsSchedule[lastIdx];
+        const atEnd = l.earningsSchedule[lastIdx];
+
+        totalNetToDate += atCurrent.netEarnings || 0;
+        totalFeesToDate += atCurrent.cumFees || 0;
+        totalNetProjected += atEnd.netEarnings || 0;
+        totalPrincipal += l.purchasePrice;
+
+        monthsCounted = Math.max(
+          monthsCounted,
+          Math.min(diffMonthsFromStart, l.earningsSchedule.length)
+        );
+      });
+
+      const avgMonthlyEarnings = monthsCounted > 0 ? totalNetToDate / monthsCounted : 0;
+
+      return {
+        totalNetToDate,
+        totalNetProjected,
+        totalFeesToDate,
+        avgMonthlyEarnings,
+        monthsCounted
+      };
+    }
+
+    function getCurrentEarningsRow(loan) {
+      const fallbackRow = { netEarnings: 0, cumPrincipal: 0, cumInterest: 0, cumFees: 0 };
+      const lastIdx = loan.earningsSchedule.length - 1;
+      const loanStart = new Date(loan.loanStartDate);
+      const diffMonthsFromStartRaw = monthDiff(loanStart, new Date());
+      const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+        ? Math.max(1, diffMonthsFromStartRaw)
+        : 1;
+      const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
+      const row = lastIdx >= 0
+        ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
+        : fallbackRow;
+
+      return {
+        row,
+        monthsCounted: Math.min(diffMonthsFromStart, loan.earningsSchedule.length || 1)
+      };
+    }
+
+    let kpis = computeEarningsKPIs(loansWithEarnings);
     let totalPrincipal = 0;
 
     let miniHtmlTooltip = null;
@@ -717,10 +920,6 @@
     // --------------------------
     function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan){
       containerEl.innerHTML = "";
-      if (!earningsSchedule.length) {
-        containerEl.textContent = "No earnings data";
-        return;
-      }
       const svgNS = "http://www.w3.org/2000/svg";
       const w = 170;
       const h = 48;
@@ -895,10 +1094,6 @@
     // --------------------------
     function createDrawerStackedChart(containerEl, earningsSchedule, loan){
       containerEl.innerHTML = "";
-      if (!earningsSchedule.length) {
-        containerEl.textContent = "No earnings data";
-        return;
-      }
       const svgNS = "http://www.w3.org/2000/svg";
       const rect = containerEl.getBoundingClientRect();
       const w = Math.max(360, rect.width || 700);
@@ -1115,7 +1310,7 @@
     // --------------------------
     const kpisEl = document.getElementById("kpis");
     function renderKPIs() {
-      const kpis = earningsKpis;
+      kpis = computeEarningsKPIs(loansWithEarnings);
       totalPrincipal = loans.reduce((s,l)=>s+l.purchasePrice,0);
       kpisEl.innerHTML = `
         <div class="kpi" data-kpi="netToDate">
@@ -1156,9 +1351,9 @@
       drawerTitle.textContent = "Total Net Earnings to Date";
       drawerSub.textContent = "Portfolio-level earnings across all loans.";
       drawerPrimaryTitle.textContent = "Net Earnings to Date";
-      drawerPrimary.textContent = `$${earningsKpis.totalNetToDate.toFixed(2)}`;
+      drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
       drawerSecondaryTitle.textContent = "Total Fees to Date";
-      drawerSecondary.textContent = `$${earningsKpis.totalFeesToDate.toFixed(2)}`;
+      drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
       resetDrawerContent();
       renderKPI1Chart(loansWithEarnings, "drawerChartArea");
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -1171,7 +1366,7 @@
       drawerTitle.textContent = "Projected Lifetime Earnings";
       drawerSub.textContent = "Net earnings at maturity for all loans.";
       drawerPrimaryTitle.textContent = "Projected Lifetime Net";
-      drawerPrimary.textContent = `$${earningsKpis.totalNetProjected.toFixed(2)}`;
+      drawerPrimary.textContent = `$${kpis.totalNetProjected.toFixed(2)}`;
       drawerSecondaryTitle.textContent = "Total Principal";
       drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
       resetDrawerContent();
@@ -1186,9 +1381,9 @@
       drawerTitle.textContent = "Average Monthly Earnings";
       drawerSub.textContent = `Based on net earnings through ${formatDate(new Date())}.`;
       drawerPrimaryTitle.textContent = "Avg Monthly Earnings";
-      drawerPrimary.textContent = `$${earningsKpis.avgMonthlyEarnings.toFixed(2)}`;
+      drawerPrimary.textContent = `$${kpis.avgMonthlyEarnings.toFixed(2)}`;
       drawerSecondaryTitle.textContent = "Months Counted";
-      drawerSecondary.textContent = `${earningsKpis.monthsCounted || 0} months`;
+      drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
       resetDrawerContent();
       renderKPI3Chart(loansWithEarnings, "drawerChartArea");
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -1201,7 +1396,7 @@
       drawerTitle.textContent = "Total Fees to Date";
       drawerSub.textContent = "Cumulative monthly fees across all loans.";
       drawerPrimaryTitle.textContent = "Total Fees";
-      drawerPrimary.textContent = `$${earningsKpis.totalFeesToDate.toFixed(2)}`;
+      drawerPrimary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
       drawerSecondaryTitle.textContent = "Total Loans";
       drawerSecondary.textContent = `${loans.length}`;
       resetDrawerContent();
@@ -1274,6 +1469,7 @@
 
     async function initPage() {
       await loadLoansFromBackend();
+      rebuildLoansWithEarnings();
       renderKPIs();
       renderLoanTiles();
       bindKpiClickHandlers();
@@ -1970,21 +2166,6 @@
       a.click();
       URL.revokeObjectURL(url);
     }
-  </script>
-
-  <div id="chartTooltip"
-       style="position:fixed;display:none;
-              background:var(--card);
-              padding:6px 10px;
-              border-radius:6px;
-              font-size:12px;
-              box-shadow:0 2px 6px rgba(0,0,0,0.2);
-              pointer-events:none;
-              z-index:9999;">
-  </div>
-
-  <script>
-    window.chartTooltip = document.getElementById("chartTooltip");
   </script>
 </body>
 </html>
