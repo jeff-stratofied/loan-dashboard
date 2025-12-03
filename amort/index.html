@@ -573,6 +573,21 @@
 
       return d;
     }
+    function computeAnnualizedYield() {
+    const totalEarnedInterest = loansWithAmort.reduce((sum, loan) => {
+    const owned = loan.cumSchedule.filter(r => r.isOwned);
+    const latest = owned[owned.length - 1];
+    return sum + (latest ? latest.cumInterest : 0);
+  }, 0);
+
+  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
+  if (totalInvested <= 0) return 0;
+
+  const minStart = Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()));
+  const monthsOwned = Math.max(1, monthDiff(new Date(minStart), new Date()));
+
+  return (totalEarnedInterest / totalInvested) * (12 / monthsOwned);
+}
 
     /* ============================
        Render KPI tiles
@@ -788,27 +803,6 @@ document.getElementById("kpiYield").textContent =
     async function initPage() {
       await loadLoans();
       rebuildLoansWithAmort();
-
-function computeAnnualizedYield() {
-  // Total interest earned to date across all loans
-  const totalEarnedInterest = loansWithAmort.reduce((sum, loan) => {
-    const owned = loan.cumSchedule.filter(r => r.isOwned);
-    const latest = owned[owned.length - 1];
-    return sum + (latest ? latest.cumInterest : 0);
-  }, 0);
-
-  // Cost basis
-  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
-
-  if (totalInvested <= 0) return 0;
-
-  // Annualized return = (Interest Earned to Date / Invested) * (12 / months owned)
-  const minStart = Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()));
-  const monthsOwned = Math.max(1, monthDiff(new Date(minStart), new Date()));
-
-  return (totalEarnedInterest / totalInvested) * (12 / monthsOwned);
-}
-
       
       renderKPI();
       renderLoanTiles();
