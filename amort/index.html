@@ -204,6 +204,10 @@
     #drawerBody{ overflow-x:hidden; }
 
     .drawer-footer{ flex-shrink:0; padding:20px; }
+
+    .not-owned {
+      opacity: 0.45;
+    }
     .drawer-footer .actions{ justify-content:flex-start; }
 
     .drawer-chart{
@@ -243,6 +247,8 @@
     }
     td{ padding:8px; border-bottom:1px dashed rgba(15,23,42,0.04); text-align:right; transition:color .25s ease, border-color .25s ease; }
     td:first-child, th:first-child{ text-align:left }
+    .not-owned { opacity: 0.45; }
+    .purchase-highlight { border-top: 2px solid #4ade80; }
 
     .actions{ display:flex; gap:8px; margin-top:12px }
     .btn{ padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; cursor:pointer; font-weight:600; transition:background-color .25s ease, color .25s ease, border-color .25s ease; }
@@ -320,7 +326,7 @@
         </div>
       </div>
 
-      <div class="current-date">Current Month: <strong id="currentMonthLabel">18</strong> (months since first purchase)</div>
+      <div class="current-date">Current Date: <span id="currentDate"></span></div>
     </header>
 
     <section class="kpis" id="kpis"></section>
@@ -359,6 +365,8 @@
         </div>
       </div>
 
+      <div class="drawer-detail" id="drawerBalanceAtPurchase" style="font-weight:700;margin-bottom:6px"></div>
+
       <div id="drawerExtra"></div>
 
       <div id="drawerAmortContainer">
@@ -387,66 +395,66 @@
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
   <script type="module">
-    import { loadLoans as fetchLoans } from "../js/loadloans.js";
-    /* ============================
-       Settings & Current Month
-       ============================ */
-    const CURRENT_MONTH = 18;
-    document.getElementById('currentMonthLabel').textContent = CURRENT_MONTH;
+    import {
+      formatDate,
+      formatMonthYear,
+      addMonths,
+      monthDiff,
+      attachSchedules,
+      buildPortfolioViews
+    } from "../js/loanEngine.js";
+    import { createLineChart } from "../js/chartEngine.js";
 
     /* ============================
        Loan data loaded from backend
        ============================ */
     // Dynamic loan loading from backend API
     let loans = [];
+    let portfolio = null;
+    let incomeLabels = [];
+    let incomePayments = [];
+    let amortKpis = {};
+
+    const TODAY = new Date();
+    const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
+    const incomeStartDate = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), 1);
 
     async function loadLoans() {
       try {
-        const data = await fetchLoans();
-        const arr = data || [];
-        loans = arr.map(l => ({
+        // Unified loan fetch (Cloudflare Worker)
+        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
+        const data = await res.json();
+        const arr = data.loans || data || [];
+
+        loans = arr.map((l, idx) => ({
           ...l,
-          loanStartDate: l.loanStartDate || "",
+          id: l.loanId ?? l.id ?? (idx + 1),
+          loanId: l.loanId ?? l.id ?? (idx + 1),
+          loanName: l.loanName ?? `Loan ${idx + 1}`,
+          principal: Number(l.purchasePrice ?? l.principal ?? 0),
+          purchasePrice: Number(l.purchasePrice ?? l.principal ?? 0),
+          nominalRate: Number(l.nominalRate ?? l.rate ?? 0),
+          termYears: Number(l.termYears ?? l.term ?? 0),
+          graceYears: Number(l.graceYears ?? l.grace ?? 0),
+          loanStartDate: l.loanStartDate || l.purchaseDate || "",
+          purchaseDate: l.purchaseDate || l.loanStartDate || "",
+          upfrontFee: Number(l.upfrontFee ?? 150),
+          monthlyFeeStart: Number(l.monthlyFeeStart ?? l.feePerMonth ?? 9)
         }));
+
+        // Build amort schedules + ownership logic using loanEngine
+        loansWithAmort = attachSchedules(loans);
+
+        // Build shared portfolio view (Phase C unified values)
+        portfolio = buildPortfolioViews(loansWithAmort);
+        incomeLabels = portfolio.incomeLabels;
+        incomePayments = portfolio.incomePayments;
+        amortKpis = portfolio.amortKpis;
       } catch (err) {
         console.error("Failed to load loans", err);
         loans = [];
+        loansWithAmort = [];
       }
-    }
-
-    /* ============================
-       Amortization (grace interest capitalized)
-       ============================ */
-    function calcAmort(principal, annualRate, termYears, graceYears) {
-      const monthlyRate = annualRate / 12;
-      const totalMonths = Math.round(termYears * 12);
-      const graceMonths = Math.round(graceYears * 12);
-      const repayMonths = Math.max(1, totalMonths - graceMonths);
-
-      let balance = principal;
-      const schedule = [];
-
-      // Grace months — interest accrues and capitalizes (payment = 0)
-      for (let m = 1; m <= graceMonths; m++) {
-        const interest = +(balance * monthlyRate).toFixed(2);
-        balance = +(balance + interest).toFixed(2); // capitalize
-        schedule.push({ monthIndex: m, payment: 0, principalPaid: 0, interest, balance });
-      }
-
-      // Payment computed on capitalized balance after grace
-      const payment = monthlyRate === 0
-        ? +(balance / repayMonths).toFixed(2)
-        : +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -repayMonths))).toFixed(2);
-
-      // Repayment months
-      for (let m = 1; m <= repayMonths; m++) {
-        const interest = +(balance * monthlyRate).toFixed(2);
-        const principalPaid = +Math.min(balance, +(payment - interest).toFixed(2));
-        balance = +(Math.max(0, balance - principalPaid).toFixed(2));
-        schedule.push({ monthIndex: graceMonths + m, payment: +payment.toFixed(2), principalPaid, interest, balance });
-      }
-
-      return { payment, schedule };
     }
 
     /* ============================
@@ -455,52 +463,29 @@
     let loansWithAmort = [];
 
     function rebuildLoansWithAmort() {
-      loansWithAmort = loans.map((raw, idx) => {
-        // Normalize fields coming from the backend
-        const id = raw.loanId ?? raw.id ?? (idx + 1);
+      loansWithAmort = loansWithAmort.map((loan) => {
+        // We now rely on loansWithAmort[i].amort.schedule
+        // NO inline amortization logic should remain here.
 
-        const purchasePrice = Number(
-          raw.purchasePrice ?? raw.principal ?? 0
-        );
-        const nominalRate = Number(
-          raw.nominalRate ?? raw.rate ?? 0
-        );
-        const termYears = Number(
-          raw.termYears ?? raw.term ?? 0
-        );
-        const graceYears = Number(
-          raw.graceYears ?? raw.grace ?? 0
-        );
+        const loanStart = new Date(loan.loanStartDate);
+        const purchaseDt = new Date(loan.purchaseDate);
+        const monthsSinceStart = monthDiff(loanStart, purchaseDt);
 
-        const upfrontFee = Number(
-          raw.upfrontFee ?? 150
-        );
-        const monthlyFeeStart = Number(
-          raw.monthlyFeeStart ?? raw.feePerMonth ?? 9
-        );
+        const schedule = loan.amort.schedule.map((row, i) => {
+          const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
+          return {
+            ...row,
+            monthIndex: i + 1,
+            loanDate: addMonths(loanStart, i),
+            ownershipDate: row.isOwned ? addMonths(purchaseDt, ownershipMonthIndex - 1) : null,
+            ownershipMonthIndex
+          };
+        });
 
-        const loanData = {
-          ...raw,
-          id,
-          loanId: id,
-          loanName: raw.loanName ?? `Loan ${id}`,
-          school: raw.school ?? "",
-          loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
-          termYears,
-          graceYears,
-          purchasePrice,
-          nominalRate,
-          upfrontFee,
-          monthlyFeeStart
-        };
-
-        // Amortization schedule (grace interest capitalized)
-        const amort = calcAmort(
-          loanData.purchasePrice,
-          loanData.nominalRate,
-          loanData.termYears,
-          loanData.graceYears
-        );
+        const firstOwnedIdx = schedule.findIndex(r => r.isOwned);
+        const balanceAtPurchase = firstOwnedIdx >= 0
+          ? (schedule[firstOwnedIdx - 1]?.balance ?? schedule[firstOwnedIdx]?.balance ?? 0)
+          : 0;
 
         // Build cumulative principal, interest, and fees
         let cumPrincipal = 0;
@@ -509,26 +494,27 @@
 
         const termMonths = Math.max(
           1,
-          Math.round(loanData.termYears * 12)
+          Math.round(loan.termYears * 12)
         );
 
-        const cumSchedule = amort.schedule.map(row => {
+        const cumSchedule = schedule.map(row => {
           const m = row.monthIndex;
 
           // Upfront fee only in month 1
-          const upfront = (m === 1 ? loanData.upfrontFee : 0);
+          const upfront = (m === 1 ? loan.upfrontFee : 0);
 
           // Sliding monthly fee from monthlyFeeStart → 0 over the term
-          let monthlyFee = loanData.monthlyFeeStart * (1 - m / termMonths);
+          let monthlyFee = loan.monthlyFeeStart * (1 - m / termMonths);
           if (!Number.isFinite(monthlyFee) || monthlyFee < 0) {
             monthlyFee = 0;
           }
 
           const feeThisMonth = upfront + monthlyFee;
-          cumFees = +(cumFees + feeThisMonth).toFixed(2);
-
-          cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
-          cumInterest  = +(cumInterest  + row.interest).toFixed(2);
+          if (row.isOwned) {
+            cumFees = +(cumFees + feeThisMonth).toFixed(2);
+            cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
+            cumInterest  = +(cumInterest  + row.interest).toFixed(2);
+          }
 
           return {
             ...row,
@@ -540,17 +526,26 @@
         });
 
         // Mini-chart points (first 24 months)
+        const ownedRows = cumSchedule.filter(r => r.isOwned);
         const miniPts = cumSchedule.slice(0, 24).map(s => ({
           x: s.monthIndex,
           cumP: s.cumPrincipal,
           cumI: s.cumInterest
         }));
 
+        const ownedP = ownedRows.map(r => r.cumPrincipal);
+        const ownedI = ownedRows.map(r => r.cumInterest);
+
         return {
-          ...loanData,
-          amort,
+          ...loan,
+          amort: { ...loan.amort, schedule },
+          schedule,
           cumSchedule,
-          miniPts
+          miniPts,
+          monthsSinceStart,
+          balanceAtPurchase,
+          ownedP,
+          ownedI
         };
       });
     }
@@ -558,43 +553,25 @@
     /* ============================
        KPIs
        ============================ */
-    function computeKPIs(list) {
-      const total = list.reduce((s, l) => s + l.purchasePrice, 0);
-      const weightedRate = list.reduce((s, l) => s + l.nominalRate * l.purchasePrice, 0) / Math.max(1, total);
-      const weightedDuration = list.reduce((s, l) => s + (l.termYears * 12) * l.purchasePrice, 0) / Math.max(1, total);
-      // Monthly Income = sum of next month's scheduled payments (Option A)
-      const TODAY = new Date();
-      const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
-
-      function sameMonthYear(d1, d2) {
-        return d1.getFullYear() === d2.getFullYear() &&
-               d1.getMonth() === d2.getMonth();
-      }
-
-      const monthlyIncome = loansWithAmort.reduce((sum, loan) => {
-        return sum + loan.amort.schedule
-          .filter(r => r.isOwned && r.ownershipDate && sameMonthYear(new Date(r.ownershipDate), nextMonthDate))
-          .reduce((s, r) => s + r.payment, 0);
-      }, 0);
-      return { total, weightedRate: weightedRate * 100, weightedDuration, monthlyIncome, nextMonthDate };
-    }
-    let kpis;
+    let kpis = {};
 
     /* ============================
        Small helper — create SVG path from points
        ============================ */
-    function buildPathFromPoints(points, w, h, pad = 6) {
+    function buildPathFromPoints(points, w, h, pad = 6, xForIndex) {
       if (!points.length) return '';
 
       const ys = points.map(p => p.y);
       const minY = Math.min(...ys);
       const maxY = Math.max(...ys);
       const range = Math.max(1, maxY - minY);
-      const stepX = (w - pad * 2) / Math.max(1, points.length - 1);
+
+      const stepX = points.length > 1 ? (w - pad * 2) / (points.length - 1) : 0;
+      const xForIndexFn = xForIndex || ((i) => pad + i * stepX);
 
       let d = '';
       points.forEach((p, i) => {
-        const x = pad + i * stepX;
+        const x = xForIndexFn(i);
         const y = pad + (h - pad * 2) - ((p.y - minY) / range) * (h - pad * 2);
         d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
       });
@@ -608,17 +585,25 @@
     const kpisEl = document.getElementById('kpis');
 
     function renderKPI() {
-      kpis = computeKPIs(loansWithAmort);
+      kpis = amortKpis || {};
       kpisEl.innerHTML = `
-        <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$0</p></div>
-        <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${kpis.weightedRate.toFixed(2)}%</p></div>
-        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3>${kpis.nextMonthDate.toLocaleDateString("en-US", { month: "short" })} Expected Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
+        <div class="kpi" data-kpi="tpv"><h3>Total Invested</h3><p id="tpvTile">$${(kpis.totalInvested || 0).toLocaleString()}</p></div>
+        <div class="kpi" data-kpi="rates"><h3>Portfolio Value</h3><p>$${(kpis.portfolioValue || 0).toLocaleString()}</p></div>
+        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3 id="kpiMonthlyIncomeLabel"></h3><p id="kpiMonthlyIncomeValue">$0</p></div>
         <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${loansWithAmort.length}</p></div>
       `;
 
-      const kpiMonthlyIncome = document.getElementById('kpiMonthlyIncome');
-      if (kpiMonthlyIncome) {
-        kpiMonthlyIncome.addEventListener('click', () => {
+      const kpiMonthlyIncomeTile = document.getElementById('kpiMonthlyIncome');
+      const kpiMonthlyIncomeValue = document.getElementById('kpiMonthlyIncomeValue');
+      const kpiMonthlyIncomeLabel = document.getElementById('kpiMonthlyIncomeLabel');
+
+      if (kpiMonthlyIncomeValue && kpiMonthlyIncomeLabel) {
+        kpiMonthlyIncomeValue.textContent = `$${(kpis.monthlyIncomeKpi || 0).toFixed(2)}`;
+        kpiMonthlyIncomeLabel.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
+      }
+
+      if (kpiMonthlyIncomeTile) {
+        kpiMonthlyIncomeTile.addEventListener('click', () => {
           renderPaymentsDrawer();
           drawer.classList.add('open');
         });
@@ -661,8 +646,9 @@
     function renderTPVTile() {
       tpvSeriesData = tpvSeries(loansWithAmort);
       if (!tpvSeriesData.length) return;
+      const diffMonthsFromStart = monthsSincePortfolioStart();
       document.getElementById('tpvTile').textContent =
-        `$${Math.round(tpvSeriesData[Math.min(CURRENT_MONTH - 1, tpvSeriesData.length - 1)].value).toLocaleString()}`;
+        `$${Math.round(tpvSeriesData[Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1)].value).toLocaleString()}`;
     }
 
     /* ============================
@@ -691,24 +677,26 @@
 
           <div class="chart-wrap">
             <div class="mini-label">Rate ${(loan.nominalRate * 100).toFixed(2)}%</div>
-            <svg class="sparkline" viewBox="0 0 170 48" preserveAspectRatio="none" data-idx="${idx}"></svg>
+            <div class="sparkline" style="width:170px;height:48px;" data-idx="${idx}"></div>
           </div>
         `;
 
         tile.addEventListener('click', e => { e.stopPropagation(); openDrawerForLoan(loan); });
         grid.appendChild(tile);
 
-        const svg = tile.querySelector("svg.sparkline");
-        const pPoints = loan.cumSchedule.map(s => ({ y: s.cumPrincipal }));
-        const iPoints = loan.cumSchedule.map(s => ({ y: s.cumInterest }));
+        const sparkline = tile.querySelector(".sparkline");
+        createLineChart({
+          container: sparkline,
+          width: 170,
+          height: 48,
+          pad: 6,
+          labels: incomeLabels,
+          values: incomePayments,
+          todayLineDate: TODAY,
+          nextMonthLineDate: nextMonthDate,
+          dateToMonthIndex: date => monthDiff(incomeStartDate, date)
+        });
 
-        const pathP = buildPathFromPoints(pPoints, 170, 48);
-        const pathI = buildPathFromPoints(iPoints, 170, 48);
-
-        svg.innerHTML = `
-          <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6"/>
-          <path d="${pathP}" fill="none" stroke="#06b6d4" stroke-width="1.6"/>
-        `;
       });
     }
 
@@ -731,6 +719,7 @@
     const drawerSecondary = document.getElementById('drawerSecondary');
     const drawerPrimaryTitle = document.getElementById('drawerPrimaryTitle');
     const drawerSecondaryTitle = document.getElementById('drawerSecondaryTitle');
+    const drawerBalanceAtPurchase = document.getElementById('drawerBalanceAtPurchase');
     const drawerBody = document.getElementById('drawerBody');
     const amortBody = document.getElementById('amortBody');
     const drawerChartArea = document.getElementById('drawerChartArea');
@@ -764,6 +753,7 @@
       drawerSecondaryTitle.textContent = 'Rate';
       drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
       drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
+      drawerBalanceAtPurchase.textContent = `Balance at Purchase: $${loan.balanceAtPurchase.toLocaleString()}`;
 
       /* render amort rows */
       drawerAmortContainer.style.display = 'block';
@@ -771,183 +761,28 @@
       loan.amort.schedule.forEach(r => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td style="text-align:left">${r.monthIndex}</td>
+          <td style="text-align:left">${formatDate(r.loanDate)}</td>
           <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
         `;
+        if (!r.isOwned) tr.classList.add('not-owned');
+        if (r.ownershipMonthIndex === 1) tr.classList.add('purchase-highlight');
         amortBody.appendChild(tr);
       });
 
-      /* build drawer chart (multi-line with legend & current date marker) */
       drawerChartArea.innerHTML = '';
-      drawerLegend.style.display = 'flex';
-      drawerLegend.innerHTML = `
-        <div class="item"><span class="sw" style="background:#0f172a"></span>Balance</div>
-        <div class="item"><span class="sw" style="background:#06b6d4"></span>Cum Principal</div>
-        <div class="item"><span class="sw" style="background:#a78bfa"></span>Cum Interest</div>
-        <div class="item"><span class="sw" style="background:#fb7185"></span>Fees</div>
-      `;
+      drawerLegend.style.display = 'none';
 
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const w = 480, h = 240, pad = 28;
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', '100%');
-
-      const schedule = loan.cumSchedule;
-      const balances = loan.amort.schedule.map(s => ({ x: s.monthIndex, y: s.balance }));
-      const cumP = schedule.map(s => ({ x: s.monthIndex, y: s.cumPrincipal }));
-      const cumI = schedule.map(s => ({ x: s.monthIndex, y: s.cumInterest }));
-      const cumF = schedule.map(s => ({ x: s.monthIndex, y: s.cumFees }));
-
-      // global Y range for consistent scaling
-      const allYs = [
-        ...balances.map(p => p.y),
-        ...cumP.map(p => p.y),
-        ...cumI.map(p => p.y),
-        ...cumF.map(p => p.y)
-      ];
-      const maxY = Math.max(...allYs);
-      const minY = Math.min(...allYs);
-      const range = Math.max(1, maxY - minY);
-
-      const stepX = (w - pad * 2) / Math.max(1, schedule.length - 1);
-      function toXY(point, i) {
-        const x = pad + i * stepX;
-        const y = pad + (h - pad * 2) - ((point.y - minY) / range) * (h - pad * 2);
-        return [x, y];
-      }
-      function buildPath(arr) {
-        return arr.map((p, i) => {
-          const [x, y] = toXY(p, i);
-          return (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-        }).join(' ');
-      }
-
-      // subtle grid lines
-      for (let gy = 0; gy < 5; gy++) {
-        const y = pad + gy * ((h - pad * 2) / 4);
-        const line = document.createElementNS(svgNS, 'line');
-        line.setAttribute('x1', pad);
-        line.setAttribute('x2', w - pad);
-        line.setAttribute('y1', y);
-        line.setAttribute('y2', y);
-        line.setAttribute('stroke', '#eef2f7');
-        line.setAttribute('stroke-width', '1');
-        svg.appendChild(line);
-      }
-
-      const pathBal = buildPath(balances);
-      const pathP = buildPath(cumP);
-      const pathI = buildPath(cumI);
-      const pathF = buildPath(cumF);
-
-      const elBal = document.createElementNS(svgNS, 'path');
-      elBal.setAttribute('d', pathBal);
-      elBal.setAttribute('fill', 'none');
-      elBal.setAttribute('stroke', '#0f172a');
-      elBal.setAttribute('stroke-width', '2');
-      svg.appendChild(elBal);
-
-      const elP = document.createElementNS(svgNS, 'path');
-      elP.setAttribute('d', pathP);
-      elP.setAttribute('fill', 'none');
-      elP.setAttribute('stroke', '#06b6d4');
-      elP.setAttribute('stroke-width', '1.6');
-      svg.appendChild(elP);
-
-      const elI = document.createElementNS(svgNS, 'path');
-      elI.setAttribute('d', pathI);
-      elI.setAttribute('fill', 'none');
-      elI.setAttribute('stroke', '#a78bfa');
-      elI.setAttribute('stroke-width', '1.6');
-      svg.appendChild(elI);
-
-      const elF = document.createElementNS(svgNS, 'path');
-      elF.setAttribute('d', pathF);
-      elF.setAttribute('fill', 'none');
-      elF.setAttribute('stroke', '#fb7185');
-      elF.setAttribute('stroke-width', '1.4');
-      svg.appendChild(elF);
-
-      // current date marker
-      const maxMonth = schedule.length;
-      const curX = pad + (Math.max(1, Math.min(CURRENT_MONTH, maxMonth)) - 1) * stepX;
-      const curLine = document.createElementNS(svgNS, 'line');
-      curLine.setAttribute('x1', curX);
-      curLine.setAttribute('x2', curX);
-      curLine.setAttribute('y1', pad);
-      curLine.setAttribute('y2', h - pad);
-      curLine.setAttribute('stroke', '#111827');
-      curLine.setAttribute('stroke-dasharray', '3 4');
-      curLine.setAttribute('stroke-opacity', '0.6');
-      svg.appendChild(curLine);
-
-      // hover overlay (vertical line and circles)
-      const vLine = document.createElementNS(svgNS, 'line');
-      vLine.setAttribute('stroke', '#0f172a');
-      vLine.setAttribute('stroke-width', '1');
-      vLine.setAttribute('stroke-dasharray', '3 4');
-      vLine.setAttribute('opacity', '0.6');
-      svg.appendChild(vLine);
-
-      const circles = document.createElementNS(svgNS, 'g');
-      svg.appendChild(circles);
-
-      svg.addEventListener('mousemove', (ev) => {
-        const rect = svg.getBoundingClientRect();
-        const x = ev.clientX - rect.left;
-        let idx = Math.round((x - pad) / stepX);
-        idx = Math.max(0, Math.min(schedule.length - 1, idx));
-        const px = pad + idx * stepX;
-
-        vLine.setAttribute('x1', px); vLine.setAttribute('x2', px);
-        vLine.setAttribute('y1', pad); vLine.setAttribute('y2', h - pad);
-        circles.innerHTML = '';
-
-          const pointVals = {
-            month: schedule[idx].monthIndex,
-            balance: balances[idx].y,
-            cumP: cumP[idx].y,
-            cumI: cumI[idx].y,
-            cumF: cumF[idx].y
-          };
-
-          const series = [
-            { val: pointVals.balance, color: '#0f172a' },
-            { val: pointVals.cumP, color: '#06b6d4' },
-            { val: pointVals.cumI, color: '#a78bfa' },
-            { val: pointVals.cumF, color: '#fb7185' }
-          ];
-
-        series.forEach(s => {
-          const [cx, cy] = toXY({ y: s.val }, idx);
-          const c = document.createElementNS(svgNS, 'circle');
-          c.setAttribute('cx', cx);
-          c.setAttribute('cy', cy);
-          c.setAttribute('r', 4);
-          c.setAttribute('fill', s.color);
-          c.setAttribute('stroke', '#fff');
-          c.setAttribute('stroke-width', '1.2');
-          circles.appendChild(c);
-        });
-
-          tooltip.style.display = 'block';
-          tooltip.style.left = (rect.left + px) + 'px';
-          tooltip.style.top = (rect.top + 16) + 'px';
-          tooltip.innerHTML = `M${pointVals.month} — Balance $${pointVals.balance.toLocaleString()}<br>Principal $${pointVals.cumP.toLocaleString()} • Interest $${pointVals.cumI.toLocaleString()} • Fees $${pointVals.cumF.toLocaleString()}`;
-        });
-
-      svg.addEventListener('mouseleave', () => {
-        vLine.setAttribute('x1', 0); vLine.setAttribute('x2', 0);
-        circles.innerHTML = '';
-        tooltip.style.display = 'none';
+      createLineChart({
+        container: drawerChartArea,
+        labels: incomeLabels,
+        values: incomePayments,
+        todayLineDate: TODAY,
+        nextMonthLineDate: nextMonthDate,
+        dateToMonthIndex: date => monthDiff(incomeStartDate, date)
       });
-
-      drawerChartArea.appendChild(svg);
 
       drawer.classList.add('open');
       drawer.setAttribute('aria-hidden', 'false');
@@ -967,6 +802,9 @@
     function renderDistributionDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      drawerBalanceAtPurchase.textContent = '';
 
       drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
       drawerSub.textContent = 'Number of loans purchased by month';
@@ -1071,12 +909,14 @@
     function renderTPVDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
+      drawerBalanceAtPurchase.textContent = '';
 
       drawerTitle.textContent = 'Total Portfolio Value';
       drawerSub.textContent = 'Purchase + accrued interest (grace) + cumulative payments';
 
       drawerPrimaryTitle.textContent = 'Current TPV';
-      const curVal = tpvSeriesData[Math.min(CURRENT_MONTH - 1, tpvSeriesData.length - 1)].value;
+      const diffMonthsFromStart = monthsSincePortfolioStart();
+      const curVal = tpvSeriesData[Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1)].value;
       drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
 
       drawerSecondaryTitle.textContent = 'Total Invested';
@@ -1129,7 +969,7 @@
       }
 
       // current month marker
-      const curIdx = Math.min(CURRENT_MONTH - 1, tpvSeriesData.length - 1);
+      const curIdx = Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1);
       const curX = pad + curIdx * stepX;
       const curLine = document.createElementNS(svgNS, 'line');
       curLine.setAttribute('x1', curX); curLine.setAttribute('x2', curX);
@@ -1170,7 +1010,7 @@
               <thead><tr><th>Month</th><th style="text-align:right">TPV</th></tr></thead>
               <tbody>
                 <tr><td style="text-align:left">Start (M1)</td><td style="text-align:right">$${Math.round(tpvSeriesData[0].value).toLocaleString()}</td></tr>
-                <tr><td style="text-align:left">Current (M${CURRENT_MONTH})</td><td style="text-align:right">$${curValRounded.toLocaleString()}</td></tr>
+                <tr><td style="text-align:left">Current (M${diffMonthsFromStart})</td><td style="text-align:right">$${curValRounded.toLocaleString()}</td></tr>
                 <tr><td style="text-align:left">End (M${tpvSeriesData[tpvSeriesData.length - 1].month})</td><td style="text-align:right">$${Math.round(tpvSeriesData[tpvSeriesData.length - 1].value).toLocaleString()}</td></tr>
               </tbody>
             </table>
@@ -1186,6 +1026,7 @@
     function renderRatesDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
+      drawerBalanceAtPurchase.textContent = '';
 
       drawerTitle.textContent = 'Rates Distribution';
       drawerSub.textContent = 'Histogram of loan nominal rates';
@@ -1290,101 +1131,24 @@
       drawerSub.textContent = 'Sum of scheduled payments across loans';
 
       // Primary KPI (top)
-      drawerPrimaryTitle.textContent = `${kpis.nextMonthDate.toLocaleDateString('en-US', { month: 'short' })} Expected Income`;
-      drawerPrimary.textContent = `$${kpis.monthlyIncome.toFixed(2)}`;
+      drawerPrimaryTitle.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
+      drawerPrimary.textContent = `$${(kpis.monthlyIncomeKpi || 0).toFixed(2)}`;
       drawerSecondaryTitle.textContent = 'Total Invested';
-      drawerSecondary.textContent = `$${kpis.total.toLocaleString()}`;
+      drawerSecondary.textContent = `$${(kpis.totalInvested || 0).toLocaleString()}`;
 
       drawerAmortContainer.style.display = 'none';
       drawerLegend.style.display = 'none';
       drawerChartArea.innerHTML = '';
       drawerExtra.innerHTML = '';
 
-      // --------------------------------------------------
-      // Build next month's expected income snapshot
-      // --------------------------------------------------
-      const monthlyIncome = kpis.monthlyIncome;
-      const monthLabel = kpis.nextMonthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      const payments = [monthlyIncome];
-
-      // --------------------------------------------------
-      // Chart SVG
-      // --------------------------------------------------
-
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const w = 600, h = 230, pad = 32;
-      const innerW = w - pad * 2;
-      const innerH = h - pad * 2;
-
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', h);
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-
-      const maxY = Math.max(...payments);
-      const rangeY = Math.max(1, maxY);
-      const stepX = innerW / Math.max(1, payments.length - 1);
-
-      // Draw line
-      let dPath = '';
-      payments.forEach((val, idx) => {
-        const x = pad + idx * stepX;
-        const y = pad + innerH - (val / rangeY) * innerH;
-        dPath += idx === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+      createLineChart({
+        container: drawerChartArea,
+        labels: incomeLabels,
+        values: incomePayments,
+        todayLineDate: TODAY,
+        nextMonthLineDate: nextMonthDate,
+        dateToMonthIndex: date => monthDiff(incomeStartDate, date)
       });
-
-      const path = document.createElementNS(svgNS, 'path');
-      path.setAttribute('d', dPath);
-      path.setAttribute('stroke', '#ef4444');
-      path.setAttribute('stroke-width', '2.5');
-      path.setAttribute('fill', 'none');
-      svg.appendChild(path);
-
-      // --------------------------------------------------
-      // X-axis readable labels (about 8 evenly spaced)
-      // --------------------------------------------------
-      const prettyLabels = [monthLabel];
-
-      const labelEvery = Math.max(1, Math.floor(prettyLabels.length / 7));
-      prettyLabels.forEach((label, i) => {
-        if (i % labelEvery !== 0 && i !== prettyLabels.length - 1) return;
-        const x = pad + i * stepX;
-        const t = document.createElementNS(svgNS, 'text');
-        t.setAttribute('x', x);
-        t.setAttribute('y', h - 6);
-        t.setAttribute('text-anchor', 'middle');
-        t.setAttribute('font-size', '11');
-        t.setAttribute('fill', '#475569');
-        t.textContent = label;
-        svg.appendChild(t);
-      });
-
-      // --------------------------------------------------
-      // Hover
-      // --------------------------------------------------
-      payments.forEach((p, i) => {
-        const x = pad + i * stepX;
-        const hit = document.createElementNS(svgNS, 'rect');
-        hit.setAttribute('x', x - stepX / 2);
-        hit.setAttribute('width', stepX);
-        hit.setAttribute('y', pad);
-        hit.setAttribute('height', innerH);
-        hit.setAttribute('fill', 'transparent');
-
-        hit.addEventListener('mousemove', e => {
-          tooltip.style.display = 'block';
-          tooltip.style.left = e.clientX + 'px';
-          tooltip.style.top = (e.clientY - 12) + 'px';
-          tooltip.innerHTML = `${prettyLabels[i]} • $${p.toFixed(2)}`;
-        });
-        hit.addEventListener('mouseleave', () => {
-          tooltip.style.display = 'none';
-        });
-
-        svg.appendChild(hit);
-      });
-
-      drawerChartArea.appendChild(svg);
 
       // --------------------------------------------------
       // Monthly table
@@ -1401,11 +1165,12 @@
                 </tr>
               </thead>
               <tbody>
-                ${prettyLabels.map((lab, i) => `
+                ${incomeLabels.map((lab, i) => `
                   <tr>
-                    <td style="padding:6px;">${lab}</td>
-                    <td style="padding:6px;text-align:right;">$${payments[i].toFixed(2)}</td>
-                  </tr>`).join('')}
+                    <td>${lab}</td>
+                    <td style="text-align:right;">$${incomePayments[i].toFixed(2)}</td>
+                  </tr>
+                `).join('')}
               </tbody>
             </table>
           </div>
@@ -1514,6 +1279,22 @@
     });
 
     document.addEventListener("DOMContentLoaded", initPage);
+    document.getElementById("currentDate").textContent = formatDate(new Date());
+  </script>
+
+  <div id="chartTooltip"
+       style="position:fixed;display:none;
+              background:var(--card);
+              padding:6px 10px;
+              border-radius:6px;
+              font-size:12px;
+              box-shadow:0 2px 6px rgba(0,0,0,0.2);
+              pointer-events:none;
+              z-index:9999;">
+  </div>
+
+  <script>
+    window.chartTooltip = document.getElementById("chartTooltip");
   </script>
 </body>
 </html>
