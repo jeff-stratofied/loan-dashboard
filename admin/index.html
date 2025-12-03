@@ -255,7 +255,7 @@ const arr = data.loans || [];
 
     async function saveLoans(updatedLoans) {
   try {
-    const res = await postLoans(updatedLoans);
+    const res = await postLoans(updatedLoans, currentSha);
 
     if (!res) {
       alert("Error saving loans!");
