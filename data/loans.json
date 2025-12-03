@@ -3,7 +3,7 @@
     {
       "loanId": 1,
       "loanName": "Loan 1",
-      "school": "Ohio State",
+      "school": "Penn State",
       "loanStartDate": "2024-01-31",
       "purchaseDate": "2024-01-31",
       "principal": 10000,
