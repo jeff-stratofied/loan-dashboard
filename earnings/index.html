@@ -1010,7 +1010,7 @@
       // ==== Correct Today line using ownership start ====
 const TODAY = new Date();
 
-const firstOwnDate = new Date(data[0].ownershipDate);
+const firstOwnDate = new Date(loan.purchaseDate);
 const lastOwnDate  = new Date(data[data.length - 1].ownershipDate);
 
 // Total owned months
@@ -1231,7 +1231,7 @@ const currentX = padL + ratio * (w - padL - padR);
       // ==== Correct Today line using ownership start ====
 const TODAY = new Date();
 
-const firstOwnDate = new Date(data[0].ownershipDate);
+const firstOwnDate = new Date(loan.purchaseDate);
 const lastOwnDate  = new Date(data[data.length - 1].ownershipDate);
 
 // Total owned months
