@@ -229,40 +229,60 @@ export function buildPortfolioViews(loansWithAmort) {
   //
   // Everything aligned to loanDate.
 
-
-  const roiSeries = {};
+    const roiSeries = {};
   const roiKpis = {};
 
   loansWithAmort.forEach(loan => {
     const purchase = new Date(loan.purchaseDate);
-    let cumInterest = 0;
-    let currentValue = 0;
+    const purchasePrice = Number(
+      loan.purchasePrice ?? loan.principal ?? 0
+    );
+
+    let cumInterest  = 0;
+    let cumPrincipal = 0;
+    let cumFees      = 0;
 
     roiSeries[loan.id] = loan.amort.schedule
       .filter(r => r.loanDate >= purchase)
       .map(r => {
-        cumInterest += r.interest;
-        currentValue = r.balance + cumInterest;
+        // accumulate interest + principal
+        cumInterest  += r.interest;
+        cumPrincipal += r.principalPaid;
 
-        const roi = loan.principal
-          ? (currentValue - loan.principal) / loan.principal
+        // if you later add per-row fees, put them in r.feeThisMonth
+        const feeThisMonth = Number(r.feeThisMonth ?? 0);
+        cumFees += feeThisMonth;
+
+        // 👉 your formula:
+        // LoanValueToday = PurchasePrice + cumInterest + cumPrincipal - cumFees
+        const loanValue =
+          purchasePrice + cumInterest + cumPrincipal - cumFees;
+
+        const roi = purchasePrice
+          ? (loanValue - purchasePrice) / purchasePrice
           : 0;
 
         return {
           date: r.loanDate,
-          roi: roi,
+          month: r.monthIndex,
+          roi,
+          loanValue,
           balance: r.balance,
-          cumInterest: cumInterest
+          cumInterest,
+          cumPrincipal,
+          cumFees,
+          ownershipDate: r.ownershipDate
         };
       });
 
-    // Latest ROI KPI
+    // Latest ROI KPI for this loan (last point in its series)
     roiKpis[loan.id] =
       roiSeries[loan.id].length > 0
         ? roiSeries[loan.id][roiSeries[loan.id].length - 1].roi
         : 0;
   });
 
+  
 
   // ----------------------------------------------
   // 3) Earnings Timeline (per-loan & portfolio)
