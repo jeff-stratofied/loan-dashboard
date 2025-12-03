@@ -2,9 +2,9 @@
 
 const API_URL = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
 
-// -----------------------------
+// ----------------------------------------------------
 // GET loans  (returns { loans, sha })
-// -----------------------------
+// ----------------------------------------------------
 export async function loadLoans() {
   try {
     const res = await fetch(API_URL, {
@@ -17,16 +17,19 @@ export async function loadLoans() {
       throw new Error(`GET error ${res.status}: ${txt}`);
     }
 
-    return await res.json();  // { loans: [...], sha: "..." }
+    // Worker returns shape:
+    // { loans: [...], sha: "xxxx" }
+    return await res.json();
+
   } catch (err) {
     console.error("Error loading loans:", err);
     return { loans: [], sha: null };
   }
 }
 
-// -----------------------------
+// ----------------------------------------------------
 // SAVE loans  (POST { loans, sha })
-// -----------------------------
+// ----------------------------------------------------
 export async function saveLoans(loans, sha) {
   const payload = { loans };
   if (sha) payload.sha = sha;
@@ -43,5 +46,5 @@ export async function saveLoans(loans, sha) {
     throw new Error(`Save error: ${res.status}`);
   }
 
-  return await res.json();  // includes content.sha (updated SHA)
+  return await res.json();  // includes content.sha
 }
