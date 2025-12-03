@@ -585,12 +585,16 @@
         <div class="kpi" data-kpi="tpv"><h3>Total Invested</h3><p id="tpvTile">$${(kpis.totalInvested || 0).toLocaleString()}</p></div>
         <div class="kpi" data-kpi="rates"><h3>Portfolio Value</h3><p>$${(kpis.portfolioValue || 0).toLocaleString()}</p></div>
         <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3 id="kpiMonthlyIncomeLabel"></h3><p id="kpiMonthlyIncomeValue">$0</p></div>
-        <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${loansWithAmort.length}</p></div>
+        <div class="kpi" data-kpi="yield"><h3>Annualized Yield</h3><p id="kpiYield">0%</p></div>
       `;
 
       const kpiMonthlyIncomeTile = document.getElementById('kpiMonthlyIncome');
       const kpiMonthlyIncomeValue = document.getElementById('kpiMonthlyIncomeValue');
       const kpiMonthlyIncomeLabel = document.getElementById('kpiMonthlyIncomeLabel');
+      const annualYield = computeAnnualizedYield();
+document.getElementById("kpiYield").textContent =
+  (annualYield * 100).toFixed(2) + "%";
+
 
       if (kpiMonthlyIncomeValue && kpiMonthlyIncomeLabel) {
         kpiMonthlyIncomeValue.textContent = `$${(kpis.monthlyIncomeKpi || 0).toFixed(2)}`;
@@ -785,9 +789,31 @@
       await loadLoans();
       rebuildLoansWithAmort();
 
+function computeAnnualizedYield() {
+  // Total interest earned to date across all loans
+  const totalEarnedInterest = loansWithAmort.reduce((sum, loan) => {
+    const owned = loan.cumSchedule.filter(r => r.isOwned);
+    const latest = owned[owned.length - 1];
+    return sum + (latest ? latest.cumInterest : 0);
+  }, 0);
+
+  // Cost basis
+  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
+
+  if (totalInvested <= 0) return 0;
+
+  // Annualized return = (Interest Earned to Date / Invested) * (12 / months owned)
+  const minStart = Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()));
+  const monthsOwned = Math.max(1, monthDiff(new Date(minStart), new Date()));
+
+  return (totalEarnedInterest / totalInvested) * (12 / monthsOwned);
+}
+
+      
       renderKPI();
       renderLoanTiles();
       renderTPVTile();
+      
     }
 
     /* ============================
@@ -1389,6 +1415,105 @@
       drawerBody.scrollTop = 0;
     }
 
+function renderYieldDrawer() {
+  currentMode = "kpi";
+  currentLoan = null;
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+  drawerAmortContainer.style.display = "none";
+  drawerLegend.style.display = "none";
+  drawerExtra.innerHTML = "";
+  drawerChartArea.innerHTML = "";
+
+  drawerTitle.textContent = "Annualized Yield";
+  drawerSub.textContent = "Interest earned to date relative to invested capital";
+
+  const annualYield = computeAnnualizedYield();
+  drawerPrimaryTitle.textContent = "Annualized Yield";
+  drawerPrimary.textContent = (annualYield * 100).toFixed(2) + "%";
+
+  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
+  drawerSecondaryTitle.textContent = "Total Invested";
+  drawerSecondary.textContent = "$" + totalInvested.toLocaleString();
+
+  // ---- Chart: Yield contribution by loan ----
+  const svgNS = "http://www.w3.org/2000/svg";
+  const w = 500, h = 220, pad = 30;
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+
+  const contributions = loansWithAmort.map(l => {
+    const owned = l.cumSchedule.filter(r => r.isOwned);
+    const latest = owned[owned.length - 1];
+    return {
+      name: l.loanName,
+      interest: latest ? latest.cumInterest : 0
+    };
+  });
+
+  const max = Math.max(...contributions.map(c => c.interest));
+  const barW = (w - pad * 2) / contributions.length * 0.7;
+
+  contributions.forEach((c, i) => {
+    const x = pad + i * ((w - pad * 2) / contributions.length);
+    const barH = (c.interest / max) * (h - pad * 2);
+    const y = h - pad - barH;
+
+    const rect = document.createElementNS(svgNS, "rect");
+    rect.setAttribute("x", x);
+    rect.setAttribute("y", y);
+    rect.setAttribute("width", barW);
+    rect.setAttribute("height", barH);
+    rect.setAttribute("fill", "#0ea5e9");
+    svg.appendChild(rect);
+
+    rect.addEventListener("mousemove", ev => {
+      tooltip.style.display = "block";
+      tooltip.style.left = ev.clientX + "px";
+      tooltip.style.top = ev.clientY - 10 + "px";
+      tooltip.innerHTML = `${c.name}<br>Interest: $${c.interest.toLocaleString()}`;
+    });
+    rect.addEventListener("mouseleave", () => tooltip.style.display = "none");
+
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", x + barW / 2);
+    label.setAttribute("y", h - pad + 14);
+    label.setAttribute("font-size", "11");
+    label.setAttribute("text-anchor", "middle");
+    label.textContent = c.name.replace("Loan ", "");
+    svg.appendChild(label);
+  });
+
+  drawerChartArea.appendChild(svg);
+
+  // ---- Table ----
+  drawerExtra.innerHTML = `
+    <div style="margin-top:10px">
+      <strong class="small">Yield Contribution by Loan</strong>
+      <div style="max-height:240px;overflow:auto;border-radius:6px;padding:6px;border:1px solid var(--border);background:var(--card)">
+        <table style="width:100%;font-size:13px">
+          <thead>
+            <tr><th>Loan</th><th>Interest Earned</th><th>Purchase</th><th>Rate</th></tr>
+          </thead>
+          <tbody>
+            ${contributions.map((c, idx) => `
+              <tr>
+                <td>${c.name}</td>
+                <td>$${c.interest.toFixed(2)}</td>
+                <td>${loansWithAmort[idx].purchaseDate}</td>
+                <td>${(loansWithAmort[idx].nominalRate * 100).toFixed(2)}%</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+    
     function renderPaymentsDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
@@ -1532,6 +1657,7 @@
           if (key === 'distribution') renderDistributionDrawer();
           if (key === 'tpv') renderTPVDrawer();
           if (key === 'rates') renderRatesDrawer();
+          if (key === 'yield') renderYieldDrawer();
         });
       });
     }
