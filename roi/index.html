@@ -790,20 +790,22 @@ function openDrawerForLoan(loan){
       const roiBody = document.getElementById('roiBody');
       roiBody.innerHTML = '';
       // build rows using cumSchedule and roiSeries, accounting for amortization fees
-      loan.roiSeries.forEach(s => {
-        const month = s.month;
-        const cs = loan.cumSchedule.find(r => r.ownershipMonthIndex === month) || {};
-        const balance = (cs.balance !== undefined) ? cs.balance : '';
-        const cumInterest = (cs.cumInterest !== undefined) ? cs.cumInterest : '';
-        const cumPayments = (cs.cumTotal !== undefined) ? cs.cumTotal : '';
-        const cumFees = s.cumFees ?? 0;
-        const loanValueAdj = s.loanValue ?? 0;
-        const roiAdj = s.roi || 0;
-        const tr = document.createElement('tr');
-        const loanDate = cs.loanDate ? formatDate(cs.loanDate) : '';
-        tr.innerHTML = `<td style="text-align:left">${loanDate}</td><td style="text-align:right">$${Number(balance).toFixed(2)}</td><td style="text-align:right">$${Number(cumInterest).toFixed(2)}</td><td style="text-align:right">$${Number(cumPayments).toFixed(2)}</td><td style="text-align:right">$${Number(cumFees).toFixed(2)}</td><td style="text-align:right">$${Number(loanValueAdj).toFixed(2)}</td><td style="text-align:right">${(roiAdj*100).toFixed(2)}%</td>`;
-        roiBody.appendChild(tr);
-      });
+      loan.roiSeries.forEach(row => {
+  const tr = document.createElement("tr");
+
+  tr.innerHTML = `
+    <td style="text-align:left">${formatDate(row.date)}</td>
+    <td style="text-align:right">$${row.balance.toFixed(2)}</td>
+    <td style="text-align:right">$${row.cumInterest.toFixed(2)}</td>
+    <td style="text-align:right">$${row.cumPrincipal.toFixed(2)}</td>
+    <td style="text-align:right">$${row.cumFees.toFixed(2)}</td>
+    <td style="text-align:right">$${row.loanValue.toFixed(2)}</td>
+    <td style="text-align:right">${(row.roi * 100).toFixed(2)}%</td>
+  `;
+
+  roiBody.appendChild(tr);
+});
+
 
       drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); drawer.scrollTop=0;
     }
