@@ -5,171 +5,141 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Loan Admin</title>
 
-  <!-- =========================================================
-       DARK/LIGHT THEME (matches ROI page)
-       ========================================================= -->
-  <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --panel-light: #334155;
-      --text: #e2e8f0;
-      --border: #334155;
-      --hover: #283547;
-      --button-bg: #1e293b;
-      --button-border: #334155;
-      --button-hover: #334155;
-      --danger: #ef4444;
-      --danger-dark: #b91c1c;
-      --green: #22c55e;
-    }
+ <style>
 
-    html[data-theme="light"] {
-      --bg: #f8fafc;
-      --panel: #ffffff;
-      --panel-light: #e2e8f0;
-      --text: #0f172a;
-      --border: #cbd5e1;
-      --hover: #f1f5f9;
-      --button-bg: #ffffff;
-      --button-border: #cbd5e1;
-      --button-hover: #e2e8f0;
-      --danger: #ef4444;
-      --danger-dark: #b91c1c;
-      --green: #16a34a;
-    }
+/* ===========================================
+   THEME VARIABLES — MATCH EXACTLY WITH ROI
+   =========================================== */
 
-    * {
-      transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
-    }
+html {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #1e293b;
+  --input-bg: #020617;
+  --input-border: #334155;
+  --shadow: 0 18px 40px rgba(0,0,0,0.4);
+  --button-bg: #1e293b;
+  --button-border: #334155;
+  --delete-bg: #111827;
+  --delete-border: #374151;
+  --green: #22c55e;
+}
 
-    body {
-      margin: 0;
-      padding: 24px;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    }
+html[data-theme="light"] {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --input-bg: #ffffff;
+  --input-border: #cbd5e1;
+  --shadow: 0 1px 4px rgba(0,0,0,0.08);
+  --button-bg: #ffffff;
+  --button-border: #cbd5e1;
+  --delete-bg: #f1f5f9;
+  --delete-border: #cbd5e1;
+  --green: #16a34a;
+}
 
-    /* =========================================================
-       HEADER
-       ========================================================= */
-    .header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-    }
+/* Smooth theme transition */
+body, table, th, td, input, select, button {
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
 
-    .header-left h1 {
-      margin: 0;
-      font-size: 32px;
-      font-weight: 600;
-    }
+/* ===========================================
+   GLOBAL LAYOUT
+   =========================================== */
 
-    .header-left p {
-      margin: 4px 0 0 0;
-      opacity: 0.8;
-      font-size: 15px;
-    }
+body {
+  margin: 0;
+  padding: 1.5rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
 
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+/* Titles */
+h1 {
+  margin: 0 0 0.3rem 0;
+  font-size: 1.45rem;
+}
 
-    /* =========================================================
-       BUTTONS
-       ========================================================= */
-    button {
-      padding: 7px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--button-border);
-      background: var(--button-bg);
-      color: var(--text);
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+.sub {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 1.2rem;
+}
 
-    button:hover {
-      background: var(--button-hover);
-    }
+/* ===========================================
+   BUTTONS
+   =========================================== */
 
-    .delete-btn {
-      background: var(--danger);
-      border-color: var(--danger-dark);
-      color: white;
-    }
-    .delete-btn:hover {
-      background: var(--danger-dark);
-    }
+button {
+  border-radius: 999px;
+  border: 1px solid var(--button-border);
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: 500;
+  background: var(--button-bg);
+  color: var(--text);
+}
 
-    .toggle-btn {
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      font-size: 16px;
-    }
+button:hover {
+  opacity: 0.8;
+}
 
-    /* =========================================================
-       STATUS PILL
-       ========================================================= */
-    .pill {
-      background: var(--panel);
-      padding: 5px 12px;
-      border-radius: 20px;
-      border: 1px solid var(--panel-light);
-      font-size: 13px;
-      opacity: 0.9;
-      margin-top: 6px;
-      display: inline-block;
-    }
+/* Add Loan (green pill) */
+#add-row {
+  background: var(--green);
+  border-color: var(--green);
+  color: #ffffff;
+}
 
-    /* =========================================================
-       TABLE
-       ========================================================= */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--panel);
-      border-radius: 10px;
-      overflow: hidden;
-      font-size: 14px;
-    }
+/* Save button */
+#save-btn {
+  background: var(--button-bg);
+  border-color: var(--button-border);
+}
 
-    th {
-      background: var(--panel-light);
-      padding: 10px;
-      text-align: left;
-      font-weight: 600;
-      border-bottom: 1px solid var(--border);
-    }
+/* Delete button — small, dark, not red */
+.delete-btn {
+  background: var(--delete-bg) !important;
+  border: 1px solid var(--delete-border) !important;
+  color: var(--text) !important;
+  font-size: 0.75rem !important;
+  padding: 0.22rem 0.6rem !important;
+  border-radius: 0.35rem !important;
+}
 
-    td {
-      padding: 10px;
-      border-bottom: 1px solid var(--border);
-    }
+/* ===========================================
+   STATUS PILL (matches ROI)
+   =========================================== */
 
-    tr:hover td {
-      background: var(--hover);
-    }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
 
-    input, select {
-      width: 100%;
-      padding: 5px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-    }
-  </style>
+.pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--green);
+}
+
+/* ===========================================
+   TABLE (matches ROI card/table style)
+   =========
+
 </head>
 
 <body>
