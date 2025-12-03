@@ -1007,22 +1007,39 @@
         svg.appendChild(rFee);
       });
 
-      // Vertical line at today's date relative to the loan's full timeline
-      const TODAY = new Date();
+      // ==== Correct Today line using ownership start ====
+const TODAY = new Date();
 
-      const firstDate = new Date(data[0].loanDate);
-      const lastDate  = new Date(data[data.length - 1].loanDate);
+const firstOwnDate = new Date(data[0].ownershipDate);
+const lastOwnDate  = new Date(data[data.length - 1].ownershipDate);
 
-      let totalMonthsRaw = monthDiff(firstDate, lastDate);
-      if (!Number.isFinite(totalMonthsRaw) || totalMonthsRaw <= 0) totalMonthsRaw = 1;
+// Total owned months
+let totalOwnedMonths = monthDiff(firstOwnDate, lastOwnDate);
+if (!Number.isFinite(totalOwnedMonths) || totalOwnedMonths <= 0) {
+  totalOwnedMonths = data.length - 1;
+}
 
-      let monthsToTodayRaw = monthDiff(firstDate, TODAY);
-      if (!Number.isFinite(monthsToTodayRaw)) monthsToTodayRaw = 0;
+// Months from purchase to today
+let ownedMonthsToToday = monthDiff(firstOwnDate, TODAY);
+if (!Number.isFinite(ownedMonthsToToday)) ownedMonthsToToday = 0;
 
-      const monthsToToday = Math.max(0, Math.min(monthsToTodayRaw, totalMonthsRaw));
-      const ratio = monthsToToday / totalMonthsRaw;
+// Clamp
+ownedMonthsToToday = Math.max(0, Math.min(ownedMonthsToToday, totalOwnedMonths));
 
-      const currentX = padL + ratio * (w - padL - padR);
+// Convert to X position
+const ratio = totalOwnedMonths > 0 ? (ownedMonthsToToday / totalOwnedMonths) : 0;
+const currentX = padL + ratio * (w - padL - padR);
+
+const vline = document.createElementNS(svgNS, "line");
+vline.setAttribute("x1", currentX);
+vline.setAttribute("x2", currentX);
+vline.setAttribute("y1", 0);
+vline.setAttribute("y2", h);
+vline.setAttribute("stroke", "#64748b");
+vline.setAttribute("stroke-dasharray", "4,3");
+vline.setAttribute("stroke-width", "1");
+svg.appendChild(vline);
+
 
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
@@ -1222,23 +1239,38 @@
         }
       });
 
-      // Vertical line at today's date relative to the loan's full timeline
-      const TODAY = new Date();
+      // ==== Correct Today line using ownership start ====
+const TODAY = new Date();
 
-      const firstDate = new Date(data[0].loanDate);
-      const lastDate  = new Date(data[data.length - 1].loanDate);
+const firstOwnDate = new Date(data[0].ownershipDate);
+const lastOwnDate  = new Date(data[data.length - 1].ownershipDate);
 
-      let totalMonthsRaw = monthDiff(firstDate, lastDate);
-      if (!Number.isFinite(totalMonthsRaw) || totalMonthsRaw <= 0) totalMonthsRaw = 1;
+// Total owned months
+let totalOwnedMonths = monthDiff(firstOwnDate, lastOwnDate);
+if (!Number.isFinite(totalOwnedMonths) || totalOwnedMonths <= 0) {
+  totalOwnedMonths = data.length - 1;
+}
 
-      let monthsToTodayRaw = monthDiff(firstDate, TODAY);
-      if (!Number.isFinite(monthsToTodayRaw)) monthsToTodayRaw = 0;
+// Months from purchase to today
+let ownedMonthsToToday = monthDiff(firstOwnDate, TODAY);
+if (!Number.isFinite(ownedMonthsToToday)) ownedMonthsToToday = 0;
 
-      // Clamp to [0, totalMonthsRaw]
-      const monthsToToday = Math.max(0, Math.min(monthsToTodayRaw, totalMonthsRaw));
-      const ratio = monthsToToday / totalMonthsRaw;
+// Clamp
+ownedMonthsToToday = Math.max(0, Math.min(ownedMonthsToToday, totalOwnedMonths));
 
-      const currentX = padL + ratio * (w - padL - padR);
+const ratio = totalOwnedMonths > 0 ? (ownedMonthsToToday / totalOwnedMonths) : 0;
+const currentX = padL + ratio * (w - padL - padR);
+
+const vline = document.createElementNS(svgNS, "line");
+vline.setAttribute("x1", currentX);
+vline.setAttribute("x2", currentX);
+vline.setAttribute("y1", 0);
+vline.setAttribute("y2", h);
+vline.setAttribute("stroke", "#64748b");
+vline.setAttribute("stroke-dasharray", "4,3");
+vline.setAttribute("stroke-width", "1");
+svg.appendChild(vline);
+
 
       const vline = document.createElementNS(svgNS, "line");
       vline.setAttribute("x1", currentX);
