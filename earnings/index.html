@@ -1260,17 +1260,6 @@ vline.setAttribute("stroke-dasharray", "4,3");
 vline.setAttribute("stroke-width", "1");
 svg.appendChild(vline);
 
-
-      const vline = document.createElementNS(svgNS, "line");
-      vline.setAttribute("x1", currentX);
-      vline.setAttribute("x2", currentX);
-      vline.setAttribute("y1", 0);
-      vline.setAttribute("y2", h);
-      vline.setAttribute("stroke", "#64748b");
-      vline.setAttribute("stroke-dasharray", "4,3");
-      vline.setAttribute("stroke-width", "1");
-      svg.appendChild(vline);
-
       containerEl.appendChild(svg);
 
       let lensInstance = null;
