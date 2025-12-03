@@ -164,7 +164,8 @@
   </table>
 
   <script type="module">
-    import { loadLoans as fetchLoans } from "../js/loadLoans.js";
+    import { loadLoans as fetchLoans, saveLoans as postLoans } from "../js/loadLoans.js";
+
     // Shared state
     let loans = [];
 
@@ -251,16 +252,23 @@
     }
 
     async function saveLoans(updatedLoans) {
-      import { loadLoans as fetchLoans, saveLoans as postLoans } from "../js/loadLoans.js";
+  try {
+    const res = await postLoans(updatedLoans);
 
-
-      if (!res || !res.ok) {
-        alert("Error saving loans!");
-        throw new Error("Error saving loans");
-      } else {
-        alert("Loans updated!");
-      }
+    if (!res) {
+      alert("Error saving loans!");
+      throw new Error("Save returned empty response");
     }
+
+    alert("Loans updated!");
+    return res;
+  } catch (err) {
+    console.error("Save error:", err);
+    alert("Error saving loans!");
+    throw err;
+  }
+}
+
 
     // -----------------------------
     // Normalization & defaults
