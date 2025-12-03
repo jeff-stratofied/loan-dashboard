@@ -829,7 +829,7 @@
       currentLoan = loan;
 
       drawerTitle.textContent = `${loan.loanName} — ${loan.school || "No school"}`;
-      drawerSub.textContent = `${loan.school || "No school"} • Purchased ${loan.purchaseDate} • $${loan.purchasePrice.toLocaleString()}`;
+      drawerSub.textContent = `${loan.school || "No school"} • Purchased ${loan.purchaseDate} • Orig Loan Amt $${loan.purchasePrice.toLocaleString()}`;
       drawerPrimaryTitle.textContent = 'Purchase Price';
       drawerSecondaryTitle.textContent = 'Rate';
       drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
