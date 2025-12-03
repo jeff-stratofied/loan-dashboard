@@ -390,38 +390,52 @@ svg text {
         const balanceAtPurchase =
           schedule[Math.max(0, monthsSinceStart - 1)]?.balance ?? 0;
 
+                const DISCOUNT_FACTOR = 0.95;
         let cumFees = 0;
         const roiSeries = [];
+
         cumSchedule.forEach(s => {
           if (!s.isOwned) return;
 
           const m = s.ownershipMonthIndex;
 
-          let upfrontFee = (m === 1 ? l.upfrontFee : 0);
+          // Fees: upfront only in first owned month, plus declining monthly fee
+          let upfrontFee = (m === 1 ? Number(l.upfrontFee) || 0 : 0);
 
-          let termMonths = Number(l.termYears * 12) || 1;   // prevent divide by zero
+          const termMonths = Number(l.termYears * 12) || 1;   // prevent divide by zero
           let monthlyFee = Number(l.monthlyFeeStart) * (1 - (m / termMonths));
           if (isNaN(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
 
-          let feeThisMonth = upfrontFee + monthlyFee;
+          const feeThisMonth = upfrontFee + monthlyFee;
           cumFees += feeThisMonth;
 
-          const cashCollected = s.cumPrincipal + s.cumInterest;
-          const loanValue = cashCollected - cumFees;
-          // ROI based ONLY on ownership timeline
-          const roi = (
-              s.cumPrincipal +
-              s.cumInterest -
-              l.purchasePrice
-          ) / l.purchasePrice;
+          // Realized value so far (principal + interest − fees)
+          const realized = (s.cumPrincipal + s.cumInterest) - cumFees;
+
+          // Unrealized value: mark remaining balance at 95% of face
+          const remainingBalance = Number(s.balance ?? 0);
+          const unrealized = remainingBalance * DISCOUNT_FACTOR;
+
+          // Mark-to-market loan value
+          const loanValue = realized + unrealized;
+
+          // ROI relative to actual cash invested (purchase price)
+          const purchasePrice = Number(l.purchasePrice || 0);
+          const denom = purchasePrice !== 0 ? purchasePrice : 1; // guard divide-by-zero
+          const roi = (loanValue - purchasePrice) / denom;
+
           roiSeries.push({
             month: s.ownershipMonthIndex,
             ownershipDate: s.ownershipDate,
             roi,
             loanValue,
-            cumFees
+            cumFees,
+            realized,
+            remainingBalance,
+            unrealized
           });
         });
+
         const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ y:s.roi, ownershipDate: s.ownershipDate }));
 
         // return updated loan object
