@@ -5,27 +5,21 @@ const API_URL = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
 // -----------------------------
 // GET loans
 // -----------------------------
-export async function loadLoans() {
-  try {
-    const res = await fetch(API_URL, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json"
-      }
-    });
+export async function saveLoans(loans, sha) {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ loans, sha })
+  });
 
-    if (!res.ok) {
-      console.error("API Error:", res.status, res.statusText);
-      throw new Error(`API error: ${res.status}`);
-    }
-
-    const data = await res.json();
-    return data.loans || [];
-  } catch (err) {
-    console.error("Error loading loans:", err);
-    return [];
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API error ${res.status}: ${text}`);
   }
+
+  return await res.json();
 }
+
 
 // -----------------------------
 // SAVE loans (POST)
