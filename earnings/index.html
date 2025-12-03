@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Earnings Dashboard</title>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-light: #334155;
+      --text: #e2e8f0;
+      --border: #334155;
+      --hover: #283547;
+      --button-bg: #1e293b;
+      --button-border: #334155;
+      --button-hover: #334155;
+      --green: #22c55e;
+      --danger: #ef4444;
+      --danger-dark: #b91c1c;
+      --card-radius: 14px;
+    }
+
+    html[data-theme="light"] {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --panel-light: #e2e8f0;
+      --text: #0f172a;
+      --border: #cbd5e1;
+      --hover: #f1f5f9;
+      --button-bg: #ffffff;
+      --button-border: #cbd5e1;
+      --button-hover: #e2e8f0;
+      --green: #16a34a;
+      --danger: #ef4444;
+      --danger-dark: #b91c1c;
+    }
+
+    * {
+      transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .header-left h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 600;
+    }
+    .header-left p {
+      margin: 6px 0 0 0;
+      opacity: 0.85;
+      font-size: 15px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--button-border);
+      background: var(--button-bg);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover {
+      background: var(--button-hover);
+    }
+
+    .toggle-btn {
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 16px;
+    }
+
+    #tiles {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 18px;
+      margin-top: 10px;
+    }
+
+    .tile {
+      background: var(--panel);
+      padding: 18px 20px 24px 20px;
+      border-radius: var(--card-radius);
+      border: 1px solid var(--panel-light);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .tile-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0;
+      padding: 0;
+    }
+    .tile-sub {
+      font-size: 14px;
+      opacity: 0.85;
+    }
+
+    .earnings-value {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--green);
+      margin-top: 4px;
+    }
+
+    svg {
+      width: 100%;
+      height: 120px;
+      overflow: visible;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="header-row">
+  <div class="header-left">
+    <h1>Earnings Dashboard</h1>
+    <p>Your portfolio’s monthly earnings across all loans.</p>
+  </div>
+
+  <div class="header-right">
+    <button onclick="location.href='https://jeff-stratofied.github.io/loan-dashboard/roi/index.html'">📈 ROI</button>
+    <button onclick="location.href='https://jeff-stratofied.github.io/loan-dashboard/amortization/index.html'">📊 Amort</button>
+    <button onclick="location.href='https://jeff-stratofied.github.io/loan-dashboard/admin/index.html'">⚙️ Admin</button>
+
+    <button id="themeToggle" class="toggle-btn">🌙</button>
+  </div>
+</div>
+
+<div id="tiles"></div>
+
+<script type="module">
+import { loadLoans } from "/loan-dashboard/js/loadLoans.js";
+
+function monthsBetween(a, b) {
+  const d1 = new Date(a);
+  const d2 = new Date(b);
+  return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+}
+
+function addMonths(dateStr, n) {
+  const d = new Date(dateStr);
+  d.setMonth(d.getMonth() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function fmt(n) {
+  return Number(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function fmt0(n) {
+  return Number(n).toLocaleString("en-US", {maximumFractionDigits: 0});
+}
+
+const today = new Date();
+async function buildPage() {
+  const rawLoans = await loadLoans();
+  if (!rawLoans || rawLoans.length === 0) return;
+
+  const loans = rawLoans.map((l, idx) => ({
+    loanId: l.loanId ?? idx + 1,
+    loanName: l.loanName ?? `Loan ${idx + 1}`,
+    school: l.school ?? "School",
+    purchaseDate: l.purchaseDate,
+    loanStartDate: l.loanStartDate ?? l.purchaseDate,
+    principal: Number(l.principal),
+    purchasePrice: Number(l.purchasePrice),
+    rate: Number(l.rate),
+    termYears: Number(l.termYears),
+    graceYears: Number(l.graceYears)
+  }));
+
+  const globalStart = loans
+    .map(l => l.purchaseDate)
+    .reduce((a, b) => (a < b ? a : b));
+
+  const globalEnd = loans
+    .map(l => addMonths(l.loanStartDate, l.termYears * 12 + l.graceYears * 12))
+    .reduce((a, b) => (a > b ? a : b));
+
+  const totalGlobalMonths = monthsBetween(globalStart, globalEnd) + 1;
+  const todayIndex = monthsBetween(globalStart, today);
+
+  function computeLoanTimeline(l) {
+    const timeline = new Array(totalGlobalMonths).fill(0).map(() => ({
+      earnings: 0,
+      balance: 0,
+      principalPaid: 0,
+      interestPaid: 0,
+      accruedInterest: 0,
+      cumAccruedInterest: 0,
+      cumPrincipalPaid: 0,
+      cumInterestPaid: 0,
+      fee: 0
+    }));
+
+    const purchaseIdx = monthsBetween(globalStart, l.purchaseDate);
+    const maturityIdx = monthsBetween(globalStart, addMonths(l.loanStartDate, l.graceYears * 12 + l.termYears * 12));
+    const loanMonths = maturityIdx - purchaseIdx + 1;
+
+    const monthly = (l.rate / 12);
+    const graceMonths = l.graceYears * 12;
+    const repaymentMonths = l.termYears * 12;
+    const paymentMonthOneIndex = monthsBetween(l.purchaseDate, addMonths(l.loanStartDate, graceMonths)) + purchaseIdx;
+
+    let balance = l.principal;
+
+    const feeCurve = [];
+    for (let i = 0; i < loanMonths; i++) {
+      if (i === 0) feeCurve.push(150);
+      else feeCurve.push(150 * (1 - i / (loanMonths - 1)));
+    }
+
+    let cumAccruedInterest = 0;
+    let cumPrincipal = 0;
+    let cumInterest = 0;
+
+    let payment = 0;
+    if (repaymentMonths > 0) {
+      const r = monthly;
+      const n = repaymentMonths;
+      payment = (balance * r) / (1 - Math.pow(1 + r, -n));
+    }
+
+    for (let i = 0; i < loanMonths; i++) {
+      const globalIdx = purchaseIdx + i;
+      const fee = feeCurve[i];
+      if (i < graceMonths) {
+        const accrued = balance * monthly;
+        balance += accrued;
+        cumAccruedInterest += accrued;
+
+        timeline[globalIdx] = {
+          earnings: accrued - fee,
+          balance,
+          principalPaid: 0,
+          interestPaid: 0,
+          accruedInterest: accrued,
+          cumAccruedInterest,
+          cumPrincipalPaid: cumPrincipal,
+          cumInterestPaid: cumInterest,
+          fee
+        };
+      } else {
+        const interestPaid = balance * monthly;
+        const principalPaid = payment - interestPaid;
+        balance -= principalPaid;
+
+        cumPrincipal += principalPaid;
+        cumInterest += interestPaid;
+
+        const earnings =
+          principalPaid +
+          interestPaid +
+          cumAccruedInterest -
+          fee;
+
+        timeline[globalIdx] = {
+          earnings,
+          balance,
+          principalPaid,
+          interestPaid,
+          accruedInterest: 0,
+          cumAccruedInterest,
+          cumPrincipalPaid: cumPrincipal,
+          cumInterestPaid: cumInterest,
+          fee
+        };
+      }
+    }
+
+    for (let i = maturityIdx + 1; i < totalGlobalMonths; i++) {
+      timeline[i] = {
+        earnings: 0,
+        balance,
+        principalPaid: 0,
+        interestPaid: 0,
+        accruedInterest: 0,
+        cumAccruedInterest,
+        cumPrincipalPaid: cumPrincipal,
+        cumInterestPaid: cumInterest,
+        fee: 0
+      };
+    }
+
+    return timeline;
+  }
+
+  const loanTimelines = loans.map(computeLoanTimeline);
+async function buildPage() {
+  const rawLoans = await loadLoans();
+  if (!rawLoans || rawLoans.length === 0) return;
+
+  const loans = rawLoans.map((l, idx) => ({
+    loanId: l.loanId ?? idx + 1,
+    loanName: l.loanName ?? `Loan ${idx + 1}`,
+    school: l.school ?? "School",
+    purchaseDate: l.purchaseDate,
+    loanStartDate: l.loanStartDate ?? l.purchaseDate,
+    principal: Number(l.principal),
+    purchasePrice: Number(l.purchasePrice),
+    rate: Number(l.rate),
+    termYears: Number(l.termYears),
+    graceYears: Number(l.graceYears)
+  }));
+
+  const globalStart = loans
+    .map(l => l.purchaseDate)
+    .reduce((a, b) => (a < b ? a : b));
+
+  const globalEnd = loans
+    .map(l => addMonths(l.loanStartDate, l.termYears * 12 + l.graceYears * 12))
+    .reduce((a, b) => (a > b ? a : b));
+
+  const totalGlobalMonths = monthsBetween(globalStart, globalEnd) + 1;
+  const todayIndex = monthsBetween(globalStart, today);
+
+  function computeLoanTimeline(l) {
+    const timeline = new Array(totalGlobalMonths).fill(0).map(() => ({
+      earnings: 0,
+      balance: 0,
+      principalPaid: 0,
+      interestPaid: 0,
+      accruedInterest: 0,
+      cumAccruedInterest: 0,
+      cumPrincipalPaid: 0,
+      cumInterestPaid: 0,
+      fee: 0
+    }));
+
+    const purchaseIdx = monthsBetween(globalStart, l.purchaseDate);
+    const maturityIdx = monthsBetween(globalStart, addMonths(l.loanStartDate, l.graceYears * 12 + l.termYears * 12));
+    const loanMonths = maturityIdx - purchaseIdx + 1;
+
+    const monthly = (l.rate / 12);
+    const graceMonths = l.graceYears * 12;
+    const repaymentMonths = l.termYears * 12;
+    const paymentMonthOneIndex = monthsBetween(l.purchaseDate, addMonths(l.loanStartDate, graceMonths)) + purchaseIdx;
+
+    let balance = l.principal;
+
+    const feeCurve = [];
+    for (let i = 0; i < loanMonths; i++) {
+      if (i === 0) feeCurve.push(150);
+      else feeCurve.push(150 * (1 - i / (loanMonths - 1)));
+    }
+
+    let cumAccruedInterest = 0;
+    let cumPrincipal = 0;
+    let cumInterest = 0;
+
+    let payment = 0;
+    if (repaymentMonths > 0) {
+      const r = monthly;
+      const n = repaymentMonths;
+      payment = (balance * r) / (1 - Math.pow(1 + r, -n));
+    }
+
+    for (let i = 0; i < loanMonths; i++) {
+      const globalIdx = purchaseIdx + i;
+      const fee = feeCurve[i];
+      if (i < graceMonths) {
+        const accrued = balance * monthly;
+        balance += accrued;
+        cumAccruedInterest += accrued;
+
+        timeline[globalIdx] = {
+          earnings: accrued - fee,
+          balance,
+          principalPaid: 0,
+          interestPaid: 0,
+          accruedInterest: accrued,
+          cumAccruedInterest,
+          cumPrincipalPaid: cumPrincipal,
+          cumInterestPaid: cumInterest,
+          fee
+        };
+      } else {
+        const interestPaid = balance * monthly;
+        const principalPaid = payment - interestPaid;
+        balance -= principalPaid;
+
+        cumPrincipal += principalPaid;
+        cumInterest += interestPaid;
+
+        const earnings =
+          principalPaid +
+          interestPaid +
+          cumAccruedInterest -
+          fee;
+
+        timeline[globalIdx] = {
+          earnings,
+          balance,
+          principalPaid,
+          interestPaid,
+          accruedInterest: 0,
+          cumAccruedInterest,
+          cumPrincipalPaid: cumPrincipal,
+          cumInterestPaid: cumInterest,
+          fee
+        };
+      }
+    }
+
+    for (let i = maturityIdx + 1; i < totalGlobalMonths; i++) {
+      timeline[i] = {
+        earnings: 0,
+        balance,
+        principalPaid: 0,
+        interestPaid: 0,
+        accruedInterest: 0,
+        cumAccruedInterest,
+        cumPrincipalPaid: cumPrincipal,
+        cumInterestPaid: cumInterest,
+        fee: 0
+      };
+    }
+
+    return timeline;
+  }
+
+  const loanTimelines = loans.map(computeLoanTimeline);
+  function render() {
+    const tiles = document.getElementById("tiles");
+    tiles.innerHTML = "";
+
+    loans.forEach((loan, idx) => {
+      const timeline = loanTimelines[idx];
+
+      const latest = timeline[Math.min(todayIndex, timeline.length - 1)];
+      const net = latest.cumPrincipalPaid +
+                  latest.cumAccruedInterest +
+                  latest.cumInterestPaid -
+                  timeline
+                    .slice(0, Math.min(todayIndex + 1, timeline.length))
+                    .reduce((a, b) => a + b.fee, 0);
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
+
+      tile.innerHTML = `
+        <div>
+          <div class="tile-title">${loan.loanName}</div>
+          <div class="tile-sub">${loan.school}</div>
+        </div>
+
+        <div class="tile-sub">Net Earnings as of ${today.toLocaleString("en-US", {month:"short", year:"numeric"})}</div>
+        <div class="earnings-value">$${fmt(net)}</div>
+
+        <svg></svg>
+      `;
+
+      const svg = tile.querySelector("svg");
+      drawChart(svg, timeline);
+
+      tiles.appendChild(tile);
+    });
+  }
+
+  function drawChart(svg, timeline) {
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+    const w = svg.clientWidth;
+    const h = svg.clientHeight;
+    const pad = 20;
+
+    const maxEarn = Math.max(
+      1,
+      ...timeline.slice(0, Math.min(todayIndex + 1, timeline.length))
+        .map(m => m.earnings)
+    );
+    const minEarn = Math.min(
+      0,
+      ...timeline.slice(0, Math.min(todayIndex + 1, timeline.length))
+        .map(m => m.earnings)
+    );
+    const span = Math.max(1, maxEarn - minEarn);
+
+    const toXY = (m, i) => {
+      const x = pad + (i / (timeline.length - 1)) * (w - pad * 2);
+      const y = h - pad - ((m - minEarn) / span) * (h - pad * 2);
+      return [x, y];
+    };
+
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    let d = "";
+    timeline.forEach((m, i) => {
+      const [x, y] = toXY(m.earnings, i);
+      d += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+    });
+    path.setAttribute("d", d);
+    path.setAttribute("stroke", "var(--green)");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("fill", "none");
+    svg.appendChild(path);
+
+    const todayLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    const tx = pad + (todayIndex / (timeline.length - 1)) * (w - pad * 2);
+    todayLine.setAttribute("x1", tx);
+    todayLine.setAttribute("x2", tx);
+    todayLine.setAttribute("y1", pad);
+    todayLine.setAttribute("y2", h - pad);
+    todayLine.setAttribute("stroke", "#94a3b8");
+    todayLine.setAttribute("stroke-dasharray", "4,3");
+    svg.appendChild(todayLine);
+  }
+
+  const themeToggle = document.getElementById("themeToggle");
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    themeToggle.textContent = t === "dark" ? "🌙" : "☀️";
+    localStorage.setItem("earnings-theme", t);
+  }
+  themeToggle.onclick = () => {
+    const newTheme =
+      document.documentElement.getAttribute("data-theme") === "dark"
+        ? "light"
+        : "dark";
+    applyTheme(newTheme);
+  };
+  const saved = localStorage.getItem("earnings-theme") || "dark";
+  applyTheme(saved);
+
+  buildPage().then(render);
+</script>
+
+</body>
+</html>
