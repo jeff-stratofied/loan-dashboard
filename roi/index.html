@@ -294,22 +294,42 @@ svg text {
     const TODAY = new Date();
     const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
     // Dynamic loans loaded from backend
+    const defaultKpis = {
+      weightedROI: 0,
+      projectedWeightedROI: 0,
+      avgRate: 0,
+      total: 0
+    };
+
     let loans = [];
     let loansWithAmort = [];
     let portfolio = {};
     let roiStartDate = new Date();
+    let roiSeries = {};
+    let roiKpis = { ...defaultKpis };
+
+    window.roiSeries = roiSeries;
+    window.roiKpis = roiKpis;
+    window.loansWithAmort = loansWithAmort;
+
+    function syncGlobals() {
+      window.roiSeries = roiSeries;
+      window.roiKpis = roiKpis;
+      window.loansWithAmort = loansWithAmort;
+    }
+
+    function getKpiValues() {
+      return { ...defaultKpis, ...(roiKpis || {}) };
+    }
 
     function prepareLoanData(loadedLoans) {
-      window.roiKpis = window.roiKpis || { 
-  weightedROI: 0, 
-  projectedWeightedROI: 0, 
-  avgRate: 0, 
-  total: 0 
-};
 
       loans = loadedLoans;
       loansWithAmort = attachSchedules(loans);
       portfolio = buildPortfolioViews(loansWithAmort);
+
+      roiSeries = portfolio.roiSeries || {};
+      roiKpis = { ...defaultKpis, ...(portfolio.roiKpis || {}) };
 
       loansWithAmort = (portfolio.loans || loansWithAmort).map(l => ({
         ...l,
@@ -318,7 +338,9 @@ svg text {
         miniPts: l.miniPts || [],
         balanceAtPurchase: l.balanceAtPurchase ?? 0
       }));
-      roiStartDate = computeEarliestDate(portfolio.roiSeries || {});
+      roiStartDate = computeEarliestDate(roiSeries);
+
+      syncGlobals();
     }
 
     function computeEarliestDate(seriesMap){
@@ -329,16 +351,12 @@ svg text {
     }
 
     async function initROI(loadedLoans) {
-  prepareLoanData(loadedLoans);
+      prepareLoanData(loadedLoans);
 
-  // Promote to global scope so UI can access them
-  window.roiSeries = portfolio.roiSeries || {};
-  window.roiKpis   = portfolio.roiKpis   || {};
-
-  // Helper label formatter
-  window.formatLoanLabel = (loan) =>
-    `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-}
+      // Helper label formatter
+      window.formatLoanLabel = (loan) =>
+        `Loan ${loan.id} — ${loan.name} (${loan.school})`;
+    }
 
 
     /* -------------------------
@@ -355,8 +373,6 @@ svg text {
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
-
-    const kpis = roiKpis || { weightedROI: 0, projectedWeightedROI: 0, avgRate: 0, total: 0 };
 
 // --- Multi-series chart (loan lines + weighted line) ---
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
@@ -621,57 +637,84 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       containerEl.innerHTML=''; const minV=Math.min(...values); const maxV=Math.max(...values); const range=Math.max(1e-6,maxV-minV); const binSize=range/bins; const counts=new Array(bins).fill(0); values.forEach(v=>{ let idx=Math.floor((v-minV)/binSize); if(idx===bins) idx=bins-1; counts[idx]++; }); const labels=counts.map((_,i)=>{ const a=minV+i*binSize; const b=a+binSize; return `${(a*100).toFixed(1)}–${(b*100).toFixed(1)}%`; }); return createBarChart(containerEl, labels, counts, opts); }
 
     /* -------------------------
-       UI: Render KPI tiles
-       ------------------------- */
-    const kpisEl = document.getElementById('kpis');
-    kpisEl.innerHTML = `
-      <div class="kpi" data-kpi="tpv"><h3>Weighted ROI to Date</h3><p id="wroi">${(kpis.weightedROI*100).toFixed(2)}%</p></div>
-      <div class="kpi" data-kpi="rates"><h3>Projected Weighted ROI</h3><p id="wproj">${(kpis.projectedWeightedROI*100).toFixed(2)}%</p></div>
-      <div class="kpi" data-kpi="payments"><h3>Avg Rate</h3><p>${(kpis.avgRate*100).toFixed(2)}%</p></div>
-      <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${loansWithAmort.length}</p></div>
-    `;
-
-    /* -------------------------
-       Render loan tiles + mini charts
+       UI rendering helpers
        ------------------------- */
     const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
 
-    loansWithAmort.forEach((loan, idx) => {
-      const currentRoiEntry = getCurrentOwnedRoiEntry(loan);
-      const tile = document.createElement('div'); tile.className='tile'; tile.setAttribute('tabindex','0');
-      tile.innerHTML = `
-        <div class="tile-left">
-          <div class="loan-name">${formatLoanLabel(loan)}</div>
-          <div class="loan-sub">$${loan.purchasePrice.toLocaleString()}</div>
-          <div class="loan-meta"><div>Term: ${loan.termYears}y</div><div>Grace: ${loan.graceYears}y</div></div>
-        </div>
-        <div class="chart-wrap">
-          <div class="mini-label">
-  ROI ${(currentRoiEntry.roi * 100).toFixed(2)}%
-</div>
-          <div class="sparkline" style="width:170px;height:48px;" data-idx="${idx}" aria-hidden="true"></div>
-        </div>
-      `;
-      tile.addEventListener('click', e=>{ e.stopPropagation(); openDrawerForLoan(loan); });
-      tile.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawerForLoan(loan); } });
-      grid.appendChild(tile);
+    function renderKpis() {
+      const kpis = getKpiValues();
+      const kpisEl = document.getElementById('kpis');
+      if (!kpisEl) return;
 
-      const chartContainer = tile.querySelector('.sparkline');
-      const loanStartDate = new Date(loan.loanStartDate);
-      const series = roiSeries[loan.id] || [];
-      createLineChart({
-        container: chartContainer,
-        width: 170,
-        height: 48,
-        pad: 6,
-        labels: series.map(p => formatMonthYear(p.date)),
-        values: series.map(p => p.roi * 100),
-        todayLineDate: TODAY,
-        nextMonthLineDate: nextMonthDate,
-        dateToMonthIndex: date => monthDiff(loanStartDate, date)
+      kpisEl.innerHTML = `
+        <div class="kpi" data-kpi="tpv"><h3>Weighted ROI to Date</h3><p id="wroi">${(kpis.weightedROI*100).toFixed(2)}%</p></div>
+        <div class="kpi" data-kpi="rates"><h3>Projected Weighted ROI</h3><p id="wproj">${(kpis.projectedWeightedROI*100).toFixed(2)}%</p></div>
+        <div class="kpi" data-kpi="payments"><h3>Avg Rate</h3><p>${(kpis.avgRate*100).toFixed(2)}%</p></div>
+        <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${loansWithAmort.length}</p></div>
+      `;
+    }
+
+    function renderLoanGrid() {
+      if (!grid) return;
+
+      const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16','#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
+      grid.innerHTML = '';
+      loansWithAmort.forEach((loan, idx) => {
+        const currentRoiEntry = getCurrentOwnedRoiEntry(loan);
+        const tile = document.createElement('div'); tile.className='tile'; tile.setAttribute('tabindex','0');
+        tile.innerHTML = `
+          <div class="tile-left">
+            <div class="loan-name">${formatLoanLabel(loan)}</div>
+            <div class="loan-sub">$${loan.purchasePrice.toLocaleString()}</div>
+            <div class="loan-meta"><div>Term: ${loan.termYears}y</div><div>Grace: ${loan.graceYears}y</div></div>
+          </div>
+          <div class="chart-wrap">
+            <div class="mini-label">
+    ROI ${(currentRoiEntry.roi * 100).toFixed(2)}%
+  </div>
+            <div class="sparkline" style="width:170px;height:48px;" data-idx="${idx}" aria-hidden="true"></div>
+          </div>
+        `;
+        tile.addEventListener('click', e=>{ e.stopPropagation(); openDrawerForLoan(loan); });
+        tile.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawerForLoan(loan); } });
+        grid.appendChild(tile);
+
+        const chartContainer = tile.querySelector('.sparkline');
+        const loanStartDate = new Date(loan.loanStartDate);
+        const series = roiSeries[loan.id] || [];
+        createLineChart({
+          container: chartContainer,
+          width: 170,
+          height: 48,
+          pad: 6,
+          labels: series.map(p => formatMonthYear(p.date)),
+          values: series.map(p => p.roi * 100),
+          todayLineDate: TODAY,
+          nextMonthLineDate: nextMonthDate,
+          dateToMonthIndex: date => monthDiff(loanStartDate, date)
+        });
       });
-    });
+    }
+
+    function bindKpiTileEvents() {
+      document.querySelectorAll('.kpi').forEach(k=>{
+        k.addEventListener('click', ev=>{
+          ev.stopPropagation();
+          const key=k.getAttribute('data-kpi');
+          if(key==='distribution') renderDistributionDrawer();
+          if(key==='tpv') renderTPVDrawer();
+          if(key==='rates') renderRatesDrawer();
+          if(key==='payments') renderPaymentsDrawer();
+        });
+      });
+    }
+
+    function renderDashboard(){
+      renderKpis();
+      renderLoanGrid();
+      bindKpiTileEvents();
+    }
 
     /* -------------------------
        Drawer helpers & openers
@@ -864,9 +907,10 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
 }
 
     function renderRatesDrawer(){
+  const kpis = getKpiValues();
   currentMode='kpi'; currentLoan=null;
   drawerAmortContainer.innerHTML='';
-  drawerTitle.textContent='Projected Weighted ROI'; 
+  drawerTitle.textContent='Projected Weighted ROI';
   drawerSub.textContent='Projection to maturity';
 
   // Compute projected weighted ROI & portfolio value
@@ -976,6 +1020,7 @@ drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
 
 
 function renderPaymentsDrawer() {
+  const kpis = getKpiValues();
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -1111,7 +1156,7 @@ function renderPaymentsDrawer() {
        Close drawer on outside click; hide tooltip on scroll
        ------------------------- */
     document.addEventListener('click', function(e){ if(!drawer.classList.contains('open')) return; const clickedInside=drawer.contains(e.target); const clickedTile=!!e.target.closest('.tile'); if(!clickedInside && !clickedTile) closeDrawer(); });
-    document.querySelector('.grid').addEventListener('scroll', ()=>{ tooltip.style.display='none'; });
+    grid?.addEventListener('scroll', ()=>{ tooltip.style.display='none'; });
 
     /* -------------------------
        End
@@ -1122,6 +1167,8 @@ function renderPaymentsDrawer() {
 -------------------------------------------------- */
 document.addEventListener("DOMContentLoaded", async () => {
   console.log("ROI page starting…");
+
+  window.chartTooltip = document.getElementById("chartTooltip");
 
   // 1. Load loans from API
   const rawLoans = await loadLoans();
@@ -1164,40 +1211,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   // 3. Set date in header
   document.getElementById("currentDate").textContent = formatDate(new Date());
 
-  // 4. Run ROI engine
+  // 4. Run ROI engine and render
   initROI(loadedLoans);
-});
-
-
-    
-
-
-    // theme toggle
-window.addEventListener("DOMContentLoaded", () => {
-  const toggle = document.getElementById("themeToggle");
-  if (!toggle) return;
-
-  const applyTheme = (theme) => {
-    document.documentElement.setAttribute("data-theme", theme);
-    document.body.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("theme", theme);
-    toggle.textContent = theme === "dark" ? "☀️" : "🌙";
-    toggle.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
-    toggle.setAttribute("title", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
-  };
-
-  const saved = localStorage.getItem("theme");
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  applyTheme(saved || (prefersDark ? "dark" : "light"));
-
-  toggle.addEventListener("click", () => {
-    const nextTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    applyTheme(nextTheme);
-  });
+  renderDashboard();
+  populateROILoanTable();
 });
 </script>
-
-
 
 <div id="chartTooltip"
      style="position:fixed;display:none;
@@ -1211,7 +1230,29 @@ window.addEventListener("DOMContentLoaded", () => {
 </div>
 
 <script>
-  window.chartTooltip = document.getElementById("chartTooltip");
+  // theme toggle
+  document.addEventListener("DOMContentLoaded", () => {
+    const toggle = document.getElementById("themeToggle");
+    if (!toggle) return;
+
+    const applyTheme = (theme) => {
+      document.documentElement.setAttribute("data-theme", theme);
+      document.body.classList.toggle("dark", theme === "dark");
+      localStorage.setItem("theme", theme);
+      toggle.textContent = theme === "dark" ? "☀️" : "🌙";
+      toggle.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+      toggle.setAttribute("title", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
+    };
+
+    const saved = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    applyTheme(saved || (prefersDark ? "dark" : "light"));
+
+    toggle.addEventListener("click", () => {
+      const nextTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      applyTheme(nextTheme);
+    });
+  });
 </script>
 </body>
 </html>
