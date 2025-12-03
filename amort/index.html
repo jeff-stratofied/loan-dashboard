@@ -149,7 +149,7 @@
     .tile:hover{ transform:translateY(-6px); box-shadow:var(--shadow) }
 
     .tile-left{ flex:1; padding-right:10px }
-    .loan-name{ font-weight:700; font-size:14px }
+    .loan-id{ font-weight:700; font-size:14px }
     .loan-sub{ font-size:12px; color:var(--muted); margin-top:6px }
     .loan-meta{ display:flex; gap:8px; font-size:12px; color:var(--muted); margin-top:8px }
 
@@ -662,7 +662,7 @@
 
         tile.innerHTML = `
           <div class="tile-left">
-            <div class="loan-name">${loan.loanName}</div>
+            <div class="loan-id">${loan.loanID}</div>
             <div class="loan-sub">${loan.school || "No school listed"}</div>
             <div class="loan-meta">
               <div>Term: ${loan.termYears}y</div>
