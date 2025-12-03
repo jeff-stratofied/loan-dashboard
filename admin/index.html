@@ -204,9 +204,32 @@ input:focus, select:focus {
 
 <body>
 
-<!-- =========================================================
-     HEADER
-     ========================================================= -->
+
+/* ===========================================
+   HEADER LAYOUT
+   =========================================== */
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.header-left {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+  
 <div class="header-row">
   <div class="header-left">
     <h1>Loan Admin</h1>
