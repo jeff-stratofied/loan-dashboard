@@ -251,11 +251,8 @@
     }
 
     async function saveLoans(updatedLoans) {
-      const res = await fetchLoans({
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedLoans)
-      });
+      import { loadLoans as fetchLoans, saveLoans as postLoans } from "../js/loadLoans.js";
+
 
       if (!res || !res.ok) {
         alert("Error saving loans!");
