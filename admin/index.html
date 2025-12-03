@@ -201,7 +201,9 @@
 
       try {
         const data = await fetchLoans();
-        const arr = Array.isArray(data) ? data : (data?.loans || data || []);
+        currentSha = data.sha || null;
+const arr = data.loans || [];
+
         loans = arr.map((l, i) => normalizeLoan(l, i));
 
         if (!loans.length) {
