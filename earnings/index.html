@@ -1448,27 +1448,28 @@ svg.appendChild(vline);
         const atCurrent = hasSchedule
           ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
           : fallbackRow;
-        const currentMonthLabel = formatMonthYear(atCurrent.ownershipDate || atCurrent.loanDate);
+     
 
         const tile = document.createElement("div");
         tile.className = "tile";
         tile.innerHTML = `
-          <div class="tile-left">
-            <div class="loan-name">${loan.loanName}</div>
-            <div class="loan-sub">${loan.school || "No school listed"}</div>
-            <div class="loan-meta">
-              <div>Term: ${loan.termYears}y</div>
-              <div>Grace: ${loan.graceYears}y</div>
-              <div>Fee: $${(loan.monthlyFeeStart || 0).toFixed(2)}/mo</div>
-            </div>
-          </div>
-          <div class="chart-wrap">
-            <div class="mini-label">
-              Net Earnings ${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
-            </div>
-            <div class="mini-chart"></div>
-          </div>
-        `;
+  <div class="tile-left">
+    <div class="loan-name">${loan.loanName}</div>
+    <div class="loan-sub">${loan.school || "No school listed"}</div>
+    <div class="loan-meta">
+      <div>Term: ${loan.termYears}y</div>
+      <div>Grace: ${loan.graceYears}y</div>
+      <div>Fee: $${(loan.monthlyFeeStart || 0).toFixed(2)}/mo</div>
+    </div>
+  </div>
+  <div class="chart-wrap">
+    <div class="mini-label">
+      Net Earnings To Date: $${atCurrent.netEarnings.toFixed(0)}
+    </div>
+    <div class="mini-chart"></div>
+  </div>
+`;
+
         tile.addEventListener("click", () => openLoanDrawer(loan));
         grid.appendChild(tile);
 
