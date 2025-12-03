@@ -828,7 +828,7 @@
       currentMode = 'loan';
       currentLoan = loan;
 
-      drawerTitle.textContent = `${loan.loanID} — ${loan.school || "No school"}`;
+      drawerTitle.textContent = `${loan.loanId} — ${loan.school || "No school"}`;
       drawerSub.textContent = `Purchased ${loan.purchaseDate} • Orig Loan Amt $${loan.purchasePrice.toLocaleString()}`;
       drawerPrimaryTitle.textContent = 'Purchase Price';
       drawerSecondaryTitle.textContent = 'Rate';
