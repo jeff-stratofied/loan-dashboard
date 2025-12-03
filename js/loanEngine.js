@@ -8,26 +8,40 @@
 
 import { loadLoans as fetchLoans } from "./loadLoans.js";
 
+// ===============================
+// CORRECTED loadLoans()
+// ===============================
 export async function loadLoans() {
   const raw = await fetchLoans();
 
-  // Cloudflare Worker returns { loans:[...], sha:"..." }
+  // Worker returns { loans:[...], sha:"..." }
   const items = raw || [];
 
-  // Normalize the backend fields into the shape the dashboards expect
-  const normalized = items.map((l, idx) => ({
-    id: l.loanId ?? idx + 1,
-    name: l.loanName,
-    school: l.school,
-    loanStartDate: l.loanStartDate,
-    purchaseDate: l.purchaseDate,
-    purchasePrice: Number(l.principal),
-    nominalRate: Number(l.rate),
-    termYears: Number(l.termYears),
-    graceYears: Number(l.graceYears),
-  }));
+  return items.map((l, idx) => {
+    const principal  = Number(l.principal ?? 0);
+    const rate       = Number(l.rate ?? 0);
+    const termYears  = Number(l.termYears ?? 0);
+    const graceYears = Number(l.graceYears ?? 0);
 
-  return normalized;
+    return {
+      // IDs & names
+      id: l.loanId ?? idx + 1,
+      loanName: l.loanName ?? `Loan ${idx + 1}`,
+      name: l.loanName ?? `Loan ${idx + 1}`,
+      school: l.school ?? "",
+
+      // Dates
+      loanStartDate: l.loanStartDate,
+      purchaseDate:  l.purchaseDate,
+
+      // Financial values
+      principal,
+      purchasePrice: Number(l.purchasePrice ?? principal),
+      nominalRate: rate,
+      termYears,
+      graceYears
+    };
+  });
 }
 
 export function addMonths(date, n) {
