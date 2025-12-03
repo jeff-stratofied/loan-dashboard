@@ -320,8 +320,10 @@
 
     return list;
   }
+  
+    /* Load from Worker */
+  const status = document.getElementById("status");
 
-  /* Load from Worker */
   async function loadFromBackend() {
     status.textContent = "Loading…";
 
