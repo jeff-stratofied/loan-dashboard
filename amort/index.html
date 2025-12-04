@@ -1392,7 +1392,13 @@ function wireKpiClicks() {
       drawerTitle.textContent = 'Rates Distribution';
       drawerSub.textContent = 'Histogram of loan nominal rates';
       drawerPrimaryTitle.textContent = 'Avg Rate';
-      drawerPrimary.textContent = `${kpis.weightedRate.toFixed(2)}%`;
+      const avgRate =
+      loansWithAmort.reduce((sum, l) =>
+      sum + (l.interestRate || l.rate || l.nominalRate || 0), 0
+      ) / loansWithAmort.length;
+
+      drawerPrimary.textContent = `${(avgRate * 100).toFixed(2)}%`;
+
       drawerSecondaryTitle.textContent = '';
       drawerSecondary.textContent = '';
 
