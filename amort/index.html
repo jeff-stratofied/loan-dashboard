@@ -623,18 +623,20 @@ function computeTotalInvested() {
   return loansWithAmort.reduce((sum, l) => sum + (l.purchasePrice || 0), 0);
 }
 
-    function renderKPI() {
-  
+function renderKPI() {
+  const totalInvested = computeTotalInvested();
+  const portfolioValue = computeTPV();
+  const annualYield = computeAnnualizedYield();
+
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
       <h3>Total Invested</h3>
-      <p id="tpvTile">$${computeTotalInvested().toLocaleString()}</p>
+      <p id="tpvTile">$${totalInvested.toLocaleString()}</p>
     </div>
 
     <div class="kpi" data-kpi="rates">
       <h3>Portfolio Value</h3>
-      <p id="kpiPortfolioValue">$${computeTPV().toLocaleString()}</p>
-
+      <p id="kpiPortfolioValue">$${portfolioValue.toLocaleString()}</p>
     </div>
 
     <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome">
@@ -644,12 +646,11 @@ function computeTotalInvested() {
 
     <div class="kpi" data-kpi="yield">
       <h3>Annualized Yield</h3>
-      <p id="kpiYield">0%</p>
+      <p id="kpiYield">${(annualYield * 100).toFixed(2)}%</p>
     </div>
   `;
 
-  // KEEP THE MONTHLY INCOME LOGIC AS-IS
-  const kpiMonthlyIncomeTile = document.getElementById('kpiMonthlyIncome');
+  // Update Monthly Income tile
   const kpiMonthlyIncomeValue = document.getElementById('kpiMonthlyIncomeValue');
   const kpiMonthlyIncomeLabel = document.getElementById('kpiMonthlyIncomeLabel');
 
@@ -658,25 +659,10 @@ function computeTotalInvested() {
     kpiMonthlyIncomeLabel.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
   }
 
-function attachKpiClickHandlers() {
-  document.querySelectorAll(".kpi").forEach(k => {
-    k.addEventListener("click", () => {
-      const type = k.dataset.kpi;
-
-      if (type === "tpv") return renderTPVDrawer();
-      if (type === "rates") return renderRatesDrawer();
-      if (type === "payments") return renderDistributionDrawer();
-      if (type === "yield") return renderYieldDrawer();
-    });
-  });
+  // REQUIRED: make KPI tiles open drawers
+  attachKpiClickHandlers();
 }
 
-      
-  // UPDATE YIELD TILE ↓
-  const annualYield = computeAnnualizedYield();
-  document.getElementById("kpiYield").textContent =
-    (annualYield * 100).toFixed(2) + "%";
-}
     
 
     /* ============================
@@ -711,49 +697,49 @@ function attachKpiClickHandlers() {
 
     let tpvSeriesData = [];
 
-function monthsSincePortfolioStart() {
-  if (!loansWithAmort || loansWithAmort.length === 0) return 0;
+    function monthsSincePortfolioStart() {
+    if (!loansWithAmort || loansWithAmort.length === 0) return 0;
 
-  const minStart = Math.min(
+    const minStart = Math.min(
     ...loansWithAmort.map(l => new Date(l.purchaseDate).getTime())
-  );
+    );
 
-  const now = new Date();
-  const start = new Date(minStart);
+    const now = new Date();
+    const start = new Date(minStart);
 
-  const months =
+    const months =
     (now.getFullYear() - start.getFullYear()) * 12 +
     (now.getMonth() - start.getMonth());
 
-  return Math.max(0, months);
-}
+    return Math.max(0, months);
+    }
 
     
     function renderTPVTile() {
       tpvSeriesData = tpvSeries(loansWithAmort);
       if (!tpvSeriesData.length) return;
       const portfolioStartDate = new Date(
-  Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()))
-);
+    Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()))
+    );
 
-const diffMonthsFromStart = Math.max(
-  1,
-  monthDiff(portfolioStartDate, new Date())
-);
+    const diffMonthsFromStart = Math.max(
+    1,
+    monthDiff(portfolioStartDate, new Date())
+    );
 
       // Choose correct TPV index (safe for all months)
-const idx = Math.min(
-  tpvSeriesData.length - 1,
-  diffMonthsFromStart - 1
-);
+    const idx = Math.min(
+    tpvSeriesData.length - 1,
+    diffMonthsFromStart - 1
+    );
 
-// Current TPV value
-const curTPV = tpvSeriesData[idx].value;
+    // Current TPV value
+    const curTPV = tpvSeriesData[idx].value;
 
-document.getElementById('tpvTile').textContent =
-  `$${Math.round(curTPV).toLocaleString()}`;
+    document.getElementById('tpvTile').textContent =
+    `$${Math.round(curTPV).toLocaleString()}`;
 
-    }
+ }
 
     /* ============================
        Render loan tiles with mini-charts (cumulative principal & interest)
