@@ -638,21 +638,6 @@ function computeTotalInvested() {
   document.getElementById("kpiYield").textContent =
     (annualYield * 100).toFixed(2) + "%";
 }
-
-
-
-      if (kpiMonthlyIncomeValue && kpiMonthlyIncomeLabel) {
-        kpiMonthlyIncomeValue.textContent = `$${(kpis.monthlyIncomeKpi || 0).toFixed(2)}`;
-        kpiMonthlyIncomeLabel.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
-      }
-
-      if (kpiMonthlyIncomeTile) {
-        kpiMonthlyIncomeTile.addEventListener('click', () => {
-          renderPaymentsDrawer();
-          drawer.classList.add('open');
-        });
-      }
-      wireKpiClicks();
     
 
     /* ============================
