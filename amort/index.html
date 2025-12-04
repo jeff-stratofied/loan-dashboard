@@ -594,10 +594,15 @@
        ============================ */
     const kpisEl = document.getElementById('kpis');
 
+function computeTotalInvested() {
+  return loansWithAmort.reduce((sum, l) => sum + (l.purchasePrice || 0), 0);
+}
+
+    
     function renderKPI() {
       kpis = amortKpis || {};
       kpisEl.innerHTML = `
-        <div class="kpi" data-kpi="tpv"><h3>Total Invested</h3><p id="tpvTile">$${(kpis.totalInvested || 0).toLocaleString()}</p></div>
+        <div class="kpi" data-kpi="tpv"><h3>Total Invested</h3><p id="tpvTile">$${computeTotalInvested().toLocaleString()}</p></div>
         <div class="kpi" data-kpi="rates"><h3>Portfolio Value</h3><p>$${(kpis.portfolioValue || 0).toLocaleString()}</p></div>
         <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3 id="kpiMonthlyIncomeLabel"></h3><p id="kpiMonthlyIncomeValue">$0</p></div>
         <div class="kpi" data-kpi="yield"><h3>Annualized Yield</h3><p id="kpiYield">0%</p></div>
@@ -678,7 +683,15 @@ function monthsSincePortfolioStart() {
     function renderTPVTile() {
       tpvSeriesData = tpvSeries(loansWithAmort);
       if (!tpvSeriesData.length) return;
-      const diffMonthsFromStart = monthsSincePortfolioStart();
+      const portfolioStartDate = new Date(
+  Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()))
+);
+
+const diffMonthsFromStart = Math.max(
+  1,
+  monthDiff(portfolioStartDate, new Date())
+);
+
       document.getElementById('tpvTile').textContent =
         `$${Math.round(tpvSeriesData[Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1)].value).toLocaleString()}`;
     }
@@ -1212,25 +1225,41 @@ function monthsSincePortfolioStart() {
     }
 
     function renderTPVDrawer() {
-      currentMode = 'kpi';
-      currentLoan = null;
-      drawerBalanceAtPurchase.textContent = '';
+  currentMode = 'kpi';
+  currentLoan = null;
+  drawerBalanceAtPurchase.textContent = '';
 
-      drawerTitle.textContent = 'Total Portfolio Value';
-      drawerSub.textContent = 'Purchase + accrued interest (grace) + cumulative payments';
+  drawerTitle.textContent = 'Total Portfolio Value';
+  drawerSub.textContent = 'Purchase + accrued interest (grace) + cumulative payments';
 
-      drawerPrimaryTitle.textContent = 'Current TPV';
-      const diffMonthsFromStart = monthsSincePortfolioStart();
-      const curVal = tpvSeriesData[Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1)].value;
-      drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
+  // FIX: Accurate date-based portfolio start
+  const portfolioStartDate = new Date(
+    Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()))
+  );
 
-      drawerSecondaryTitle.textContent = 'Total Invested';
-      drawerSecondary.textContent = `$${loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
+  // FIX: Accurate month difference
+  const diffMonthsFromStart = Math.max(
+    1,
+    monthDiff(portfolioStartDate, new Date())
+  );
 
-      drawerAmortContainer.style.display = 'none';
-      drawerExtra.innerHTML = '';
-      drawerChartArea.innerHTML = '';
-      drawerLegend.style.display = 'none';
+  drawerPrimaryTitle.textContent = 'Current TPV';
+
+  const curVal = tpvSeriesData[
+    Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1)
+  ].value;
+
+  drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
+
+  drawerSecondaryTitle.textContent = 'Total Invested';
+  drawerSecondary.textContent =
+    `$${loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
+
+  drawerAmortContainer.style.display = 'none';
+  drawerExtra.innerHTML = '';
+  drawerChartArea.innerHTML = '';
+  drawerLegend.style.display = 'none';
+
 
       // draw TPV series
       const svgNS = 'http://www.w3.org/2000/svg';
