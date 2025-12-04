@@ -663,7 +663,40 @@ function renderKPI() {
   attachKpiClickHandlers();
 }
 
-    
+    /* ============================
+   Attach KPI Click Handlers
+   ============================ */
+function attachKpiClickHandlers() {
+  const tiles = document.querySelectorAll(".kpi");
+
+  tiles.forEach(tile => {
+    const type = tile.dataset.kpi;
+
+    tile.addEventListener("click", () => {
+      switch (type) {
+        case "tpv":
+          renderTPVDrawer();
+          break;
+
+        case "rates":
+          renderRatesDrawer();
+          break;
+
+        case "payments":
+          renderDistributionDrawer(); 
+          break;
+
+        case "yield":
+          renderYieldDrawer();
+          break;
+
+        default:
+          console.warn("Unknown KPI:", type);
+      }
+    });
+  });
+}
+
 
     /* ============================
        TPV (Total Portfolio Value) series
