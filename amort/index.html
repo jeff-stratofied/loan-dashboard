@@ -600,20 +600,45 @@ function computeTotalInvested() {
 
     
     function renderKPI() {
-      kpis = amortKpis || {};
-      kpisEl.innerHTML = `
-        <div class="kpi" data-kpi="tpv"><h3>Total Invested</h3><p id="tpvTile">$${computeTotalInvested().toLocaleString()}</p></div>
-        <div class="kpi" data-kpi="rates"><h3>Portfolio Value</h3><p>$${(kpis.portfolioValue || 0).toLocaleString()}</p></div>
-        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3 id="kpiMonthlyIncomeLabel"></h3><p id="kpiMonthlyIncomeValue">$0</p></div>
-        <div class="kpi" data-kpi="yield"><h3>Annualized Yield</h3><p id="kpiYield">0%</p></div>
-      `;
+  kpis = amortKpis || {};
+  kpisEl.innerHTML = `
+    <div class="kpi" data-kpi="tpv">
+      <h3>Total Invested</h3>
+      <p id="kpiInvested">$${computeTotalInvested().toLocaleString()}</p>
+    </div>
 
-      const kpiMonthlyIncomeTile = document.getElementById('kpiMonthlyIncome');
-      const kpiMonthlyIncomeValue = document.getElementById('kpiMonthlyIncomeValue');
-      const kpiMonthlyIncomeLabel = document.getElementById('kpiMonthlyIncomeLabel');
-      const annualYield = computeAnnualizedYield();
-document.getElementById("kpiYield").textContent =
-  (annualYield * 100).toFixed(2) + "%";
+    <div class="kpi" data-kpi="rates">
+      <h3>Portfolio Value</h3>
+      <p id="kpiPortfolioValue">$${computeTPV().toLocaleString()}</p>
+    </div>
+
+    <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome">
+      <h3 id="kpiMonthlyIncomeLabel"></h3>
+      <p id="kpiMonthlyIncomeValue">$0</p>
+    </div>
+
+    <div class="kpi" data-kpi="yield">
+      <h3>Annualized Yield</h3>
+      <p id="kpiYield">0%</p>
+    </div>
+  `;
+
+  // KEEP THE MONTHLY INCOME LOGIC AS-IS
+  const kpiMonthlyIncomeTile = document.getElementById('kpiMonthlyIncome');
+  const kpiMonthlyIncomeValue = document.getElementById('kpiMonthlyIncomeValue');
+  const kpiMonthlyIncomeLabel = document.getElementById('kpiMonthlyIncomeLabel');
+
+  if (kpiMonthlyIncomeValue && kpiMonthlyIncomeLabel) {
+    kpiMonthlyIncomeValue.textContent = `$${(kpis.monthlyIncomeKpi || 0).toFixed(2)}`;
+    kpiMonthlyIncomeLabel.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
+  }
+
+  // UPDATE YIELD TILE ↓
+  const annualYield = computeAnnualizedYield();
+  document.getElementById("kpiYield").textContent =
+    (annualYield * 100).toFixed(2) + "%";
+}
+
 
 
       if (kpiMonthlyIncomeValue && kpiMonthlyIncomeLabel) {
