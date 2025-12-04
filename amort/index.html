@@ -658,6 +658,20 @@ function computeTotalInvested() {
     kpiMonthlyIncomeLabel.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
   }
 
+function attachKpiClickHandlers() {
+  document.querySelectorAll(".kpi").forEach(k => {
+    k.addEventListener("click", () => {
+      const type = k.dataset.kpi;
+
+      if (type === "tpv") return renderTPVDrawer();
+      if (type === "rates") return renderRatesDrawer();
+      if (type === "payments") return renderDistributionDrawer();
+      if (type === "yield") return renderYieldDrawer();
+    });
+  });
+}
+
+      
   // UPDATE YIELD TILE ↓
   const annualYield = computeAnnualizedYield();
   document.getElementById("kpiYield").textContent =
@@ -877,14 +891,19 @@ document.getElementById('tpvTile').textContent =
     }
 
     async function initPage() {
-      await loadLoans();
-      rebuildLoansWithAmort();
-      
-      renderKPI();
-      renderLoanTiles();
-      renderTPVTile();
-      
-    }
+  await loadLoans();
+  rebuildLoansWithAmort();
+
+  // ensure KPIs recompute after portfolio is built
+  kpis = amortKpis || {};
+
+  renderKPI();        // now has correct amortKpis + TPV + Yield
+  renderLoanTiles();  // tiles clickable
+  renderTPVTile();    // TPV KPI tile updated correctly
+
+  attachKpiClickHandlers(); // <- REQUIRED so KPI tiles open drawers
+}
+
 
     /* ============================
        Drawer helpers
