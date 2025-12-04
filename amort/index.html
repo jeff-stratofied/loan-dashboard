@@ -626,12 +626,6 @@ document.getElementById("kpiYield").textContent =
         kpiMonthlyIncomeLabel.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
       }
 
-      if (kpiMonthlyIncomeTile) {
-        kpiMonthlyIncomeTile.addEventListener('click', () => {
-          renderPaymentsDrawer();
-          drawer.classList.add('open');
-        });
-      }
       wireKpiClicks();
     }
 
