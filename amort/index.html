@@ -1328,6 +1328,22 @@ function monthsSincePortfolioStart() {
       drawerBody.scrollTop = 0;
     }
 
+function computeWeightedAvgRate() {
+  if (!loansWithAmort || loansWithAmort.length === 0) return 0;
+
+  const totalAmount = loansWithAmort.reduce((sum, l) => sum + l.purchasePrice, 0);
+  if (totalAmount === 0) return 0;
+
+  let weightedRate = 0;
+
+  loansWithAmort.forEach(l => {
+    weightedRate += (l.nominalRate * l.purchasePrice) / totalAmount;
+  });
+
+  return weightedRate * 100;
+}
+
+    
     function renderRatesDrawer() {
       currentMode = 'kpi';
       currentLoan = null;
@@ -1336,7 +1352,9 @@ function monthsSincePortfolioStart() {
       drawerTitle.textContent = 'Rates Distribution';
       drawerSub.textContent = 'Histogram of loan nominal rates';
       drawerPrimaryTitle.textContent = 'Avg Rate';
-      drawerPrimary.textContent = `${kpis.weightedRate.toFixed(2)}%`;
+      const avgRate = kpis.weightedRate ?? computeWeightedAvgRate();
+      drawerPrimary.textContent = `${avgRate.toFixed(2)}%`;
+
       drawerSecondaryTitle.textContent = '';
       drawerSecondary.textContent = '';
 
