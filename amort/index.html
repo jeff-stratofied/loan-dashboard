@@ -829,14 +829,7 @@ document.getElementById("kpiYield").textContent =
       });
     }
 
-    function wireKpiClicks() {
-      const kpiDrawerMap = {
-        tpv: renderTPVDrawer,
-        rates: renderRatesDrawer,
-        payments: renderPaymentsDrawer,
-        yield: renderYieldDrawer,
-      };
-
+   
       document.querySelectorAll('.kpi').forEach(kpi => {
         const type = kpi.dataset.kpi;
         const renderFn = kpiDrawerMap[type];
