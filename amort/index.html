@@ -829,31 +829,6 @@ document.getElementById("kpiYield").textContent =
       });
     }
 
-    function wireKpiClicks() {
-      const kpiDrawerMap = {
-        tpv: renderTPVDrawer,
-        rates: renderRatesDrawer,
-        payments: renderPaymentsDrawer,
-        yield: renderYieldDrawer,
-      };
-
-      document.querySelectorAll('.kpi').forEach(kpi => {
-        const type = kpi.dataset.kpi;
-        const renderFn = kpiDrawerMap[type];
-
-        kpi.addEventListener('click', () => {
-          if (!renderFn) {
-            console.warn(`Unknown KPI type: ${type}`);
-            return;
-          }
-
-          renderFn();
-          drawer.classList.add('open');
-          drawer.setAttribute('aria-hidden', 'false');
-        });
-      });
-    }
-
     async function initPage() {
       await loadLoans();
       rebuildLoansWithAmort();
@@ -1764,6 +1739,31 @@ function renderYieldDrawer() {
     /* ============================
        Wire KPI clicks
        ============================ */
+    function wireKpiClicks() {
+      const kpiDrawerMap = {
+        tpv: renderTPVDrawer,
+        rates: renderRatesDrawer,
+        payments: renderPaymentsDrawer,
+        yield: renderYieldDrawer
+      };
+
+      document.querySelectorAll('.kpi').forEach(kpi => {
+        const type = kpi.dataset.kpi;
+        const renderFn = kpiDrawerMap[type];
+
+        kpi.addEventListener('click', () => {
+          if (!renderFn) {
+            console.warn(`Unknown KPI type: ${type}`);
+            return;
+          }
+
+          renderFn();
+          drawer.classList.add('open');
+          drawer.setAttribute('aria-hidden', 'false');
+        });
+      });
+    }
+
     /* ============================
        CSV / copy / download / print
        ============================ */
