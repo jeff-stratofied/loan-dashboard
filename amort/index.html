@@ -344,63 +344,56 @@
     <section class="grid" id="loanGrid" aria-live="polite"></section>
   </div>
 
-  <!-- Right drawer -->
-  <aside id="drawer" class="drawer" aria-hidden="true">
-    <div class="drawer-header">
-      <div class="drawer-head">
-        <div>
-          <h2 id="drawerTitle">Drawer</h2>
-          <div class="muted" id="drawerSub">details</div>
-        </div>
+  <!-- ============================
+     UNIVERSAL DRAWER (Loans + KPIs)
+     ============================ -->
+<aside id="drawer" class="drawer" aria-hidden="true">
 
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn" id="downloadCsvBtn">Download CSV</button>
-          <button class="close-btn" id="closeBtn" aria-label="Close drawer">✕</button>
-        </div>
-      </div>
+  <!-- Drawer Header -->
+  <header class="drawer-header">
+    <button class="drawer-close" data-close-drawer>&times;</button>
+
+    <div class="drawer-head-titles">
+      <h2 id="drawerTitle"></h2>
+      <p id="drawerSub" class="drawer-sub"></p>
+    </div>
+  </header>
+
+  <!-- Drawer Metrics -->
+  <section class="drawer-metrics">
+    <div class="drawer-metric-box">
+      <p id="drawerPrimaryTitle" class="metric-title"></p>
+      <h3 id="drawerPrimary" class="metric-value"></h3>
+    </div>
+    <div class="drawer-metric-box">
+      <p id="drawerSecondaryTitle" class="metric-title"></p>
+      <h3 id="drawerSecondary" class="metric-value"></h3>
+    </div>
+  </section>
+
+  <!-- Drawer Body Scroll Area -->
+  <div id="drawerBody" class="drawer-body">
+
+    <!-- KPI / Chart area -->
+    <div id="drawerChartArea" class="drawer-chart"></div>
+
+    <!-- Legend for charts (optional) -->
+    <div id="drawerLegend" class="drawer-legend"></div>
+
+    <!-- Optional extra tables -->
+    <div id="drawerExtra" class="drawer-extra"></div>
+
+    <!-- Loan Amortization Schedule Container -->
+    <div id="drawerAmortContainer" class="drawer-amort" style="display:none;">
+      <table class="amort-table">
+        <thead id="amortHead"></thead>
+        <tbody id="amortBody"></tbody>
+      </table>
     </div>
 
-    <div id="drawerBody" class="drawer-body">
-      <div class="drawer-chart" id="drawerChartArea"></div>
-      <div class="legend" id="drawerLegend" style="display:none"></div>
+  </div>
+</aside>
 
-      <div style="display:flex;gap:10px;margin-bottom:8px">
-        <div style="flex:1;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border)">
-          <div style="font-size:12px;color:var(--muted)" id="drawerPrimaryTitle">Purchase Price</div>
-          <div id="drawerPrimary" style="font-weight:800;font-size:18px"></div>
-        </div>
-        <div style="width:120px;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border)">
-          <div style="font-size:12px;color:var(--muted)" id="drawerSecondaryTitle">Rate</div>
-          <div id="drawerSecondary" style="font-weight:800;font-size:16px"></div>
-        </div>
-      </div>
-
-      <div class="drawer-detail" id="drawerBalanceAtPurchase" style="font-weight:700;margin-bottom:6px"></div>
-
-      <div id="drawerExtra"></div>
-
-      <div id="drawerAmortContainer">
-        <h3 style="margin-top:8px">Amortization</h3>
-        <div class="amort-wrap" id="amortWrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th>
-              </tr>
-            </thead>
-            <tbody id="amortBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="drawer-footer">
-      <div class="actions">
-        <button class="btn" id="printBtn">Print</button>
-        <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
-      </div>
-    </div>
-  </aside>
 
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
