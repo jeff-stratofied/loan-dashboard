@@ -582,6 +582,8 @@
 /************************************
  * Portfolio Value (TPV) Calculation
  ************************************/
+const kpisEl = document.getElementById('kpis');
+
 function computeTPV() {
   if (!Array.isArray(loansWithAmort) || loansWithAmort.length === 0)
     return 0;
@@ -600,6 +602,10 @@ function computeTPV() {
   }, 0);
 }
 
+function computeTotalInvested() {
+  return loansWithAmort.reduce((sum, l) => sum + (l.purchasePrice || 0), 0);
+}
+
 function computeAnnualizedYield() {
   const totalEarnedInterest = loansWithAmort.reduce((sum, loan) => {
     const owned = loan.cumSchedule.filter(r => r.isOwned);
@@ -614,13 +620,6 @@ function computeAnnualizedYield() {
   const monthsOwned = Math.max(1, monthDiff(new Date(minStart), new Date()));
 
   return (totalEarnedInterest / totalInvested) * (12 / monthsOwned);
-}
-
-/* Compute total invested */
-const kpisEl = document.getElementById('kpis');
-
-function computeTotalInvested() {
-  return loansWithAmort.reduce((sum, l) => sum + (l.purchasePrice || 0), 0);
 }
 
 function renderKPI() {
@@ -650,7 +649,6 @@ function renderKPI() {
     </div>
   `;
 
-  // Update Monthly Income tile
   const kpiMonthlyIncomeValue = document.getElementById('kpiMonthlyIncomeValue');
   const kpiMonthlyIncomeLabel = document.getElementById('kpiMonthlyIncomeLabel');
 
@@ -659,120 +657,101 @@ function renderKPI() {
     kpiMonthlyIncomeLabel.textContent = `${kpis.nextMonthLabel || ''} Expected Income`;
   }
 
-  // REQUIRED: make KPI tiles open drawers
   attachKpiClickHandlers();
 }
 
-    /* ============================
+/* ============================
    Attach KPI Click Handlers
    ============================ */
 function attachKpiClickHandlers() {
-  const tiles = document.querySelectorAll(".kpi");
+  const tiles = document.querySelectorAll('.kpi');
 
   tiles.forEach(tile => {
     const type = tile.dataset.kpi;
 
-    tile.addEventListener("click", () => {
+    tile.addEventListener('click', () => {
       switch (type) {
-        case "tpv":
+        case 'tpv':
           renderTPVDrawer();
           break;
 
-        case "rates":
+        case 'rates':
           renderRatesDrawer();
           break;
 
-        case "payments":
-          renderDistributionDrawer(); 
+        case 'payments':
+          renderDistributionDrawer();
           break;
 
-        case "yield":
+        case 'yield':
           renderYieldDrawer();
           break;
 
         default:
-          console.warn("Unknown KPI:", type);
+          console.warn('Unknown KPI:', type);
       }
     });
   });
 }
 
 
-    /* ============================
-       TPV (Total Portfolio Value) series
-       Definition:
-         TPV_loan(m) = initialPurchase + accruedInterestDuringGrace_upTo_m + cumulativePaymentsUpTo_m
-       ============================ */
-    function tpvSeries(loansList) {
-      const maxMonths = Math.max(...loansList.map(l => l.amort.schedule.length));
-      const series = [];
+/* ============================
+   TPV (Total Portfolio Value) series
+   Definition:
+     TPV_loan(m) = initialPurchase + accruedInterestDuringGrace_upTo_m + cumulativePaymentsUpTo_m
+   ============================ */
+function tpvSeries(loansList) {
+  const maxMonths = Math.max(...loansList.map(l => l.amort.schedule.length));
+  const series = [];
 
-      for (let m = 1; m <= maxMonths; m++) {
-        let total = 0;
-        loansList.forEach(l => {
-          const initial = l.purchasePrice;
-          // accrued interest during grace months up to m
-          const accrued = l.amort.schedule
-            .filter(s => s.monthIndex <= m && s.payment === 0)
-            .reduce((s, r) => s + r.interest, 0);
-          // cumulative payments to date up to m
-          const payments = l.amort.schedule
-            .filter(s => s.monthIndex <= m)
-            .reduce((s, r) => s + r.payment, 0);
+  for (let m = 1; m <= maxMonths; m++) {
+    let total = 0;
+    loansList.forEach(l => {
+      const initial = l.purchasePrice;
+      const accrued = l.amort.schedule
+        .filter(s => s.monthIndex <= m && s.payment === 0)
+        .reduce((s, r) => s + r.interest, 0);
+      const payments = l.amort.schedule
+        .filter(s => s.monthIndex <= m)
+        .reduce((s, r) => s + r.payment, 0);
 
-          total += initial + accrued + payments;
-        });
-        series.push({ month: m, value: total });
-      }
+      total += initial + accrued + payments;
+    });
+    series.push({ month: m, value: total });
+  }
 
-      return series;
-    }
+  return series;
+}
 
-    let tpvSeriesData = [];
+let tpvSeriesData = [];
 
-    function monthsSincePortfolioStart() {
-    if (!loansWithAmort || loansWithAmort.length === 0) return 0;
+function monthsSincePortfolioStart() {
+  if (!loansWithAmort || loansWithAmort.length === 0) return 0;
 
-    const minStart = Math.min(
+  const minStart = Math.min(
     ...loansWithAmort.map(l => new Date(l.purchaseDate).getTime())
-    );
+  );
 
-    const now = new Date();
-    const start = new Date(minStart);
+  const now = new Date();
+  const start = new Date(minStart);
 
-    const months =
+  const months =
     (now.getFullYear() - start.getFullYear()) * 12 +
     (now.getMonth() - start.getMonth());
 
-    return Math.max(0, months);
-    }
+  return Math.max(0, months);
+}
 
-    
-    function renderTPVTile() {
-      tpvSeriesData = tpvSeries(loansWithAmort);
-      if (!tpvSeriesData.length) return;
-      const portfolioStartDate = new Date(
-    Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()))
-    );
 
-    const diffMonthsFromStart = Math.max(
-    1,
-    monthDiff(portfolioStartDate, new Date())
-    );
+function renderTPVTile() {
+  tpvSeriesData = tpvSeries(loansWithAmort);
+  if (!tpvSeriesData.length) return;
 
-      // Choose correct TPV index (safe for all months)
-    const idx = Math.min(
-    tpvSeriesData.length - 1,
-    diffMonthsFromStart - 1
-    );
-
-    // Current TPV value
-    const curTPV = tpvSeriesData[idx].value;
-
-    document.getElementById('tpvTile').textContent =
-    `$${Math.round(curTPV).toLocaleString()}`;
-
- }
+  const portfolioValueEl = document.getElementById('kpiPortfolioValue');
+  if (portfolioValueEl) {
+    portfolioValueEl.textContent = `$${Math.round(computeTPV()).toLocaleString()}`;
+  }
+}
 
     /* ============================
        Render loan tiles with mini-charts (cumulative principal & interest)
@@ -919,8 +898,6 @@ function attachKpiClickHandlers() {
   renderKPI();        // now has correct amortKpis + TPV + Yield
   renderLoanTiles();  // tiles clickable
   renderTPVTile();    // TPV KPI tile updated correctly
-
-  attachKpiClickHandlers(); // <- REQUIRED so KPI tiles open drawers
 }
 
 
