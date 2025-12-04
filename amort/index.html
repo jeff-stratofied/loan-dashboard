@@ -1450,7 +1450,7 @@ function renderYieldDrawer() {
     return {
       id: l.id,
       name: l.loanName,
-      school: l.schoolName || "",  // <-- include school if you have it
+      school: l.school || "",  // <-- include school if you have it
       rate: l.nominalRate,
       purchaseDate: l.purchaseDate,
       interest: latest ? latest.cumInterest : 0,
