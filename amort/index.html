@@ -829,22 +829,6 @@ document.getElementById("kpiYield").textContent =
       });
     }
 
-   
-      document.querySelectorAll('.kpi').forEach(kpi => {
-        const type = kpi.dataset.kpi;
-        const renderFn = kpiDrawerMap[type];
-
-        kpi.addEventListener('click', () => {
-          if (!renderFn) {
-            console.warn(`Unknown KPI type: ${type}`);
-            return;
-          }
-
-          renderFn();
-          drawer.classList.add('open');
-          drawer.setAttribute('aria-hidden', 'false');
-        });
-      });
     
 /* ============================
    Wire KPI clicks
