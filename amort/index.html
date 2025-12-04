@@ -1370,7 +1370,7 @@ document.getElementById("kpiYield").textContent =
       drawerLegend.style.display = 'none';
 
       // histogram
-      const rates = loansWithAmort.map(l => l.nominalRate * 100);
+      const rates = loansWithAmort.map(l => ((l.interestRate || l.rate || l.nominalRate) * 100));
       const min = Math.min(...rates), max = Math.max(...rates);
       const bins = 5;
       const width = (max - min) / bins || 1;
@@ -1426,7 +1426,7 @@ document.getElementById("kpiYield").textContent =
       drawerChartArea.appendChild(svg);
 
       // table sorted by rate
-      const sorted = loansWithAmort.slice().sort((a, b) => b.nominalRate - a.nominalRate);
+      const sorted = loansWithAmort.slice().sort((a, b) => (b.interestRate || b.rate || b.nominalRate) - (a.interestRate || a.rate || a.nominalRate));
       drawerExtra.innerHTML = `
         <div style="margin-top:10px">
           <strong class="small">Loans sorted by rate</strong>
@@ -1436,7 +1436,7 @@ document.getElementById("kpiYield").textContent =
               <tbody>
                 ${sorted.map(l => `<tr>
                   <td style="text-align:left">${l.loanName}</td>
-                  <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
+                  <td style="text-align:left">${((l.interestRate || l.rate || l.nominalRate) * 100).toFixed(2)}%</td>
                   <td style="text-align:left">${l.purchaseDate}</td>
                   <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
                 </tr>`).join('')}
