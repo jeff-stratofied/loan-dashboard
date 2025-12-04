@@ -598,7 +598,27 @@ function computeTotalInvested() {
   return loansWithAmort.reduce((sum, l) => sum + (l.purchasePrice || 0), 0);
 }
 
-    
+    /************************************
+ * Portfolio Value (TPV) Calculation
+ ************************************/
+function computeTPV() {
+  if (!Array.isArray(loansWithAmort) || loansWithAmort.length === 0)
+    return 0;
+
+  return loansWithAmort.reduce((sum, loan) => {
+    const last = loan.cumSchedule[loan.cumSchedule.length - 1];
+    if (!last) return sum;
+
+    const loanValue =
+        (loan.purchasePrice || 0) +
+        (last.cumInterest || 0) +
+        (last.cumPrincipal || 0) -
+        (last.cumFees || 0);
+
+    return sum + loanValue;
+  }, 0);
+}
+
     function renderKPI() {
   kpis = amortKpis || {};
   kpisEl.innerHTML = `
@@ -610,6 +630,7 @@ function computeTotalInvested() {
     <div class="kpi" data-kpi="rates">
       <h3>Portfolio Value</h3>
       <p id="kpiPortfolioValue">$${computeTPV().toLocaleString()}</p>
+
     </div>
 
     <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome">
