@@ -309,6 +309,16 @@
     html[data-theme="dark"] .tooltip{ background:var(--tooltip-bg); color:var(--tooltip-text); box-shadow:0 12px 30px rgba(0,0,0,0.45); border-color:rgba(148,163,184,0.35); }
     html[data-theme="dark"] .close-btn{ background:#0f172a; color:var(--text); }
     svg text{ fill:var(--text); transition:fill .25s ease; }
+
+    *, svg path, svg text, .kpi, .tile, .drawer {
+      transition:
+        background-color .25s ease,
+        color .25s ease,
+        border-color .25s ease,
+        fill .25s ease,
+        stroke .25s ease,
+        box-shadow .25s ease;
+    }
   </style>
 </head>
 
