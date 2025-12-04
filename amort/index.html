@@ -824,15 +824,24 @@ document.getElementById("kpiYield").textContent =
     }
 
     function wireKpiClicks() {
+      const kpiDrawerMap = {
+        tpv: renderTPVDrawer,
+        rates: renderRatesDrawer,
+        payments: renderPaymentsDrawer,
+        yield: renderYieldDrawer,
+      };
+
       document.querySelectorAll('.kpi').forEach(kpi => {
         const type = kpi.dataset.kpi;
+        const renderFn = kpiDrawerMap[type];
 
         kpi.addEventListener('click', () => {
-          if (type === 'tpv')          renderTPVDrawer();
-          else if (type === 'rates')   renderRatesDrawer();
-          else if (type === 'payments')renderPaymentsDrawer();
-          else if (type === 'yield')   renderYieldDrawer();
+          if (!renderFn) {
+            console.warn(`Unknown KPI type: ${type}`);
+            return;
+          }
 
+          renderFn();
           drawer.classList.add('open');
           drawer.setAttribute('aria-hidden', 'false');
         });
