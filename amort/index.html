@@ -1779,8 +1779,13 @@ document.querySelectorAll(".kpi").forEach(kpi => {
   });
 });
 
-    document.addEventListener("DOMContentLoaded", initPage);
-    document.getElementById("currentDate").textContent = formatDate(new Date());
-  </script>
+/* =======================================
+   PAGE INIT
+   ======================================= */
+document.addEventListener("DOMContentLoaded", () => {
+  initPage();
+  document.getElementById("currentDate").textContent = formatDate(new Date());
+});
+</script>
 </body>
 </html>
