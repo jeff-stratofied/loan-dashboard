@@ -887,7 +887,9 @@ function wireKpiClicks() {
     const drawerExtra = document.getElementById('drawerExtra');
     const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
-    document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
+    document
+  .querySelector('[data-close-drawer]')
+  .addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
     let currentLoan = null;
