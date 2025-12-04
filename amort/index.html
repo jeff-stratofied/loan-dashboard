@@ -607,10 +607,22 @@
     function renderKPI() {
       kpis = amortKpis || {};
       kpisEl.innerHTML = `
-        <div class="kpi" data-kpi="tpv"><h3>Total Invested</h3><p id="tpvTile">$${(kpis.totalInvested || 0).toLocaleString()}</p></div>
-        <div class="kpi" data-kpi="rates"><h3>Portfolio Value</h3><p>$${(kpis.portfolioValue || 0).toLocaleString()}</p></div>
-        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome"><h3 id="kpiMonthlyIncomeLabel"></h3><p id="kpiMonthlyIncomeValue">$0</p></div>
-        <div class="kpi" data-kpi="yield"><h3>Annualized Yield</h3><p id="kpiYield">0%</p></div>
+        <div class="kpi" data-kpi="tpv">
+          <h3>Total Invested</h3>
+          <p id="tpvTile">$${(kpis.totalInvested || 0).toLocaleString()}</p>
+        </div>
+        <div class="kpi" data-kpi="rates">
+          <h3>Portfolio Value</h3>
+          <p>$${(kpis.portfolioValue || 0).toLocaleString()}</p>
+        </div>
+        <div class="kpi" data-kpi="payments" id="kpiMonthlyIncome">
+          <h3 id="kpiMonthlyIncomeLabel"></h3>
+          <p id="kpiMonthlyIncomeValue">$0</p>
+        </div>
+        <div class="kpi" data-kpi="yield">
+          <h3>Annualized Yield</h3>
+          <p id="kpiYield">0%</p>
+        </div>
       `;
 
       const kpiMonthlyIncomeTile = document.getElementById('kpiMonthlyIncome');
