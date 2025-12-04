@@ -813,6 +813,22 @@ document.getElementById("kpiYield").textContent =
       });
     }
 
+    function wireKpiClicks() {
+      document.querySelectorAll('.kpi').forEach(kpi => {
+        const type = kpi.dataset.kpi;
+
+        kpi.addEventListener('click', () => {
+          if (type === 'tpv')          renderTPVDrawer();
+          else if (type === 'rates')   renderRatesDrawer();
+          else if (type === 'payments')renderPaymentsDrawer();
+          else if (type === 'yield')   renderYieldDrawer();
+
+          drawer.classList.add('open');
+          drawer.setAttribute('aria-hidden', 'false');
+        });
+      });
+    }
+
     async function initPage() {
       await loadLoans();
       rebuildLoansWithAmort();
@@ -1722,19 +1738,6 @@ function renderYieldDrawer() {
     /* ============================
        Wire KPI clicks
        ============================ */
-    function wireKpiClicks() {
-      document.querySelectorAll('.kpi').forEach(k => {
-        k.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          const key = k.getAttribute('data-kpi');
-          if (key === 'distribution') renderDistributionDrawer();
-          if (key === 'tpv') renderTPVDrawer();
-          if (key === 'rates') renderRatesDrawer();
-          if (key === 'yield') renderYieldDrawer();
-        });
-      });
-    }
-
     /* ============================
        CSV / copy / download / print
        ============================ */
