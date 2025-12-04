@@ -660,112 +660,6 @@ function renderKPI() {
   attachKpiClickHandlers();
 }
 
-    function renderDistributionDrawer() {
-      currentMode = 'kpi';
-      currentLoan = null;
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-      drawerBalanceAtPurchase.textContent = '';
-
-      drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
-      drawerSub.textContent = 'Number of loans purchased by month';
-      drawerPrimaryTitle.textContent = '';
-      drawerPrimary.textContent = '';
-      drawerSecondaryTitle.textContent = 'Total Invested';
-
-      const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
-      drawerSecondary.textContent = `$${totalInvested.toLocaleString()}`;
-
-      drawerAmortContainer.style.display = 'none';
-      drawerExtra.innerHTML = '';
-
-      // counts by month
-      const counts = {};
-      loansWithAmort.forEach(l => { const m = monthLabel(l.purchaseDate); counts[m] = (counts[m] || 0) + 1; });
-      const months = Object.keys(counts);
-
-      drawerChartArea.innerHTML = '';
-      drawerLegend.style.display = 'none';
-
-      // simple bar chart SVG
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const w = 480, h = 220, pad = 30;
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', '100%');
-
-      const maxCount = Math.max(...Object.values(counts));
-      months.forEach((m, i) => {
-        const barW = (w - pad * 2) / months.length * 0.7;
-        const gap = ((w - pad * 2) / months.length - barW) / 2;
-        const x = pad + i * ((w - pad * 2) / months.length) + gap;
-        const barH = (counts[m] / Math.max(1, maxCount)) * (h - pad * 2);
-        const y = h - pad - barH;
-
-        const rect = document.createElementNS(svgNS, 'rect');
-        rect.setAttribute('x', x); rect.setAttribute('y', isNaN(y) ? 0 : y);
-        rect.setAttribute('width', barW); rect.setAttribute('height', isNaN(barH) ? 0 : barH);
-        rect.setAttribute('fill', '#06b6d4');
-        svg.appendChild(rect);
-
-        const text = document.createElementNS(svgNS, 'text');
-        text.setAttribute('x', x + barW / 2);
-        text.setAttribute('y', h - pad + 14);
-        text.setAttribute('font-size', '11');
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('fill', '#475569');
-        text.textContent = m;
-        svg.appendChild(text);
-
-        rect.addEventListener('mousemove', (ev) => {
-          tooltip.style.display = 'block';
-          tooltip.style.left = ev.clientX + 'px';
-          tooltip.style.top = (ev.clientY - 12) + 'px';
-          tooltip.innerHTML = `${m} • ${counts[m]} loans`;
-        });
-        rect.addEventListener('mouseleave', () => tooltip.style.display = 'none');
-      });
-
-      // current month marker on the right edge (visual cue)
-      const curLine = document.createElementNS(svgNS, 'line');
-      curLine.setAttribute('x1', pad + (w - pad * 2));
-      curLine.setAttribute('x2', pad + (w - pad * 2));
-      curLine.setAttribute('y1', pad);
-      curLine.setAttribute('y2', h - pad);
-      curLine.setAttribute('stroke', '#111827');
-      curLine.setAttribute('stroke-dasharray', '3 4');
-      curLine.setAttribute('stroke-opacity', '0.3');
-      svg.appendChild(curLine);
-
-      drawerChartArea.appendChild(svg);
-
-      // table listing loans
-      drawerExtra.innerHTML = `
-        <div style="margin-top:10px">
-          <strong class="small">Loans</strong>
-          <div style="max-height:220px; overflow:auto; margin-top:6px; border-radius:6px; padding:6px; border:1px solid var(--border);background:var(--card)">
-            <table style="width:100%; font-size:13px">
-              <thead>
-                <tr><th>Loan</th><th>Purchase</th><th>Rate</th><th style="text-align:right">Balance</th></tr>
-              </thead>
-              <tbody>
-                ${loansWithAmort.map(l => `<tr>
-                  <td style="text-align:left">${l.loanName}</td>
-                  <td style="text-align:left">${l.purchaseDate}</td>
-                  <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
-                  <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
-                </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-      drawerBody.scrollTop = 0;
-    }
 
     function renderTPVDrawer() {
   currentMode = 'kpi';
@@ -900,21 +794,6 @@ function renderKPI() {
       drawerBody.scrollTop = 0;
     }
 
-function computeWeightedAvgRate() {
-  if (!loansWithAmort || loansWithAmort.length === 0) return 0;
-
-  const totalAmount = loansWithAmort.reduce((sum, l) => sum + l.purchasePrice, 0);
-  if (totalAmount === 0) return 0;
-
-  let weightedRate = 0;
-
-  loansWithAmort.forEach(l => {
-    weightedRate += (l.nominalRate * l.purchasePrice) / totalAmount;
-  });
-
-  return weightedRate * 100;
-}
-
     
     function renderRatesDrawer() {
       currentMode = 'kpi';
@@ -1016,6 +895,110 @@ function computeWeightedAvgRate() {
       drawer.setAttribute('aria-hidden', 'false');
       drawerBody.scrollTop = 0;
     }
+
+ function renderDistributionDrawer() {
+      currentMode = 'kpi';
+      currentLoan = null;
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+      drawerBalanceAtPurchase.textContent = '';
+
+      drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
+      drawerSub.textContent = 'Number of loans purchased by month';
+      drawerPrimaryTitle.textContent = '';
+      drawerPrimary.textContent = '';
+      drawerSecondaryTitle.textContent = 'Total Invested';
+
+      const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
+      drawerSecondary.textContent = `$${totalInvested.toLocaleString()}`;
+
+      drawerAmortContainer.style.display = 'none';
+      drawerExtra.innerHTML = '';
+
+      // counts by month
+      const counts = {};
+      loansWithAmort.forEach(l => { const m = monthLabel(l.purchaseDate); counts[m] = (counts[m] || 0) + 1; });
+      const months = Object.keys(counts);
+
+      drawerChartArea.innerHTML = '';
+      drawerLegend.style.display = 'none';
+
+      // simple bar chart SVG
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const w = 480, h = 220, pad = 30;
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      svg.setAttribute('width', '100%');
+      svg.setAttribute('height', '100%');
+
+      const maxCount = Math.max(...Object.values(counts));
+      months.forEach((m, i) => {
+        const barW = (w - pad * 2) / months.length * 0.7;
+        const gap = ((w - pad * 2) / months.length - barW) / 2;
+        const x = pad + i * ((w - pad * 2) / months.length) + gap;
+        const barH = (counts[m] / Math.max(1, maxCount)) * (h - pad * 2);
+        const y = h - pad - barH;
+
+        const rect = document.createElementNS(svgNS, 'rect');
+        rect.setAttribute('x', x); rect.setAttribute('y', isNaN(y) ? 0 : y);
+        rect.setAttribute('width', barW); rect.setAttribute('height', isNaN(barH) ? 0 : barH);
+        rect.setAttribute('fill', '#06b6d4');
+        svg.appendChild(rect);
+
+        const text = document.createElementNS(svgNS, 'text');
+        text.setAttribute('x', x + barW / 2);
+        text.setAttribute('y', h - pad + 14);
+        text.setAttribute('font-size', '11');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#475569');
+        text.textContent = m;
+        svg.appendChild(text);
+
+        rect.addEventListener('mousemove', (ev) => {
+          tooltip.style.display = 'block';
+          tooltip.style.left = ev.clientX + 'px';
+          tooltip.style.top = (ev.clientY - 12) + 'px';
+          tooltip.innerHTML = `${m} • ${counts[m]} loans`;
+        });
+        rect.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+      });
+
+      // current month marker on the right edge (visual cue)
+      const curLine = document.createElementNS(svgNS, 'line');
+      curLine.setAttribute('x1', pad + (w - pad * 2));
+      curLine.setAttribute('x2', pad + (w - pad * 2));
+      curLine.setAttribute('y1', pad);
+      curLine.setAttribute('y2', h - pad);
+      curLine.setAttribute('stroke', '#111827');
+      curLine.setAttribute('stroke-dasharray', '3 4');
+      curLine.setAttribute('stroke-opacity', '0.3');
+      svg.appendChild(curLine);
+
+      drawerChartArea.appendChild(svg);
+
+      // table listing loans
+      drawerExtra.innerHTML = `
+        <div style="margin-top:10px">
+          <strong class="small">Loans</strong>
+          <div style="max-height:220px; overflow:auto; margin-top:6px; border-radius:6px; padding:6px; border:1px solid var(--border);background:var(--card)">
+            <table style="width:100%; font-size:13px">
+              <thead>
+                <tr><th>Loan</th><th>Purchase</th><th>Rate</th><th style="text-align:right">Balance</th></tr>
+              </thead>
+              <tbody>
+                ${loansWithAmort.map(l => `<tr>
+                  <td style="text-align:left">${l.loanName}</td>
+                  <td style="text-align:left">${l.purchaseDate}</td>
+                  <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
+                  <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+
+
 
 function renderYieldDrawer() {
   currentMode = "kpi";
