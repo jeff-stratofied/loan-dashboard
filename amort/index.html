@@ -573,32 +573,13 @@
 
       return d;
     }
-    function computeAnnualizedYield() {
-    const totalEarnedInterest = loansWithAmort.reduce((sum, loan) => {
-    const owned = loan.cumSchedule.filter(r => r.isOwned);
-    const latest = owned[owned.length - 1];
-    return sum + (latest ? latest.cumInterest : 0);
-  }, 0);
+    
 
-  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
-  if (totalInvested <= 0) return 0;
+/* ============================
+   Render KPI tiles
+   ============================ */
 
-  const minStart = Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()));
-  const monthsOwned = Math.max(1, monthDiff(new Date(minStart), new Date()));
-
-  return (totalEarnedInterest / totalInvested) * (12 / monthsOwned);
-}
-
-    /* ============================
-       Render KPI tiles
-       ============================ */
-    const kpisEl = document.getElementById('kpis');
-
-function computeTotalInvested() {
-  return loansWithAmort.reduce((sum, l) => sum + (l.purchasePrice || 0), 0);
-}
-
-    /************************************
+/************************************
  * Portfolio Value (TPV) Calculation
  ************************************/
 function computeTPV() {
@@ -610,17 +591,40 @@ function computeTPV() {
     if (!last) return sum;
 
     const loanValue =
-        (loan.purchasePrice || 0) +
-        (last.cumInterest || 0) +
-        (last.cumPrincipal || 0) -
-        (last.cumFees || 0);
+      (loan.purchasePrice || 0) +
+      (last.cumInterest || 0) +
+      (last.cumPrincipal || 0) -
+      (last.cumFees || 0);
 
     return sum + loanValue;
   }, 0);
 }
 
+function computeAnnualizedYield() {
+  const totalEarnedInterest = loansWithAmort.reduce((sum, loan) => {
+    const owned = loan.cumSchedule.filter(r => r.isOwned);
+    const last = owned[owned.length - 1];
+    return sum + (last ? last.cumInterest : 0);
+  }, 0);
+
+  const totalInvested = computeTotalInvested();
+  if (totalInvested <= 0) return 0;
+
+  const minStart = Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()));
+  const monthsOwned = Math.max(1, monthDiff(new Date(minStart), new Date()));
+
+  return (totalEarnedInterest / totalInvested) * (12 / monthsOwned);
+}
+
+/* Compute total invested */
+const kpisEl = document.getElementById('kpis');
+
+function computeTotalInvested() {
+  return loansWithAmort.reduce((sum, l) => sum + (l.purchasePrice || 0), 0);
+}
+
     function renderKPI() {
-  kpis = amortKpis || {};
+  
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
       <h3>Total Invested</h3>
@@ -723,8 +727,18 @@ const diffMonthsFromStart = Math.max(
   monthDiff(portfolioStartDate, new Date())
 );
 
-      document.getElementById('tpvTile').textContent =
-        `$${Math.round(tpvSeriesData[Math.min(diffMonthsFromStart - 1, tpvSeriesData.length - 1)].value).toLocaleString()}`;
+      // Choose correct TPV index (safe for all months)
+const idx = Math.min(
+  tpvSeriesData.length - 1,
+  diffMonthsFromStart - 1
+);
+
+// Current TPV value
+const curTPV = tpvSeriesData[idx].value;
+
+document.getElementById('tpvTile').textContent =
+  `$${Math.round(curTPV).toLocaleString()}`;
+
     }
 
     /* ============================
@@ -1899,6 +1913,32 @@ function renderYieldDrawer() {
       const current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
+/* =======================================
+   KPI Click Handlers (open drawers)
+   ======================================= */
+document.querySelectorAll(".kpi").forEach(kpi => {
+  kpi.addEventListener("click", () => {
+    const type = kpi.dataset.kpi;
+
+    if (type === "tpv") {
+      renderTPVDrawer();
+    } 
+    else if (type === "portfolio") {
+      renderTPVDrawer();
+    }
+    else if (type === "rates") {
+      renderRatesDrawer();
+    } 
+    else if (type === "payments") {
+      renderIncomeDrawer();
+    } 
+    else if (type === "yield") {
+      renderYieldDrawer();
+    }
+
+    openDrawer();
+  });
+});
 
     document.addEventListener("DOMContentLoaded", initPage);
     document.getElementById("currentDate").textContent = formatDate(new Date());
