@@ -573,21 +573,6 @@
 
       return d;
     }
-    function computeAnnualizedYield() {
-    const totalEarnedInterest = loansWithAmort.reduce((sum, loan) => {
-    const owned = loan.cumSchedule.filter(r => r.isOwned);
-    const latest = owned[owned.length - 1];
-    return sum + (latest ? latest.cumInterest : 0);
-  }, 0);
-
-  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
-  if (totalInvested <= 0) return 0;
-
-  const minStart = Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()));
-  const monthsOwned = Math.max(1, monthDiff(new Date(minStart), new Date()));
-
-  return (totalEarnedInterest / totalInvested) * (12 / monthsOwned);
-}
 
     /* ============================
        Render KPI tiles
@@ -803,6 +788,27 @@ document.getElementById("kpiYield").textContent =
     async function initPage() {
       await loadLoans();
       rebuildLoansWithAmort();
+
+function computeAnnualizedYield() {
+  // Total interest earned to date across all loans
+  const totalEarnedInterest = loansWithAmort.reduce((sum, loan) => {
+    const owned = loan.cumSchedule.filter(r => r.isOwned);
+    const latest = owned[owned.length - 1];
+    return sum + (latest ? latest.cumInterest : 0);
+  }, 0);
+
+  // Cost basis
+  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
+
+  if (totalInvested <= 0) return 0;
+
+  // Annualized return = (Interest Earned to Date / Invested) * (12 / months owned)
+  const minStart = Math.min(...loansWithAmort.map(l => new Date(l.purchaseDate).getTime()));
+  const monthsOwned = Math.max(1, monthDiff(new Date(minStart), new Date()));
+
+  return (totalEarnedInterest / totalInvested) * (12 / monthsOwned);
+}
+
       
       renderKPI();
       renderLoanTiles();
@@ -1414,69 +1420,45 @@ function renderYieldDrawer() {
   currentLoan = null;
   drawer.classList.add("open");
   drawer.setAttribute("aria-hidden", "false");
-
   drawerAmortContainer.style.display = "none";
   drawerLegend.style.display = "none";
-  drawerChartArea.innerHTML = "";
   drawerExtra.innerHTML = "";
+  drawerChartArea.innerHTML = "";
 
   drawerTitle.textContent = "Annualized Yield";
   drawerSub.textContent = "Interest earned to date relative to invested capital";
 
   const annualYield = computeAnnualizedYield();
-  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
-
   drawerPrimaryTitle.textContent = "Annualized Yield";
   drawerPrimary.textContent = (annualYield * 100).toFixed(2) + "%";
 
+  const totalInvested = loansWithAmort.reduce((s, l) => s + l.purchasePrice, 0);
   drawerSecondaryTitle.textContent = "Total Invested";
   drawerSecondary.textContent = "$" + totalInvested.toLocaleString();
 
-  // ---------------------------
-  // Color palette for loans
-  // ---------------------------
-  const palette = [
-    "#e11d48","#f97316","#f59e0b","#eab308","#84cc16",
-    "#10b981","#06b6d4","#3b82f6","#6366f1","#8b5cf6"
-  ];
-
-  // ---------------------------
-  // Yield contribution per loan
-  // ---------------------------
-  const contributions = loansWithAmort.map((l, idx) => {
-    const owned = l.cumSchedule.filter(r => r.isOwned);
-    const latest = owned[owned.length - 1];
-
-    return {
-      id: l.id,
-      name: l.loanName,
-      school: l.schoolName || "",  // <-- include school if you have it
-      rate: l.nominalRate,
-      purchaseDate: l.purchaseDate,
-      interest: latest ? latest.cumInterest : 0,
-      color: palette[(l.id - 1) % palette.length]
-    };
-  });
-
-  const maxInterest = Math.max(...contributions.map(c => c.interest), 1);
-
-  // ---------------------------
-  // Draw chart
-  // ---------------------------
+  // ---- Chart: Yield contribution by loan ----
   const svgNS = "http://www.w3.org/2000/svg";
-  const w = 780, h = 260, pad = 35;
-
+  const w = 500, h = 220, pad = 30;
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
-  drawerChartArea.appendChild(svg);
 
+  const contributions = loansWithAmort.map(l => {
+    const owned = l.cumSchedule.filter(r => r.isOwned);
+    const latest = owned[owned.length - 1];
+    return {
+      name: l.loanName,
+      interest: latest ? latest.cumInterest : 0
+    };
+  });
+
+  const max = Math.max(...contributions.map(c => c.interest));
   const barW = (w - pad * 2) / contributions.length * 0.7;
 
   contributions.forEach((c, i) => {
     const x = pad + i * ((w - pad * 2) / contributions.length);
-    const barH = (c.interest / maxInterest) * (h - pad * 2);
+    const barH = (c.interest / max) * (h - pad * 2);
     const y = h - pad - barH;
 
     const rect = document.createElementNS(svgNS, "rect");
@@ -1484,86 +1466,52 @@ function renderYieldDrawer() {
     rect.setAttribute("y", y);
     rect.setAttribute("width", barW);
     rect.setAttribute("height", barH);
-    rect.setAttribute("fill", c.color);
-    rect.setAttribute("rx", 4);
-    rect.style.cursor = "pointer";
+    rect.setAttribute("fill", "#0ea5e9");
+    svg.appendChild(rect);
 
     rect.addEventListener("mousemove", ev => {
       tooltip.style.display = "block";
       tooltip.style.left = ev.clientX + "px";
-      tooltip.style.top = (ev.clientY - 25) + "px";
-      tooltip.innerHTML =
-        `${c.name}<br>` +
-        `${c.school ? c.school + "<br>" : ""}` +
-        `Interest: $${c.interest.toLocaleString()}`;
+      tooltip.style.top = ev.clientY - 10 + "px";
+      tooltip.innerHTML = `${c.name}<br>Interest: $${c.interest.toLocaleString()}`;
     });
-    rect.addEventListener("mouseleave", () => {
-      tooltip.style.display = "none";
-    });
+    rect.addEventListener("mouseleave", () => tooltip.style.display = "none");
 
-    svg.appendChild(rect);
-
-    // label (loan number)
     const label = document.createElementNS(svgNS, "text");
     label.setAttribute("x", x + barW / 2);
-    label.setAttribute("y", h - pad + 16);
+    label.setAttribute("y", h - pad + 14);
     label.setAttribute("font-size", "11");
     label.setAttribute("text-anchor", "middle");
-    label.setAttribute("fill", "var(--text)");
     label.textContent = c.name.replace("Loan ", "");
     svg.appendChild(label);
   });
 
-  // ---------------------------
-  // TABLE under chart
-  // ---------------------------
+  drawerChartArea.appendChild(svg);
+
+  // ---- Table ----
   drawerExtra.innerHTML = `
-    <h3 style="margin-top:12px;margin-bottom:6px">Yield Contribution by Loan</h3>
-    <div style="
-      max-height:260px;
-      overflow:auto;
-      border:1px solid var(--border);
-      border-radius:8px;
-      background:var(--card);
-      padding:6px;
-    ">
-      <table style="width:100%;font-size:13px;">
-        <thead>
-          <tr>
-            <th style="text-align:left;">Loan</th>
-            <th style="text-align:left;">School</th>
-            <th style="text-align:right;">Interest Earned</th>
-            <th style="text-align:left;">Purchase</th>
-            <th style="text-align:right;">Rate</th>
-          </tr>
-        </thead>
-        <tbody id="yieldTableBody"></tbody>
-      </table>
+    <div style="margin-top:10px">
+      <strong class="small">Yield Contribution by Loan</strong>
+      <div style="max-height:240px;overflow:auto;border-radius:6px;padding:6px;border:1px solid var(--border);background:var(--card)">
+        <table style="width:100%;font-size:13px">
+          <thead>
+            <tr><th>Loan</th><th>Interest Earned</th><th>Purchase</th><th>Rate</th></tr>
+          </thead>
+          <tbody>
+            ${contributions.map((c, idx) => `
+              <tr>
+                <td>${c.name}</td>
+                <td>$${c.interest.toFixed(2)}</td>
+                <td>${loansWithAmort[idx].purchaseDate}</td>
+                <td>${(loansWithAmort[idx].nominalRate * 100).toFixed(2)}%</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
-
-  const tbody = document.getElementById("yieldTableBody");
-
-  contributions.forEach(c => {
-    const row = `
-      <tr>
-        <td style="text-align:left;">
-          <span style="
-            display:inline-block;width:10px;height:10px;
-            background:${c.color};border-radius:2px;
-            margin-right:8px;
-          "></span>
-          ${c.name}
-        </td>
-        <td style="text-align:left;">${c.school || ""}</td>
-        <td style="text-align:right;">$${c.interest.toFixed(2)}</td>
-        <td style="text-align:left;">${c.purchaseDate}</td>
-        <td style="text-align:right;">${(c.rate * 100).toFixed(2)}%</td>
-      </tr>`;
-    tbody.insertAdjacentHTML("beforeend", row);
-  });
 }
-
 
     
     function renderPaymentsDrawer() {
