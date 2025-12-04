@@ -657,6 +657,24 @@ document.getElementById("kpiYield").textContent =
 
     let tpvSeriesData = [];
 
+function monthsSincePortfolioStart() {
+  if (!loansWithAmort || loansWithAmort.length === 0) return 0;
+
+  const minStart = Math.min(
+    ...loansWithAmort.map(l => new Date(l.purchaseDate).getTime())
+  );
+
+  const now = new Date();
+  const start = new Date(minStart);
+
+  const months =
+    (now.getFullYear() - start.getFullYear()) * 12 +
+    (now.getMonth() - start.getMonth());
+
+  return Math.max(0, months);
+}
+
+    
     function renderTPVTile() {
       tpvSeriesData = tpvSeries(loansWithAmort);
       if (!tpvSeriesData.length) return;
