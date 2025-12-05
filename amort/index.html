@@ -541,7 +541,20 @@ async function loadLoans() {
     if (!res.ok) throw new Error("Bad API response");
 
     const raw = await res.json();
-    loans = raw.loans || [];  // <-- IMPORTANT FIX
+
+    // Normalize YOUR API fields → amort engine fields
+    loans = (raw.loans || []).map(l => ({
+      id: l.loanId,
+      loanName: l.loanName,
+      school: l.school,
+      loanStartDate: l.loanStartDate,
+      purchaseDate: l.purchaseDate,
+      origLoanAmount: Number(l.origLoanAmt),
+      purchasePrice: Number(l.purchasePrice),
+      rate: Number(l.rate),
+      termYears: Number(l.termYears),
+      graceYears: Number(l.graceYears)
+    }));
 
   } catch (err) {
     console.error("Failed loading loans:", err);
@@ -549,6 +562,7 @@ async function loadLoans() {
     loans = [];
   }
 }
+
 
 /* ============================================================
    AMORTIZATION ENGINE HELPERS
