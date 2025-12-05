@@ -1574,16 +1574,26 @@ drawerBody.scrollTop = 0;
       poly.setAttribute('stroke-width', '2');
       svg.appendChild(poly);
 
-      months.forEach((m, i) => {
-        const x = pad + i * stepX;
-        const text = document.createElementNS(svgNS, 'text');
-        text.setAttribute('x', x);
-        text.setAttribute('y', h - pad + 14);
-        text.setAttribute('font-size', '11');
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('fill', '#475569');
-        text.textContent = m;
-        svg.appendChild(text);
+      // ---- Sparse X-Axis Labels (cleaned) ----
+      const labelCount = 6;
+      const skip = Math.max(1, Math.floor(months.length / labelCount));
+
+      for (let i = 0; i < months.length; i += skip) {
+      const x = pad + i * stepX;
+
+      const text = document.createElementNS(svgNS, 'text');
+      text.setAttribute('x', x);
+      text.setAttribute('y', h - pad + 14);
+      text.setAttribute('font-size', '11');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('fill', '#475569');
+
+      // show YYYY-MM
+      text.textContent = months[i];
+
+    svg.appendChild(text);
+  }
+
 
         const hit = document.createElementNS(svgNS, 'rect');
         hit.setAttribute('x', x - stepX / 2);
