@@ -490,12 +490,17 @@ function buildStaticLoans() {
 
 async function init() {
   if (USE_DYNAMIC_DATA) {
-    let apiLoaded = await loadLoans();  // array of loans
-allLoans = attachSchedules(apiLoaded);  // attaches cumSchedule + miniPts
+
+    // 1) loadLoans now returns an array of clean loan objects
+    const apiLoans = await loadLoans();
+
+    // 2) attachSchedules builds amort, cumSchedule, miniPts
+    allLoans = attachSchedules(apiLoans);
 
   } else {
     allLoans = buildStaticLoans();
   }
+
      /* ============================
        Render KPI tiles
        ============================ */
