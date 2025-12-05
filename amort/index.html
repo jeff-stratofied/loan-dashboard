@@ -383,6 +383,8 @@
   <script type="module">
     import { loadLoans, attachSchedules } from "../js/loanEngine.js";
 
+    let tpvSeriesData = [];   // <-- GLOBAL so all drawers can use it
+    
     let USE_DYNAMIC_DATA = false;   // stays false until Step 7
     let allLoans = [];              // unified variable replacing allLoans
     
@@ -526,7 +528,7 @@ async function init() {
     });
   
   // Now it is safe: allLoans exists
-  const tpvSeriesData = tpvSeries(allLoans);
+  tpvSeriesData = tpvSeries(allLoans);   // assign to global
     document.getElementById('tpvTile').textContent =
       `$${Math.round(tpvSeriesData[Math.min(CURRENT_MONTH - 1, tpvSeriesData.length - 1)].value).toLocaleString()}`;
 
@@ -1286,7 +1288,8 @@ function computeKPIs(list) {
       drawerPrimaryTitle.textContent = 'Monthly Income';
       drawerPrimary.textContent = `$${Math.round(kpis.monthlyIncome).toLocaleString()}`;
       drawerSecondaryTitle.textContent = 'Total Invested';
-      drawerSecondary.textContent = `$${kpis.total.toLocaleString()}`;
+      drawerSecondary.textContent =
+      `$${allLoans.reduce((s,l) => s + l.purchasePrice, 0).toLocaleString()}`;
 
       drawerAmortContainer.style.display = 'none';
       drawerExtra.innerHTML = '';
