@@ -314,7 +314,7 @@
         </div>
       </div>
 
-      <div class="current-date">Current Month: <strong id="currentMonthLabel">18</strong> (months since first purchase)</div>
+      <div class="current-date" id="currentDateLabel">Current Date: </div>
     </header>
 
     <section class="kpis" id="kpis"></section>
@@ -1569,7 +1569,18 @@ function computeKPIs(list) {
     });
 
 }
-  
+  // Set Current Date in header
+const currentDateEl = document.getElementById('currentDateLabel');
+if (currentDateEl) {
+  const today = new Date();
+  const formatted = today.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  currentDateEl.textContent = `Current Date: ${formatted}`;
+}
+
     init();   // The ONLY startup call
   </script>
 </body>
