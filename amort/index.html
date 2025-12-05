@@ -445,7 +445,7 @@
       const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
 
       let cumP = 0, cumI = 0, cumTotal = 0;
-      const cumSchedule = amort.schedule.map(r => {
+      const amort.schedule = amort.schedule.map(r => {
         cumP = +(cumP + r.principalPaid).toFixed(2);
         cumI = +(cumI + r.interest).toFixed(2);
         cumTotal = +(cumTotal + r.payment).toFixed(2);
@@ -453,10 +453,10 @@
       });
 
       // mini points downsample to max 24 for speed
-      const miniPts = cumSchedule.slice(0, Math.min(24, cumSchedule.length))
+      const miniPts = amort.schedule.slice(0, Math.min(24, amort.schedule.length))
         .map(s => ({ x: s.monthIndex, cumP: s.cumPrincipal, cumI: s.cumInterest }));
 
-      return { ...l, amort, cumSchedule, miniPts };
+      return { ...l, amort, amort.schedule, miniPts };
     });
 
     /* ============================
@@ -573,7 +573,7 @@
       // render mini sparkline
       const svg = tile.querySelector('svg.sparkline');
       const w = 170, h = 48, pad = 6;
-      const fullSched = loan.cumSchedule;
+      const fullSched = loan.amort.schedule;
       const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
       const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
 
@@ -713,7 +713,7 @@
       svg.setAttribute('width', '100%');
       svg.setAttribute('height', '100%');
 
-      const schedule = loan.cumSchedule;
+      const schedule = loan.amort.schedule;
       const balances = loan.amort.schedule.map(s => ({ x: s.monthIndex, y: s.balance }));
       const cumP = schedule.map(s => ({ x: s.monthIndex, y: s.cumPrincipal }));
       const cumI = schedule.map(s => ({ x: s.monthIndex, y: s.cumInterest }));
