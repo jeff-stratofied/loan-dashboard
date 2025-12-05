@@ -662,7 +662,40 @@ svg.innerHTML = `
       tooltip.style.display = 'block';
       tooltip.innerHTML =
       `M${p.monthIndex} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
-    });
+         // draw hover circles
+      const hoverG = svg.querySelector('g.mini-hover');
+      hoverG.innerHTML = '';
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const stepX = (w - pad * 2) / Math.max(1, fullSched.length - 1);
+      const iX = pad + idxNearest * stepX;
+
+      const valsP = pPoints.map(pp => pp.y);
+      const valsI = iPoints.map(pp => pp.y);
+      const minP = Math.min(...valsP), maxP = Math.max(...valsP), rangeP = Math.max(1, maxP - minP);
+      const minI = Math.min(...valsI), maxI = Math.max(...valsI), rangeI = Math.max(1, maxI - minI);
+
+      const cyP = pad + (h - pad * 2) - ((p.cumPrincipal - minP) / rangeP) * (h - pad * 2);
+      const cyI = pad + (h - pad * 2) - ((p.cumInterest - minI) / rangeI) * (h - pad * 2);
+
+      const cP = document.createElementNS(svgNS, 'circle');
+      cP.setAttribute('cx', iX); 
+      cP.setAttribute('cy', cyP); 
+      cP.setAttribute('r', 3.4); 
+      cP.setAttribute('fill', '#06b6d4');
+      cP.setAttribute('stroke', '#fff');
+      cP.setAttribute('stroke-width', '1');
+      hoverG.appendChild(cP);
+
+      const cI = document.createElementNS(svgNS, 'circle');
+      cI.setAttribute('cx', iX); 
+      cI.setAttribute('cy', cyI); 
+      cI.setAttribute('r', 3.4); 
+      cI.setAttribute('fill', '#a78bfa');
+      cI.setAttribute('stroke', '#fff');
+      cI.setAttribute('stroke-width', '1');
+      hoverG.appendChild(cI);
+    
+      });
 
       svg.addEventListener('mouseleave', () => {
         tooltip.style.display = 'none';
