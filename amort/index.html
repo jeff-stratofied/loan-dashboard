@@ -499,7 +499,20 @@ async function init() {
   } else {
     allLoans = buildStaticLoans();
   }
+     /* ============================
+       Render KPI tiles
+       ============================ */
+    const kpis = computeKPIs(allLoans);
+    
+    const kpisEl = document.getElementById('kpis');
+    kpisEl.innerHTML = `
+      <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$0</p></div>
+      <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${kpis.weightedRate.toFixed(2)}%</p></div>
+      <div class="kpi" data-kpi="payments"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
+      <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${allLoans.length}</p></div>
+    `;
 
+  
   // Now it is safe: allLoans exists
   const tpvSeriesData = tpvSeries(allLoans);
     document.getElementById('tpvTile').textContent =
@@ -637,9 +650,6 @@ function computeKPIs(list) {
   };
 }
 
-
-    const kpis = computeKPIs(allLoans);
-
     /* ============================
        Small helper — create SVG path from points
        ============================ */
@@ -661,17 +671,6 @@ function computeKPIs(list) {
 
       return d;
     }
-
-    /* ============================
-       Render KPI tiles
-       ============================ */
-    const kpisEl = document.getElementById('kpis');
-    kpisEl.innerHTML = `
-      <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$0</p></div>
-      <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${kpis.weightedRate.toFixed(2)}%</p></div>
-      <div class="kpi" data-kpi="payments"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
-      <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${allLoans.length}</p></div>
-    `;
 
     /* ============================
        TPV (Total Portfolio Value) series
