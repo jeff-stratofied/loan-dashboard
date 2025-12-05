@@ -361,7 +361,7 @@
           <table>
             <thead>
               <tr>
-                <th>Month</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th>
+                <th>Date</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th>
               </tr>
             </thead>
             <tbody id="amortBody"></tbody>
@@ -731,6 +731,16 @@ function getCurrentMonthForLoan(loan) {
   let months = monthsBetween(loan.purchaseDate);
   return Math.min(months, loan.amort.schedule.length);
 }
+// Convert purchaseDate + offset months → "Feb 15, 2025"
+function offsetDateByMonths(startDateStr, offset) {
+  const d = new Date(startDateStr + "T00:00:00");  // ensure no timezone shift
+  d.setMonth(d.getMonth() + offset);
+  return d.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
 
 
   
@@ -872,7 +882,7 @@ function computeKPIs(list) {
       loan.amort.schedule.forEach(r => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td style="text-align:left">${r.monthIndex}</td>
+          <td style="text-align:left">${offsetDateByMonths(loan.purchaseDate, r.monthIndex - 1)}</td>
           <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
