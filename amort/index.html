@@ -461,8 +461,12 @@
 });
 
       // mini points downsample to max 24 for speed
-      const miniPts = cumSchedule.slice(0, Math.min(24, cumSchedule.length))
-        .map(s => ({ x: s.monthIndex, cumP: s.cumPrincipal, cumI: s.cumInterest }));
+      const miniPts = cumSchedule
+        .slice(0, Math.min(24, cumSchedule.length))
+        .map(s => ({
+        x: s.monthIndex,
+        y: s.balance
+  }));
 
       return { ...l, amort, cumSchedule, miniPts };
     });
