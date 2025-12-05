@@ -565,12 +565,21 @@ async function init() {
 
       grid.appendChild(tile);
 
-      // render mini sparkline
+       // render mini sparkline
       const svg = tile.querySelector('svg.sparkline');
       const w = 170, h = 48, pad = 6;
-      const fullSched = loan.cumSchedule;
-      const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
-      const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
+
+      // FIX: use dynamic amortization schedule instead of cumSchedule
+      const fullSched = loan.amort?.schedule || [];
+
+      if (!fullSched.length) {
+      svg.innerHTML = "";   // nothing to plot
+      return;
+    }
+
+const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
+const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
+
 
       const pathP = buildPathFromPoints(pPoints, w, h, pad);
       const pathI = buildPathFromPoints(iPoints, w, h, pad);
@@ -590,16 +599,27 @@ async function init() {
 
       // Hover tooltip for mini chart
       svg.addEventListener('mousemove', ev => {
-        const rect = svg.getBoundingClientRect();
-        const relativeX = ev.clientX - rect.left;
-        const frac = relativeX / rect.width;
-        const idxNearest = Math.round(frac * (fullSched.length - 1));
-        const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
+      const rect = svg.getBoundingClientRect();
+      const relativeX = ev.clientX - rect.left;
+      const frac = relativeX / rect.width;
 
-        tooltip.style.left = (ev.clientX) + 'px';
-        tooltip.style.top = (ev.clientY - 10) + 'px';
-        tooltip.style.display = 'block';
-        tooltip.innerHTML = `M${p.monthIndex} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
+      // ---------------------------------
+      // SAFETY CHECK — INSERT HERE
+      // ---------------------------------
+      if (!fullSched.length) return;
+
+      const idxNearest = Math.round(frac * (fullSched.length - 1));
+      const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
+      if (!p) return;
+      // ---------------------------------
+
+      tooltip.style.left = (ev.clientX) + 'px';
+      tooltip.style.top = (ev.clientY - 10) + 'px';
+      tooltip.style.display = 'block';
+      tooltip.innerHTML =
+      `M${p.monthIndex} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
+    });
+
 
         // draw hover circles
         const hoverG = svg.querySelector('g.mini-hover');
@@ -798,11 +818,20 @@ function computeKPIs(list) {
       svg.setAttribute('width', '100%');
       svg.setAttribute('height', '100%');
 
-      const schedule = loan.cumSchedule;
-      const balances = loan.amort.schedule.map(s => ({ x: s.monthIndex, y: s.balance }));
-      const cumP = schedule.map(s => ({ x: s.monthIndex, y: s.cumPrincipal }));
-      const cumI = schedule.map(s => ({ x: s.monthIndex, y: s.cumInterest }));
-      const cumT = schedule.map(s => ({ x: s.monthIndex, y: s.cumTotal }));
+      // The dynamic engine stores everything inside loan.amort.schedule
+    const schedule = loan.amort?.schedule || [];
+
+    if (!schedule.length) {
+    drawerChartArea.innerHTML = "<p>No schedule data available</p>";
+    return;
+    }
+
+      // Build series
+      const balances = schedule.map(s => ({ x: s.monthIndex, y: s.balance }));
+      const cumP     = schedule.map(s => ({ x: s.monthIndex, y: s.cumPrincipal }));
+      const cumI     = schedule.map(s => ({ x: s.monthIndex, y: s.cumInterest }));
+      const cumT     = schedule.map(s => ({ x: s.monthIndex, y: s.cumTotal }));
+
 
       // global Y range for consistent scaling
       const allYs = [
