@@ -1327,68 +1327,70 @@ drawerBody.scrollTop = 0;
 
       drawerChartArea.appendChild(svg);
 
-      // TPV snapshot table
-      const curValRounded = Math.round(tpvSeriesData[curIdx].value);
-drawerExtra.innerHTML = `
-  <div style="margin-top:10px">
-    <strong class="small">TPV Snapshot</strong>
-    <div style="max-height:160px;overflow:auto;margin-top:6px;
-                border-radius:6px;padding:6px;
-                border:1px solid var(--border);background:var(--card)">
-      <table style="width:100%;font-size:13px">
-        <thead>
-          <tr><th>Date</th><th style="text-align:right">TPV</th></tr>
-        </thead>
-        <tbody>
-          ${(() => {
-            // start date = earliest purchase date
-            const earliest = allLoans.reduce(
-              (min, l) => Math.min(min, new Date(l.purchaseDate)),
-              Infinity
-            );
-            const earliestDate = new Date(earliest);
+      <strong class="small">TPV Snapshot</strong>
+<div style="max-height:160px;overflow:auto;margin-top:6px;
+            border-radius:6px;padding:6px;
+            border:1px solid var(--border);background:var(--card)">
+  <table style="width:100%;font-size:13px">
+    <thead>
+      <tr><th>Date</th><th style="text-align:right">TPV</th></tr>
+    </thead>
+    <tbody>
+      ${(() => {
+        // 1️⃣ Portfolio Started (earliest purchase date)
+        const earliest = allLoans.reduce(
+          (min, l) => Math.min(min, new Date(l.purchaseDate + "T00:00:00").getTime()),
+          Infinity
+        );
+        const earliestDate = new Date(earliest);
+        const startTPV = Math.round(tpvSeriesData[0].value);
 
-            // current date = today
-            const today = new Date();
-            const curIdx = getCurrentMonthIndex(allLoans) - 1;
-            const curTPV = Math.round(tpvSeriesData[curIdx].value);
+        // 2️⃣ Current TPV (today)
+        const today = new Date();
+        // compute how many months have passed since portfolio start
+        const monthsSinceStart =
+          (today.getFullYear() - earliestDate.getFullYear()) * 12 +
+          (today.getMonth() - earliestDate.getMonth());
+        const currentIndex = Math.max(
+          0,
+          Math.min(monthsSinceStart, tpvSeriesData.length - 1)
+        );
+        const currentTPV = Math.round(tpvSeriesData[currentIndex].value);
 
-            // projected end date = latest maturity date
-            const latestMaturity = allLoans.reduce((max, l) => {
-              const last = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
-              const d = new Date(l.purchaseDate + "T00:00:00");
-              d.setMonth(d.getMonth() + last - 1);
-              return Math.max(max, d.getTime());
-            }, 0);
+        // 3️⃣ Projected End Date (max maturity among all loans)
+        const projectedEndTimestamp = allLoans.reduce((max, loan) => {
+          const firstDate = new Date(loan.purchaseDate + "T00:00:00");
+          const lastMonthIndex =
+            loan.amort.schedule[loan.amort.schedule.length - 1].monthIndex;
+          const maturityDate = new Date(firstDate);
+          maturityDate.setMonth(maturityDate.getMonth() + (lastMonthIndex - 1));
+          return Math.max(max, maturityDate.getTime());
+        }, 0);
+        const projectedEndDate = new Date(projectedEndTimestamp);
+        const projectedTPV = Math.round(
+          tpvSeriesData[tpvSeriesData.length - 1].value
+        );
 
-            const projectedDate = new Date(latestMaturity);
-            const endTPV = Math.round(
-              tpvSeriesData[tpvSeriesData.length - 1].value
-            );
+        return `
+          <tr>
+            <td style="text-align:left">Portfolio Started<br><span style="color:var(--muted)">${earliestDate.toLocaleDateString()}</span></td>
+            <td style="text-align:right">$${startTPV.toLocaleString()}</td>
+          </tr>
 
-            return `
-              <tr>
-                <td style="text-align:left">${earliestDate.toLocaleDateString()}</td>
-                <td style="text-align:right">$${Math.round(
-                  tpvSeriesData[0].value
-                ).toLocaleString()}</td>
-              </tr>
+          <tr>
+            <td style="text-align:left">Current TPV<br><span style="color:var(--muted)">${today.toLocaleDateString()}</span></td>
+            <td style="text-align:right">$${currentTPV.toLocaleString()}</td>
+          </tr>
 
-              <tr>
-                <td style="text-align:left">${today.toLocaleDateString()} (Today)</td>
-                <td style="text-align:right">$${curTPV.toLocaleString()}</td>
-              </tr>
-
-              <tr>
-                <td style="text-align:left">Projected (${projectedDate.toLocaleDateString()})</td>
-                <td style="text-align:right">$${endTPV.toLocaleString()}</td>
-              </tr>
-            `;
-          })()}
-        </tbody>
-      </table>
-    </div>
-  </div>
+          <tr>
+            <td style="text-align:left">Projected End Date<br><span style="color:var(--muted)">${projectedEndDate.toLocaleDateString()}</span></td>
+            <td style="text-align:right">$${projectedTPV.toLocaleString()}</td>
+          </tr>
+        `;
+      })()}
+    </tbody>
+  </table>
+</div>
 `;
 
 
