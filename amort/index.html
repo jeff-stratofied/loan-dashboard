@@ -489,40 +489,46 @@ function buildStaticLoans() {
 }
 
 async function init() {
-  if (USE_DYNAMIC_DATA) {
-    let apiLoaded = await loadLoans();  // { loans, sha }
-    let apiLoans = apiLoaded;   // already the array
-    apiLoans = attachSchedules(apiLoans);
+if (USE_DYNAMIC_DATA) {
+  let apiLoaded = await loadLoans();  // { loans, sha }
+  let apiLoans = apiLoaded;           // already the array
+  apiLoans = attachSchedules(apiLoans);
 
-    allLoans = apiLoans.map(l => {
-  // build cumulative schedule exactly like static mode:
-  let cumP = 0, cumI = 0, cumT = 0;
+  allLoans = apiLoans.map(l => {
+    // ADD cumulative values directly into amort.schedule
+    let cumP = 0, cumI = 0, cumT = 0;
 
-  const cumSchedule = l.amort.schedule.map(r => {
-    cumP += r.principalPaid;
-    cumI += r.interest;
-    cumT += r.payment;
+    const schedule = l.amort.schedule.map(r => {
+      cumP += r.principalPaid;
+      cumI += r.interest;
+      cumT += r.payment;
 
+      return {
+        ...r,
+        cumPrincipal: +(cumP.toFixed(2)),
+        cumInterest: +(cumI.toFixed(2)),
+        cumTotal: +(cumT.toFixed(2))
+      };
+    });
+
+    // build mini sparkline points
+    const miniPts = schedule
+      .slice(0, Math.min(24, schedule.length))
+      .map(s => ({
+        x: s.monthIndex,
+        y: s.balance
+      }));
+
+    // IMPORTANT: overwrite amort.schedule so drawer charts work
     return {
-      ...r,
-      cumPrincipal: +(cumP.toFixed(2)),
-      cumInterest: +(cumI.toFixed(2)),
-      cumTotal: +(cumT.toFixed(2))
+      ...l,
+      amort: { ...l.amort, schedule },
+      cumSchedule: schedule,
+      miniPts
     };
   });
+}
 
-  // mini chart points (first 24 months)
-  const miniPts = cumSchedule.slice(0, 24).map(s => ({
-    x: s.monthIndex,
-    y: s.balance
-  }));
-
-  return {
-    ...l,
-    cumSchedule,
-    miniPts
-  };
-});
 
 
   } else {
