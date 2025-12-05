@@ -488,20 +488,133 @@ function buildStaticLoans() {
   });
 }
 
+function renderKPIs(list) {
+  const k = computeKPIs(list);
+
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi" data-kpi="tpv">
+      <h3>Total Portfolio Value</h3>
+      <p id="tpvTile">$${k.totalPrincipal.toLocaleString()}</p>
+    </div>
+    <div class="kpi" data-kpi="rates">
+      <h3>Avg Rate</h3>
+      <p>${k.weightedRate.toFixed(2)}%</p>
+    </div>
+    <div class="kpi" data-kpi="payments">
+      <h3>Monthly Income</h3>
+      <p>$${k.monthlyIncome.toFixed(2)}</p>
+    </div>
+    <div class="kpi" data-kpi="distribution">
+      <h3>Total Loans</h3>
+      <p>${list.length}</p>
+    </div>
+  `;
+}
+function renderLoanTiles(list) {
+  const grid = document.getElementById('loanGrid');
+  grid.innerHTML = '';
+  const tooltip = document.getElementById('tooltip');
+
+  list.forEach((loan, idx) => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.setAttribute('tabindex', '0');
+
+    tile.innerHTML = `
+      <div class="tile-left">
+        <div class="loan-name">Loan ${loan.loanName}</div>
+        <div class="loan-sub">$${loan.purchasePrice.toLocaleString()}</div>
+        <div class="loan-meta"><div>Term: ${loan.termYears}y</div><div>Grace: ${loan.graceYears}y</div></div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="mini-label">Rate ${(loan.nominalRate * 100).toFixed(2)}%</div>
+        <svg class="sparkline" viewBox="0 0 170 48" preserveAspectRatio="none" data-idx="${idx}" aria-hidden="true"></svg>
+      </div>
+    `;
+
+    tile.addEventListener('click', e => {
+      e.stopPropagation();
+      openDrawerForLoan(loan);
+    });
+
+    tile.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openDrawerForLoan(loan);
+      }
+    });
+
+    grid.appendChild(tile);
+
+    // ---- sparkline render ----
+    const svg = tile.querySelector('svg.sparkline');
+    const w = 170, h = 48, pad = 6;
+    const fullSched = loan.cumSchedule;
+
+    const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
+    const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
+
+    const pathP = buildPathFromPoints(pPoints, w, h, pad);
+    const pathI = buildPathFromPoints(iPoints, w, h, pad);
+
+    const maxMonth = Math.max(1, fullSched.length);
+    const xForMonth = month => {
+      const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
+      return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
+    };
+
+    svg.innerHTML = `
+      <path d="${pathI}" stroke="#a78bfa" stroke-width="1.6" fill="none"></path>
+      <path d="${pathP}" stroke="#06b6d4" stroke-width="1.6" fill="none"></path>
+      <g class="mini-hover"></g>
+      <line class="current-line"
+            x1="${xForMonth(CURRENT_MONTH)}"
+            y1="2"
+            x2="${xForMonth(CURRENT_MONTH)}"
+            y2="${h - 2}"
+            stroke="#111827"
+            stroke-opacity="0.6"
+            stroke-dasharray="3 3" />
+    `;
+  });
+}
+
+}
+function setupKPIInteractions() {
+  document.querySelectorAll('.kpi').forEach(k => {
+    k.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const key = k.getAttribute('data-kpi');
+      if (key === 'distribution') renderDistributionDrawer();
+      if (key === 'tpv') renderTPVDrawer();
+      if (key === 'rates') renderRatesDrawer();
+      if (key === 'payments') renderPaymentsDrawer();
+    });
+  });
+}
+    
 async function init() {
   if (USE_DYNAMIC_DATA) {
 
-    const apiLoans = await loadLoans();   // <-- array of clean loan objects
-    allLoans = attachSchedules(apiLoans); // <-- attaches amortSchedule, cumSchedule, miniPts
+    const apiLoans = await loadLoans();
+    allLoans = attachSchedules(apiLoans);
 
   } else {
 
-    allLoans = buildStaticLoans();        // static version (already includes schedules)
+    allLoans = buildStaticLoans();
   }
 
+  // ---------------------------------------------
+  // Now it is safe to use allLoans
+  // ---------------------------------------------
+  cachedKPIs = computeKPIs(allLoans);
+  tpvSeriesData = tpvSeries(allLoans);
 
+  renderKPIs(allLoans);
+  renderLoanTiles(allLoans);
+  setupKPIInteractions();
 }
-
 
 /* ============================
    KPI Calculations
