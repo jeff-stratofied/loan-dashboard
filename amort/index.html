@@ -539,25 +539,14 @@ async function loadLoans() {
   try {
     const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
     if (!res.ok) throw new Error("Bad API response");
-    loans = await res.json();
 
-    // Normalize field names into our JS model
-    loans = loans.map(l => ({
-      id: l.ID,
-      loanName: l["Loan Name"],
-      school: l["School"],
-      loanStartDate: l["Loan Start Date"],
-      purchaseDate: l["Purchase Date"],
-      origLoanAmount: Number(l["Orig Loan Amt"]),
-      purchasePrice: Number(l["Purchase Price"]),
-      rate: Number(l["Rate"]),
-      termYears: Number(l["Term (yrs)"]),
-      graceYears: Number(l["Grace (yrs)"])
-    }));
+    const raw = await res.json();
+    loans = raw.loans || [];  // <-- IMPORTANT FIX
 
   } catch (err) {
     console.error("Failed loading loans:", err);
     alert("Error loading loans from API.");
+    loans = [];
   }
 }
 
