@@ -640,37 +640,7 @@ async function init() {
   };
 }
 
-/* ============================
-   KPI Calculations
-============================ */
-function computeKPIs(list) {
 
-  // Total Portfolio Value (purchase price sum)
-  const totalPrincipal = list.reduce((sum, loan) => sum + loan.purchasePrice, 0);
-
-  // Weighted Average Rate
-  const weightedRate =
-    totalPrincipal > 0
-      ? list.reduce((sum, loan) => sum + loan.nominalRate * loan.purchasePrice, 0) / totalPrincipal
-      : 0;
-
-  // Expected Monthly Income for CURRENT_MONTH
-  const monthIdx = CURRENT_MONTH - 1;
-  const monthlyIncome = list.reduce((sum, loan) => {
-    const pay = loan.amort.schedule[monthIdx]?.payment || 0;
-    return sum + pay;
-  }, 0);
-
-  // Total loan count
-  const loanCount = list.length;
-
-  return {
-    totalPrincipal,
-    weightedRate,
-    monthlyIncome,
-    loanCount
-  };
-}
 
     const kpis = computeKPIs(allLoans);
 
