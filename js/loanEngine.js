@@ -12,17 +12,16 @@ import { loadLoans as fetchLoans } from "./loadLoans.js";
 // CORRECTED loadLoans()
 // ===============================
 export async function loadLoans() {
-  const raw = await fetchLoans();  
-
   // raw = { loans:[...], sha:"..." }
-  const items = Array.isArray(raw)
-    ? raw                // fallback if old pages expected array
-    : Array.isArray(raw.loans)
-      ? raw.loans
-      : [];
+  const raw = await fetchLoans();
+
+  // Extract the loan array correctly
+  const items = Array.isArray(raw?.loans)
+    ? raw.loans
+    : [];
 
   return items.map((l, idx) => {
-    const principal  = Number(l.principal ?? l.origLoanAmt ?? 0);
+    const principal  = Number(l.principal ?? l.origLoanAmt ?? l.purchasePrice ?? 0);
     const rate       = Number(l.rate ?? l.nominalRate ?? 0);
     const termYears  = Number(l.termYears ?? 0);
     const graceYears = Number(l.graceYears ?? 0);
@@ -47,6 +46,7 @@ export async function loadLoans() {
     };
   });
 }
+
 
 
 export function addMonths(date, n) {
