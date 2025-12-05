@@ -500,10 +500,6 @@ async function init() {
     allLoans = buildStaticLoans();
   }
 
-  populateTiles(allLoans);
-  updateKPIs(allLoans);
-  setupInteractions(allLoans);
-
   // Now it is safe: allLoans exists
   const tpvSeriesData = tpvSeries(allLoans);
     document.getElementById('tpvTile').textContent =
