@@ -2,38 +2,38 @@
 
 const API_URL = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
 
-// ----------------------------------------------------
-// GET loans  (returns { loans, sha })
-// ----------------------------------------------------
-// ----------------------------------------------------
-// GET loans  (returns raw { loans: [...], sha })
-// ----------------------------------------------------
+// ===============================
+// loadLoans.js  (API fetch only)
+// ===============================
+
+// Fetch loans from Cloudflare Worker
 export async function loadLoans() {
+  const url = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
+
   try {
-    const res = await fetch(API_URL, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" }
-    });
+    const res = await fetch(url);
 
     if (!res.ok) {
-      const txt = await res.text();
-      throw new Error(`GET error ${res.status}: ${txt}`);
+      console.error("Fetch failed:", res.status, res.statusText);
+      return { loans: [], sha: null };
     }
 
     const data = await res.json();
 
-    // Always return { loans: [...], sha }
-    if (!Array.isArray(data.loans)) {
-      data.loans = [];
+    // Worker returns: { loans:[...], sha:"..." }
+    if (Array.isArray(data.loans)) {
+      return data;        // <-- CORRECT
     }
 
-    return data;
+    console.warn("Unexpected API shape:", data);
+    return { loans: [], sha: null };
 
   } catch (err) {
-    console.error("Error loading loans:", err);
+    console.error("API error:", err);
     return { loans: [], sha: null };
   }
 }
+
 
 
 
