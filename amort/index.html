@@ -612,13 +612,65 @@ async function init() {
        KPIs
        ============================ */
     function computeKPIs(list) {
-      const total = list.reduce((s, l) => s + l.purchasePrice, 0);
-      const weightedRate = list.reduce((s, l) => s + l.nominalRate * l.purchasePrice, 0) / Math.max(1, total);
-      const weightedDuration = list.reduce((s, l) => s + (l.termYears * 12) * l.purchasePrice, 0) / Math.max(1, total);
-      // monthly income ≈ sum of first scheduled payment across loans
-      const monthlyIncome = list.reduce((s, l) => s + (l.amort.schedule.length ? l.amort.schedule[0].payment : 0), 0);
-      return { total, weightedRate: weightedRate * 100, weightedDuration, monthlyIncome };
-    }
+  // Total Portfolio Value (purchase price sum)
+  const totalPrincipal = list.reduce((sum, loan) => sum + loan.purchasePrice, 0);
+
+  // Weighted Average Rate
+  const weightedRate =
+    totalPrincipal > 0
+      ? list.reduce((sum, loan) => sum + loan.nominalRate * loan.purchasePrice, 0) / totalPrincipal
+      : 0;
+
+  // Expected Monthly Income for CURRENT_MONTH
+  const monthIdx = CURRENT_MONTH - 1;
+  const monthlyIncome = list.reduce((sum, loan) => {
+    // If the schedule doesn't extend this far → contribute 0
+    const pay = loan.amort.schedule[monthIdx]?.payment || 0;
+    return sum + pay;
+  }, 0);
+
+  // Total loan count
+  const loanCount = list.length;
+
+  return {
+    totalPrincipal,
+    weightedRate,
+    monthlyIncome,
+    loanCount
+  };
+}
+
+/* ============================
+   KPI Calculations
+============================ */
+function computeKPIs(list) {
+
+  // Total Portfolio Value (purchase price sum)
+  const totalPrincipal = list.reduce((sum, loan) => sum + loan.purchasePrice, 0);
+
+  // Weighted Average Rate
+  const weightedRate =
+    totalPrincipal > 0
+      ? list.reduce((sum, loan) => sum + loan.nominalRate * loan.purchasePrice, 0) / totalPrincipal
+      : 0;
+
+  // Expected Monthly Income for CURRENT_MONTH
+  const monthIdx = CURRENT_MONTH - 1;
+  const monthlyIncome = list.reduce((sum, loan) => {
+    const pay = loan.amort.schedule[monthIdx]?.payment || 0;
+    return sum + pay;
+  }, 0);
+
+  // Total loan count
+  const loanCount = list.length;
+
+  return {
+    totalPrincipal,
+    weightedRate,
+    monthlyIncome,
+    loanCount
+  };
+}
 
     const kpis = computeKPIs(allLoans);
 
