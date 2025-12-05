@@ -494,11 +494,8 @@ async function init() {
     let apiLoans = apiLoaded;   // already the array
     apiLoans = attachSchedules(apiLoans);
 
-    allLoans = apiLoans.map(l => ({
-      ...l,
-      cumSchedule: [],
-      miniPts: []
-    }));
+    // KEEP the schedules built by attachSchedules()
+    allLoans = apiLoans; 
 
   } else {
     allLoans = buildStaticLoans();
