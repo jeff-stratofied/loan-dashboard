@@ -491,15 +491,19 @@ function buildStaticLoans() {
 async function init() {
   if (USE_DYNAMIC_DATA) {
 
-    // 1) loadLoans now returns an array of clean loan objects
-    const apiLoans = await loadLoans();
-
-    // 2) attachSchedules builds amort, cumSchedule, miniPts
-    allLoans = attachSchedules(apiLoans);
+    const apiLoans = await loadLoans();   // <-- array of clean loan objects
+    allLoans = attachSchedules(apiLoans); // <-- attaches amortSchedule, cumSchedule, miniPts
 
   } else {
-    allLoans = buildStaticLoans();
+
+    allLoans = buildStaticLoans();        // static version (already includes schedules)
   }
+
+  // Now it is safe to use allLoans
+  renderKPIs(allLoans);
+  renderLoanTiles(allLoans);
+  setupKPIInteractions();
+}
 
      /* ============================
        Render KPI tiles
