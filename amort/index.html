@@ -1030,63 +1030,76 @@ function computeKPIs(list) {
       const circles = document.createElementNS(svgNS, 'g');
       svg.appendChild(circles);
 
-      svg.addEventListener('mousemove', (ev) => {
-        const rect = svg.getBoundingClientRect();
-        const x = ev.clientX - rect.left;
-        let idx = Math.round((x - pad) / stepX);
-        idx = Math.max(0, Math.min(schedule.length - 1, idx));
-        const px = pad + idx * stepX;
+// Drawer hover interactions
+svg.addEventListener('mousemove', (ev) => {
+  const rect = svg.getBoundingClientRect();
+  const x = ev.clientX - rect.left;
 
-        vLine.setAttribute('x1', px); vLine.setAttribute('x2', px);
-        vLine.setAttribute('y1', pad); vLine.setAttribute('y2', h - pad);
-        circles.innerHTML = '';
+  let idx = Math.round((x - pad) / stepX);
+  idx = Math.max(0, Math.min(schedule.length - 1, idx));
 
-        const pointVals = {
-          month: schedule[idx].monthIndex,
-          balance: balances[idx].y,
-          cumP: cumP[idx].y,
-          cumI: cumI[idx].y,
-          cumT: cumT[idx].y
-        };
+  const px = pad + idx * stepX;
+  const row = schedule[idx];
 
-        const series = [
-          { val: pointVals.balance, color: '#0f172a' },
-          { val: pointVals.cumP, color: '#06b6d4' },
-          { val: pointVals.cumI, color: '#a78bfa' },
-          { val: pointVals.cumT, color: '#fb7185' }
-        ];
+  // vertical hover line
+  vLine.setAttribute('x1', px);
+  vLine.setAttribute('x2', px);
+  vLine.setAttribute('y1', pad);
+  vLine.setAttribute('y2', h - pad);
 
-        series.forEach(s => {
-          const [cx, cy] = toXY({ y: s.val }, idx);
-          const c = document.createElementNS(svgNS, 'circle');
-          c.setAttribute('cx', cx);
-          c.setAttribute('cy', cy);
-          c.setAttribute('r', 4);
-          c.setAttribute('fill', s.color);
-          c.setAttribute('stroke', '#fff');
-          c.setAttribute('stroke-width', '1.2');
-          circles.appendChild(c);
-        });
+  circles.innerHTML = '';
 
-        tooltip.style.display = 'block';
-        tooltip.style.left = (rect.left + px) + 'px';
-        tooltip.style.top = (rect.top + 16) + 'px';
-        const dateLabel = chartDateLabel(loan.purchaseDate, p.monthIndex);
-        tooltip.innerHTML =
-        `${dateLabel} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
+  // 4 series: Balance, Cum P, Cum I, Total
+  const series = [
+    { val: balances[idx].y, color: '#0f172a' },
+    { val: cumP[idx].y,     color: '#06b6d4' },
+    { val: cumI[idx].y,     color: '#a78bfa' },
+    { val: cumT[idx].y,     color: '#fb7185' }
+  ];
 
-      svg.addEventListener('mouseleave', () => {
-        vLine.setAttribute('x1', 0); vLine.setAttribute('x2', 0);
-        circles.innerHTML = '';
-        tooltip.style.display = 'none';
-      });
+  // draw hover dots
+  series.forEach(s => {
+    const [cx, cy] = toXY({ y: s.val }, idx);
+    const dot = document.createElementNS(svgNS, 'circle');
+    dot.setAttribute('cx', cx);
+    dot.setAttribute('cy', cy);
+    dot.setAttribute('r', 4);
+    dot.setAttribute('fill', s.color);
+    dot.setAttribute('stroke', '#fff');
+    dot.setAttribute('stroke-width', '1.2');
+    circles.appendChild(dot);
+  });
 
-      drawerChartArea.appendChild(svg);
+  // Calendar date label
+  const dateLabel = chartDateLabel(loan.purchaseDate, row.monthIndex);
 
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-      drawerBody.scrollTop = 0;
-    });
+  // Tooltip
+  tooltip.style.display = 'block';
+  tooltip.style.left = ev.clientX + 'px';
+  tooltip.style.top = (ev.clientY - 10) + 'px';
+  tooltip.innerHTML =
+    `${dateLabel}<br>
+     Balance $${row.balance.toLocaleString()}<br>
+     Principal $${row.cumPrincipal.toLocaleString()}<br>
+     Interest $${row.cumInterest.toLocaleString()}`;
+}); // <-- closes mousemove listener
+
+// Hide hover state on leave
+svg.addEventListener('mouseleave', () => {
+  vLine.setAttribute('y1', 0);
+  vLine.setAttribute('y2', 0);
+  circles.innerHTML = '';
+  tooltip.style.display = 'none';
+}); // <-- closes mouseleave listener
+
+// These lines stay at the end of the drawer-opening function
+drawerChartArea.appendChild(svg);
+drawer.classList.add('open');
+drawer.setAttribute('aria-hidden', 'false');
+drawerBody.scrollTop = 0;
+
+} // <-- THIS closes openDrawerForLoan(loan) — required
+
 
     /* ============================
        KPI drawers: Distribution, TPV, Rates, Payments
