@@ -387,6 +387,7 @@
     
     let USE_DYNAMIC_DATA = false;   // stays false until Step 7
     let allLoans = [];              // unified variable replacing allLoans
+    let cachedKPIs = null;
     
     /* ============================
        Settings & Current Month
@@ -504,7 +505,8 @@ async function init() {
      /* ============================
        Render KPI tiles
        ============================ */
-    const kpis = computeKPIs(allLoans);
+    cachedKPIs = computeKPIs(allLoans);
+    const kpis = cachedKPIs;;
     
     const kpisEl = document.getElementById('kpis');
     kpisEl.innerHTML = `
@@ -1188,7 +1190,7 @@ function computeKPIs(list) {
       drawerTitle.textContent = 'Rates Distribution';
       drawerSub.textContent = 'Histogram of loan nominal rates';
       drawerPrimaryTitle.textContent = 'Avg Rate';
-      drawerPrimary.textContent = `${kpis.weightedRate.toFixed(2)}%`;
+      drawerPrimary.textContent = `${cachedKPIs.weightedRate.toFixed(2)}%`;
       drawerSecondaryTitle.textContent = '';
       drawerSecondary.textContent = '';
 
@@ -1286,7 +1288,7 @@ function computeKPIs(list) {
       drawerTitle.textContent = 'Total Expected Payments (monthly)';
       drawerSub.textContent = 'Sum of scheduled payments across loans';
       drawerPrimaryTitle.textContent = 'Monthly Income';
-      drawerPrimary.textContent = `$${Math.round(kpis.monthlyIncome).toLocaleString()}`;
+      drawerPrimary.textContent = `$${Math.round(cachedKPIs.monthlyIncome).toLocaleString()}`;
       drawerSecondaryTitle.textContent = 'Total Invested';
       drawerSecondary.textContent =
       `$${allLoans.reduce((s,l) => s + l.purchasePrice, 0).toLocaleString()}`;
