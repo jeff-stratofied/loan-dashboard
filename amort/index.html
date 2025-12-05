@@ -1688,7 +1688,7 @@ drawerBody.scrollTop = 0;
       }
     });
 
-    /* ============================
+      /* ============================
        Theme toggle (matches ROI)
        ============================ */
     const themeToggleBtn = document.getElementById('themeToggle');
@@ -1704,32 +1704,46 @@ drawerBody.scrollTop = 0;
       try { localStorage.setItem('amortTheme', mode); } catch (e) {}
     }
 
-    const stored = (() => { try { return localStorage.getItem('amortTheme'); } catch (e) { return null; } })();
-    if (stored === 'dark' || (!stored && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    const stored = (() => {
+      try {
+        return localStorage.getItem('amortTheme');
+      } catch (e) {
+        return null;
+      }
+    })();
+
+    if (
+      stored === 'dark' ||
+      (!stored &&
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
       setTheme('dark');
     } else {
       setTheme('light');
     }
 
     themeToggleBtn.addEventListener('click', () => {
-      const current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+      const current =
+        root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
 
-}
-  // Set Current Date in header
-const currentDateEl = document.getElementById('currentDateLabel');
-if (currentDateEl) {
-  const today = new Date();
-  const formatted = today.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  currentDateEl.textContent = `Current Date: ${formatted}`;
-}
+    // Set Current Date in header
+    const currentDateEl = document.getElementById('currentDateLabel');
+    if (currentDateEl) {
+      const today = new Date();
+      const formatted = today.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      currentDateEl.textContent = `Current Date: ${formatted}`;
+    }
+  } // <-- end of async function init()
 
-    init();   // The ONLY startup call
+  init();   // The ONLY startup call
+
   </script>
 </body>
 </html>
