@@ -605,13 +605,11 @@ async function init() {
 }
 
 
+/* ============================
+   KPI Calculations
+============================ */
+function computeKPIs(list) {
 
-
-
-    /* ============================
-       KPIs
-       ============================ */
-    function computeKPIs(list) {
   // Total Portfolio Value (purchase price sum)
   const totalPrincipal = list.reduce((sum, loan) => sum + loan.purchasePrice, 0);
 
@@ -624,7 +622,6 @@ async function init() {
   // Expected Monthly Income for CURRENT_MONTH
   const monthIdx = CURRENT_MONTH - 1;
   const monthlyIncome = list.reduce((sum, loan) => {
-    // If the schedule doesn't extend this far → contribute 0
     const pay = loan.amort.schedule[monthIdx]?.payment || 0;
     return sum + pay;
   }, 0);
@@ -639,7 +636,6 @@ async function init() {
     loanCount
   };
 }
-
 
 
     const kpis = computeKPIs(allLoans);
