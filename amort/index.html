@@ -494,11 +494,36 @@ async function init() {
     let apiLoans = apiLoaded;   // already the array
     apiLoans = attachSchedules(apiLoans);
 
-    allLoans = apiLoans.map(l => ({
-      ...l,
-      cumSchedule: [],
-      miniPts: []
-    }));
+    allLoans = apiLoans.map(l => {
+  // build cumulative schedule exactly like static mode:
+  let cumP = 0, cumI = 0, cumT = 0;
+
+  const cumSchedule = l.amort.schedule.map(r => {
+    cumP += r.principalPaid;
+    cumI += r.interest;
+    cumT += r.payment;
+
+    return {
+      ...r,
+      cumPrincipal: +(cumP.toFixed(2)),
+      cumInterest: +(cumI.toFixed(2)),
+      cumTotal: +(cumT.toFixed(2))
+    };
+  });
+
+  // mini chart points (first 24 months)
+  const miniPts = cumSchedule.slice(0, 24).map(s => ({
+    x: s.monthIndex,
+    y: s.balance
+  }));
+
+  return {
+    ...l,
+    cumSchedule,
+    miniPts
+  };
+});
+
 
   } else {
     allLoans = buildStaticLoans();
