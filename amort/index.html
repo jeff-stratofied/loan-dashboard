@@ -468,7 +468,14 @@
         y: s.balance
   }));
 
-      return { ...l, amort, cumSchedule, miniPts };
+      return {
+        ...l,
+        loanName: "Loan " + l.id,
+        loanStartDate: l.purchaseDate,
+        amort,
+        cumSchedule,
+        miniPts
+      };
     });
 
     /* ============================
@@ -565,7 +572,7 @@
 
       tile.innerHTML = `
         <div class="tile-left">
-          <div class="loan-name">Loan ${loan.id}</div>
+          <div class="loan-name">Loan ${loan.loanName}</div>
           <div class="loan-sub">$${loan.purchasePrice.toLocaleString()}</div>
           <div class="loan-meta"><div>Term: ${loan.termYears}y</div><div>Grace: ${loan.graceYears}y</div></div>
         </div>
@@ -686,7 +693,7 @@
       currentMode = 'loan';
       currentLoan = loan;
 
-      drawerTitle.textContent = `Loan ${loan.id}`;
+      drawerTitle.textContent = `Loan ${loan.loanName}`;
       drawerSub.textContent = `Purchased: ${loan.purchaseDate}`;
       drawerPrimaryTitle.textContent = 'Purchase Price';
       drawerSecondaryTitle.textContent = 'Rate';
