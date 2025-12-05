@@ -17,15 +17,21 @@ export async function loadLoans() {
       throw new Error(`GET error ${res.status}: ${txt}`);
     }
 
-    // Worker returns shape:
-    // { loans: [...], sha: "xxxx" }
-    return await res.json();
+    const data = await res.json();
+
+    // SAFETY: always ensure array exists
+    if (!Array.isArray(data.loans)) {
+      data.loans = [];
+    }
+
+    return data;
 
   } catch (err) {
     console.error("Error loading loans:", err);
     return { loans: [], sha: null };
   }
 }
+
 
 // ----------------------------------------------------
 // SAVE loans  (POST { loans, sha })
