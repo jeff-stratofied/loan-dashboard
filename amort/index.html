@@ -499,10 +499,7 @@ async function init() {
     allLoans = buildStaticLoans();        // static version (already includes schedules)
   }
 
-  // Now it is safe to use allLoans
-  renderKPIs(allLoans);
-  renderLoanTiles(allLoans);
-  setupKPIInteractions();
+
 }
 
 
