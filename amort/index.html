@@ -395,7 +395,6 @@
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
   <script type="module">
-    import { loadLoans } from "../js/loadLoans.js";
     import {
       formatDate,
       formatMonthYear,
@@ -420,9 +419,30 @@
     const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
     const incomeStartDate = new Date(nextMonthDate.getFullYear(), nextMonthDate.getMonth(), 1);
 
-    async function loadLoanData() {
+    async function loadLoans() {
       try {
-        loans = await loadLoans();
+        // Unified loan fetch (Cloudflare Worker)
+        const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
+        const data = await res.json();
+        const arr = data.loans || data || [];
+
+        loans = arr.map((l, idx) => ({
+          ...l,
+          id: l.loanId ?? l.id ?? (idx + 1),
+          loanId: l.loanId ?? l.id ?? (idx + 1),
+          loanName: l.loanName ?? `Loan ${idx + 1}`,
+          principal: Number(l.purchasePrice ?? l.principal ?? 0),
+          purchasePrice: Number(l.purchasePrice ?? l.principal ?? 0),
+          nominalRate: Number(l.nominalRate ?? l.rate ?? 0),
+          termYears: Number(l.termYears ?? l.term ?? 0),
+          graceYears: Number(l.graceYears ?? l.grace ?? 0),
+          loanStartDate: l.loanStartDate || l.purchaseDate || "",
+          purchaseDate: l.purchaseDate || l.loanStartDate || "",
+          upfrontFee: Number(l.upfrontFee ?? 150),
+          monthlyFeeStart: Number(l.monthlyFeeStart ?? l.feePerMonth ?? 9)
+        }));
+
+        // Build amort schedules + ownership logic using loanEngine
         loansWithAmort = attachSchedules(loans);
 
         // Build shared portfolio view (Phase C unified values)
@@ -681,7 +701,7 @@
     }
 
     async function initPage() {
-      await loadLoanData();
+      await loadLoans();
       rebuildLoansWithAmort();
 
       renderKPI();
