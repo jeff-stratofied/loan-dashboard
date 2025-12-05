@@ -505,7 +505,7 @@ async function init() {
   setupInteractions(allLoans);
 }
 
-init();   // The ONLY startup call
+
 
 
 
@@ -1467,6 +1467,7 @@ init();   // The ONLY startup call
       const current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
+    init();   // The ONLY startup call
   </script>
 </body>
 </html>
