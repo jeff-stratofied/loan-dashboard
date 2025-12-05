@@ -506,12 +506,24 @@ async function init() {
     
     const kpisEl = document.getElementById('kpis');
     kpisEl.innerHTML = `
-      <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$0</p></div>
+      <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$${kpis.totalPrincipal.toLocaleString()}</p></div>
       <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${kpis.weightedRate.toFixed(2)}%</p></div>
       <div class="kpi" data-kpi="payments"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
       <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${allLoans.length}</p></div>
     `;
-
+       /* ============================
+       Wire KPI clicks
+       ============================ */
+    document.querySelectorAll('.kpi').forEach(k => {
+      k.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const key = k.getAttribute('data-kpi');
+        if (key === 'distribution') renderDistributionDrawer();
+        if (key === 'tpv') renderTPVDrawer();
+        if (key === 'rates') renderRatesDrawer();
+        if (key === 'payments') renderPaymentsDrawer();
+      });
+    });
   
   // Now it is safe: allLoans exists
   const tpvSeriesData = tpvSeries(allLoans);
@@ -1389,20 +1401,6 @@ function computeKPIs(list) {
       drawer.setAttribute('aria-hidden', 'false');
       drawerBody.scrollTop = 0;
     }
-
-    /* ============================
-       Wire KPI clicks
-       ============================ */
-    document.querySelectorAll('.kpi').forEach(k => {
-      k.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        const key = k.getAttribute('data-kpi');
-        if (key === 'distribution') renderDistributionDrawer();
-        if (key === 'tpv') renderTPVDrawer();
-        if (key === 'rates') renderRatesDrawer();
-        if (key === 'payments') renderPaymentsDrawer();
-      });
-    });
 
     /* ============================
        CSV / copy / download / print
