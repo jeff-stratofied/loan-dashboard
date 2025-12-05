@@ -490,7 +490,8 @@ function buildStaticLoans() {
 
 async function init() {
   if (USE_DYNAMIC_DATA) {
-    let apiLoans = await loadLoans();
+    let apiLoaded = await loadLoans();  // { loans, sha }
+    let apiLoans = apiLoaded.loans || [];
     apiLoans = attachSchedules(apiLoans);
 
     allLoans = apiLoans.map(l => ({
