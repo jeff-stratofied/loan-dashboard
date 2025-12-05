@@ -5,31 +5,36 @@ const API_URL = "https://loan-dashboard-api.jeff-263.workers.dev/loans";
 // ----------------------------------------------------
 // GET loans  (returns { loans, sha })
 // ----------------------------------------------------
+// ----------------------------------------------------
+// GET loans  (returns raw { loans: [...], sha })
+// ----------------------------------------------------
 export async function loadLoans() {
-  const raw = await fetchLoans();
+  try {
+    const res = await fetch(API_URL, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
 
-  // Worker returns { loans:[...], sha:"..." }
-  const items = Array.isArray(raw?.loans) ? raw.loans : [];
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`GET error ${res.status}: ${txt}`);
+    }
 
-  return items.map((l, idx) => {
-    return {
-      id: l.loanId ?? idx + 1,
-      loanName: l.loanName ?? `Loan ${idx + 1}`,
-      name: l.loanName ?? `Loan ${idx + 1}`,
-      school: l.school ?? "",
+    const data = await res.json();
 
-      loanStartDate: l.loanStartDate,
-      purchaseDate:  l.purchaseDate,
+    // Always return { loans: [...], sha }
+    if (!Array.isArray(data.loans)) {
+      data.loans = [];
+    }
 
-      principal: Number(l.principal ?? l.purchasePrice ?? 0),
-      purchasePrice: Number(l.purchasePrice ?? 0),
+    return data;
 
-      nominalRate: Number(l.rate ?? 0),
-      termYears: Number(l.termYears ?? 0),
-      graceYears: Number(l.graceYears ?? 0),
-    };
-  });
+  } catch (err) {
+    console.error("Error loading loans:", err);
+    return { loans: [], sha: null };
+  }
 }
+
 
 
 
