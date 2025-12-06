@@ -445,23 +445,22 @@
 <body>
   <div class="app" role="main">
     <header>
-      <div class="header-top">
-        <div>
-          <h1>Loan Portfolio — Earnings</h1>
-          <p class="lead">Cumulative principal, interest, and fees, with stacked earnings visuals.</p>
-          <div class="current-date">
-            Current Date: <span id="currentDate"></span>
-          </div>
-        </div>
-       <div class="header-controls">
-    <div style="font-size:13px;color:var(--muted)">
-        Name: <strong style="color:var(--brand)">Jeff Customer</strong>
+  <div class="header-top">
+    <div>
+      <h1>Loan Portfolio — Earnings</h1>
+      <p class="lead">Cumulative principal, interest, and fees, with stacked earnings visuals.</p>
+      <p class="current-date">Current Date: <span id="currentDate"></span></p>
     </div>
-    <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
-</div>
 
+    <div class="header-controls">
+      <div class="user-label">
+        Name: <strong style="color:var(--brand)">Jeff Customer</strong>
       </div>
-    </header>
+      <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
+    </div>
+  </div>
+</header>
+
 
     <section class="kpis" id="kpis"></section>
     <section class="grid" id="loanGrid" aria-live="polite"></section>
