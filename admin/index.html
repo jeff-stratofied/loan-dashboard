@@ -410,6 +410,53 @@ input:focus, select:focus {
 
     const updated = collectLoans();
 
+  /* Save to Worker */
+async function saveToBackend() {
+  status.textContent = "Saving…";
+
+  const updated = collectLoans();
+
+  // 🔒 VALIDATION — prevent broken loans from being saved
+  for (const loan of updated) {
+    if (loan.principal === "" || Number(loan.principal) <= 0) {
+      alert(`Loan "${loan.loanName}" is missing a valid Original Loan Amount.`);
+      status.textContent = "Save blocked";
+      return;
+    }
+    if (!loan.purchaseDate || loan.purchaseDate === "") {
+      alert(`Loan "${loan.loanName}" is missing a Purchase Date.`);
+      status.textContent = "Save blocked";
+      return;
+    }
+    if (!loan.loanStartDate || loan.loanStartDate === "") {
+      alert(`Loan "${loan.loanName}" is missing a Loan Start Date.`);
+      status.textContent = "Save blocked";
+      return;
+    }
+  }
+
+  try {
+    const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        loans: updated,
+        sha: currentSha
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw data;
+
+    currentSha = data.content.sha;
+    status.textContent = "Saved ✔";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Save failed";
+  }
+}
+
+    
     try {
       const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
         method: "POST",
