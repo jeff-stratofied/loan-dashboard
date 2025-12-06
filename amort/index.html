@@ -536,7 +536,7 @@ if (USE_DYNAMIC_DATA) {
     const kpisEl = document.getElementById('kpis');
     kpisEl.innerHTML = `
       <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$${kpis.totalPrincipal.toLocaleString()}</p></div>
-      <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${kpis.weightedRate.toFixed(2)}%</p></div>
+      <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${(kpis.weightedRate * 100).toFixed(2)}%</p></div>
       <div class="kpi" data-kpi="payments"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
       <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${allLoans.length}</p></div>
     `;
@@ -1434,7 +1434,7 @@ drawerBody.scrollTop = 0;
       drawerTitle.textContent = 'Rates Distribution';
       drawerSub.textContent = 'Histogram of loan nominal rates';
       drawerPrimaryTitle.textContent = 'Avg Rate';
-      drawerPrimary.textContent = `${cachedKPIs.weightedRate.toFixed(2)}%`;
+      drawerPrimary.textContent = `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
       drawerSecondaryTitle.textContent = '';
       drawerSecondary.textContent = '';
 
