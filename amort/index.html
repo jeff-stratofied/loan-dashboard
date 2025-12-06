@@ -1574,6 +1574,58 @@ drawerBody.scrollTop = 0;
       poly.setAttribute('stroke-width', '2');
       svg.appendChild(poly);
 
+// ----- Hover Interaction (correct) -----
+const hoverLine = document.createElementNS(svgNS, 'line');
+hoverLine.setAttribute('stroke', '#64748b');
+hoverLine.setAttribute('stroke-dasharray', '3 3');
+hoverLine.setAttribute('stroke-width', '1');
+hoverLine.style.opacity = 0;
+svg.appendChild(hoverLine);
+
+const hoverDot = document.createElementNS(svgNS, 'circle');
+hoverDot.setAttribute('r', 4);
+hoverDot.setAttribute('fill', '#fb7185');
+hoverDot.setAttribute('stroke', '#fff');
+hoverDot.setAttribute('stroke-width', '1.2');
+hoverDot.style.opacity = 0;
+svg.appendChild(hoverDot);
+
+svg.addEventListener('mousemove', (ev) => {
+  const rect = svg.getBoundingClientRect();
+  const mouseX = ev.clientX - rect.left;
+  let idx = Math.round((mouseX - pad) / stepX);
+
+  idx = Math.max(0, Math.min(months.length - 1, idx));
+
+  const x = pad + idx * stepX;
+  const y = pad + (h - pad * 2) - ((paymentsByMonth[idx] - minPay) / range) * (h - pad * 2);
+
+  // Show line + dot
+  hoverLine.setAttribute('x1', x);
+  hoverLine.setAttribute('x2', x);
+  hoverLine.setAttribute('y1', pad);
+  hoverLine.setAttribute('y2', h - pad);
+  hoverLine.style.opacity = 1;
+
+  hoverDot.setAttribute('cx', x);
+  hoverDot.setAttribute('cy', y);
+  hoverDot.style.opacity = 1;
+
+  // Tooltip: YYYY-MM • $N
+  tooltip.style.display = 'block';
+  tooltip.style.left = ev.clientX + 'px';
+  tooltip.style.top = (ev.clientY - 12) + 'px';
+  tooltip.innerHTML =
+    `${months[idx]} • $${Math.round(paymentsByMonth[idx]).toLocaleString()}`;
+});
+
+svg.addEventListener('mouseleave', () => {
+  hoverLine.style.opacity = 0;
+  hoverDot.style.opacity = 0;
+  tooltip.style.display = 'none';
+});
+
+      
       // ---- Sparse X-Axis Labels (cleaned) ----
 const labelCount = 6;
 const skip = Math.max(1, Math.floor(months.length / labelCount));
@@ -1593,10 +1645,6 @@ for (let i = 0; i < months.length; i += skip) {
 
   svg.appendChild(text);
 }
-
-
-
-
 
       drawerChartArea.appendChild(svg);
 
