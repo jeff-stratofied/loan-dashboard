@@ -5,7 +5,7 @@
       "school": "Penn State",
       "loanStartDate": "2024-01-31",
       "purchaseDate": "2024-01-31",
-      "principal": 11000,
+      "principal": 0,
       "purchasePrice": 11000,
       "rate": 0.0883,
       "termYears": 10,
