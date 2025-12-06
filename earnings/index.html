@@ -48,17 +48,21 @@
     }
 
     html, body {
+      height:100%;
+      margin:0;
       background-color:var(--bg);
       color:var(--text);
-      transition:background-color .35s ease, color .35s ease;
+      transition:background-color .25s ease, color .25s ease;
     }
-    body {
-      margin:0;
-      font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-      background:linear-gradient(180deg,var(--surface) 0%, var(--card) 100%);
-      -webkit-font-smoothing:antialiased;
-      transition:background .35s ease, box-shadow .35s ease;
+
+   body {
+    background:linear-gradient(180deg,var(--surface) 0%, var(--card) 100%);
+    background-color:var(--bg);
+    font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+    -webkit-font-smoothing:antialiased;
+    transition:background-color .25s ease, color .25s ease;
     }
+
 
     .app {
       max-width:1200px;
@@ -71,12 +75,18 @@
       flex-direction:column;
       gap:8px;
       margin-bottom:12px;
+      background:transparent;     /* <-- ensure no lighter strip */
+      padding:0;
+      transition:color .25s ease;
     }
+
     .header-top {
       display:flex;
       align-items:center;
       justify-content:space-between;
+      background:transparent;   /* <-- match amort */
     }
+
     h1 {
       font-size:20px;
       margin:0;
