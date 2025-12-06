@@ -305,9 +305,13 @@ input:focus, select:focus {
       school: l.school ?? "Penn State",
       loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "",
       purchaseDate: l.purchaseDate ?? "",
-      principal: l.principal !== undefined && l.principal !== ""     
-        ? Number(l.principal)     
-        : 0,        // Orig Loan Amt
+     principal:
+  l.principal === undefined
+    ? 0                    // brand new row with no value yet → default to 0
+    : l.principal === "" 
+        ? currentLoans[idx]?.principal ?? 0  
+        : Number(l.principal),
+
       purchasePrice: Number(l.purchasePrice ?? 0),
       rate: Number(l.rate ?? 0),
       termYears: Number(l.termYears ?? 10),
