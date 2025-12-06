@@ -1293,8 +1293,6 @@ drawerBody.scrollTop = 0;
   svg.appendChild(text);
 }
 
-
-
       // current month marker
       const curIdx = Math.min(curMonthIdx - 1, tpvSeriesData.length - 1);
       const curX = pad + curIdx * stepX;
@@ -1316,11 +1314,24 @@ drawerBody.scrollTop = 0;
         hit.setAttribute('height', h - pad * 2);
         hit.setAttribute('fill', 'transparent');
         hit.addEventListener('mousemove', (ev) => {
-          tooltip.style.display = 'block';
-          tooltip.style.left = ev.clientX + 'px';
-          tooltip.style.top = (ev.clientY - 12) + 'px';
-          tooltip.innerHTML = `M${d.month} • TPV $${Math.round(d.value).toLocaleString()}`;
-        });
+  const earliest = new Date(
+    Math.min(...allLoans.map(l => new Date(l.purchaseDate + "T00:00:00").getTime()))
+  );
+
+  const hoverDate = new Date(earliest);
+  hoverDate.setMonth(hoverDate.getMonth() + (d.month - 1));
+
+  const label = hoverDate.toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric"
+  });
+
+  tooltip.style.display = 'block';
+  tooltip.style.left = ev.clientX + 'px';
+  tooltip.style.top = (ev.clientY - 12) + 'px';
+  tooltip.innerHTML = `${label} • TPV $${Math.round(d.value).toLocaleString()}`;
+});
+
         hit.addEventListener('mouseleave', () => tooltip.style.display = 'none');
         svg.appendChild(hit);
       });
