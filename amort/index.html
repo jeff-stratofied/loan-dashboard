@@ -574,25 +574,38 @@ if (USE_DYNAMIC_DATA) {
 
       tile.innerHTML = `
 <div class="tile-left">
-  <div class="loan-name"> ${loan.loanName}</div>
+  <!-- Line 1: Loan Name (bold) -->
+  <div class="loan-name" style="font-weight:700;font-size:14px;">
+    ${loan.loanName}
+  </div>
 
-  <!-- SCHOOL (2nd line, like Earnings page) -->
-  <div class="loan-sub">${loan.school || 'School ' + loan.id}</div>
+  <!-- Line 2: School (bold) -->
+  <div class="loan-name" style="font-weight:700;font-size:13px;">
+    ${loan.school || ('School ' + loan.id)}
+  </div>
 
-  <!-- META LINE: Rate | Term | Maturity Date -->
-  <div class="loan-meta">
-    <div>Rate: ${(loan.nominalRate * 100).toFixed(2)}%</div>
-    <div>Term: ${loan.termYears}y</div>
-    <div>Matures: ${
+  <!-- Line 3: Rate · Term · Matures -->
+  <div class="loan-sub" style="margin-top:6px;">
+    Rate: ${(loan.nominalRate * 100).toFixed(2)}%
+    &nbsp;·&nbsp;
+    Term: ${loan.termYears}y
+    &nbsp;·&nbsp;
+    Matures: ${
       (() => {
         const first = new Date(loan.purchaseDate + 'T00:00:00');
         const lastIdx = loan.amort.schedule[loan.amort.schedule.length - 1].monthIndex;
         first.setMonth(first.getMonth() + (lastIdx - 1));
         return first.toLocaleDateString(undefined, { month: "short", year: "numeric" });
       })()
-    }</div>
+    }
+  </div>
+
+  <!-- Line 4: Loan ID -->
+  <div class="loan-sub">
+    Loan ${loan.id}
   </div>
 </div>
+
 
 
         <div class="chart-wrap">
