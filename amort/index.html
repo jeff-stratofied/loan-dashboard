@@ -1580,10 +1580,20 @@ drawerBody.scrollTop = 0;
           const ym = m.split('-');
           const md = new Date(parseInt(ym[0]), parseInt(ym[1]) - 1, 1);
           const monthsSince = (md.getFullYear() - pd.getFullYear()) * 12 + (md.getMonth() - pd.getMonth());
-          const idx = Math.max(0, monthsSince);
-          const entry = l.amort.schedule[Math.min(l.amort.schedule.length - 1, idx)];
-          s += entry ? entry.payment : 0;
+          // compute index of this month relative to purchase date
+          const idx = monthsSince;
+
+          // If the loan has not started → no payment
+          if (idx < 0) return s;
+
+          // If the loan is already finished → no payment
+          if (idx >= l.amort.schedule.length) return s;
+
+          // Otherwise use the correct amortization row
+          const entry = l.amort.schedule[idx];
+           s += entry.payment;
           return s;
+
         }, 0);
       });
 
