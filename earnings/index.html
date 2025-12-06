@@ -182,10 +182,11 @@
 
     /* Fix KPI vertical alignment to match amort */
     .kpis {
-      margin-top: 10px;      /* NEW — adds consistent top spacing */
-      margin-bottom: 18px;   /* same as amort */
-      margin: 10px 0 18px;
-    }
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin:10px 0 18px;
+      }
     .kpi{
       background:var(--card);
       padding:14px;
