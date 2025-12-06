@@ -573,11 +573,27 @@ if (USE_DYNAMIC_DATA) {
       tile.setAttribute('tabindex', '0');
 
       tile.innerHTML = `
-        <div class="tile-left">
-          <div class="loan-name">Loan ${loan.loanName}</div>
-          <div class="loan-sub">$${loan.purchasePrice.toLocaleString()}</div>
-          <div class="loan-meta"><div>Term: ${loan.termYears}y</div><div>Grace: ${loan.graceYears}y</div></div>
-        </div>
+<div class="tile-left">
+  <div class="loan-name">Loan ${loan.loanName}</div>
+
+  <!-- SCHOOL (2nd line, like Earnings page) -->
+  <div class="loan-sub">${loan.school || 'School ' + loan.id}</div>
+
+  <!-- META LINE: Rate | Term | Maturity Date -->
+  <div class="loan-meta">
+    <div>Rate: ${(loan.nominalRate * 100).toFixed(2)}%</div>
+    <div>Term: ${loan.termYears}y</div>
+    <div>Matures: ${
+      (() => {
+        const first = new Date(loan.purchaseDate + 'T00:00:00');
+        const lastIdx = loan.amort.schedule[loan.amort.schedule.length - 1].monthIndex;
+        first.setMonth(first.getMonth() + (lastIdx - 1));
+        return first.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+      })()
+    }</div>
+  </div>
+</div>
+
 
         <div class="chart-wrap">
           <div class="mini-label">Rate ${(loan.nominalRate * 100).toFixed(2)}%</div>
