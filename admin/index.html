@@ -410,24 +410,28 @@ input:focus, select:focus {
 
     const updated = collectLoans();
 
-  /* Save to Worker */
+/* Save to Worker */
 async function saveToBackend() {
   status.textContent = "Saving…";
 
   const updated = collectLoans();
 
-  // 🔒 VALIDATION — prevent broken loans from being saved
+  // =====================================================
+  // VALIDATION — block saving invalid or missing values
+  // =====================================================
   for (const loan of updated) {
-    if (loan.principal === "" || Number(loan.principal) <= 0) {
-      alert(`Loan "${loan.loanName}" is missing a valid Original Loan Amount.`);
+    if (loan.principal === "" || loan.principal === null || Number(loan.principal) <= 0) {
+      alert(`Loan "${loan.loanName}" must have an Original Loan Amount greater than 0.`);
       status.textContent = "Save blocked";
       return;
     }
+
     if (!loan.purchaseDate || loan.purchaseDate === "") {
       alert(`Loan "${loan.loanName}" is missing a Purchase Date.`);
       status.textContent = "Save blocked";
       return;
     }
+
     if (!loan.loanStartDate || loan.loanStartDate === "") {
       alert(`Loan "${loan.loanName}" is missing a Loan Start Date.`);
       status.textContent = "Save blocked";
@@ -455,6 +459,7 @@ async function saveToBackend() {
     status.textContent = "Save failed";
   }
 }
+
 
     
     try {
