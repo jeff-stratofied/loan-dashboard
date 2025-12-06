@@ -1535,27 +1535,27 @@ drawerBody.scrollTop = 0;
       }));
 
       const months = [];
-// ---- Compute today's month index ----
-const today = new Date();
-today.setDate(1); // align to month start
-const todayStr = today.toISOString().slice(0, 7);
 
-let todayIndex = months.indexOf(todayStr);
-if (todayIndex === -1) {
-  // If today is outside min–max date range, clamp to range
-  todayIndex = today < new Date(months[0] + "-01")
-    ? 0
-    : months.length - 1;
-}
-
-
-      
       const cursor = new Date(minDate);
       cursor.setDate(1);
       while (cursor.getTime() <= maxDate) {
         months.push(new Date(cursor.getTime()).toISOString().slice(0, 7));
         cursor.setMonth(cursor.getMonth() + 1);
       }
+
+      // ---- Compute today's month index *after* months[] is built ----
+      const today = new Date();
+      today.setDate(1); // align to month start
+      const todayStr = today.toISOString().slice(0, 7);
+
+      let todayIndex = months.indexOf(todayStr);
+      if (todayIndex === -1) {
+        // clamp to range if today is outside series
+        const first = new Date(months[0] + '-01T00:00:00');
+        const last = new Date(months[months.length - 1] + '-01T00:00:00');
+        todayIndex = today < first ? 0 : months.length - 1;
+      }
+
 
       // compute total payments by month
       const paymentsByMonth = months.map(m => {
