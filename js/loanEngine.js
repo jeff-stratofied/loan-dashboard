@@ -9,43 +9,92 @@
 import { loadLoans as fetchLoans } from "./loadLoans.js";
 
 // ===============================
-// CORRECTED loadLoans()
+// UNIVERSAL LOAD + NORMALIZE
 // ===============================
 export async function loadLoans() {
-  // raw = { loans:[...], sha:"..." }
   const raw = await fetchLoans();
 
-  // Extract the loan array correctly
-  const items = Array.isArray(raw?.loans)
-    ? raw.loans
-    : [];
+  const items = Array.isArray(raw?.loans) ? raw.loans : [];
 
   return items.map((l, idx) => {
-    const principal  = Number(l.principal ?? l.origLoanAmt ?? l.purchasePrice ?? 0);
-    const rate       = Number(l.rate ?? l.nominalRate ?? 0);
-    const termYears  = Number(l.termYears ?? 0);
-    const graceYears = Number(l.graceYears ?? 0);
+    const id = Number(l.loanId ?? idx + 1);
+
+    // Normalize names
+    const loanName =
+      l.loanName ||
+      l.name ||
+      `Loan ${id}`;
+
+    const school =
+      l.school ||
+      l.institution ||
+      (loanName.includes(" ") ? loanName.split(" ")[0] : "School");
+
+    // Normalize amounts
+    const principal = Number(
+      l.principal ??
+      l.origLoanAmt ??
+      l.originalBalance ??
+      l.purchasePrice ??
+      0
+    );
+
+    const purchasePrice = Number(
+      l.purchasePrice ??
+      l.buyPrice ??
+      principal
+    );
+
+    const nominalRate = Number(
+      l.rate ??
+      l.nominalRate ??
+      0
+    );
+
+    // Normalize dates
+    const loanStartDate =
+      l.loanStartDate ||
+      l.startDate ||
+      l.purchaseDate ||   // fallback
+      "";
+
+    const purchaseDate =
+      l.purchaseDate ||
+      l.loanStartDate ||
+      "";
+
+    // Normalize terms
+    const termYears = Number(
+      l.termYears ??
+      l.term ??
+      10
+    );
+
+    const graceYears = Number(
+      l.graceYears ??
+      l.grace ??
+      0
+    );
 
     return {
-      // IDs & names
-      id: l.loanId ?? idx + 1,
-      loanName: l.loanName ?? `Loan ${idx + 1}`,
-      name: l.loanName ?? `Loan ${idx + 1}`,
-      school: l.school ?? "",
+      // ---- Stable fields used by ALL dashboards ----
+      id,
+      loanName,
+      name: loanName,
+      school,
 
-      // Dates
-      loanStartDate: l.loanStartDate,
-      purchaseDate:  l.purchaseDate,
+      loanStartDate,
+      purchaseDate,
 
-      // Financial values
       principal,
-      purchasePrice: Number(l.purchasePrice ?? principal),
-      nominalRate: rate,
+      purchasePrice,
+      nominalRate,
       termYears,
-      graceYears
+      graceYears,
     };
   });
 }
+
 
 
 
