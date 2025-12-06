@@ -106,7 +106,11 @@
       cursor:pointer;
       transition: transform .18s, box-shadow .18s, background-color .25s ease, color .25s ease, border-color .25s ease;
     }
-    .kpi:hover{ transform:var(--kpi-hover); box-shadow:0 12px 30px rgba(15,23,42,0.08); }
+    .kpi:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+
     .kpi h3{ margin:0; font-size:12px; color:var(--muted) }
     .kpi p{ margin:8px 0 0; font-size:18px; font-weight:700 }
 
