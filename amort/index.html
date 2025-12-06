@@ -896,8 +896,8 @@ function computeKPIs(list) {
       currentMode = 'loan';
       currentLoan = loan;
 
-      drawerTitle.textContent = `Loan ${loan.loanName}`;
-      drawerSub.textContent = `Purchased: ${loan.purchaseDate}`;
+     drawerTitle.textContent = `${loan.name} — ${loan.school}`;
+drawerSub.textContent = `Purchased: ${loan.purchaseDate}`;
       drawerPrimaryTitle.textContent = 'Purchase Price';
       drawerSecondaryTitle.textContent = 'Rate';
       drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
