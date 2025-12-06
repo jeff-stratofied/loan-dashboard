@@ -69,20 +69,16 @@
       background-color:var(--bg);
       transition:background-color .25s ease, color .25s ease;
     }
-
-    html, body {
-    overflow-y: hidden;
-    }
-
     
     html[data-theme="dark"] body { background:linear-gradient(180deg,#0b1224 0%, #0f172a 100%); }
 
     .app{
       max-width:1200px;
-      margin:20px auto;
+      margin:0 auto;      /* FIX: matches earnings */
       padding:16px;
       transition:color .25s ease;
     }
+
 
     body > .app {
       background: transparent;
