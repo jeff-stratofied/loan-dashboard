@@ -291,164 +291,191 @@
       width:100%;
     }
 
-    /* Drawer */
-.drawer{
-  position:fixed;
-  right:0;
-  top:0;
-  height:100vh;               /* exact viewport height */
-  max-width:1000px;
-  width:760px;
-  background:var(--card);
-  box-shadow:-28px 0 80px rgba(2,6,23,0.14);
-  transform:translateX(110%);
-  transition:transform .32s cubic-bezier(.2,.9,.3,1), opacity .24s ease, background-color .3s ease, color .3s ease, border-color .3s ease, box-shadow .3s ease;
-  z-index:120;
+/* ============================================================
+   WIDE DRAWER BASE STRUCTURE (KEEPING YOUR LAYOUT)
+   ============================================================ */
 
-  /* THE IMPORTANT FIXES */
-  display:flex;               /* define vertical layout */
-  flex-direction:column;      /* header → content → footer */
-  padding:0;                  /* remove padding from the container */
+.drawer {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
+  width: 760px;                 /* KEEP: widescreen charts */
+  max-width: 1000px;
+  background: var(--card);
+  box-shadow: -28px 0 80px rgba(2,6,23,0.14);
+  transform: translateX(110%);
+  transition: transform .32s cubic-bezier(.2,.9,.3,1),
+              opacity .24s ease,
+              background-color .3s ease,
+              color .3s ease,
+              border-color .3s ease,
+              box-shadow .3s ease;
+  z-index: 120;
 
-  overflow:hidden;            /* scrolling happens inside content area */
-  opacity:0;
+  display: flex;                /* KEEP: multi-section drawer */
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;             /* scrolling happens in body */
+  opacity: 0;
 }
-.drawer-head{
-  padding:20px;
-  flex-shrink:0;      /* stays fixed at top */
-  background:var(--card);
-  transition:background-color .3s ease, color .3s ease, border-color .3s ease;
+
+.drawer.open {
+  transform: translateX(0);
+  opacity: 1;
+  animation: drawerIn .28s cubic-bezier(.2,.9,.3,1);
 }
+
+@keyframes drawerIn {
+  from { transform: translateX(30%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+
+
+/* ============================================================
+   UNIFIED VISUAL HEADER (MATCHES AMORT)
+   ============================================================ */
+
+.drawer-head {
+  padding: 22px;                /* unified head padding */
+  flex-shrink: 0;
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer-head h2 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.drawer-head .subhead {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+
+/* ============================================================
+   BODY (SCROLLS)
+   ============================================================ */
 
 #drawerBody,
-.drawer-body{
-  flex:1 1 auto;      /* fill remaining space */
-  overflow-y:auto;    /* THIS area scrolls */
-  padding:20px;
-}
-
-.drawer-footer{
-  padding:20px;
-  flex-shrink:0;      /* stays at bottom */
-  background:var(--card);
-  transition:background-color .3s ease, color .3s ease, border-color .3s ease;
-}
-
-
-
-    .drawer.open{
-      transform:translateX(0);
-      opacity:1;
-      animation:drawerIn .28s cubic-bezier(.2,.9,.3,1);
-    }
-    @keyframes drawerIn {
-      from { transform:translateX(30%); opacity:0; }
-      to   { transform:translateX(0);   opacity:1; }
-    }
-
-    .drawer-head{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:8px;
-      margin-bottom:12px;
-    }
-    .drawer-subtitle{
-      color:var(--muted);
-      font-size:13px;
-      margin-top:4px;
-    }
-    .drawer-detail{
-      color:var(--muted);
-      font-size:12px;
-      margin-top:4px;
-    }
-    .drawer-chart{
-      width:100%;
-      height:260px;
-      background:var(--drawer-gradient);
-      border-radius:8px;
-      border:1px solid var(--border);
-      margin-bottom:8px;
-      padding:0;
-      position:relative;
-      display:block;
-      transition:background .35s ease, border-color .3s ease, box-shadow .3s ease;
-    }
-
-    .drawer-info-row{
-      display:flex;
-      gap:12px;
-      margin-bottom:8px;
-      align-items:center;
-    }
-    .info-card{
-      flex:1;
-      background:var(--card);
-      padding:12px;
-      border-radius:8px;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      min-height:56px;
-      border:1px solid var(--border);
-      transition:background-color .3s ease, border-color .3s ease, color .3s ease, box-shadow .3s ease;
-    }
-    .info-card.small{ width:160px; align-items:flex-end; }
-    .muted-small{ font-size:12px; color:var(--muted); margin-bottom:6px; }
-    .main-val{ font-weight:800; font-size:18px; }
-    .drawer-body{ display:flex; flex-direction:column; gap:12px; }
-    #drawerBody,
 .drawer-body {
   flex: 1 1 auto;
   overflow-y: auto;
-  margin-top: 8px;
+  padding: 22px;
   padding-bottom: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
+
 .drawer,
 #drawerBody,
 .drawer-body {
   overflow-x: hidden !important;
 }
 
-    .drawer-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:12px; }
-    .drawer-actions .spacer{ flex:1; }
 
-    .amort-wrap{
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:8px;
-      max-height:40vh;
-      overflow:auto;
-      background:var(--card);
-      transition:background-color .3s ease, border-color .3s ease, color .3s ease;
-    }
+/* ============================================================
+   UNIFIED STAT BOXES (MATCH AMORT)
+   ============================================================ */
 
-    table{ width:100%; border-collapse:collapse; font-size:13px; color:var(--text); transition:color .25s ease; }
-    thead th{
-      position:sticky;
-      top:0;
-      background:var(--table-header);
-      padding:8px;
-      text-align:left;
-      color:var(--muted);
-      font-weight:700;
-      border-bottom:1px solid var(--border);
-      transition:background-color .3s ease, color .3s ease, border-color .3s ease;
-    }
-    td{
-      padding:8px;
-      border-bottom:1px dashed var(--border);
-      text-align:right;
-      transition:color .25s ease, border-color .25s ease;
-    }
-    td:first-child, th:first-child{ text-align:left; }
+.stat-boxes {
+  display: flex;
+  gap: 12px;
+  margin: 0 0 10px 0;
+}
 
-    .small{ font-size:12px; color:var(--muted); }
+.stat-box {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+}
 
-    @media(max-width:760px){
-      .drawer{ width:100%; min-width:0; }
-    }
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+
+/* ============================================================
+   UNIFIED CHART WRAPPER (MATCHES AMORT)
+   ============================================================ */
+
+.drawer-chart {
+  width: 100%;
+  height: 240px;              /* Slightly taller for wide drawer */
+  border-radius: 8px;
+  margin: 10px 0 20px 0;
+}
+
+.drawer-chart svg {
+  width: 100%;
+  height: 100%;
+}
+
+
+/* ============================================================
+   UNIFIED TABLE STYLE (MATCHES AMORT)
+   ============================================================ */
+
+.drawer table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.drawer table tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer table td {
+  padding: 6px 4px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--table-header);
+  padding: 8px;
+  text-align: left;
+  color: var(--muted);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.drawer-footer {
+  padding: 22px;
+  flex-shrink: 0;
+  background: var(--card);
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media(max-width:760px){
+  .drawer{ width:100%; min-width:0; }
+}
 
     /* Theme toggle */
     .theme-icon{
