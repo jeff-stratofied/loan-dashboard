@@ -1595,25 +1595,7 @@ for (let i = 0; i < months.length; i += skip) {
 }
 
 
-        const hit = document.createElementNS(svgNS, 'rect');
-        hit.setAttribute('x', x - stepX / 2);
-        hit.setAttribute('y', pad);
-        hit.setAttribute('width', Math.max(1, stepX));
-        hit.setAttribute('height', h - pad * 2);
-        hit.setAttribute('fill', 'transparent');
 
-        hit.addEventListener('mousemove', (ev) => {
-  tooltip.style.display = 'block';
-  tooltip.style.left = ev.clientX + 'px';
-  tooltip.style.top = (ev.clientY - 12) + 'px';
-  tooltip.innerHTML = `${m} • $${Math.round(paymentsByMonth[i]).toLocaleString()}`;
-});   // <-- closes mousemove only
-
-hit.addEventListener('mouseleave', () => {
-  tooltip.style.display = 'none';
-});
-
-svg.appendChild(hit);
 
 
       drawerChartArea.appendChild(svg);
