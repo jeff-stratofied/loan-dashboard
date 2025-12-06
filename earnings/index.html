@@ -6,47 +6,64 @@
   <title>Loan Portfolio — Earnings</title>
 
   <style>
-    :root {
-      color-scheme: light;
-      --bg:#f8fafc;
-      /* Updated to match Amort */
-      --surface:#f1f5f9;
-      --card:#ffffff;
-      --card-muted:#f1f5f9;
-      --border:rgba(15,23,42,0.08);
-      --text:#0f172a;
-      --muted:#5b6472;
-      --brand:#0ea5e9;
-      --accent2:#7c3aed;
-      --shadow:0 16px 40px rgba(15,23,42,0.08);
-      --kpi-hover:translateY(-6px);
-      --drawer-gradient:linear-gradient(180deg,#ffffff,#f8fafc);
-      --tile-gradient:linear-gradient(180deg,#ffffff,#f8fafc);
-      --chart-area:rgba(14,165,233,0.15);
-      --chart-area-2:rgba(124,58,237,0.12);
-      --table-header:rgba(241,245,249,0.95);
-      --grid-strong:rgba(148,163,184,0.35);
-      --grid-light:rgba(148,163,184,0.12);
+   :root {
+    --bg:#f0f4f8;
+    --surface:#f1f5f9;
+    --card:#ffffff;
+    --text:#0f172a;
+    --muted:#64748b;
+    --border:#e2e8f0;
+    --shadow:rgba(0,0,0,0.08);
+
+    --brand:#0ea5e9;
+    --brand-strong:#0284c7;
+
+    --accent1:#7c3aed;
+    --accent2:#0ea5e9;
+    --accent3:#14b8a6;
+    --accent4:#f97316;
+    --accent5:#ef4444;
+
+    --stat-bg:#f8fafc;
+    --stat-border:#e2e8f0;
+
+    --grad-top:var(--surface);
+    --grad-bottom:var(--card);
+
+    --font-smooth:antialiased;
+
+    --tile-bg:var(--card);
+    --tile-hover-bg:#f8fafc;
+
+    --drawer-bg:var(--card);
+    --drawer-shadow:rgba(0,0,0,0.10);
     }
 
-    html[data-theme="dark"] {
-      color-scheme: dark;
-      --bg:#0b1220;
-      --surface:#0f172a;
-      --card:#111827;
-      --card-muted:#0b1324;
-      --border:rgba(226,232,240,0.12);
-      --text:#e2e8f0;
-      --muted:#9aa6b2;
-      --shadow:0 22px 50px rgba(0,0,0,0.45);
-      --drawer-gradient:linear-gradient(180deg,#0f172a,#0b1220);
-      --tile-gradient:linear-gradient(180deg,#111827,#0b1220);
-      --chart-area:rgba(14,165,233,0.24);
-      --chart-area-2:rgba(124,58,237,0.22);
-      --table-header:rgba(30,41,59,0.95);
-      --grid-strong:rgba(148,163,184,0.42);
-      --grid-light:rgba(148,163,184,0.2);
-    }
+
+   html[data-theme="dark"] {
+    color-scheme: dark;
+
+    --bg:#0f172a;
+    --surface:#1e293b;
+    --card:#1e293b;
+    --text:#f1f5f9;
+    --muted:#94a3b8;
+    --border:#334155;
+    --shadow:rgba(0,0,0,0.45);
+
+    --stat-bg:#1e293b;
+    --stat-border:#334155;
+
+    --grad-top:#1e293b;
+    --grad-bottom:#0f172a;
+
+    --tile-bg:#1e293b;
+    --tile-hover-bg:#243447;
+
+    --drawer-bg:#1e293b;
+    --drawer-shadow:rgba(0,0,0,0.55);
+  }
+
 
     html, body {
       height:100%;
@@ -57,11 +74,10 @@
     }
 
    body {
-    background:linear-gradient(180deg,var(--surface) 0%, var(--card) 100%);
-    background-color:var(--bg);
-    font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-    -webkit-font-smoothing:antialiased;
-    transition:background-color .25s ease, color .25s ease;
+    background: linear-gradient(180deg, var(--grad-top) 0%, var(--grad-bottom) 100%);
+    background-color: var(--bg);
+    -webkit-font-smoothing: var(--font-smooth);
+    transition: background-color .25s ease, color .25s ease;
     }
 
 
