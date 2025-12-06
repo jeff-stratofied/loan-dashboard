@@ -89,12 +89,16 @@
     padding:16px 16px 0 16px;
     transition:color .25s ease;
     }
-    /* MATCH AMORT HEADER SPACING */
-    header {
-    margin-top: 12px;    /* increase vertical spacing so title sits lower */
-    margin-bottom: 14px; /* amort has slightly more space before KPIs */
-    }
 
+    /* MATCH AMORT HEADER SPACING */
+   header {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-bottom:8px;     /* match amort */
+    padding:0;
+    transition:color .25s ease;
+    }
 
     body > .app {
     background: transparent;
