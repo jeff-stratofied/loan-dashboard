@@ -74,24 +74,23 @@
 
     .app{
       max-width:1200px;
-      margin:0 auto;      /* FIX: matches earnings */
-      padding:16px;
+      margin:20px auto 0 auto;   /* remove extra bottom margin */
+      padding:16px 16px 0 16px;  /* remove extra bottom padding */
       transition:color .25s ease;
     }
 
-
-    body > .app {
+     body > .app {
       background: transparent;
-      padding-top: 20px; /* Matches Earnings */
+      padding-top: 16px;  /* match earnings exactly */
       margin-top: 0;
     }
 
-    
     header{
       display:flex;
       flex-direction:column;
       gap:8px;
-      margin-bottom:12px;
+      margin-bottom:8px;   /* match earnings */
+      padding:0;            /* remove invisible offset */
       transition:color .25s ease;
     }
 
