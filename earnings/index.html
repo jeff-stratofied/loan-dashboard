@@ -1452,32 +1452,23 @@ svg.appendChild(vline);
 
         const tile = document.createElement("div");
         tile.className = "tile";
-        const maturityDate = loan.loanStartDate
-  ? formatMonthYear(addMonths(new Date(loan.loanStartDate), loan.termYears * 12))
-  : "";
-
-tile.innerHTML = `
-  <div class="tile-left">
-    <div class="loan-name" style="font-weight:700; font-size:14px;">
-      ${loan.loanName}
-    </div>
-
-    <div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
-      ${loan.school || ""}
-    </div>
-
-    <div class="loan-sub" style="margin-top:6px;">
-      Rate: ${(loan.nominalRate * 100).toFixed(2)}% · 
-      Term: ${loan.termYears} yrs · 
-      Matures: ${maturityDate}
-    </div>
-
-    <div class="loan-sub" style="margin-top:4px;">
-      Loan ${loan.loanId}
-    </div>
-  </div>
-`;
-
+        tile.innerHTML = `
+          <div class="tile-left">
+            <div class="loan-name">${loan.loanName}</div>
+            <div class="loan-sub">${loan.school || "No school listed"}</div>
+            <div class="loan-meta">
+              <div>Term: ${loan.termYears}y</div>
+              <div>Grace: ${loan.graceYears}y</div>
+              <div>Fee: $${(loan.monthlyFeeStart || 0).toFixed(2)}/mo</div>
+            </div>
+          </div>
+          <div class="chart-wrap">
+            <div class="mini-label">
+              Net Earnings ${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
+            </div>
+            <div class="mini-chart"></div>
+          </div>
+        `;
         tile.addEventListener("click", () => openLoanDrawer(loan));
         grid.appendChild(tile);
 
