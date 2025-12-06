@@ -89,6 +89,11 @@
     padding:16px 16px 0 16px;
     transition:color .25s ease;
     }
+    /* MATCH AMORT HEADER SPACING */
+    header {
+    margin-top: 12px;    /* increase vertical spacing so title sits lower */
+    margin-bottom: 14px; /* amort has slightly more space before KPIs */
+    }
 
 
     body > .app {
@@ -120,11 +125,12 @@
       font-size:20px;
       margin:0;
     }
-    p.lead {
-      margin:0;
-      color:var(--muted);
-      font-size:13px;
+     p.lead {
+      margin: 4px 0;
+      color: var(--muted);
+      font-size: 13px;
     }
+
     .current-date {
       font-size:13px;
       color:var(--muted);
