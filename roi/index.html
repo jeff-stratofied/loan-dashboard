@@ -870,49 +870,42 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       const currentRoiEntry = getCurrentOwnedRoiEntry(loan);
       const tile = document.createElement('div'); tile.className='tile'; tile.setAttribute('tabindex','0');
       tile.innerHTML = `
-  <div class="tile-left">
+        <div class="tile-left">
 
-    <!-- Line 1: Loan Name -->
-    <div class="loan-name" style="font-weight:700; font-size:14px;">
-      ${loan.name || loan.loanName || ("Loan " + loan.id)}
-    </div>
+        <!-- Line 1: Loan Name -->
+        <div class="loan-name" style="font-weight:700; font-size:14px;">
+        ${loan.name || loan.loanName || ("Loan " + loan.id)}
+       </div>
 
-    <!-- Line 2: School -->
-    <div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
-      ${loan.school || "No school listed"}
-    </div>
+        <!-- Line 2: School -->
+        <div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
+        ${loan.school || "No school listed"}
+       </div>
 
-    <!-- Line 3: Rate · Term · Matures -->
-    <div class="loan-sub" style="margin-top:6px;">
-      Rate: ${(loan.nominalRate * 100).toFixed(2)}% &nbsp;·&nbsp;
-      Term: ${loan.termYears} yrs &nbsp;·&nbsp;
-      Matures: ${formatMonthYear(
+        <!-- Line 3: Rate · Term · Matures -->
+        <div class="loan-sub" style="margin-top:6px;">
+        Rate: ${(loan.nominalRate * 100).toFixed(2)}% &nbsp;·&nbsp;
+        Term: ${loan.termYears} yrs &nbsp;·&nbsp;
+        Matures: ${formatMonthYear(
         addMonths(new Date(loan.loanStartDate), loan.termYears * 12)
-      )}
+        )}
+        </div>
+
+        <!-- Line 4: Loan ID -->
+        <div class="loan-sub" style="margin-top:4px;">
+         Loan ${loan.id}
+      </div>
+
     </div>
 
-    <!-- Line 4: Loan ID -->
-    <div class="loan-sub" style="margin-top:4px;">
-      Loan ${loan.id}
-    </div>
-
-  </div>
-
-  <div class="chart-wrap">
-    <div class="mini-label">
+    <div class="chart-wrap">
+      <div class="mini-label">
       ROI ${(currentRoiEntry.roi * 100).toFixed(2)}%
     </div>
     <svg class="sparkline" viewBox="0 0 170 48" preserveAspectRatio="none" data-idx="${idx}" aria-hidden="true"></svg>
   </div>
 `;
 
-        <div class="chart-wrap">
-          <div class="mini-label">
-  ROI ${(currentRoiEntry.roi * 100).toFixed(2)}%
-</div>
-          <svg class="sparkline" viewBox="0 0 170 48" preserveAspectRatio="none" data-idx="${idx}" aria-hidden="true"></svg>
-        </div>
-      `;
       tile.addEventListener('click', e=>{ e.stopPropagation(); openDrawerForLoan(loan); });
       tile.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawerForLoan(loan); } });
       grid.appendChild(tile);
