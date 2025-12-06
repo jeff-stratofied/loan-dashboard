@@ -1535,6 +1535,21 @@ drawerBody.scrollTop = 0;
       }));
 
       const months = [];
+// ---- Compute today's month index ----
+const today = new Date();
+today.setDate(1); // align to month start
+const todayStr = today.toISOString().slice(0, 7);
+
+let todayIndex = months.indexOf(todayStr);
+if (todayIndex === -1) {
+  // If today is outside min–max date range, clamp to range
+  todayIndex = today < new Date(months[0] + "-01")
+    ? 0
+    : months.length - 1;
+}
+
+
+      
       const cursor = new Date(minDate);
       cursor.setDate(1);
       while (cursor.getTime() <= maxDate) {
@@ -1584,6 +1599,21 @@ drawerBody.scrollTop = 0;
       poly.setAttribute('stroke', '#fb7185');
       poly.setAttribute('stroke-width', '2');
       svg.appendChild(poly);
+
+      // ---- Today Vertical Line ----
+const todayX = pad + todayIndex * stepX;
+
+const vLine = document.createElementNS(svgNS, 'line');
+vLine.setAttribute('x1', todayX);
+vLine.setAttribute('x2', todayX);
+vLine.setAttribute('y1', pad);
+vLine.setAttribute('y2', h - pad);
+vLine.setAttribute('stroke', '#111827');
+vLine.setAttribute('stroke-dasharray', '3 3');
+vLine.setAttribute('stroke-opacity', '0.6');
+
+svg.appendChild(vLine);
+
 
 // ----- Hover Interaction (correct) -----
 const hoverLine = document.createElementNS(svgNS, 'line');
