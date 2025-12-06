@@ -70,6 +70,11 @@
       transition:background-color .25s ease, color .25s ease;
     }
 
+    html, body {
+    overflow-y: hidden;
+    }
+
+    
     html[data-theme="dark"] body { background:linear-gradient(180deg,#0b1224 0%, #0f172a 100%); }
 
     .app{
@@ -79,6 +84,13 @@
       transition:color .25s ease;
     }
 
+    body > .app {
+      background: transparent;
+      padding-top: 20px; /* Matches Earnings */
+      margin-top: 0;
+    }
+
+    
     header{
       display:flex;
       flex-direction:column;
@@ -124,7 +136,7 @@
       display:grid;
       grid-template-columns:repeat(2,1fr);
       gap:12px;
-      height:calc(100vh - 300px);
+      height:calc(100vh - 320px);
       overflow:auto;
       padding-right:6px;
     }
