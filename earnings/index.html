@@ -117,18 +117,31 @@
     }
 
 
-
-    .header-top {
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      background:transparent;   /* <-- match amort */
+  .header-top {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
     }
+
+  .header-controls {
+    display:flex;
+    gap:10px;
+    align-items:center;
+    }
+
 
     h1 {
       font-size:20px;
       margin:0;
     }
+
+    .lead {
+    margin: 4px 0 0 0;
+    font-size: 13px;
+    color: var(--muted);
+    }
+
      p.lead {
       margin: 0px 0;
       color: var(--muted);
@@ -444,7 +457,7 @@
 </head>
 <body>
   <div class="app" role="main">
-    <header>
+<header>
   <div class="header-top">
     <div>
       <h1>Loan Portfolio — Earnings</h1>
@@ -453,13 +466,14 @@
     </div>
 
     <div class="header-controls">
-      <div class="user-label">
-        Name: <strong style="color:var(--brand)">Jeff Customer</strong>
+      <div style="font-size:13px; color:var(--muted)">
+        Name: <strong style="color:var(--brand)">Jeff L Customer</strong>
       </div>
       <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
     </div>
   </div>
 </header>
+
 
 
     <section class="kpis" id="kpis"></section>
