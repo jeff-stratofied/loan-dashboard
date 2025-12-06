@@ -1603,15 +1603,18 @@ for (let i = 0; i < months.length; i += skip) {
         hit.setAttribute('fill', 'transparent');
 
         hit.addEventListener('mousemove', (ev) => {
-          tooltip.style.display = 'block';
-          tooltip.style.left = ev.clientX + 'px';
-          tooltip.style.top = (ev.clientY - 12) + 'px';
-          tooltip.innerHTML = `${m} • $${Math.round(paymentsByMonth[i]).toLocaleString()}`;
-        });
-        hit.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+  tooltip.style.display = 'block';
+  tooltip.style.left = ev.clientX + 'px';
+  tooltip.style.top = (ev.clientY - 12) + 'px';
+  tooltip.innerHTML = `${m} • $${Math.round(paymentsByMonth[i]).toLocaleString()}`;
+});   // <-- closes mousemove only
 
-        svg.appendChild(hit);
-      });
+hit.addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+});
+
+svg.appendChild(hit);
+
 
       drawerChartArea.appendChild(svg);
 
