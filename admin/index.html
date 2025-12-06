@@ -433,48 +433,26 @@ async function saveToBackend() {
     }
   }
 
-  try {
-    const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        loans: updated,
-        sha: currentSha
-      })
-    });
+ try {
+  const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      loans: updated,
+      sha: currentSha
+    })
+  });
 
-    const data = await res.json();
-    if (!res.ok) throw data;
+  const data = await res.json();
+  if (!res.ok) throw data;
 
-    currentSha = data.content.sha;
-    status.textContent = "Saved ✔";
-  } catch (err) {
-    console.error(err);
-    status.textContent = "Save failed";
-  }
+  currentSha = data.content.sha;
+  status.textContent = "Saved ✔";
+
+} catch (err) {
+  console.error(err);
+  status.textContent = "Save failed";
 }
-
-
-    
-    try {
-      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-          loans: updated,
-          sha: currentSha
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw data;
-
-      currentSha = data.content.sha;
-      status.textContent = "Saved ✔";
-    } catch (err) {
-      console.error(err);
-      status.textContent = "Save failed";
-    }
 
 
   /* Buttons */
