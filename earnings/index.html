@@ -139,7 +139,7 @@
     }
 
     .kpi h3{ margin:0; font-size:12px; color:var(--muted) }
-    .kpi p{ margin:8px 0 0; font-size:18px; font-weight:700 }
+    .kpi [data-kpi]{ margin:8px 0 0; font-size:18px; font-weight:700 }
 
     /* Grid of tiles */
     .grid{
@@ -371,19 +371,19 @@ html[data-theme="dark"] .close-btn {
     <section class="kpis" id="kpis">
       <div class="kpi">
         <h3>Net Earnings to Date</h3>
-        <p id="kpiNet">--</p>
+        <div data-kpi="net">--</div>
       </div>
       <div class="kpi">
         <h3>Projected Lifetime Earnings</h3>
-        <p id="kpiLifetime">--</p>
+        <div data-kpi="lifetime">--</div>
       </div>
       <div class="kpi">
         <h3>Average Monthly Earnings</h3>
-        <p id="kpiMonthly">--</p>
+        <div data-kpi="avg">--</div>
       </div>
       <div class="kpi">
         <h3>Total Fees to Date</h3>
-        <p id="kpiFees">--</p>
+        <div data-kpi="fees">--</div>
       </div>
     </section>
 
@@ -545,50 +545,66 @@ html[data-theme="dark"] .close-btn {
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
   <script type="module">
-    import { monthDiff } from "../js/loanEngine.js";
-    import { loadLoans as fetchLoanData } from "../js/loadLoans.js";
+    import {
+      loadLoans,
+      attachSchedules,
+      buildPortfolioViews
+    } from "../js/loanEngine.js";
     import { createLineChart } from "../js/chartEngine.js";
 
-    function formatMoney(value) {
-      return (value ?? 0).toLocaleString("en-US", {
-        style: "currency",
-        currency: "USD",
-        maximumFractionDigits: 0
-      });
-    }
+    function updateEarningsKpis(portfolio) {
+      const { loans, earningsSeries, earningsKpis } = portfolio;
 
-    function updateKPIs(loans, currentIndex) {
+      // ------------------------------
+      // 1. Net Earnings to Date
+      // ------------------------------
+      const totalNet = Object.values(earningsKpis)
+        .reduce((sum, v) => sum + v, 0);
 
-      let totalNetToDate = 0;
-      let totalLifetime = 0;
-      let totalMonthly = 0;
-      let totalFeesToDate = 0;
+      document.querySelector('[data-kpi="net"]').textContent =
+        "$" + totalNet.toLocaleString();
+
+      // ------------------------------
+      // 2. Lifetime Projected Earnings
+      //    = final cumulative earnings value for each loan
+      // ------------------------------
+      const projected = loans.reduce((sum, loan) => {
+        const series = earningsSeries[loan.id] || [];
+        if (series.length === 0) return sum;
+        const last = series[series.length - 1];
+        return sum + last.cumulative;
+      }, 0);
+
+      document.querySelector('[data-kpi="lifetime"]').textContent =
+        "$" + projected.toLocaleString();
+
+      // ------------------------------
+      // 3. Average Monthly Earnings
+      //    = average of cumulative earnings slope for owned months
+      // ------------------------------
+      let monthCount = 0;
+      let totalInterest = 0;
 
       loans.forEach(loan => {
-        const sched = loan.earningsSchedule;
-        if (!sched || sched.length === 0) return;
-
-        const idx = Math.min(currentIndex, sched.length - 1);
-        const lastIdx = sched.length - 1;
-
-        // Net Earnings To Date
-        totalNetToDate += sched[idx].netEarnings;
-
-        // Lifetime Net Earnings
-        totalLifetime += sched[lastIdx].netEarnings;
-
-        // Monthly Earnings (principal + interest - fee)
-        totalMonthly += (sched[idx].principalPaid + sched[idx].interestPaid - sched[idx].fee);
-
-        // Fees To Date
-        totalFeesToDate += sched[idx].cumFees;
+        const series = earningsSeries[loan.id] || [];
+        if (series.length > 0) {
+          monthCount += series.length;
+          totalInterest += series[series.length - 1].cumulative;
+        }
       });
 
-      // Update UI
-      document.querySelector('#kpiNet').textContent = formatMoney(totalNetToDate);
-      document.querySelector('#kpiLifetime').textContent = formatMoney(totalLifetime);
-      document.querySelector('#kpiMonthly').textContent = formatMoney(totalMonthly);
-      document.querySelector('#kpiFees').textContent = formatMoney(totalFeesToDate);
+      const avgMonthly = monthCount > 0 ? totalInterest / monthCount : 0;
+
+      document.querySelector('[data-kpi="avg"]').textContent =
+        "$" + avgMonthly.toFixed(2);
+
+      // ------------------------------
+      // 4. Total Fees To Date
+      //    (currently no per-row fees exist, default $0)
+      // ------------------------------
+      const totalFees = 0;
+      document.querySelector('[data-kpi="fees"]').textContent =
+        "$" + totalFees.toLocaleString();
     }
 
     const loanGrid = document.getElementById('loanGrid');
@@ -607,14 +623,11 @@ html[data-theme="dark"] .close-btn {
     const currentDateLabel = document.getElementById('currentDateLabel');
     const tooltip = document.getElementById('tooltip');
 
-    const kpis = document.querySelectorAll('.kpi p');
+    const kpis = document.querySelectorAll('[data-kpi]');
     const kpiCards = document.querySelectorAll('.kpi');
 
     let currentLoan = null;
     let currentMode = null;
-    let loans = [];
-    let currentIndex = 0;
-
     const KPI_CONFIG = {
       'kpi-net': {
         title: 'Net Earnings to Date',
@@ -638,30 +651,15 @@ html[data-theme="dark"] .close-btn {
       }
     };
 
-    function computeCurrentIndex(loansList) {
-      const today = new Date();
-
-      return loansList.reduce((acc, loan) => {
-        const sched = loan?.earningsSchedule;
-        if (!Array.isArray(sched) || sched.length === 0) return acc;
-
-        const start = loan.loanStartDate ? new Date(loan.loanStartDate) : null;
-        if (!start || Number.isNaN(start.getTime())) return acc;
-
-        const monthsSinceStart = monthDiff(start, today);
-        const idx = Math.max(0, Math.min(monthsSinceStart, sched.length - 1));
-        return Math.max(acc, idx);
-      }, 0);
-    }
-
-    async function loadLoansAndKPIs() {
+    async function loadPortfolioAndKpis() {
       try {
-        const data = await fetchLoanData();
-        loans = Array.isArray(data?.loans) ? data.loans : [];
-        currentIndex = computeCurrentIndex(loans);
-        updateKPIs(loans, currentIndex);
+        const loans = await loadLoans();
+        const loansWithSchedules = attachSchedules(loans);
+        const portfolioViews = buildPortfolioViews(loansWithSchedules);
+
+        updateEarningsKpis(portfolioViews);
       } catch (err) {
-        console.error('Error loading loans or updating KPIs', err);
+        console.error('Error loading portfolio or updating KPIs', err);
       }
     }
 
@@ -671,7 +669,7 @@ html[data-theme="dark"] .close-btn {
     // Placeholder KPI values
     kpis.forEach(el => { el.textContent = '--'; });
 
-    loadLoansAndKPIs();
+    loadPortfolioAndKpis();
 
     // Theme toggle
     const storedTheme = localStorage.getItem('theme');
