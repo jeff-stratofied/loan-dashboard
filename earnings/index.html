@@ -388,10 +388,10 @@ html[data-theme="dark"] .close-btn {
     </section>
 
     <section class="grid" id="loanGrid" aria-live="polite">
-      <div class="tile" data-loan="Loan A" data-school="Coastal Business School">
+      <div class="tile" data-loan="PSU 2024 8.83" data-school="Penn State">
         <div class="tile-left">
-          <div class="loan-name">Loan A</div>
-          <div class="loan-sub">Coastal Business School</div>
+          <div class="loan-name">PSU 2024 8.83</div>
+          <div class="loan-sub">Penn State</div>
           <div class="loan-meta">
             <div>Rate: 7.2%</div>
             <div>Term: 10 yrs</div>
@@ -647,6 +647,13 @@ html[data-theme="dark"] .close-btn {
         const loansWithSchedules = attachSchedules(loans);
         const portfolioViews = buildPortfolioViews(loansWithSchedules);
 
+        window.LoanMap = {};
+        loansWithSchedules.forEach(loan => {
+          window.LoanMap[loan.loanName] = loan;
+        });
+
+        hydrateTiles(loansWithSchedules);
+
         updateEarningsKpis({
           loans: loansWithSchedules,
           currentMonthIndex: portfolioViews.currentMonthIndex
@@ -704,6 +711,23 @@ html[data-theme="dark"] .close-btn {
       }
     }
 
+    function hydrateTiles(loans) {
+      const tiles = Array.from(loanGrid.querySelectorAll('.tile'));
+      tiles.forEach((tile, idx) => {
+        const loan = loans[idx];
+        if (!loan) return;
+
+        tile.setAttribute('data-loan', loan.loanName);
+        tile.setAttribute('data-school', loan.school);
+
+        const loanNameEl = tile.querySelector('.loan-name');
+        const loanSubEl = tile.querySelector('.loan-sub');
+
+        if (loanNameEl) loanNameEl.textContent = loan.loanName;
+        if (loanSubEl) loanSubEl.textContent = loan.school;
+      });
+    }
+
     // Drawer handling
     function openDrawer() {
       drawer.classList.add('open');
@@ -727,9 +751,10 @@ html[data-theme="dark"] .close-btn {
       tile.addEventListener('click', e => {
         e.stopPropagation();
         const loanName = tile.getAttribute('data-loan');
-        const school = tile.getAttribute('data-school');
+        const loan = window.LoanMap ? window.LoanMap[loanName] : null;
+        if (!loan) return;
         openDrawer();
-        populateDrawer('loan', { loanName, school });
+        populateDrawer('loan', loan);
       });
     });
 
