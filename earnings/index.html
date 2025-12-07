@@ -570,17 +570,18 @@ html[data-theme="dark"] .close-btn {
         const rowNow = sched[idx];
         const rowLast = sched[last];
 
-        // NET EARNINGS TO DATE
-        totalNetToDate += rowNow.netEarnings ?? (rowNow.cumPrincipal + rowNow.cumInterest - rowNow.cumFees);
+        // Correct field names
+        const netNow = rowNow.netEarnings 
+          ?? (rowNow.cumPrincipal + rowNow.cumInterest - rowNow.cumFees);
 
-        // LIFETIME PROJECTED EARNINGS
-        totalLifetime += rowLast.netEarnings ?? (rowLast.cumPrincipal + rowLast.cumInterest - rowLast.cumFees);
+        const netLifetime = rowLast.netEarnings
+          ?? (rowLast.cumPrincipal + rowLast.cumInterest - rowLast.cumFees);
 
-        // AVERAGE MONTHLY EARNINGS
-        const monthly = (rowNow.principalPaid + rowNow.interestPaid - rowNow.fee);
+        const monthly = (rowNow.principalPaid + rowNow.interestPaid - rowNow.feesPaid);
+
+        totalNetToDate += netNow;
+        totalLifetime += netLifetime;
         totalMonthly += monthly;
-
-        // TOTAL FEES TO DATE
         totalFeesToDate += rowNow.cumFees;
       });
 
