@@ -371,19 +371,19 @@ html[data-theme="dark"] .close-btn {
     <section class="kpis" id="kpis">
       <div class="kpi">
         <h3>Net Earnings to Date</h3>
-        <p>--</p>
+        <p id="kpiNet">--</p>
       </div>
       <div class="kpi">
         <h3>Projected Lifetime Earnings</h3>
-        <p>--</p>
+        <p id="kpiLifetime">--</p>
       </div>
       <div class="kpi">
         <h3>Average Monthly Earnings</h3>
-        <p>--</p>
+        <p id="kpiMonthly">--</p>
       </div>
       <div class="kpi">
         <h3>Total Fees to Date</h3>
-        <p>--</p>
+        <p id="kpiFees">--</p>
       </div>
     </section>
 
@@ -545,8 +545,51 @@ html[data-theme="dark"] .close-btn {
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
   <script type="module">
-    import { loadLoans, attachSchedules, buildPortfolioViews } from "../js/loanEngine.js";
+    import { monthDiff } from "../js/loanEngine.js";
+    import { loadLoans as fetchLoanData } from "../js/loadLoans.js";
     import { createLineChart } from "../js/chartEngine.js";
+
+    function formatMoney(value) {
+      return (value ?? 0).toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0
+      });
+    }
+
+    function updateKPIs(loans, currentIndex) {
+
+      let totalNetToDate = 0;
+      let totalLifetime = 0;
+      let totalMonthly = 0;
+      let totalFeesToDate = 0;
+
+      loans.forEach(loan => {
+        const sched = loan.earningsSchedule;
+        if (!sched || sched.length === 0) return;
+
+        const idx = Math.min(currentIndex, sched.length - 1);
+        const lastIdx = sched.length - 1;
+
+        // Net Earnings To Date
+        totalNetToDate += sched[idx].netEarnings;
+
+        // Lifetime Net Earnings
+        totalLifetime += sched[lastIdx].netEarnings;
+
+        // Monthly Earnings (principal + interest - fee)
+        totalMonthly += (sched[idx].principalPaid + sched[idx].interestPaid - sched[idx].fee);
+
+        // Fees To Date
+        totalFeesToDate += sched[idx].cumFees;
+      });
+
+      // Update UI
+      document.querySelector('#kpiNet').textContent = formatMoney(totalNetToDate);
+      document.querySelector('#kpiLifetime').textContent = formatMoney(totalLifetime);
+      document.querySelector('#kpiMonthly').textContent = formatMoney(totalMonthly);
+      document.querySelector('#kpiFees').textContent = formatMoney(totalFeesToDate);
+    }
 
     const loanGrid = document.getElementById('loanGrid');
     const drawer = document.getElementById('drawer');
@@ -569,6 +612,8 @@ html[data-theme="dark"] .close-btn {
 
     let currentLoan = null;
     let currentMode = null;
+    let loans = [];
+    let currentIndex = 0;
 
     const KPI_CONFIG = {
       'kpi-net': {
@@ -593,11 +638,40 @@ html[data-theme="dark"] .close-btn {
       }
     };
 
+    function computeCurrentIndex(loansList) {
+      const today = new Date();
+
+      return loansList.reduce((acc, loan) => {
+        const sched = loan?.earningsSchedule;
+        if (!Array.isArray(sched) || sched.length === 0) return acc;
+
+        const start = loan.loanStartDate ? new Date(loan.loanStartDate) : null;
+        if (!start || Number.isNaN(start.getTime())) return acc;
+
+        const monthsSinceStart = monthDiff(start, today);
+        const idx = Math.max(0, Math.min(monthsSinceStart, sched.length - 1));
+        return Math.max(acc, idx);
+      }, 0);
+    }
+
+    async function loadLoansAndKPIs() {
+      try {
+        const data = await fetchLoanData();
+        loans = Array.isArray(data?.loans) ? data.loans : [];
+        currentIndex = computeCurrentIndex(loans);
+        updateKPIs(loans, currentIndex);
+      } catch (err) {
+        console.error('Error loading loans or updating KPIs', err);
+      }
+    }
+
     // Set current date label
     currentDateLabel.textContent = `Current Date: ${new Date().toLocaleDateString()}`;
 
     // Placeholder KPI values
     kpis.forEach(el => { el.textContent = '--'; });
+
+    loadLoansAndKPIs();
 
     // Theme toggle
     const storedTheme = localStorage.getItem('theme');
