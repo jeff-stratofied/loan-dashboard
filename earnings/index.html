@@ -705,8 +705,8 @@ html[data-theme="dark"] .close-btn {
         openDrawerForKPI(route);
       });
     });
-
-    drawerOverlay.addEventListener('click', closeDrawer);
+    // drawerOverlay click should NOT close the drawer (match amort behavior)
+    // drawerOverlay.addEventListener('click', closeDrawer);
     closeBtn.addEventListener('click', closeDrawer);
   </script>
 </body>
