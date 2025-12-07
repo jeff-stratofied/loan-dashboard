@@ -544,231 +544,55 @@ html[data-theme="dark"] .close-btn {
 
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
-  <script type="module">
-    import {
-      loadLoans,
-      attachSchedules,
-      buildPortfolioViews
-    } from "../js/loanEngine.js";
-    import { createLineChart } from "../js/chartEngine.js";
+    <script type="module">
+import { loadLoans, attachSchedules, buildPortfolioViews } from "../js/loanEngine.js";
+import { createLineChart } from "../js/chartEngine.js";
 
-    function updateEarningsKpis(portfolio) {
-      const { loans, currentMonthIndex } = portfolio;
+function updateEarningsKpis(portfolio) {
+  const { loans, currentMonthIndex } = portfolio;
 
-      let totalNetToDate = 0;
-      let totalLifetime = 0;
-      let totalMonthly = 0;
-      let totalFeesToDate = 0;
+  let totalNetToDate = 0;
+  let totalLifetime = 0;
+  let totalMonthly = 0;
+  let totalFeesToDate = 0;
 
-      loans.forEach(loan => {
-        const sched = loan.earningsSchedule;
-        if (!sched || sched.length === 0) return;
+  loans.forEach(loan => {
+    const sched = loan.earningsSchedule;
+    if (!sched || sched.length === 0) return;
 
-        const idx = Math.min(currentMonthIndex, sched.length - 1);
-        const last = sched.length - 1;
+    const idx = Math.min(currentMonthIndex, sched.length - 1);
+    const last = sched.length - 1;
 
-        const rowNow = sched[idx];
-        const rowLast = sched[last];
+    const rowNow = sched[idx];
+    const rowLast = sched[last];
 
-        // Correct field names
-        const netNow = rowNow.netEarnings 
-          ?? (rowNow.cumPrincipal + rowNow.cumInterest - rowNow.cumFees);
+    const netNow = rowNow.netEarnings ?? (rowNow.cumPrincipal + rowNow.cumInterest - rowNow.cumFees);
+    const netLifetime = rowLast.netEarnings ?? (rowLast.cumPrincipal + rowLast.cumInterest - rowLast.cumFees);
+    const monthly = (rowNow.principalPaid + rowNow.interestPaid + rowNow.feesPaid);
+    const feesNow = rowNow.cumFees;
 
-        const netLifetime = rowLast.netEarnings
-          ?? (rowLast.cumPrincipal + rowLast.cumInterest - rowLast.cumFees);
+    totalNetToDate += netNow;
+    totalLifetime += netLifetime;
+    totalMonthly += monthly;
+    totalFeesToDate += feesNow;
+  });
 
-        const monthly = (rowNow.principalPaid + rowNow.interestPaid - rowNow.feesPaid);
+  document.querySelector('[data-kpi="net"]').textContent = `$${totalNetToDate.toLocaleString()}`;
+  document.querySelector('[data-kpi="lifetime"]').textContent = `$${totalLifetime.toLocaleString()}`;
+  document.querySelector('[data-kpi="avg"]').textContent = `$${totalMonthly.toLocaleString()}`;
+  document.querySelector('[data-kpi="fees"]').textContent = `$${totalFeesToDate.toLocaleString()}`;
+}
 
-        totalNetToDate += netNow;
-        totalLifetime += netLifetime;
-        totalMonthly += monthly;
-        totalFeesToDate += rowNow.cumFees;
-      });
+async function init() {
+  const rawLoans = await loadLoans();
+  const loans = attachSchedules(rawLoans);    // IMPORTANT FIX
+  const portfolio = buildPortfolioViews(loans);
 
-      document.querySelector('[data-kpi="net"]').textContent =
-        "$" + totalNetToDate.toLocaleString();
+  updateEarningsKpis(portfolio);
+  renderLoanTiles(loans, portfolio);
+}
 
-      document.querySelector('[data-kpi="lifetime"]').textContent =
-        "$" + totalLifetime.toLocaleString();
-
-      document.querySelector('[data-kpi="avg"]').textContent =
-        "$" + totalMonthly.toFixed(2);
-
-      document.querySelector('[data-kpi="fees"]').textContent =
-        "$" + totalFeesToDate.toLocaleString();
-    }
-
-    const loanGrid = document.getElementById('loanGrid');
-    const drawer = document.getElementById('drawer');
-    const drawerTitle = document.getElementById('drawerTitle');
-    const drawerSub = document.getElementById('drawerSub');
-    const drawerPrimaryTitle = document.getElementById('drawerPrimaryTitle');
-    const drawerSecondaryTitle = document.getElementById('drawerSecondaryTitle');
-    const drawerPrimary = document.getElementById('drawerPrimary');
-    const drawerSecondary = document.getElementById('drawerSecondary');
-    const amortBody = document.getElementById('amortBody');
-    const drawerExtra = document.getElementById('drawerExtra');
-    const drawerAmortContainer = document.getElementById('drawerAmortContainer');
-    const closeBtn = document.getElementById('closeBtn');
-    const themeToggle = document.getElementById('themeToggle');
-    const currentDateLabel = document.getElementById('currentDateLabel');
-    const tooltip = document.getElementById('tooltip');
-
-    const kpis = document.querySelectorAll('[data-kpi]');
-    const kpiCards = document.querySelectorAll('.kpi');
-
-    let currentLoan = null;
-    let currentMode = null;
-    const KPI_CONFIG = {
-      'kpi-net': {
-        title: 'Net Earnings to Date',
-        primaryTitle: 'Net Earnings',
-        secondaryTitle: 'Fees to Date'
-      },
-      'kpi-lifetime': {
-        title: 'Projected Lifetime Earnings',
-        primaryTitle: 'Projected Earnings',
-        secondaryTitle: 'Fees to Date'
-      },
-      'kpi-monthly': {
-        title: 'Average Monthly Earnings',
-        primaryTitle: 'Avg Monthly',
-        secondaryTitle: 'Fees to Date'
-      },
-      'kpi-fees': {
-        title: 'Total Fees to Date',
-        primaryTitle: 'Total Fees',
-        secondaryTitle: 'Net Earnings'
-      }
-    };
-
-    async function loadPortfolioAndKpis() {
-      try {
-        const loans = await loadLoans();
-        const loansWithSchedules = attachSchedules(loans);
-        const portfolioViews = buildPortfolioViews(loansWithSchedules);
-
-        window.LoanMap = {};
-        loansWithSchedules.forEach(loan => {
-          window.LoanMap[loan.loanName] = loan;
-        });
-
-        hydrateTiles(loansWithSchedules);
-
-        updateEarningsKpis({
-          loans: loansWithSchedules,
-          currentMonthIndex: portfolioViews.currentMonthIndex
-        });
-      } catch (err) {
-        console.error('Error loading portfolio or updating KPIs', err);
-      }
-    }
-
-    // Set current date label
-    currentDateLabel.textContent = `Current Date: ${new Date().toLocaleDateString()}`;
-
-    // Placeholder KPI values
-    kpis.forEach(el => { el.textContent = '--'; });
-
-    loadPortfolioAndKpis();
-
-    // Theme toggle
-    const storedTheme = localStorage.getItem('theme');
-    if (storedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    themeToggle.addEventListener('click', () => {
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
-      localStorage.setItem('theme', isDark ? 'light' : 'dark');
-    });
-
-    function populateDrawer(drawerType, loanData = null) {
-      const isKpi = typeof drawerType === 'string' && drawerType.startsWith('kpi-');
-
-      drawerExtra.innerHTML = '';
-      currentMode = isKpi ? 'kpi' : 'loan';
-      currentLoan = isKpi ? null : loanData;
-
-      if (isKpi) {
-        const config = KPI_CONFIG[drawerType] || {};
-        drawerTitle.textContent = config.title || 'KPI Details';
-        drawerSub.textContent = `${config.title || 'KPI'} Details`;
-        drawerPrimaryTitle.textContent = config.primaryTitle || 'Primary';
-        drawerSecondaryTitle.textContent = config.secondaryTitle || 'Secondary';
-        drawerPrimary.textContent = '--';
-        drawerSecondary.textContent = '--';
-        drawerAmortContainer.style.display = 'none';
-      } else {
-        const loanName = loanData?.loanName || 'Loan';
-        const school = loanData?.school || 'School';
-        drawerTitle.textContent = `${loanName} — ${school}`;
-        drawerSub.textContent = 'Earnings Details';
-        drawerPrimaryTitle.textContent = 'Net Earnings To Date';
-        drawerSecondaryTitle.textContent = 'Fees To Date';
-        drawerPrimary.textContent = '--';
-        drawerSecondary.textContent = '--';
-        amortBody.innerHTML = '';
-        // IMPORTANT FIX → restore full drawer section for loan mode
-        drawerAmortContainer.style.display = 'block';
-      }
-    }
-
-    function hydrateTiles(loans) {
-      const tiles = Array.from(loanGrid.querySelectorAll('.tile'));
-      tiles.forEach((tile, idx) => {
-        const loan = loans[idx];
-        if (!loan) return;
-
-        tile.setAttribute('data-loan', loan.loanName);
-        tile.setAttribute('data-school', loan.school);
-
-        const loanNameEl = tile.querySelector('.loan-name');
-        const loanSubEl = tile.querySelector('.loan-sub');
-
-        if (loanNameEl) loanNameEl.textContent = loan.loanName;
-        if (loanSubEl) loanSubEl.textContent = loan.school;
-      });
-    }
-
-    // Drawer handling
-    function openDrawer() {
-      drawer.classList.add('open');
-      document.addEventListener('click', onOutsideClick);
-    }
-
-    function closeDrawer() {
-      drawer.classList.remove('open');
-      document.removeEventListener('click', onOutsideClick);
-      currentLoan = null;
-      currentMode = null;
-    }
-
-    function onOutsideClick(e) {
-      if (!drawer.contains(e.target)) {
-        closeDrawer();
-      }
-    }
-
-    loanGrid.querySelectorAll('.tile').forEach(tile => {
-      tile.addEventListener('click', e => {
-        e.stopPropagation();
-        const loanName = tile.getAttribute('data-loan');
-        const loan = window.LoanMap ? window.LoanMap[loanName] : null;
-        if (!loan) return;
-        openDrawer();
-        populateDrawer('loan', loan);
-      });
-    });
-
-    const kpiRoutes = ['kpi-net', 'kpi-lifetime', 'kpi-monthly', 'kpi-fees'];
-    kpiCards.forEach((card, idx) => {
-      const route = kpiRoutes[idx] || 'kpi-net';
-      card.addEventListener('click', e => {
-        e.stopPropagation();
-        openDrawer();
-        populateDrawer(route);
-      });
-    });
-    closeBtn.addEventListener('click', closeDrawer);
+init();
   </script>
 </body>
 </html>
