@@ -553,58 +553,48 @@ html[data-theme="dark"] .close-btn {
     import { createLineChart } from "../js/chartEngine.js";
 
     function updateEarningsKpis(portfolio) {
-      const { loans, earningsSeries, earningsKpis } = portfolio;
+      const { loans, currentMonthIndex } = portfolio;
 
-      // ------------------------------
-      // 1. Net Earnings to Date
-      // ------------------------------
-      const totalNet = Object.values(earningsKpis)
-        .reduce((sum, v) => sum + v, 0);
-
-      document.querySelector('[data-kpi="net"]').textContent =
-        "$" + totalNet.toLocaleString();
-
-      // ------------------------------
-      // 2. Lifetime Projected Earnings
-      //    = final cumulative earnings value for each loan
-      // ------------------------------
-      const projected = loans.reduce((sum, loan) => {
-        const series = earningsSeries[loan.id] || [];
-        if (series.length === 0) return sum;
-        const last = series[series.length - 1];
-        return sum + last.cumulative;
-      }, 0);
-
-      document.querySelector('[data-kpi="lifetime"]').textContent =
-        "$" + projected.toLocaleString();
-
-      // ------------------------------
-      // 3. Average Monthly Earnings
-      //    = average of cumulative earnings slope for owned months
-      // ------------------------------
-      let monthCount = 0;
-      let totalInterest = 0;
+      let totalNetToDate = 0;
+      let totalLifetime = 0;
+      let totalMonthly = 0;
+      let totalFeesToDate = 0;
 
       loans.forEach(loan => {
-        const series = earningsSeries[loan.id] || [];
-        if (series.length > 0) {
-          monthCount += series.length;
-          totalInterest += series[series.length - 1].cumulative;
-        }
+        const sched = loan.earningsSchedule;
+        if (!sched || sched.length === 0) return;
+
+        const idx = Math.min(currentMonthIndex, sched.length - 1);
+        const last = sched.length - 1;
+
+        const rowNow = sched[idx];
+        const rowLast = sched[last];
+
+        // NET EARNINGS TO DATE
+        totalNetToDate += rowNow.netEarnings ?? (rowNow.cumPrincipal + rowNow.cumInterest - rowNow.cumFees);
+
+        // LIFETIME PROJECTED EARNINGS
+        totalLifetime += rowLast.netEarnings ?? (rowLast.cumPrincipal + rowLast.cumInterest - rowLast.cumFees);
+
+        // AVERAGE MONTHLY EARNINGS
+        const monthly = (rowNow.principalPaid + rowNow.interestPaid - rowNow.fee);
+        totalMonthly += monthly;
+
+        // TOTAL FEES TO DATE
+        totalFeesToDate += rowNow.cumFees;
       });
 
-      const avgMonthly = monthCount > 0 ? totalInterest / monthCount : 0;
+      document.querySelector('[data-kpi="net"]').textContent =
+        "$" + totalNetToDate.toLocaleString();
+
+      document.querySelector('[data-kpi="lifetime"]').textContent =
+        "$" + totalLifetime.toLocaleString();
 
       document.querySelector('[data-kpi="avg"]').textContent =
-        "$" + avgMonthly.toFixed(2);
+        "$" + totalMonthly.toFixed(2);
 
-      // ------------------------------
-      // 4. Total Fees To Date
-      //    (currently no per-row fees exist, default $0)
-      // ------------------------------
-      const totalFees = 0;
       document.querySelector('[data-kpi="fees"]').textContent =
-        "$" + totalFees.toLocaleString();
+        "$" + totalFeesToDate.toLocaleString();
     }
 
     const loanGrid = document.getElementById('loanGrid');
@@ -657,7 +647,10 @@ html[data-theme="dark"] .close-btn {
         const loansWithSchedules = attachSchedules(loans);
         const portfolioViews = buildPortfolioViews(loansWithSchedules);
 
-        updateEarningsKpis(portfolioViews);
+        updateEarningsKpis({
+          loans: loansWithSchedules,
+          currentMonthIndex: portfolioViews.currentMonthIndex
+        });
       } catch (err) {
         console.error('Error loading portfolio or updating KPIs', err);
       }
