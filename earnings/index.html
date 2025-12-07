@@ -189,9 +189,8 @@
       width:560px;
       background:var(--card);
       box-shadow:-28px 0 80px rgba(2,6,23,0.14);
-      transform:translateX(110%);
-      transition:transform .28s cubic-bezier(.2,.9,.3,1), background-color .25s ease, color .25s ease, border-color .25s ease, b
-ox-shadow .25s ease;
+      transform: translateX(100%);
+      transition: transform 0.35s, background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
       z-index:90;
       overflow:hidden;
       padding:0;
@@ -200,6 +199,20 @@ ox-shadow .25s ease;
       flex-direction:column;
     }
     .drawer.open{ transform:translateX(0) }
+
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+      z-index: 80;
+    }
+    .drawer-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
     .drawer-header{ padding:20px; flex-shrink:0; }
     .drawer-head{ display:flex; align-items:start; justify-content:space-between; gap:8px }
@@ -542,6 +555,8 @@ html[data-theme="dark"] .close-btn {
     </div>
   </aside>
 
+  <div id="drawerOverlay" class="drawer-overlay"></div>
+
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
   <script type="module">
@@ -552,14 +567,43 @@ html[data-theme="dark"] .close-btn {
     const drawer = document.getElementById('drawer');
     const drawerTitle = document.getElementById('drawerTitle');
     const drawerSub = document.getElementById('drawerSub');
+    const drawerPrimaryTitle = document.getElementById('drawerPrimaryTitle');
+    const drawerSecondaryTitle = document.getElementById('drawerSecondaryTitle');
     const drawerPrimary = document.getElementById('drawerPrimary');
     const drawerSecondary = document.getElementById('drawerSecondary');
     const amortBody = document.getElementById('amortBody');
+    const drawerAmortContainer = document.getElementById('drawerAmortContainer');
     const closeBtn = document.getElementById('closeBtn');
     const themeToggle = document.getElementById('themeToggle');
     const currentDateLabel = document.getElementById('currentDateLabel');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    const tooltip = document.getElementById('tooltip');
 
     const kpis = document.querySelectorAll('.kpi p');
+    const kpiCards = document.querySelectorAll('.kpi');
+
+    const KPI_CONFIG = {
+      'kpi-net': {
+        title: 'Net Earnings to Date',
+        primaryTitle: 'Net Earnings',
+        secondaryTitle: 'Fees to Date'
+      },
+      'kpi-lifetime': {
+        title: 'Projected Lifetime Earnings',
+        primaryTitle: 'Projected Earnings',
+        secondaryTitle: 'Fees to Date'
+      },
+      'kpi-monthly': {
+        title: 'Average Monthly Earnings',
+        primaryTitle: 'Avg Monthly',
+        secondaryTitle: 'Fees to Date'
+      },
+      'kpi-fees': {
+        title: 'Total Fees to Date',
+        primaryTitle: 'Total Fees',
+        secondaryTitle: 'Net Earnings'
+      }
+    };
 
     // Set current date label
     currentDateLabel.textContent = `Current Date: ${new Date().toLocaleDateString()}`;
@@ -577,19 +621,39 @@ html[data-theme="dark"] .close-btn {
     });
 
     // Drawer handling
-    function openDrawer(loanName, school) {
-      drawerTitle.textContent = `${loanName} — ${school}`;
-      drawerSub.textContent = 'Earnings Details';
-      drawerPrimary.textContent = '--';
-      drawerSecondary.textContent = '--';
-      amortBody.innerHTML = '';
+    function openDrawer(target, school) {
+      const isKpi = typeof target === 'string' && target.startsWith('kpi-');
+
+      if (isKpi) {
+        const config = KPI_CONFIG[target] || {};
+        drawerTitle.textContent = config.title || 'KPI Details';
+        drawerSub.textContent = `${config.title || 'KPI'} Details`;
+        drawerPrimaryTitle.textContent = config.primaryTitle || 'Primary';
+        drawerSecondaryTitle.textContent = config.secondaryTitle || 'Secondary';
+        drawerPrimary.textContent = '--';
+        drawerSecondary.textContent = '--';
+        drawerAmortContainer.style.display = 'none';
+      } else {
+        drawerTitle.textContent = `${target} — ${school}`;
+        drawerSub.textContent = 'Earnings Details';
+        drawerPrimaryTitle.textContent = 'Net Earnings To Date';
+        drawerSecondaryTitle.textContent = 'Fees To Date';
+        drawerPrimary.textContent = '--';
+        drawerSecondary.textContent = '--';
+        amortBody.innerHTML = '';
+        drawerAmortContainer.style.display = 'block';
+      }
+
       drawer.classList.add('open');
+      drawerOverlay.classList.add('show');
       drawer.setAttribute('aria-hidden', 'false');
     }
 
     function closeDrawer() {
       drawer.classList.remove('open');
+      drawerOverlay.classList.remove('show');
       drawer.setAttribute('aria-hidden', 'true');
+      if (tooltip) tooltip.style.display = 'none';
     }
 
     loanGrid.querySelectorAll('.tile').forEach(tile => {
@@ -600,6 +664,13 @@ html[data-theme="dark"] .close-btn {
       });
     });
 
+    const kpiRoutes = ['kpi-net', 'kpi-lifetime', 'kpi-monthly', 'kpi-fees'];
+    kpiCards.forEach((card, idx) => {
+      const route = kpiRoutes[idx] || 'kpi-net';
+      card.addEventListener('click', () => openDrawer(route));
+    });
+
+    drawerOverlay.addEventListener('click', closeDrawer);
     closeBtn.addEventListener('click', closeDrawer);
   </script>
 </body>
