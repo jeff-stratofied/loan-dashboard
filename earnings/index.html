@@ -201,22 +201,6 @@
     }
     .drawer.open{ transform:translateX(0) }
 
-    .drawer-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.25);
-      backdrop-filter: blur(2px);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .25s ease;
-      z-index: 80;
-    }
-
-    .drawer-overlay.show {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
     .drawer-header{ padding:20px; flex-shrink:0; }
     .drawer-head{ display:flex; align-items:start; justify-content:space-between; gap:8px }
     .close-btn{
@@ -503,7 +487,7 @@ html[data-theme="dark"] .close-btn {
   </div>
 
   <!-- Right drawer -->
-  <aside id="drawer" class="drawer" aria-hidden="true">
+  <aside id="drawer" class="drawer">
     <div class="drawer-header">
       <div class="drawer-head">
         <div>
@@ -558,8 +542,6 @@ html[data-theme="dark"] .close-btn {
     </div>
   </aside>
 
-  <div id="drawerOverlay" class="drawer-overlay"></div>
-
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
   <script type="module">
@@ -580,7 +562,6 @@ html[data-theme="dark"] .close-btn {
     const closeBtn = document.getElementById('closeBtn');
     const themeToggle = document.getElementById('themeToggle');
     const currentDateLabel = document.getElementById('currentDateLabel');
-    const drawerOverlay = document.getElementById('drawerOverlay');
     const tooltip = document.getElementById('tooltip');
 
     const kpis = document.querySelectorAll('.kpi p');
@@ -630,6 +611,10 @@ html[data-theme="dark"] .close-btn {
     function populateDrawer(drawerType, loanData = null) {
       const isKpi = typeof drawerType === 'string' && drawerType.startsWith('kpi-');
 
+      drawerExtra.innerHTML = '';
+      currentMode = isKpi ? 'kpi' : 'loan';
+      currentLoan = isKpi ? null : loanData;
+
       if (isKpi) {
         const config = KPI_CONFIG[drawerType] || {};
         drawerTitle.textContent = config.title || 'KPI Details';
@@ -655,44 +640,31 @@ html[data-theme="dark"] .close-btn {
     }
 
     // Drawer handling
+    function openDrawer() {
+      drawer.classList.add('open');
+      document.addEventListener('click', onOutsideClick);
+    }
+
     function closeDrawer() {
       drawer.classList.remove('open');
-      drawerOverlay.classList.remove('show');
-      tooltip.style.display = 'none';
+      document.removeEventListener('click', onOutsideClick);
       currentLoan = null;
       currentMode = null;
     }
 
-    function openDrawerForLoan(loan) {
-      // Always keep/open drawer before applying content
-      drawer.classList.add('open');
-      drawerOverlay.classList.add('show');
-
-      drawerExtra.innerHTML = '';
-      currentMode = 'loan';
-      currentLoan = loan;
-
-      populateDrawer('loan', loan);
-    }
-
-    function openDrawerForKPI(kpiKey) {
-      drawer.classList.add('open');
-      drawerOverlay.classList.add('show');
-
-      drawerExtra.innerHTML = '';
-      currentMode = 'kpi';
-      currentLoan = null;
-
-      populateDrawer(kpiKey);
+    function onOutsideClick(e) {
+      if (!drawer.contains(e.target)) {
+        closeDrawer();
+      }
     }
 
     loanGrid.querySelectorAll('.tile').forEach(tile => {
       tile.addEventListener('click', e => {
-        e.preventDefault();
         e.stopPropagation();
         const loanName = tile.getAttribute('data-loan');
         const school = tile.getAttribute('data-school');
-        openDrawerForLoan({ loanName, school });
+        openDrawer();
+        populateDrawer('loan', { loanName, school });
       });
     });
 
@@ -700,13 +672,11 @@ html[data-theme="dark"] .close-btn {
     kpiCards.forEach((card, idx) => {
       const route = kpiRoutes[idx] || 'kpi-net';
       card.addEventListener('click', e => {
-        e.preventDefault();
         e.stopPropagation();
-        openDrawerForKPI(route);
+        openDrawer();
+        populateDrawer(route);
       });
     });
-    // drawerOverlay click should NOT close the drawer (match amort behavior)
-    // drawerOverlay.addEventListener('click', closeDrawer);
     closeBtn.addEventListener('click', closeDrawer);
   </script>
 </body>
