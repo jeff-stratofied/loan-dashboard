@@ -1,11 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Earnings Page Rebuild</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loan Portfolio — Earnings</title>
+
+  <!-- Uses amort template structure -->
+  <style>
+    /* BASIC AMORT TEMPLATE STRUCTURE — FULL STYLING TO BE EXTENDED */
+    body { margin:0; font-family: Inter, system-ui; background:#f0f4f8; }
+    .app { max-width:1200px; margin:20px auto; padding:16px; }
+    header { display:flex; flex-direction:column; gap:8px; margin-bottom:8px; }
+    .header-top { display:flex; justify-content:space-between; align-items:center; }
+    .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:14px 0 18px; }
+    .kpi { background:white; padding:12px; border-radius:10px; border:1px solid #e2e8f0; }
+    .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; height: calc(100vh - 320px); overflow:auto; }
+    .tile { background:white; border:1px solid #e2e8f0; border-radius:12px; padding:12px; display:flex; justify-content:space-between; }
+    aside.drawer { position:fixed; right:0; top:0; width:560px; height:100vh; background:white; border-left:1px solid #e2e8f0; transform:translateX(110%); }
+    #tooltip { position:fixed; display:none; background:black; color:white; padding:6px 8px; border-radius:4px; font-size:12px; }
+  </style>
 </head>
+
 <body>
-<h1>Earnings Page Rebuild In Progress</h1>
-<p>The full implementation is being constructed. This scaffold ensures delivery works.</p>
+  <div class="app">
+    <header>
+      <div class="header-top">
+        <div>
+          <h1>Earnings Dashboard</h1>
+          <p class="lead">Cumulative principal, interest, and fees</p>
+        </div>
+        <button id="themeToggle">🌙</button>
+      </div>
+      <div id="currentDateLabel">Current Date: </div>
+    </header>
+
+    <section id="kpis" class="kpis"></section>
+    <section id="loanGrid" class="grid"></section>
+  </div>
+
+  <!-- Drawer -->
+  <aside id="drawer" class="drawer">
+    <div class="drawer-header">
+      <h2 id="drawerTitle">Earnings</h2>
+      <div id="drawerSub">Details</div>
+      <button id="closeBtn">Close</button>
+    </div>
+    <div id="drawerBody" class="drawer-body">
+      <div id="drawerChartArea" class="drawer-chart"></div>
+      <div id="drawerTable"></div>
+    </div>
+  </aside>
+
+  <div id="tooltip"></div>
+
+  <!-- External JS (matches amort template structure) -->
+  <script type="module">
+    import { loadLoans, attachSchedules, buildPortfolioViews } from "../js/loanEngine.js";
+    import { createLineChart } from "../js/chartEngine.js";
+
+    async function init() {
+      const raw = await loadLoans();
+      const loans = attachSchedules(raw);
+      const portfolio = buildPortfolioViews(loans);
+
+      document.getElementById("currentDateLabel").textContent =
+        "Current Date: " + new Date().toLocaleDateString();
+
+      // Placeholder KPI render
+      document.getElementById("kpis").innerHTML = `
+        <div class='kpi'><h3>Net Earnings</h3><p>$0.00</p></div>
+        <div class='kpi'><h3>Lifetime Earnings</h3><p>$0.00</p></div>
+        <div class='kpi'><h3>Avg Monthly</h3><p>$0.00</p></div>
+        <div class='kpi'><h3>Total Fees</h3><p>$0.00</p></div>
+      `;
+
+      // Placeholder Loan Grid
+      document.getElementById("loanGrid").innerHTML =
+        loans.map(l => `
+          <div class="tile">
+            <div>${l.loanName} — ${l.school}</div>
+            <div>MiniChart</div>
+          </div>
+        `).join("");
+    }
+
+    init();
+  </script>
 </body>
 </html>
