@@ -457,48 +457,49 @@ html[data-theme="dark"] .close-btn {
     import { createLineChart } from "../js/chartEngine.js";
 
     function updateEarningsKpis(portfolio) {
-      const { loans, currentMonthIndex } = portfolio;
+      const { loans, currentMonthIndex = 0 } = portfolio;
 
-      let totalNetToDate = 0;
+      let totalNet = 0;
       let totalLifetime = 0;
       let totalMonthly = 0;
-      let totalFeesToDate = 0;
+      let totalFees = 0;
 
       loans.forEach(loan => {
-        const sched = loan.earningsSchedule;
-        if (!sched || sched.length === 0) return;
+        const sched = loan.earningsSchedule || [];
+        if (!sched.length) return;
 
         const idx = Math.min(currentMonthIndex, sched.length - 1);
-        const last = sched.length - 1;
+        const lastIdx = sched.length - 1;
 
-        const rowNow = sched[idx];
-        const rowLast = sched[last];
+        const now = sched[idx];
+        const last = sched[lastIdx];
 
-        // NET EARNINGS TO DATE
-        totalNetToDate += rowNow.netEarnings ?? (rowNow.cumPrincipal + rowNow.cumInterest - rowNow.cumFees);
+        const net = now.netEarnings ??
+          (now.cumPrincipal + now.cumInterest - now.cumFees);
 
-        // LIFETIME PROJECTED EARNINGS
-        totalLifetime += rowLast.netEarnings ?? (rowLast.cumPrincipal + rowLast.cumInterest - rowLast.cumFees);
+        const lifetime = last.netEarnings ??
+          (last.cumPrincipal + last.cumInterest - last.cumFees);
 
-        // AVERAGE MONTHLY EARNINGS
-        const monthly = (rowNow.principalPaid + rowNow.interestPaid - rowNow.fee);
+        const monthly = (now.principalPaid || 0) +
+                        (now.interestPaid || 0) +
+                        (now.feesPaid || 0);
+
+        const fees = now.cumFees || 0;
+
+        totalNet += net;
+        totalLifetime += lifetime;
         totalMonthly += monthly;
-
-        // TOTAL FEES TO DATE
-        totalFeesToDate += rowNow.cumFees;
+        totalFees += fees;
       });
 
       document.querySelector('[data-kpi="net"]').textContent =
-        "$" + totalNetToDate.toLocaleString();
-
+        `$${totalNet.toLocaleString()}`;
       document.querySelector('[data-kpi="lifetime"]').textContent =
-        "$" + totalLifetime.toLocaleString();
-
+        `$${totalLifetime.toLocaleString()}`;
       document.querySelector('[data-kpi="avg"]').textContent =
-        "$" + totalMonthly.toFixed(2);
-
+        `$${totalMonthly.toLocaleString()}`;
       document.querySelector('[data-kpi="fees"]').textContent =
-        "$" + totalFeesToDate.toLocaleString();
+        `$${totalFees.toLocaleString()}`;
     }
 
     const loanGrid = document.getElementById('loanGrid');
