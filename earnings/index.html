@@ -190,7 +190,7 @@
       background:var(--card);
       box-shadow:-28px 0 80px rgba(2,6,23,0.14);
       transform: translateX(100%);
-      transition: transform 0.35s, background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+      transition: transform 0.35s ease-in-out;
       z-index:90;
       overflow:hidden;
       padding:0;
@@ -206,7 +206,7 @@
       background: rgba(0, 0, 0, 0.35);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.35s ease;
+      transition: opacity 0.35s ease-in-out;
       z-index: 80;
     }
     .drawer-overlay.show {
@@ -620,12 +620,11 @@ html[data-theme="dark"] .close-btn {
       localStorage.setItem('theme', isDark ? 'light' : 'dark');
     });
 
-    // Drawer handling
-    function openDrawer(target, school) {
-      const isKpi = typeof target === 'string' && target.startsWith('kpi-');
+    function populateDrawer(drawerType, loanData = null) {
+      const isKpi = typeof drawerType === 'string' && drawerType.startsWith('kpi-');
 
       if (isKpi) {
-        const config = KPI_CONFIG[target] || {};
+        const config = KPI_CONFIG[drawerType] || {};
         drawerTitle.textContent = config.title || 'KPI Details';
         drawerSub.textContent = `${config.title || 'KPI'} Details`;
         drawerPrimaryTitle.textContent = config.primaryTitle || 'Primary';
@@ -634,7 +633,9 @@ html[data-theme="dark"] .close-btn {
         drawerSecondary.textContent = '--';
         drawerAmortContainer.style.display = 'none';
       } else {
-        drawerTitle.textContent = `${target} — ${school}`;
+        const loanName = loanData?.loanName || 'Loan';
+        const school = loanData?.school || 'School';
+        drawerTitle.textContent = `${loanName} — ${school}`;
         drawerSub.textContent = 'Earnings Details';
         drawerPrimaryTitle.textContent = 'Net Earnings To Date';
         drawerSecondaryTitle.textContent = 'Fees To Date';
@@ -643,24 +644,41 @@ html[data-theme="dark"] .close-btn {
         amortBody.innerHTML = '';
         drawerAmortContainer.style.display = 'block';
       }
+    }
 
-      drawer.classList.add('open');
-      drawerOverlay.classList.add('show');
-      drawer.setAttribute('aria-hidden', 'false');
+    // Drawer handling
+    function openDrawer(drawerType, loanData = null) {
+        const drawer = document.getElementById("drawer");
+        const drawerOverlay = document.getElementById("drawerOverlay");
+
+        // Always populate drawer content FIRST
+        populateDrawer(drawerType, loanData);
+
+        // If the drawer is already open:
+        // DO NOT close it, DO NOT animate it.
+        // Amort behavior = keep drawer open and simply replace content.
+        if (drawer.classList.contains("open")) {
+            return; // Do nothing else — content already refreshed above.
+        }
+
+        // Drawer was closed → open it normally
+        drawer.classList.add("open");
+        drawerOverlay.classList.add("show");
     }
 
     function closeDrawer() {
-      drawer.classList.remove('open');
-      drawerOverlay.classList.remove('show');
-      drawer.setAttribute('aria-hidden', 'true');
-      if (tooltip) tooltip.style.display = 'none';
+        const drawer = document.getElementById("drawer");
+        const drawerOverlay = document.getElementById("drawerOverlay");
+
+        drawer.classList.remove("open");
+        drawerOverlay.classList.remove("show");
     }
 
     loanGrid.querySelectorAll('.tile').forEach(tile => {
       tile.addEventListener('click', () => {
         const loanName = tile.getAttribute('data-loan');
         const school = tile.getAttribute('data-school');
-        openDrawer(loanName, school);
+        openDrawer('loan', { loanName, school });
       });
     });
 
