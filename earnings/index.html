@@ -1,1 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Loan Portfolio — Earnings</title>
 
+  <style>
+    :root {
+     --bg:#f0f4f8;
+     --surface:#f1f5f9;
+     --card:#ffffff;
+     --text:#0f172a;
+     --muted:#64748b;
+     --border:#e2e8f0;
+     --shadow:rgba(0,0,0,0.08);
+     --brand:#0ea5e9;
+     --brand-strong:#0284c7;
+     --accent1:#7c3aed;
+     --accent2:#0ea5e9;
+     --accent3:#14b8a6;
+     --accent4:#f97316;
+     --accent5:#ef4444;
+    --stat-bg:#f8fafc;
+    --stat-border:#e2e8f0;
+    --grad-top:var(--surface);
+    --grad-bottom:var(--card);
+    --font-smooth:antialiased;
+    --tile-bg:var(--card);
+    --tile-hover-bg:#f8fafc;
+    --drawer-bg:var(--card);
+    --drawer-shadow:rgba(0,0,0,0.10);
+  }
+
+    html { color-scheme:light; }
+
+      html[data-theme="dark"] {
+      color-scheme: dark;
+
+      --bg:#0f172a;
+      --surface:#1e293b;
+      --card:#1e293b;
+      --text:#f1f5f9;
+      --muted:#94a3b8;
+      --border:#334155;
+      --shadow:rgba(0,0,0,0.45);
+
+      --stat-bg:#1e293b;
+      --stat-border:#334155;
+
+      --grad-top:#1e293b;
+      --grad-bottom:#0f172a;
+
+      --tile-bg:#1e293b;
+      --tile-hover-bg:#243447;
+
+      --drawer-bg:#1e293b;
+      --drawer-shadow:rgba(0,0,0,0.55);
+
+      --table-header:#1e293b;
+      --table-stripe:rgba(255,255,255,0.02);
+
+      --tooltip-bg:#0f172a;
+      --tooltip-text:#f8fafc;
+    }
+
+
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+    }
+
+    body {
+      background: linear-gradient(180deg, var(--grad-top) 0%, var(--grad-bottom) 100%);
+      background-color: var(--bg);
+      -webkit-font-smoothing: var(--font-smooth);
+      transition: background-color .25s ease, color .25s ease;
+    }
+
+
+    html[data-theme="dark"] body { background:linear-gradient(180deg,#0b1224 0%, #0f172a 100%); }
+
+    .app{
+      max-width:1200px;
+      margin:20px auto 0 auto;   /* remove extra bottom margin */
+      padding:16px 16px 0 16px;  /* remove extra bottom padding */
+      transition:color .25s ease;
+    }
+
+     body > .app {
+      background: transparent;
+      padding-top: 16px;  /* match earnings exactly */
+      margin-top: 0;
+    }
+
+    header{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:8px;   /* match earnings */
+      padding:0;            /* remove invisible offset */
+      transition:color .25s ease;
+    }
+
+    .header-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    .header-controls{display:flex;gap:10px;align-items:center}
+
+    h1{ font-size:20px; margin:0; }
+    p.lead{ margin:0; color:var(--muted); font-size:13px; }
+    .current-date{ font-size:13px; color:var(--muted); margin-top:4px; }
+
+    /* KPI row */
+    .kpis{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin:14px 0 18px;
+    }
+    .kpi{
+      background:var(--card);
+      padding:12px;
+      border-radius:10px;
+      box-shadow:var(--shadow);
+      border:1px solid var(--border);
+      cursor:pointer;
+      transition: transform .18s, box-shadow .18s, background-color .25s ease, color .25s ease, border-color .25s ease;
+    }
+    .kpi:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    }
+
+    .kpi h3{ margin:0; font-size:12px; color:var(--muted) }
+    .kpi p{ margin:8px 0 0; font-size:18px; font-weight:700 }
+
+    /* Grid of tiles */
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:12px;
+      height:calc(100vh - 320px);
+      overflow:auto;
+      padding-right:6px;
+    }
+    @media(max-width:900px){
+      .grid{ grid-template-columns:1fr; height:auto }
+      .kpis{ grid-template-columns:repeat(2,1fr) }
+    }
+
+    .tile{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px 12px;
+      border-radius:12px;
+      background:var(--card);
+      min-height:110px;
+      cursor:pointer;
+      overflow:hidden;
+      border:1px solid var(--border);
+      transition: transform .18s ease, box-shadow .18s ease, background-color .25s ease, color .25s ease, border-color .25s ease
+;
+    }
+    .tile:hover{ transform:translateY(-6px); box-shadow:var(--shadow) }
+
+    .tile-left{ flex:1; padding-right:10px }
+    .loan-name{ font-weight:700; font-size:14px }
+    .loan-sub{ font-size:12px; color:var(--muted); margin-top:6px }
+    .loan-meta{ display:flex; gap:8px; font-size:12px; color:var(--muted); margin-top:8px }
+
+    .chart-wrap{ width:170px; flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end }
+    .mini-label{ font-size:12px; color:var(--muted); margin-bottom:6px }
+    svg.sparkline{ width:170px; height:48px; display:block }
+
+    /* Drawer */
+    .drawer{
+      position:fixed;
+      right:0;
+      top:0;
+      height:100vh;
+      width:560px;
+      background:var(--card);
+      box-shadow:-28px 0 80px rgba(2,6,23,0.14);
+      transform:translateX(110%);
+      transition:transform .28s cubic-bezier(.2,.9,.3,1), background-color .25s ease, color .25s ease, border-color .25s ease, b
+ox-shadow .25s ease;
+      z-index:90;
+      overflow:hidden;
+      padding:0;
+      border-left:1px solid var(--border);
+      display:flex;
+      flex-direction:column;
+    }
+    .drawer.open{ transform:translateX(0) }
+
+    .drawer-header{ padding:20px; flex-shrink:0; }
+    .drawer-head{ display:flex; align-items:start; justify-content:space-between; gap:8px }
+    .close-btn{
+      background:#f1f5f9;
+      border:none;
+      padding:8px;
+      border-radius:8px;
+      cursor:pointer;
+      transition:background-color .25s ease, color .25s ease;
+    }
+    .drawer h2{ margin:0 0 6px; font-size:20px }
+    .muted{ color:var(--muted); font-size:13px; margin-bottom:10px }
+
+    .drawer-body,
+    #drawerBody{ flex:1 1 auto; overflow-y:auto; overflow-x:hidden; padding:0 20px 20px; }
+
+    .drawer,
+    .drawer-body,
+    #drawerBody{ overflow-x:hidden; }
+
+    .drawer-footer{ flex-shrink:0; padding:20px; }
+    .drawer-footer .actions{ justify-content:flex-start; }
+
+    .drawer-chart{
+      height:220px;
+      background:var(--chart-bg);
+      border-radius:8px;
+      border:1px solid rgba(15,23,42,0.03);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:8px;
+      position:relative;
+      padding:8px;
+      box-shadow:0 6px 18px rgba(15,23,42,0.06);
+      transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+    }
+
+    .legend { display:flex; gap:10px; font-size:12px; align-items:center; margin-top:6px; }
+    .legend .item { display:flex; gap:6px; align-items:center; }
+    .legend .sw { width:12px; height:8px; border-radius:2px; display:inline-block; }
+
+    .amort-wrap{
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:8px;
+      max-height:40vh;
+      overflow:auto;
+      background:var(--card);
+      transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+    }
+
+    table{ width:100%; border-collapse:collapse; font-size:13px; transition:color .25s ease; }
+    thead th{
+      position:sticky; top:0; background:var(--card);
+      padding:8px; text-align:left; color:var(--muted); font-weight:700; border-bottom:1px solid var(--border);
+      transition:background-color .25s ease, color .25s ease, border-color .25s ease;
+    }
+    td{ padding:8px; border-bottom:1px dashed rgba(15,23,42,0.04); text-align:right; transition:color .25s ease, border-color .2
+5s ease; }
+    td:first-child, th:first-child{ text-align:left }
+
+    .actions{ display:flex; gap:8px; margin-top:12px }
+    .btn{ padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; cursor:pointer; fon
+t-weight:600; transition:background-color .25s ease, color .25s ease, border-color .25s ease; }
+    .btn.primary{ background:linear-gradient(90deg,var(--brand),var(--accent2)); color:white; border:none; box-shadow:var(--shad
+ow); }
+
+    .tooltip{
+      position:fixed;
+      pointer-events:none;
+      background:var(--tooltip-bg);
+      color:var(--tooltip-text);
+      padding:6px 8px;
+      border-radius:6px;
+      font-size:12px;
+      transform:translate(-50%,-120%);
+      box-shadow:0 6px 18px rgba(2,6,23,0.2);
+      display:none;
+      z-index:9999;
+      line-height:1.12;
+      border:1px solid rgba(148,163,184,0.3);
+      transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+    }
+
+    .small { font-size:12px; color:var(--muted) }
+
+    @media(max-width:760px){ .drawer{ width:100%; min-width:0; } }
+
+    /* Theme toggle */
+    .theme-icon{
+    background:var(--card);
+    border:1px solid var(--border);
+    font-size:18px;
+    cursor:pointer;
+    transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease, transform .2s ease;
+    width:38px;
+    height:38px;
+    border-radius:10px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:var(--shadow);
+    }
+    .theme-icon:hover{
+    opacity:0.95;
+    transform:translateY(-1px);
+    }
+
+    /* Dark mode overrides */
+html[data-theme="dark"] .tile,
+html[data-theme="dark"] .kpi,
+html[data-theme="dark"] .amort-wrap {
+  background:var(--card);
+  border-color:var(--border);
+  box-shadow:0 10px 30px rgba(0,0,0,0.35);
+}
+
+html[data-theme="dark"] .drawer {
+  background:var(--drawer-bg);
+  border-left:1px solid var(--border);
+  box-shadow:-28px 0 80px var(--drawer-shadow);
+}
+
+html[data-theme="dark"] thead th {
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  color:var(--text);
+}
+
+html[data-theme="dark"] td {
+  border-bottom:1px dashed rgba(148,163,184,0.24);
+}
+
+html[data-theme="dark"] .tooltip {
+  background:var(--tooltip-bg);
+  color:var(--tooltip-text);
+  border-color:rgba(148,163,184,0.35);
+  box-shadow:0 12px 30px rgba(0,0,0,0.45);
+}
+
+html[data-theme="dark"] .close-btn {
+  background:#0f172a;
+  color:var(--text);
+}
+
+    svg text{ fill:var(--text); transition:fill .25s ease; }
+  </style>
+</head>
+
+<body>
+  <div class="app" role="main">
+    <header>
+      <div class="header-top">
+        <div>
+          <h1>Loan Portfolio — Earnings</h1>
+          <p class="lead">Cumulative principal, interest, and fees</p>
+        </div>
+        <div class="header-controls">
+          <div style="font-size:13px;color:var(--muted)">User: <strong style="color:var(--brand)">Jeff Customer</strong></div>
+          <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
+        </div>
+      </div>
+
+      <div class="current-date" id="currentDateLabel">Current Date: </div>
+    </header>
+
+    <section class="kpis" id="kpis">
+      <div class="kpi">
+        <h3>Net Earnings to Date</h3>
+        <p>--</p>
+      </div>
+      <div class="kpi">
+        <h3>Projected Lifetime Earnings</h3>
+        <p>--</p>
+      </div>
+      <div class="kpi">
+        <h3>Average Monthly Earnings</h3>
+        <p>--</p>
+      </div>
+      <div class="kpi">
+        <h3>Total Fees to Date</h3>
+        <p>--</p>
+      </div>
+    </section>
+
+    <section class="grid" id="loanGrid" aria-live="polite">
+      <div class="tile" data-loan="Loan A" data-school="Coastal Business School">
+        <div class="tile-left">
+          <div class="loan-name">Loan A</div>
+          <div class="loan-sub">Coastal Business School</div>
+          <div class="loan-meta">
+            <div>Rate: 7.2%</div>
+            <div>Term: 10 yrs</div>
+            <div>Matures: Jan 2035</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div class="mini-label">Stacked Earnings</div>
+          <div class="miniChart"></div>
+        </div>
+      </div>
+
+      <div class="tile" data-loan="Loan B" data-school="Northern Tech">
+        <div class="tile-left">
+          <div class="loan-name">Loan B</div>
+          <div class="loan-sub">Northern Tech</div>
+          <div class="loan-meta">
+            <div>Rate: 6.8%</div>
+            <div>Term: 8 yrs</div>
+            <div>Matures: Aug 2032</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div class="mini-label">Stacked Earnings</div>
+          <div class="miniChart"></div>
+        </div>
+      </div>
+
+      <div class="tile" data-loan="Loan C" data-school="Bay State College">
+        <div class="tile-left">
+          <div class="loan-name">Loan C</div>
+          <div class="loan-sub">Bay State College</div>
+          <div class="loan-meta">
+            <div>Rate: 8.1%</div>
+            <div>Term: 12 yrs</div>
+            <div>Matures: Feb 2037</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div class="mini-label">Stacked Earnings</div>
+          <div class="miniChart"></div>
+        </div>
+      </div>
+
+      <div class="tile" data-loan="Loan D" data-school="Mountainview Institute">
+        <div class="tile-left">
+          <div class="loan-name">Loan D</div>
+          <div class="loan-sub">Mountainview Institute</div>
+          <div class="loan-meta">
+            <div>Rate: 7.9%</div>
+            <div>Term: 9 yrs</div>
+            <div>Matures: Oct 2034</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div class="mini-label">Stacked Earnings</div>
+          <div class="miniChart"></div>
+        </div>
+      </div>
+
+      <div class="tile" data-loan="Loan E" data-school="Lakeside University">
+        <div class="tile-left">
+          <div class="loan-name">Loan E</div>
+          <div class="loan-sub">Lakeside University</div>
+          <div class="loan-meta">
+            <div>Rate: 7.0%</div>
+            <div>Term: 7 yrs</div>
+            <div>Matures: Jun 2031</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div class="mini-label">Stacked Earnings</div>
+          <div class="miniChart"></div>
+        </div>
+      </div>
+
+      <div class="tile" data-loan="Loan F" data-school="Capital City College">
+        <div class="tile-left">
+          <div class="loan-name">Loan F</div>
+          <div class="loan-sub">Capital City College</div>
+          <div class="loan-meta">
+            <div>Rate: 6.5%</div>
+            <div>Term: 6 yrs</div>
+            <div>Matures: Dec 2030</div>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <div class="mini-label">Stacked Earnings</div>
+          <div class="miniChart"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Right drawer -->
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-head">
+        <div>
+          <h2 id="drawerTitle">Loan X — {School}</h2>
+          <div class="muted" id="drawerSub">Earnings Details</div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="downloadCsvBtn">Download CSV</button>
+          <button class="close-btn" id="closeBtn" aria-label="Close drawer">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="drawerBody" class="drawer-body">
+      <div class="drawer-chart" id="drawerChartArea">Stacked chart placeholder</div>
+      <div class="legend" id="drawerLegend" style="display:none"></div>
+
+      <div style="display:flex;gap:10px;margin-bottom:8px">
+        <div style="flex:1;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--muted)" id="drawerPrimaryTitle">Net Earnings To Date</div>
+          <div id="drawerPrimary" style="font-weight:800;font-size:18px">--</div>
+        </div>
+        <div style="width:120px;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--muted)" id="drawerSecondaryTitle">Fees To Date</div>
+          <div id="drawerSecondary" style="font-weight:800;font-size:16px">--</div>
+        </div>
+      </div>
+
+      <div id="drawerExtra"></div>
+
+      <div id="drawerAmortContainer">
+        <h3 style="margin-top:8px">Earnings Schedule</h3>
+        <div class="amort-wrap" id="amortWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Fees</th><th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="amortBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <div class="actions">
+        <button class="btn" id="printBtn">Print</button>
+        <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
+      </div>
+    </div>
+  </aside>
+
+  <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
+
+  <script type="module">
+    import { loadLoans, attachSchedules, buildPortfolioViews } from "../js/loanEngine.js";
+    import { createLineChart } from "../js/chartEngine.js";
+
+    const loanGrid = document.getElementById('loanGrid');
+    const drawer = document.getElementById('drawer');
+    const drawerTitle = document.getElementById('drawerTitle');
+    const drawerSub = document.getElementById('drawerSub');
+    const drawerPrimary = document.getElementById('drawerPrimary');
+    const drawerSecondary = document.getElementById('drawerSecondary');
+    const amortBody = document.getElementById('amortBody');
+    const closeBtn = document.getElementById('closeBtn');
+    const themeToggle = document.getElementById('themeToggle');
+    const currentDateLabel = document.getElementById('currentDateLabel');
+
+    const kpis = document.querySelectorAll('.kpi p');
+
+    // Set current date label
+    currentDateLabel.textContent = `Current Date: ${new Date().toLocaleDateString()}`;
+
+    // Placeholder KPI values
+    kpis.forEach(el => { el.textContent = '--'; });
+
+    // Theme toggle
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      localStorage.setItem('theme', isDark ? 'light' : 'dark');
+    });
+
+    // Drawer handling
+    function openDrawer(loanName, school) {
+      drawerTitle.textContent = `${loanName} — ${school}`;
+      drawerSub.textContent = 'Earnings Details';
+      drawerPrimary.textContent = '--';
+      drawerSecondary.textContent = '--';
+      amortBody.innerHTML = '';
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeDrawer() {
+      drawer.classList.remove('open');
+      drawer.setAttribute('aria-hidden', 'true');
+    }
+
+    loanGrid.querySelectorAll('.tile').forEach(tile => {
+      tile.addEventListener('click', () => {
+        const loanName = tile.getAttribute('data-loan');
+        const school = tile.getAttribute('data-school');
+        openDrawer(loanName, school);
+      });
+    });
+
+    closeBtn.addEventListener('click', closeDrawer);
+  </script>
+</body>
+</html>
