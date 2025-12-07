@@ -186,7 +186,8 @@
       right:0;
       top:0;
       height:100vh;
-      width:560px;
+      width:760px;
+      max-width:1000px;
       background:var(--card);
       box-shadow:-28px 0 80px rgba(2,6,23,0.14);
       transform: translateX(100%);
@@ -203,13 +204,15 @@
     .drawer-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.35);
+      background: rgba(0,0,0,0.25);
+      backdrop-filter: blur(2px);
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.35s ease-in-out;
+      transition: opacity .25s ease;
       z-index: 80;
     }
-    .drawer-overlay.show {
+
+    .drawer.open + .drawer-overlay {
       opacity: 1;
       pointer-events: auto;
     }
@@ -684,7 +687,8 @@ html[data-theme="dark"] .close-btn {
     }
 
     loanGrid.querySelectorAll('.tile').forEach(tile => {
-      tile.addEventListener('click', () => {
+      tile.addEventListener('click', e => {
+        e.stopPropagation();
         const loanName = tile.getAttribute('data-loan');
         const school = tile.getAttribute('data-school');
         openDrawerForLoan({ loanName, school });
@@ -694,7 +698,10 @@ html[data-theme="dark"] .close-btn {
     const kpiRoutes = ['kpi-net', 'kpi-lifetime', 'kpi-monthly', 'kpi-fees'];
     kpiCards.forEach((card, idx) => {
       const route = kpiRoutes[idx] || 'kpi-net';
-      card.addEventListener('click', () => openDrawerForKPI(route));
+      card.addEventListener('click', e => {
+        e.stopPropagation();
+        openDrawerForKPI(route);
+      });
     });
 
     drawerOverlay.addEventListener('click', closeDrawer);
