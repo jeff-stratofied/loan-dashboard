@@ -653,35 +653,34 @@ html[data-theme="dark"] .close-btn {
 
     // Drawer handling
     function closeDrawer() {
-        drawer.classList.remove('open');
-        drawerOverlay.classList.remove('show');
-        tooltip.style.display = 'none';
-        currentLoan = null;
-        currentMode = null;
+      drawer.classList.remove('open');
+      drawerOverlay.classList.remove('show');
+      tooltip.style.display = 'none';
+      currentLoan = null;
+      currentMode = null;
     }
 
     function openDrawerForLoan(loan) {
-        // Ensure drawer stays open (amort behavior)
-        drawer.classList.add('open');
-        drawerOverlay.classList.add('show');
+      // Always keep/open drawer before applying content
+      drawer.classList.add('open');
+      drawerOverlay.classList.add('show');
 
-        drawerExtra.innerHTML = '';
-        currentMode = 'loan';
-        currentLoan = loan;
+      drawerExtra.innerHTML = '';
+      currentMode = 'loan';
+      currentLoan = loan;
 
-        populateDrawer('loan', loan);
+      populateDrawer('loan', loan);
     }
 
     function openDrawerForKPI(kpiKey) {
-        // Ensure drawer stays open (amort behavior)
-        drawer.classList.add('open');
-        drawerOverlay.classList.add('show');
+      drawer.classList.add('open');
+      drawerOverlay.classList.add('show');
 
-        drawerExtra.innerHTML = '';
-        currentMode = 'kpi';
-        currentLoan = null;
+      drawerExtra.innerHTML = '';
+      currentMode = 'kpi';
+      currentLoan = null;
 
-        populateDrawer(kpiKey);
+      populateDrawer(kpiKey);
     }
 
     loanGrid.querySelectorAll('.tile').forEach(tile => {
