@@ -212,7 +212,7 @@
       z-index: 80;
     }
 
-    .drawer.open + .drawer-overlay {
+    .drawer-overlay.show {
       opacity: 1;
       pointer-events: auto;
     }
@@ -688,6 +688,7 @@ html[data-theme="dark"] .close-btn {
 
     loanGrid.querySelectorAll('.tile').forEach(tile => {
       tile.addEventListener('click', e => {
+        e.preventDefault();
         e.stopPropagation();
         const loanName = tile.getAttribute('data-loan');
         const school = tile.getAttribute('data-school');
@@ -699,6 +700,7 @@ html[data-theme="dark"] .close-btn {
     kpiCards.forEach((card, idx) => {
       const route = kpiRoutes[idx] || 'kpi-net';
       card.addEventListener('click', e => {
+        e.preventDefault();
         e.stopPropagation();
         openDrawerForKPI(route);
       });
