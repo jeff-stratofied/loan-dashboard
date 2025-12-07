@@ -37,6 +37,10 @@
 
     --drawer-bg:var(--card);
     --drawer-shadow:rgba(0,0,0,0.10);
+
+    --grid-strong: #cbd5e1;
+    --grid-light: #e2e8f0;
+    --table-header: var(--surface);
     }
 
 
@@ -63,6 +67,10 @@
 
     --drawer-bg:#1e293b;
     --drawer-shadow:rgba(0,0,0,0.55);
+    --grid-strong: #475569;
+    --grid-light: #334155;
+    --table-header: #1e293b;
+
   }
 
 
@@ -498,9 +506,10 @@ thead th {
       position: fixed;
       z-index: 300;
       pointer-events: none;
-      background: rgba(15,23,42,0.92);
-      color: #fff;
-      border-radius: 6px;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+
       padding: 6px 10px;
       font-size: 11px;
       font-weight: 600;
@@ -562,7 +571,7 @@ thead th {
       </div>
     </div>
 
-    <div id="drawerBody">
+   <div id="drawerBody" class="drawer-body">
       <div class="drawer-chart" id="drawerChartArea"></div>
       <div id="drawerExtra"></div>
     </div>
