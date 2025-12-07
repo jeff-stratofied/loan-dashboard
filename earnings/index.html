@@ -572,6 +572,7 @@ html[data-theme="dark"] .close-btn {
     const drawerPrimary = document.getElementById('drawerPrimary');
     const drawerSecondary = document.getElementById('drawerSecondary');
     const amortBody = document.getElementById('amortBody');
+    const drawerExtra = document.getElementById('drawerExtra');
     const drawerAmortContainer = document.getElementById('drawerAmortContainer');
     const closeBtn = document.getElementById('closeBtn');
     const themeToggle = document.getElementById('themeToggle');
@@ -581,6 +582,9 @@ html[data-theme="dark"] .close-btn {
 
     const kpis = document.querySelectorAll('.kpi p');
     const kpiCards = document.querySelectorAll('.kpi');
+
+    let currentLoan = null;
+    let currentMode = null;
 
     const KPI_CONFIG = {
       'kpi-net': {
@@ -648,45 +652,50 @@ html[data-theme="dark"] .close-btn {
     }
 
     // Drawer handling
-    function openDrawer(drawerType, loanData = null) {
-        const drawer = document.getElementById("drawer");
-        const drawerOverlay = document.getElementById("drawerOverlay");
-
-        // Always populate drawer content FIRST
-        populateDrawer(drawerType, loanData);
-
-        // If the drawer is already open:
-        // DO NOT close it, DO NOT animate it.
-        // Amort behavior = keep drawer open and simply replace content.
-        if (drawer.classList.contains("open")) {
-            return; // Do nothing else — content already refreshed above.
-        }
-
-        // Drawer was closed → open it normally
-        drawer.classList.add("open");
-        drawerOverlay.classList.add("show");
+    function closeDrawer() {
+        drawer.classList.remove('open');
+        drawerOverlay.classList.remove('show');
+        tooltip.style.display = 'none';
+        currentLoan = null;
+        currentMode = null;
     }
 
-    function closeDrawer() {
-        const drawer = document.getElementById("drawer");
-        const drawerOverlay = document.getElementById("drawerOverlay");
+    function openDrawerForLoan(loan) {
+        // Ensure drawer stays open (amort behavior)
+        drawer.classList.add('open');
+        drawerOverlay.classList.add('show');
 
-        drawer.classList.remove("open");
-        drawerOverlay.classList.remove("show");
+        drawerExtra.innerHTML = '';
+        currentMode = 'loan';
+        currentLoan = loan;
+
+        populateDrawer('loan', loan);
+    }
+
+    function openDrawerForKPI(kpiKey) {
+        // Ensure drawer stays open (amort behavior)
+        drawer.classList.add('open');
+        drawerOverlay.classList.add('show');
+
+        drawerExtra.innerHTML = '';
+        currentMode = 'kpi';
+        currentLoan = null;
+
+        populateDrawer(kpiKey);
     }
 
     loanGrid.querySelectorAll('.tile').forEach(tile => {
       tile.addEventListener('click', () => {
         const loanName = tile.getAttribute('data-loan');
         const school = tile.getAttribute('data-school');
-        openDrawer('loan', { loanName, school });
+        openDrawerForLoan({ loanName, school });
       });
     });
 
     const kpiRoutes = ['kpi-net', 'kpi-lifetime', 'kpi-monthly', 'kpi-fees'];
     kpiCards.forEach((card, idx) => {
       const route = kpiRoutes[idx] || 'kpi-net';
-      card.addEventListener('click', () => openDrawer(route));
+      card.addEventListener('click', () => openDrawerForKPI(route));
     });
 
     drawerOverlay.addEventListener('click', closeDrawer);
