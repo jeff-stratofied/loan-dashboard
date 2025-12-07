@@ -387,103 +387,7 @@ html[data-theme="dark"] .close-btn {
       </div>
     </section>
 
-    <section class="grid" id="loanGrid" aria-live="polite">
-      <div class="tile" data-loan="PSU 2024 8.83" data-school="Penn State">
-        <div class="tile-left">
-          <div class="loan-name">PSU 2024 8.83</div>
-          <div class="loan-sub">Penn State</div>
-          <div class="loan-meta">
-            <div>Rate: 7.2%</div>
-            <div>Term: 10 yrs</div>
-            <div>Matures: Jan 2035</div>
-          </div>
-        </div>
-        <div class="chart-wrap">
-          <div class="mini-label">Stacked Earnings</div>
-          <div class="miniChart"></div>
-        </div>
-      </div>
-
-      <div class="tile" data-loan="Loan B" data-school="Northern Tech">
-        <div class="tile-left">
-          <div class="loan-name">Loan B</div>
-          <div class="loan-sub">Northern Tech</div>
-          <div class="loan-meta">
-            <div>Rate: 6.8%</div>
-            <div>Term: 8 yrs</div>
-            <div>Matures: Aug 2032</div>
-          </div>
-        </div>
-        <div class="chart-wrap">
-          <div class="mini-label">Stacked Earnings</div>
-          <div class="miniChart"></div>
-        </div>
-      </div>
-
-      <div class="tile" data-loan="Loan C" data-school="Bay State College">
-        <div class="tile-left">
-          <div class="loan-name">Loan C</div>
-          <div class="loan-sub">Bay State College</div>
-          <div class="loan-meta">
-            <div>Rate: 8.1%</div>
-            <div>Term: 12 yrs</div>
-            <div>Matures: Feb 2037</div>
-          </div>
-        </div>
-        <div class="chart-wrap">
-          <div class="mini-label">Stacked Earnings</div>
-          <div class="miniChart"></div>
-        </div>
-      </div>
-
-      <div class="tile" data-loan="Loan D" data-school="Mountainview Institute">
-        <div class="tile-left">
-          <div class="loan-name">Loan D</div>
-          <div class="loan-sub">Mountainview Institute</div>
-          <div class="loan-meta">
-            <div>Rate: 7.9%</div>
-            <div>Term: 9 yrs</div>
-            <div>Matures: Oct 2034</div>
-          </div>
-        </div>
-        <div class="chart-wrap">
-          <div class="mini-label">Stacked Earnings</div>
-          <div class="miniChart"></div>
-        </div>
-      </div>
-
-      <div class="tile" data-loan="Loan E" data-school="Lakeside University">
-        <div class="tile-left">
-          <div class="loan-name">Loan E</div>
-          <div class="loan-sub">Lakeside University</div>
-          <div class="loan-meta">
-            <div>Rate: 7.0%</div>
-            <div>Term: 7 yrs</div>
-            <div>Matures: Jun 2031</div>
-          </div>
-        </div>
-        <div class="chart-wrap">
-          <div class="mini-label">Stacked Earnings</div>
-          <div class="miniChart"></div>
-        </div>
-      </div>
-
-      <div class="tile" data-loan="Loan F" data-school="Capital City College">
-        <div class="tile-left">
-          <div class="loan-name">Loan F</div>
-          <div class="loan-sub">Capital City College</div>
-          <div class="loan-meta">
-            <div>Rate: 6.5%</div>
-            <div>Term: 6 yrs</div>
-            <div>Matures: Dec 2030</div>
-          </div>
-        </div>
-        <div class="chart-wrap">
-          <div class="mini-label">Stacked Earnings</div>
-          <div class="miniChart"></div>
-        </div>
-      </div>
-    </section>
+    <section class="grid" id="loanGrid"></section>
   </div>
 
   <!-- Right drawer -->
@@ -583,13 +487,49 @@ function updateEarningsKpis(portfolio) {
   document.querySelector('[data-kpi="fees"]').textContent = `$${totalFeesToDate.toLocaleString()}`;
 }
 
+function buildLoanTiles(loans) {
+  const grid = document.getElementById("loanGrid");
+  grid.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.dataset.loan = loan.loanName;
+    tile.dataset.school = loan.school;
+
+    tile.innerHTML = `
+      <div class="tile-left">
+        <div class="loan-name">${loan.loanName}</div>
+        <div class="loan-sub">${loan.school}</div>
+        <div class="loan-meta">
+          <div>Rate: ${(loan.rate * 100).toFixed(2)}%</div>
+          <div>Term: ${loan.termYears} yrs</div>
+          <div>Matures: ${loan.maturityText}</div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <div class="mini-label">Stacked Earnings</div>
+        <div class="miniChart"></div>
+      </div>
+    `;
+
+    // Click handler for drawer
+    tile.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openDrawerForLoan(loan);
+    });
+
+    grid.appendChild(tile);
+  });
+}
+
 async function init() {
   const rawLoans = await loadLoans();
   const loans = attachSchedules(rawLoans);    // IMPORTANT FIX
   const portfolio = buildPortfolioViews(loans);
 
+  buildLoanTiles(portfolio.loans);
   updateEarningsKpis(portfolio);
-  renderLoanTiles(loans, portfolio);
 }
 
 init();
