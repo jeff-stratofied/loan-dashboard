@@ -363,6 +363,40 @@
   font-size: 13px;
   color: var(--muted);
 }
+/* ==== Unified Stat Boxes (same as amort) ==== */
+.drawer-info-row{
+  display:flex;
+  gap:12px;
+  margin:0 0 12px 0;
+  align-items:center;
+}
+
+.info-card{
+  flex:1;
+  background:var(--surface);
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height:56px;
+}
+
+.info-card.small{
+  width:160px;
+}
+
+.muted-small{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.main-val{
+  font-size:18px;
+  font-weight:700;
+}
 
 
 /* ============================================================
@@ -573,7 +607,6 @@ thead th {
 
    <div id="drawerBody" class="drawer-body">
       <div class="drawer-chart" id="drawerChartArea"></div>
-      <div id="drawerExtra"></div>
     </div>
     <div class="drawer-footer">
   <div class="actions" style="padding-top:10px">
@@ -1689,6 +1722,14 @@ tile.innerHTML = `
       drawerSecondaryTitle.textContent = "Fees to Date";
       drawerSecondary.textContent = `$${atCurrent.cumFees.toFixed(2)}`;
 
+// Fill unified stat boxes
+document.getElementById("drawerPrimaryTitle").textContent = "Net Earnings To Date";
+document.getElementById("drawerPrimary").textContent = `$${atCurrent.netEarnings.toLocaleString()}`;
+
+document.getElementById("drawerSecondaryTitle").textContent = "Fees To Date";
+document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.toLocaleString()}`;
+
+      
       createDrawerStackedChart(drawerChartArea, loan.earningsSchedule, loan);
 
       // table
