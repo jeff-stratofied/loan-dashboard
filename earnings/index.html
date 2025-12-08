@@ -1536,14 +1536,15 @@ svg.appendChild(vline);
       drawerExtra.innerHTML = "";
     }
 
+    // Wrapper to unify open behavior
+    function openDrawer() {
+      openDrawerBase();
+    }
+
     function openDrawerBase(){
       drawer.classList.add("open");
       drawer.setAttribute("aria-hidden","false");
       drawer.scrollTop = 0;
-    }
-
-    function openDrawer() {
-      openDrawerBase();
     }
 
     
@@ -1718,6 +1719,13 @@ svg.appendChild(vline);
       currentLoan = null;
     }
 
+    document.addEventListener("click", function(e){
+      if (!drawer.classList.contains("open")) return;
+      if (drawer.contains(e.target)) return;
+      if (e.target.closest(".tile")) return;  // tile click = open another drawer, not close
+      closeDrawer();
+    });
+
     function openDrawerForLoan(loan) {
       currentLoan = loan;
       resetDrawerContent();
@@ -1746,16 +1754,9 @@ svg.appendChild(vline);
         amortBody.appendChild(tr);
       });
 
-      drawer.classList.add("open");
-      drawer.setAttribute("aria-hidden", "false");
+      // OPEN DRAWER CORRECTLY
+      openDrawer();
     }
-
-    document.addEventListener("click", (e) => {
-      if (!drawer.classList.contains("open")) return;
-      if (!drawer.contains(e.target) && !e.target.closest(".tile")) {
-        closeDrawer();
-      }
-    });
 
     function openLoanDrawer(loan){
       currentLoan = loan;
