@@ -136,36 +136,32 @@
     /* =========================
        KPI row + tiles (unified hover)
        ========================= */
-    .kpis{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:14px 0 18px }
-   .kpi{
+     .kpis {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin:14px 0 18px;
+    }
+
+  .kpi{
     background:var(--card);
-    padding:14px;
-    border-radius:12px;
-    box-shadow:0 6px 18px rgba(16,24,40,0.04);
+    padding:12px;
+    border-radius:10px;
+    box-shadow:var(--shadow);
     border:1px solid var(--border);
     cursor:pointer;
-    transition: transform .18s ease, box-shadow .18s ease;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
+    transition: transform .18s, box-shadow .18s,
+              background-color .25s ease, color .25s ease,
+              border-color .25s ease;
+    }
+  .kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
     }
 
-  .kpi:hover{
-    transform:translateY(-6px);
-    box-shadow:var(--shadow);
-    }
 
-  .kpi h3{
-    margin:0;
-    font-size:12px;
-    color:var(--muted);
-    }
-
-  .kpi p{
-    margin:8px 0 0;
-    font-size:18px;
-    font-weight:700;
-    }
+  .kpi h3 { margin:0; font-size:12px; color:var(--muted); }
+  .kpi p  { margin:8px 0 0; font-size:18px; font-weight:700; }
 
 
     .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; height:calc(100vh - 320px); overflow:auto; padding-right:6px }
