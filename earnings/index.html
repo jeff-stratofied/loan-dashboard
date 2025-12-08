@@ -607,6 +607,7 @@ thead th {
 
     <div id="drawerBody" class="drawer-body">
       <div class="drawer-chart" id="drawerChartArea"></div>
+      <div id="drawerExtra"></div>
       <div class="amort-wrap">
         <table>
           <thead>
@@ -1531,9 +1532,9 @@ svg.appendChild(vline);
     // --------------------------
     // KPI drawers (shared drawer)
     // --------------------------
-    function resetDrawerContent(){
-      drawerChartArea.innerHTML = "";
-      drawerExtra.innerHTML = "";
+    function resetDrawerContent() {
+      if (drawerChartArea) drawerChartArea.innerHTML = "";
+      if (drawerExtra) drawerExtra.innerHTML = "";
     }
 
     function openDrawerBase() {
@@ -1795,7 +1796,7 @@ document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.t
           </table>
         </div>
       `;
-      openDrawer();
+      openDrawerBase();
     }
 
     // --------------------------
