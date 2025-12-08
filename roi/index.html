@@ -10,57 +10,74 @@
        ==================================== -->
   <style>
 
-  :root {
-    --bg:#f8fafc;
-    --surface:#f1f5f9;
-    --card:#ffffff;
-    --border:#e2e8f0;
-    --text:#0f172a;
-    --muted:#64748b;
-    --brand:#0ea5e9;
-    --accent:#7c3aed;
-    --shadow:0 12px 30px rgba(15,23,42,0.06);
-    --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
+:root {
+  --bg:#f8fafc;
+  --surface:#f1f5f9;
+  --card:#ffffff;
+  --border:#e2e8f0;
+  --text:#0f172a;
+  --muted:#64748b;
 
-    --grad-top: var(--surface);
-    --grad-bottom: var(--card);
-    
-    --tooltip-bg:#0f172a;
-    --tooltip-text:#f8fafc;
+  --brand:#0ea5e9;
+  --accent:#7c3aed;
 
-    --kpi-hover: translateY(-6px);
-    }
+  --shadow:0 12px 30px rgba(15,23,42,0.06);
 
+  --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
+  --grad-top:#f1f5f9;
+  --grad-bottom:#ffffff;
 
-    html[data-theme="light"] {
-      --bg:#f8fafc;
-      --surface:#f1f5f9;
-      --card:#ffffff;
-      --border:#e2e8f0;
-      --text:#0f172a;
-      --muted:#64748b;
-      --brand:#0ea5e9;
-      --accent:#7c3aed;
-      --shadow:0 12px 30px rgba(15,23,42,0.06);
-      --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
-      --tooltip-bg:#0f172a;
-      --tooltip-text:#f8fafc;
-    }
+  --tooltip-bg:#0f172a;
+  --tooltip-text:#f8fafc;
 
-   html[data-theme="dark"] {
-      --bg:#0b1220;
-      --surface:#071829;
-      --card:#071022;
-      --border:#334155;
-      --text:#e6eef8;
-      --muted:#9aa6b2;
-      --brand:#38bdf8;
-      --accent:#c4b5fd;
-      --shadow:0 12px 30px rgba(2,6,23,0.6);
-      --chart-bg:linear-gradient(180deg,rgba(56,189,248,0.12),rgba(124,58,237,0.16));
-      --tooltip-bg:#0b1220;
-      --tooltip-text:#e6eef8;
-    }
+  --table-header:var(--surface);
+  --table-border:rgba(148,163,184,0.35);
+}
+
+html[data-theme="light"] {
+  --bg:#f8fafc;
+  --surface:#f1f5f9;
+  --card:#ffffff;
+  --border:#e2e8f0;
+  --text:#0f172a;
+  --muted:#64748b;
+
+  --brand:#0ea5e9;
+  --accent:#7c3aed;
+
+  --shadow:0 12px 30px rgba(15,23,42,0.06);
+
+  --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
+
+  --tooltip-bg:#0f172a;
+  --tooltip-text:#f8fafc;
+
+  --table-header:var(--surface);
+  --table-border:rgba(148,163,184,0.35);
+}
+
+html[data-theme="dark"] {
+  --bg:#0b1220;
+  --surface:#071829;
+  --card:#071022;
+  --border:#334155;
+  --text:#e6eef8;
+  --muted:#9aa6b2;
+
+  --brand:#38bdf8;
+  --accent:#c4b5fd;
+
+  --shadow:0 12px 30px rgba(2,6,23,0.6);
+
+  --chart-bg:linear-gradient(180deg,rgba(56,189,248,0.12),rgba(124,58,237,0.16));
+
+  --tooltip-bg:#0b1220;
+  --tooltip-text:#e6eef8;
+
+  --table-header:#0f172a;
+  --table-border:rgba(148,163,184,0.25);
+}
+
 
     /* Smooth theme transitions (copied from amortization page) */
     html, body,
