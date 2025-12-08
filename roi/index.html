@@ -723,6 +723,47 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     wPath.dataset.name = 'Weighted ROI';
   }
 
+  /* ============================
+   X-Axis Tick Label Rendering
+   ============================ */
+
+if (opts.dates && opts.dates.length) {
+  const axisGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  axisGroup.setAttribute("class", "x-axis-labels");
+
+  // Choose tick spacing (every 3 months, looks clean)
+  const tickSpacing = 3;
+
+  opts.dates.forEach((dateObj, idx) => {
+    if (idx % tickSpacing !== 0) return;  // skip non-tick months
+
+    const px = xScale(idx);  // same x-scale you use for plotting
+
+    // Month label
+    const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    lbl.setAttribute("x", px);
+    lbl.setAttribute("y", h - 2);   // bottom of chart area
+    lbl.setAttribute("text-anchor", "middle");
+    lbl.setAttribute("font-size", "10px");
+    lbl.setAttribute("fill", "var(--muted)");
+    lbl.textContent = formatMonthYear(dateObj);  // already exists in your code
+    axisGroup.appendChild(lbl);
+
+    // Optional small tick mark
+    const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    tick.setAttribute("x1", px);
+    tick.setAttribute("x2", px);
+    tick.setAttribute("y1", h - 20);
+    tick.setAttribute("y2", h - 15);
+    tick.setAttribute("stroke", "var(--border)");
+    tick.setAttribute("stroke-width", "1");
+    axisGroup.appendChild(tick);
+  });
+
+  svg.appendChild(axisGroup);
+}
+
+  
   // vertical marker + hover circle
   const vLine = document.createElementNS(svgNS,'line');
   vLine.setAttribute('stroke','var(--text)');
