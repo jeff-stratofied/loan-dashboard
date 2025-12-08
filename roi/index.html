@@ -768,7 +768,8 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
       tooltipEl.style.left = (rectBox.left + cx) + 'px';
       tooltipEl.style.top = (rectBox.top + cy - 28) + 'px';
       const pct = (pt.y * 100).toFixed(2);
-      tooltipEl.innerHTML = `${formatMonthYear(addMonths(new Date(opts.startDate), idx))} • Weighted ROI ${pct}%`;
+      const dateObj = opts.dates[idx];
+        tooltipEl.innerHTML = `${formatMonthYear(dateObj)} • Weighted ROI ${pct}%`;
     }
   });
 
@@ -1098,6 +1099,86 @@ function openDrawerForLoan(loan){
       drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); drawer.scrollTop=0;
     }
 
+    /* ============================================
+   HISTORICAL ROI TIMELINE ENGINE
+   Builds a unified date-based ROI timeline
+   For all loans, from earliest purchase → today
+   ============================================ */
+
+function buildHistoricalRoiTimeline(loans) {
+  const today = new Date();
+
+  // ---- 1. Determine global timeline ----
+  const earliestPurchase = loans.reduce((earliest, l) => {
+    const d = new Date(l.purchaseDate);
+    return d < earliest ? d : earliest;
+  }, new Date(loans[0].purchaseDate));
+
+  // Build monthly date list from earliest → today
+  const dates = [];
+  const cursor = new Date(earliestPurchase);
+  while (cursor <= today) {
+    dates.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  // ---- 2. Align each loan ROI onto the global date timeline ----
+  const perLoanSeries = loans.map((loan, idx) => {
+    const purchase = new Date(loan.purchaseDate);
+    const color = loanColors[idx % loanColors.length];
+
+    // Map ownershipDate -> ROI for quick lookup
+    const roiMap = {};
+    loan.roiSeries.forEach(entry => {
+      if (entry.ownershipDate) {
+        roiMap[new Date(entry.ownershipDate).toISOString().slice(0,7)] = entry.roi;
+      }
+    });
+
+    // Build calendar-aligned ROI (null before purchase)
+    const data = dates.map(date => {
+      if (date < purchase) return { date, y: null };
+      const key = date.toISOString().slice(0,7);
+      const roi = key in roiMap ? roiMap[key] : null;
+      return { date, y: roi };
+    });
+
+    return {
+      name: `Loan ${loan.id}`,
+      color,
+      data
+    };
+  });
+
+  // ---- 3. Build weighted ROI series ----
+  const totalInvested = loans.reduce((s, l) => s + l.purchasePrice, 0);
+
+  const weightedSeries = dates.map((date, i) => {
+    let weightedSum = 0;
+
+    loans.forEach((loan, idx) => {
+      const roi = perLoanSeries[idx].data[i].y;
+      if (roi != null) {
+        weightedSum += roi * loan.purchasePrice;
+      }
+    });
+
+    const weightedRoi = weightedSum / totalInvested;
+
+    return { date, y: weightedRoi };
+  });
+
+  return {
+    dates,
+    perLoanSeries,
+    weightedSeries,
+    earliestDate: earliestPurchase
+  };
+}
+
+
+
+      
     /* -------------------------
        KPI drawer renderers
        ------------------------- */
