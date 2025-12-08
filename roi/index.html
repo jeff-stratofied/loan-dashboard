@@ -688,127 +688,164 @@
 
       
 // --- Multi-series chart (loan lines + weighted line) ---
+/* ============================================================
+   Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
+   ============================================================ */
+
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
-  containerEl.innerHTML = '';
+  containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
+
   const rect = containerEl.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
   const h = opts.h || 260;
   const pad = opts.pad || 28;
+
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
   svg.style.display = "block";
 
-  // compute domain
-  const xCount = Math.max(1, weightedSeries.length);
-  let ys = [];
-  weightedSeries.forEach(d=>ys.push(d.y));
-  loanSeriesList.forEach(ls => ls.data.forEach(d=>ys.push(d.y)));
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const rangeY = Math.max(1e-6, maxY - minY);
-  const stepX = (w - pad*2) / Math.max(1, xCount - 1);
-  const xForMonth = month => pad + (Math.min(Math.max(month, 1), xCount) - 1) * stepX;
-  function toXY(pt, i){ const x = pad + (i)*stepX; const y = pad + (h - pad*2) - ((pt.y - minY)/rangeY)*(h - pad*2); return [x,y]; }
+  // -------------------------
+  // Build a unified date axis
+  // -------------------------
+  const globalDates = opts.dates || [];
+  const count = globalDates.length;
 
-  // grid
-  for(let gy=0; gy<5; gy++){ const y = pad + gy*((h-pad*2)/4); const line = document.createElementNS(svgNS,'line'); line.setAttribute('x1',pad); line.setAttribute('x2',w-pad); line.setAttribute('y1',y); line.setAttribute('y2',y); line.setAttribute('stroke','var(--border)'); line.setAttribute('stroke-opacity','0.16'); svg.appendChild(line); }
-
-  // draw loan lines (thin)
-  loanSeriesList.forEach(ls => {
-    if(!ls.data || !ls.data.length) return;
-    let dStr = '';
-  // align loan points by matching dates in opts.dates[]
-  ls.data.forEach((pt) => {
-    if (pt.y == null) return; // skip months before purchase
-  
-    // find the index of pt.date in the global date list
-    const idx = opts.dates.findIndex(d => d.getTime() === pt.date.getTime());
-    if (idx === -1) return;
-
-    const [x, y] = toXY(pt, idx);
-
-    if (dStr === '') dStr = `M ${x} ${y}`;
-    else dStr += ` L ${x} ${y}`;
-    });
-
-    const path = document.createElementNS(svgNS,'path');
-    const ptsArray = dStr
-    .replace(/M|L/g, '')
-    .trim()
-    .split(' ')
-    .reduce((acc,val,i,array)=>{
-     if(i%2===0) acc.push([Number(val), Number(array[i+1])]);
-     return acc;
-    }, []);
-
-    path.setAttribute('d', smoothPathFromPoints(ptsArray));
-
-    path.setAttribute('fill','none');
-    path.setAttribute('stroke', ls.color || '#888');
-    path.setAttribute('stroke-width', '1.2');
-    path.setAttribute('stroke-opacity', '0.95');
-    svg.appendChild(path);
-    // attach dataset name for legend toggling
-    path.dataset.name = ls.name || '';
-  });
-
-  // weighted line (on top)
-  if(weightedSeries && weightedSeries.length){
-    let dW = '';
-    weightedSeries.forEach((pt,i)=>{ const [x,y] = toXY(pt,i); dW += (i===0?('M '+x+' '+y):(' L '+x+' '+y)); });
-    const wPath = document.createElementNS(svgNS,'path');
-    wPath.setAttribute('d', dW);
-    wPath.setAttribute('fill','none');
-    wPath.setAttribute('stroke', opts.weightedColor || '#000');
-    wPath.setAttribute('stroke-width', opts.weightedWidth || '2.6');
-    wPath.setAttribute('stroke-linejoin','round');
-    wPath.setAttribute('stroke-linecap','round');
-    svg.appendChild(wPath);
-    wPath.dataset.name = 'Weighted ROI';
+  if (!count) {
+    containerEl.appendChild(svg);
+    return;
   }
 
-  /* ============================
-   X-Axis Tick Label Rendering
-   ============================ */
+  // x scale based on real dates
+  const ms0 = globalDates[0].getTime();
+  const ms1 = globalDates[count - 1].getTime();
+  const msRange = ms1 - ms0 || 1;
 
-if (opts.dates && opts.dates.length) {
-  const axisGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  axisGroup.setAttribute("class", "x-axis-labels");
+  const dateToX = (d) => {
+    const t = d.getTime();
+    const ratio = (t - ms0) / msRange;
+    return pad + ratio * (w - pad * 2);
+  };
 
-  // Choose tick spacing (every 3 months, looks clean)
-  const tickSpacing = 3;
+  // Determine Y range
+  let ys = [];
+  weightedSeries.forEach((p) => ys.push(p.y));
+  loanSeriesList.forEach((ls) => ls.data.forEach((p) => ys.push(p.y)));
 
-  opts.dates.forEach((dateObj, idx) => {
-    if (idx % tickSpacing !== 0) return;  // skip non-tick months
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const rangeY = maxY - minY || 1;
 
-    const px = pad + idx * stepX;  // same x-scale you use for plotting
+  const yScale = (yVal) => {
+    const pct = (yVal - minY) / rangeY;
+    return pad + (h - pad * 2) - pct * (h - pad * 2);
+  };
 
-    // Month label
-    const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    lbl.setAttribute("x", px);
-    lbl.setAttribute("y", h - 2);   // bottom of chart area
+  // -----------------------------------
+  // Draw grid
+  // -----------------------------------
+  for (let gy = 0; gy < 5; gy++) {
+    const line = document.createElementNS(svgNS, "line");
+    const y = pad + gy * ((h - pad * 2) / 4);
+    line.setAttribute("x1", pad);
+    line.setAttribute("x2", w - pad);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "var(--border)");
+    line.setAttribute("stroke-opacity", "0.16");
+    svg.appendChild(line);
+  }
+
+  // -----------------------------------
+  // Smooth cubic interpolation helper
+  // -----------------------------------
+  function smoothPathFromPointsCubic(points) {
+    if (points.length < 2) return "";
+
+    let d = `M ${points[0][0]} ${points[0][1]}`;
+    for (let i = 1; i < points.length; i++) {
+      const p0 = points[i - 1];
+      const p1 = points[i];
+      const cx = (p0[0] + p1[0]) / 2;
+      const cy = (p0[1] + p1[1]) / 2;
+      d += ` Q ${p0[0]} ${p0[1]}, ${cx} ${cy}`;
+    }
+    d += ` T ${points[points.length - 1][0]} ${points[points.length - 1][1]}`;
+    return d;
+  }
+
+  // -----------------------------------
+  // Plot each loan series
+  // -----------------------------------
+  loanSeriesList.forEach((ls) => {
+    const pts = ls.data
+      .filter((pt) => pt.y != null)
+      .map((pt) => [dateToX(pt.date), yScale(pt.y)]);
+
+    if (!pts.length) return;
+
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("d", smoothPathFromPointsCubic(pts));
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", ls.color || "#888");
+    path.setAttribute("stroke-width", "1.2");
+    path.setAttribute("stroke-opacity", "0.9");
+    svg.appendChild(path);
+  });
+
+  // -----------------------------------
+  // Weighted line (black)
+  // -----------------------------------
+  if (weightedSeries.length) {
+    const pts = weightedSeries.map((pt) => [
+      dateToX(pt.date),
+      yScale(pt.y),
+    ]);
+
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("d", smoothPathFromPointsCubic(pts));
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", opts.weightedColor || "#000");
+    path.setAttribute("stroke-width", opts.weightedWidth || "2.6");
+    svg.appendChild(path);
+  }
+
+  // -----------------------------------
+  // Draw X-axis Month/Year labels
+  // -----------------------------------
+  const tickSpacing = 2; // every 2 months
+  const axisGroup = document.createElementNS(svgNS, "g");
+
+  globalDates.forEach((dateObj, idx) => {
+    if (idx % tickSpacing !== 0) return;
+    const x = dateToX(dateObj);
+
+    // Label
+    const lbl = document.createElementNS(svgNS, "text");
+    lbl.setAttribute("x", x);
+    lbl.setAttribute("y", h - 4);
     lbl.setAttribute("text-anchor", "middle");
-    lbl.setAttribute("font-size", "10px");
+    lbl.setAttribute("font-size", "10");
     lbl.setAttribute("fill", "var(--muted)");
-    lbl.textContent = formatMonthYear(dateObj);  // already exists in your code
+    lbl.textContent = formatMonthYear(dateObj);
     axisGroup.appendChild(lbl);
 
-    // Optional small tick mark
-    const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    tick.setAttribute("x1", px);
-    tick.setAttribute("x2", px);
-    tick.setAttribute("y1", h - 20);
-    tick.setAttribute("y2", h - 15);
+    // Tick
+    const tick = document.createElementNS(svgNS, "line");
+    tick.setAttribute("x1", x);
+    tick.setAttribute("x2", x);
+    tick.setAttribute("y1", h - 22);
+    tick.setAttribute("y2", h - 16);
     tick.setAttribute("stroke", "var(--border)");
-    tick.setAttribute("stroke-width", "1");
     axisGroup.appendChild(tick);
   });
 
   svg.appendChild(axisGroup);
+  containerEl.appendChild(svg);
 }
+
 
   
   // vertical marker + hover circle
@@ -1275,6 +1312,42 @@ function buildHistoricalRoiTimeline(loans) {
   };
 }
 
+/* ==========================================================
+   DATE-ALIGNED CHART ENGINE HELPERS
+   ========================================================== */
+
+// Convert YYYY-MM-DD to Date objects
+function toDate(d) {
+  return (d instanceof Date) ? d : new Date(d);
+}
+
+// Difference in months between two dates
+function monthDiff(a, b) {
+  a = toDate(a);
+  b = toDate(b);
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
+
+// Format ticks (Jan 2024)
+function formatMonthYear(d) {
+  return d.toLocaleString("en-US", { month: "short", year: "numeric" });
+}
+
+// Simple catmull-rom smoothing
+function smoothPath(points) {
+  if (points.length < 3) {
+    return `M${points.map(p => `${p.x},${p.y}`).join(" L")}`;
+  }
+  let d = `M${points[0].x},${points[0].y}`;
+  for (let i = 1; i < points.length - 2; i++) {
+    const xc = (points[i].x + points[i + 1].x) / 2;
+    const yc = (points[i].y + points[i + 1].y) / 2;
+    d += ` Q ${points[i].x},${points[i].y} ${xc},${yc}`;
+  }
+  const n = points.length;
+  d += ` T ${points[n - 1].x},${points[n - 1].y}`;
+  return d;
+}
 
 
       
