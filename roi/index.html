@@ -1136,12 +1136,23 @@ function buildHistoricalRoiTimeline(loans) {
     });
 
     // Build calendar-aligned ROI (null before purchase)
+    let lastKnownROI = 0;
+
     const data = dates.map(date => {
-      if (date < purchase) return { date, y: null };
-      const key = date.toISOString().slice(0,7);
-      const roi = key in roiMap ? roiMap[key] : null;
-      return { date, y: roi };
+      if (date < purchase) {
+      return { date, y: null };
+      }
+
+    const key = date.toISOString().slice(0, 7);
+
+    if (key in roiMap) {
+    lastKnownROI = roiMap[key];
+    }
+
+    // forward-fill ROI after purchase
+    return { date, y: lastKnownROI };
     });
+
 
     return {
       name: `Loan ${loan.id}`,
