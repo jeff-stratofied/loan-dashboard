@@ -1656,6 +1656,82 @@ createMultiSeriesChart(
   drawer.setAttribute('aria-hidden', 'false');
 }
 
+      /* ============================================================
+   PROJECTED ROI TIMELINE ENGINE
+   Extends to each loan's maturity (NOT to today's date)
+   ============================================================ */
+function buildProjectedRoiTimeline(loans) {
+  // ---- 1. Determine global start (earliest purchase) ----
+  const earliestPurchase = loans.reduce((earliest, l) => {
+    const d = new Date(l.purchaseDate);
+    return d < earliest ? d : earliest;
+  }, new Date(loans[0].purchaseDate));
+
+  // ---- 2. Determine global end (latest maturity date) ----
+  const latestMaturity = loans.reduce((latest, l) => {
+    const mat = new Date(l.purchaseDate);
+    mat.setMonth(mat.getMonth() + Math.round((l.termYears + l.graceYears) * 12));
+    return mat > latest ? mat : latest;
+  }, new Date(earliestPurchase));
+
+  // ---- 3. Build monthly date list earliest → latest maturity ----
+  const dates = [];
+  const cursor = new Date(earliestPurchase);
+  while (cursor <= latestMaturity) {
+    dates.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  // ---- 4. Align per-loan ROI series ----
+  const perLoanSeries = loans.map((loan, idx) => {
+    const purchase = new Date(loan.purchaseDate);
+    const roiMap = {};
+
+    loan.roiSeries.forEach(entry => {
+      if (entry.ownershipDate) {
+        roiMap[new Date(entry.ownershipDate).toISOString().slice(0,7)] = entry.roi;
+      }
+    });
+
+    let lastKnownROI = 0;
+
+    const data = dates.map(date => {
+      if (date < purchase) return { date, y: null };
+
+      const key = date.toISOString().slice(0,7);
+      if (roiMap[key] != null) lastKnownROI = roiMap[key];
+
+      return { date, y: lastKnownROI };
+    });
+
+    return {
+      name: `Loan ${loan.id}`,
+      color: loanColors[idx % loanColors.length],
+      data
+    };
+  });
+
+  // ---- 5. Weighted ROI series ----
+  const totalInvested = loans.reduce((s,l)=> s + l.purchasePrice, 0);
+
+  const weightedSeries = dates.map((date, i) => {
+    let weightedSum = 0;
+    loans.forEach((loan, idx) => {
+      const roi = perLoanSeries[idx].data[i].y;
+      if (roi != null) {
+        weightedSum += roi * loan.purchasePrice;
+      }
+    });
+    return { date, y: weightedSum / totalInvested };
+  });
+
+  return {
+    dates,
+    perLoanSeries,
+    weightedSeries
+  };
+}
+
 
     function renderRatesDrawer(){
   currentMode = 'kpi';
@@ -1699,8 +1775,8 @@ drawerSecondary.textContent = "$" + projPortfolioValue.toLocaleString();
 // ===============================
 // 3. Build timeline (calendar aligned)
 // ===============================
-const timeline = buildHistoricalRoiTimeline(loansWithAmort);
-
+const timeline = buildProjectedRoiTimeline(loansWithAmort);
+      
 // ===============================
 // 4. Render multi-series chart WITH hover
 // ===============================
