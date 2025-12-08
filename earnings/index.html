@@ -577,7 +577,27 @@ thead th {
 
 
 
-    <section class="kpis" id="kpis"></section>
+    <section class="kpis" id="kpis">
+      <div class="kpi" data-kpi="net">
+        <h3>Net Earnings to Date</h3>
+        <p id="kpiNetToDate">--</p>
+      </div>
+
+      <div class="kpi" data-kpi="projected">
+        <h3>Projected Lifetime Earnings</h3>
+        <p id="kpiNetProj">--</p>
+      </div>
+
+      <div class="kpi" data-kpi="avgMonthly">
+        <h3>Average Monthly Earnings</h3>
+        <p id="kpiAvgMonth">--</p>
+      </div>
+
+      <div class="kpi" data-kpi="fees">
+        <h3>Total Fees to Date</h3>
+        <p id="kpiFees">--</p>
+      </div>
+    </section>
     <section class="grid" id="loanGrid" aria-live="polite"></section>
   </div>
 
@@ -1509,24 +1529,15 @@ svg.appendChild(vline);
     function renderKPIs() {
       kpis = computeEarningsKPIs(loansWithEarnings);
       totalPrincipal = loans.reduce((s,l)=>s+l.purchasePrice,0);
-      kpisEl.innerHTML = `
-        <div class="kpi" data-kpi="netToDate">
-          <h3>Total Net Earnings to Date</h3>
-          <p id="kpiNetToDate">$${kpis.totalNetToDate.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
-        </div>
-        <div class="kpi" data-kpi="projected">
-          <h3>Projected Lifetime Earnings</h3>
-          <p id="kpiNetProj">$${kpis.totalNetProjected.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
-        </div>
-        <div class="kpi" data-kpi="avgMonthly">
-          <h3>Average Monthly Earnings</h3>
-          <p id="kpiAvgMonth">$${kpis.avgMonthlyEarnings.toFixed(2)}</p>
-        </div>
-        <div class="kpi" data-kpi="fees">
-          <h3>Total Fees to Date</h3>
-          <p id="kpiFees">$${kpis.totalFeesToDate.toLocaleString(undefined,{maximumFractionDigits:0})}</p>
-        </div>
-      `;
+      const netEl = document.getElementById("kpiNetToDate");
+      const projEl = document.getElementById("kpiNetProj");
+      const avgEl = document.getElementById("kpiAvgMonth");
+      const feesEl = document.getElementById("kpiFees");
+
+      if (netEl) netEl.textContent = `$${kpis.totalNetToDate.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+      if (projEl) projEl.textContent = `$${kpis.totalNetProjected.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+      if (avgEl) avgEl.textContent = `$${kpis.avgMonthlyEarnings.toFixed(2)}`;
+      if (feesEl) feesEl.textContent = `$${kpis.totalFeesToDate.toLocaleString(undefined,{maximumFractionDigits:0})}`;
     }
 
     // --------------------------
@@ -1802,20 +1813,16 @@ document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.t
     // --------------------------
     // KPI click wiring
     // --------------------------
-    const kpiOpeners = {
-      netToDate:openKpi1,
-      projected:openKpi2,
-      avgMonthly:openKpi3,
-      fees:openKpi4
-    };
-
     function bindKpiClickHandlers() {
-      document.querySelectorAll(".kpi").forEach(k => {
-        k.addEventListener("click", () => {
-          const key = k.getAttribute("data-kpi");
-          if(kpiOpeners[key]){
-            kpiOpeners[key]();
-          }
+      document.querySelectorAll(".kpi").forEach(card => {
+        card.addEventListener("click", () => {
+          const type = card.dataset.kpi;
+          if (!type) return;
+
+          if (type === "net") openKpi1();
+          else if (type === "projected") openKpi2();
+          else if (type === "avgMonthly") openKpi3();
+          else if (type === "fees") openKpi4();
         });
       });
     }
