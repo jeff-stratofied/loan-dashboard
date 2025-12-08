@@ -87,7 +87,21 @@
     }
 
     .app{max-width:1200px;margin:20px auto;padding:16px}
-    header{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+    /* Match amort layout */
+    body > .app {
+      background: transparent;
+      padding-top: 16px;
+      margin-top: 0;
+      }
+
+    header {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:8px;   /* match amort */
+      padding:0;           /* remove invisible offset */
+    }
+
     .header-top{display:flex;align-items:center;justify-content:space-between}
     h1{ font-size:20px; margin:0 }
     p.lead{ margin:0; color:var(--muted); font-size:13px }
