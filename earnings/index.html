@@ -1526,6 +1526,19 @@ svg.appendChild(vline);
     // Render KPI tiles
     // --------------------------
     const kpisEl = document.getElementById("kpis");
+    const kpiCards = document.querySelectorAll('.kpi');
+
+    // --- Correct KPI click binding (same pattern as amort page) ---
+    kpiCards.forEach((card, idx) => {
+      card.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (idx === 0) openKpi1();
+        else if (idx === 1) openKpi2();
+        else if (idx === 2) openKpi3();
+        else if (idx === 3) openKpi4();
+        openDrawer();   // ensure drawer opens
+      });
+    });
     function renderKPIs() {
       kpis = computeEarningsKPIs(loansWithEarnings);
       totalPrincipal = loans.reduce((s,l)=>s+l.purchasePrice,0);
@@ -1707,7 +1720,6 @@ svg.appendChild(vline);
       rebuildLoansWithEarnings();
       renderKPIs();
       renderLoanTiles();
-      bindKpiClickHandlers();
     }
 
     // --------------------------
@@ -1808,23 +1820,6 @@ document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.t
         </div>
       `;
       openDrawerBase();
-    }
-
-    // --------------------------
-    // KPI click wiring
-    // --------------------------
-    function bindKpiClickHandlers() {
-      document.querySelectorAll(".kpi").forEach(card => {
-        card.addEventListener("click", () => {
-          const type = card.dataset.kpi;
-          if (!type) return;
-
-          if (type === "net") openKpi1();
-          else if (type === "projected") openKpi2();
-          else if (type === "avgMonthly") openKpi3();
-          else if (type === "fees") openKpi4();
-        });
-      });
     }
 
     document.addEventListener("DOMContentLoaded", initPage);
