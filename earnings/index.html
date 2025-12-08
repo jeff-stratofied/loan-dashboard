@@ -605,8 +605,23 @@ thead th {
       </div>
     </div>
 
-   <div id="drawerBody" class="drawer-body">
+    <div id="drawerBody" class="drawer-body">
       <div class="drawer-chart" id="drawerChartArea"></div>
+      <div class="amort-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Payment</th>
+              <th>Principal</th>
+              <th>Interest</th>
+              <th>Fees</th>
+              <th>Net Earnings</th>
+            </tr>
+          </thead>
+          <tbody id="amortBody"></tbody>
+        </table>
+      </div>
     </div>
     <div class="drawer-footer">
   <div class="actions" style="padding-top:10px">
@@ -974,6 +989,10 @@ thead th {
           monthsSinceStart
         };
       });
+
+      window.LoanMap = Object.fromEntries(
+        loansWithEarnings.map(l => [l.loanName, l])
+      );
     }
 
     // --------------------------
@@ -1596,6 +1615,8 @@ svg.appendChild(vline);
     const drawerSecondary = document.getElementById("drawerSecondary");
     const drawerChartArea = document.getElementById("drawerChartArea");
     const drawerExtra = document.getElementById("drawerExtra");
+    const amortBody = document.getElementById("amortBody");
+    const closeBtn = document.getElementById("closeBtn");
 
     let currentLoan = null;
 
@@ -1619,7 +1640,8 @@ svg.appendChild(vline);
 
         const tile = document.createElement("div");
         tile.className = "tile";
-tile.innerHTML = `
+        tile.setAttribute("data-loan", loan.loanName);
+        tile.innerHTML = `
   <div class="tile-left">
 
     <!-- Line 1: Loan Name -->
@@ -1653,8 +1675,6 @@ tile.innerHTML = `
     <div class="mini-chart"></div>
   </div>
 `;
-
-        tile.addEventListener("click", () => openLoanDrawer(loan));
         grid.appendChild(tile);
 
         const mini = tile.querySelector('.mini-chart');
@@ -1667,25 +1687,24 @@ tile.innerHTML = `
       rebuildLoansWithEarnings();
       renderKPIs();
       renderLoanTiles();
+      // --- Enable drawer click for each tile ---
+      document.querySelectorAll('.tile').forEach(tile => {
+        tile.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const loanName = tile.getAttribute('data-loan');
+          const loan = window.LoanMap?.[loanName];
+          if (loan) openDrawerForLoan(loan);
+        });
+      });
       bindKpiClickHandlers();
     }
 
     // --------------------------
     // Drawer behavior
     // --------------------------
-    document.getElementById("closeBtn").addEventListener("click", closeDrawer);
+    closeBtn.addEventListener("click", closeDrawer);
     document.addEventListener("keydown", e => {
       if(e.key === "Escape") closeDrawer();
-    });
-    document.addEventListener("click", e => {
-      if(drawer.classList.contains("open")){
-        const inside = drawer.contains(e.target);
-        const tileClicked = e.target.closest(".tile");
-        const kpiClicked = e.target.closest(".kpi");
-        if(!inside && !tileClicked && !kpiClicked){
-          closeDrawer();
-        }
-      }
     });
 
     function closeDrawer(){
@@ -1693,6 +1712,45 @@ tile.innerHTML = `
       drawer.setAttribute("aria-hidden","true");
       currentLoan = null;
     }
+
+    function openDrawerForLoan(loan) {
+      currentLoan = loan;
+      resetDrawerContent();
+
+      drawerTitle.textContent = `${loan.loanName} — ${loan.school}`;
+      drawerSub.textContent = `Earnings Details`;
+
+      // Primary + secondary numbers
+      const sched = loan.earningsSchedule || [];
+      const last = sched[sched.length - 1] || {};
+      drawerPrimary.textContent = `$${(last.netEarnings || 0).toLocaleString()}`;
+      drawerSecondary.textContent = `$${(last.cumFees || 0).toLocaleString()}`;
+
+      // Show earnings table
+      amortBody.innerHTML = "";
+      sched.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+      <td>${row.date || ""}</td>
+      <td>$${(row.payment || 0).toFixed(2)}</td>
+      <td>$${(row.principalPaid || 0).toFixed(2)}</td>
+      <td>$${(row.interestPaid || 0).toFixed(2)}</td>
+      <td>$${(row.feesPaid || 0).toFixed(2)}</td>
+      <td>$${(row.netEarnings || 0).toFixed(2)}</td>
+    `;
+        amortBody.appendChild(tr);
+      });
+
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    }
+
+    document.addEventListener("click", (e) => {
+      if (!drawer.classList.contains("open")) return;
+      if (!drawer.contains(e.target) && !e.target.closest(".tile")) {
+        closeDrawer();
+      }
+    });
 
     function openLoanDrawer(loan){
       currentLoan = loan;
