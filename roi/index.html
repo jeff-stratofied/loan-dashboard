@@ -815,7 +815,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   // X-axis
   // -----------------------------------
   const axisGroup = document.createElementNS(svgNS, "g");
-  const tickSpacing = 6;
+  const tickSpacing = 12;
 
   globalDates.forEach((dateObj, idx) => {
     if (idx % tickSpacing !== 0) return;
