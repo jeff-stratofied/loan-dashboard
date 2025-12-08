@@ -737,7 +737,7 @@ if (opts.dates && opts.dates.length) {
   opts.dates.forEach((dateObj, idx) => {
     if (idx % tickSpacing !== 0) return;  // skip non-tick months
 
-    const px = xScale(idx);  // same x-scale you use for plotting
+    const px = pad + idx * stepX;  // same x-scale you use for plotting
 
     // Month label
     const lbl = document.createElementNS("http://www.w3.org/2000/svg", "text");
