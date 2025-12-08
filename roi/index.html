@@ -1658,114 +1658,98 @@ createMultiSeriesChart(
 
 
     function renderRatesDrawer(){
-  currentMode='kpi'; currentLoan=null;
-  drawerAmortContainer.innerHTML='';
-  drawerTitle.textContent='Projected Weighted ROI'; 
-  drawerSub.textContent='Projection to maturity';
+  currentMode = 'kpi';
+currentLoan = null;
 
-  // Compute projected weighted ROI & portfolio value
-  const projectedSeries = [];
-  const monthsMax = Math.max(...loansWithAmort.map(l=>l.roiSeries.length));
-  for(let m=1;m<=monthsMax;m++){
-    let total=0, weighted=0;
-    let labelDate=null;
-    loansWithAmort.forEach(l=>{
-      const e=l.roiSeries.find(r=>r.month===m);
-      if(e){
-        weighted += l.purchasePrice*e.roi; total += l.purchasePrice;
-        if(!labelDate && e.ownershipDate) labelDate = e.ownershipDate;
-      }
-    });
-    const label = labelDate ? formatMonthYear(labelDate) : `M${m}`;
-    projectedSeries.push({x:label,y: total?weighted/total:0});
+drawerAmortContainer.innerHTML = '';
+drawerLegend.style.display = 'none';
+drawerChartArea.innerHTML = '';
+drawerExtra.innerHTML = '';
+
+drawerTitle.textContent = "Projected Weighted ROI";
+drawerSub.textContent = "Projection to Maturity";
+
+// ===============================
+// 1. Compute projected weighted ROI
+// ===============================
+const totalInv = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
+
+let projWeightedROI = 0;
+loansWithAmort.forEach(l => {
+  const last = getLastOwnedRoiEntry(l);
+  projWeightedROI += l.purchasePrice * (last.roi || 0);
+});
+projWeightedROI = projWeightedROI / Math.max(1, totalInv);
+
+drawerPrimaryTitle.textContent = "Projected Weighted ROI";
+drawerPrimary.textContent = (projWeightedROI * 100).toFixed(2) + "%";
+
+// ===============================
+// 2. Compute projected portfolio value
+// ===============================
+let projPortfolioValue = 0;
+loansWithAmort.forEach(l => {
+  const last = getLastOwnedRoiEntry(l);
+  projPortfolioValue += last.loanValue || 0;
+});
+
+drawerSecondaryTitle.textContent = "Projected Portfolio Value";
+drawerSecondary.textContent = "$" + projPortfolioValue.toLocaleString();
+
+// ===============================
+// 3. Build timeline (calendar aligned)
+// ===============================
+const timeline = buildHistoricalRoiTimeline(loansWithAmort);
+
+// ===============================
+// 4. Render multi-series chart WITH hover
+// ===============================
+createMultiSeriesChart(
+  drawerChartArea,
+  timeline.perLoanSeries,
+  timeline.weightedSeries,
+  {
+    weightedColor: "#000",
+    weightedWidth: 2.6,
+    dates: timeline.dates
   }
+);
 
-  const projectedPortfolioValue = loansWithAmort.reduce((s,l)=>{
-      const last=getLastOwnedRoiEntry(l);
-      return s + (last.loanValue||l.purchasePrice);
-  },0);
-
-  drawerPrimaryTitle.textContent='Projected Weighted ROI';
-  drawerPrimary.textContent=(kpis.projectedWeightedROI*100).toFixed(2)+'%';
-  drawerSecondaryTitle.textContent='Projected Portfolio Value';
-  drawerSecondary.textContent='$'+projectedPortfolioValue.toLocaleString();
-
-  // Build loan-level series
-  const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16','#10b981',
-                   '#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
-  const loanSeriesList = loansWithAmort.map(l=>{
-    const pts = l.roiSeries.map(p=>({x: formatMonthYear(p.ownershipDate), y:p.roi, ownershipDate: p.ownershipDate}));
-    return {name:formatLoanLabel(l), color:palette[(l.id-1)%palette.length], data:pts};
-  });
-  const startTimes = loansWithAmort.map(l => new Date(l.loanStartDate).getTime()).filter(t => !Number.isNaN(t));
-  const earliestStart = startTimes.length ? new Date(Math.min(...startTimes)) : new Date();
-
-  // Render chart
-  createMultiSeriesChart(
-    drawerChartArea,
-    loanSeriesList,
-    projectedSeries,
-    {weightedColor:'#000', weightedWidth:2.8, startDate: earliestStart}
-  );
-
-  // Build table
-  drawerExtra.innerHTML = `
-    <div style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">Projected ROI at Maturity — All Loans</h3>
-      <div style="max-height:300px;overflow:auto;
-          border:1px solid var(--border);border-radius:8px;
-          padding:6px;background:var(--card);">
-        <table style="width:100%;font-size:13px;">
-          <thead>
-            <tr>
-              <th style="text-align:left;">Loan</th>
-              <th style="text-align:left;">Purchase Date</th>
-              <th style="text-align:left;">Maturity Date</th>
-              <th style="text-align:right;">Projected ROI</th>
-            </tr>
-          </thead>
-          <tbody id="projTableBody"></tbody>
-        </table>
-      </div>
+// ===============================
+// 5. Table of projected ROI for each loan
+// ===============================
+drawerExtra.innerHTML = `
+  <div style="margin-top:12px">
+    <h3 style="margin:0 0 8px 0">Projected ROI at Maturity — All Loans</h3>
+    <div style="
+      max-height:300px;
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:6px;
+      background:var(--card);
+    ">
+      <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
+        <thead>
+          <tr>
+            <th style="text-align:left;">Loan</th>
+            <th style="text-align:left;">Purchase Date</th>
+            <th style="text-align:left;">Maturity Date</th>
+            <th style="text-align:right;">Projected ROI</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
-  `;
+  </div>
+`;
 
-  const tbody = document.getElementById('projTableBody');
-  tbody.innerHTML='';
+populateROILoanTable();
 
-  loansWithAmort.forEach(l=>{
-    const last = getLastOwnedRoiEntry(l);
-    let matStr='';
-    try{
-      const pd=new Date(l.purchaseDate);
-      const months=Math.round((l.termYears+l.graceYears)*12);
-      pd.setMonth(pd.getMonth()+months);
-      matStr=pd.toISOString().slice(0,10);
-    }catch(e){}
+drawer.classList.add('open');
+drawer.setAttribute('aria-hidden','false');
+drawer.scrollTop = 0;
 
-    const roiPct=(last.roi*100).toFixed(2)+'%';
-    const color=palette[(l.id-1)%palette.length];
-
-    const row = `
-      <tr>
-        <td style="text-align:left;">
-          <span style="display:inline-block;width:10px;height:10px;
-            background:${color};border-radius:2px;margin-right:8px;
-            vertical-align:middle;"></span>
-          ${formatLoanLabel(l)}
-        </td>
-        <td style="text-align:left;">${l.purchaseDate}</td>
-        <td style="text-align:left;">${matStr}</td>
-        <td style="text-align:right;color:${color};font-weight:700;">
-          ${roiPct}
-        </td>
-      </tr>`;
-    tbody.insertAdjacentHTML('beforeend', row);
-  });
-
-  drawerLegend.style.display='none';
-  drawer.classList.add('open'); 
-  drawer.setAttribute('aria-hidden','false');
 }
 
 
