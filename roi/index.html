@@ -1113,6 +1113,108 @@ function openDrawerForLoan(loan){
        ------------------------- */
     function getMonthlyTotals(list){ const totals={}; list.forEach(l=>{ const d=new Date(l.purchaseDate); const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; totals[key]=(totals[key]||0)+l.purchasePrice; }); return totals; }
 
+/* ================================
+   TPV Drawer — Weighted ROI To Date
+   ================================ */
+function renderTPVDrawer() {
+  if (!loansWithAmort || !loansWithAmort.length) return;
+
+  // --- Drawer Titles ---
+  drawerTitle.textContent = "Portfolio — Weighted ROI (To Date)";
+  drawerSub.textContent = "Snapshot";
+
+  // --- Compute weighted ROI to date ---
+  const totalInvested = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
+
+  let weightedROI = 0;
+  loansWithAmort.forEach(l => {
+    const last = getCurrentOwnedRoiEntry(l);
+    weightedROI += l.purchasePrice * (last.roi || 0);
+  });
+  weightedROI = weightedROI / Math.max(1, totalInvested);
+
+  drawerPrimaryTitle.textContent = "Weighted ROI to Date";
+  drawerPrimary.textContent = (weightedROI * 100).toFixed(2) + "%";
+
+  // Portfolio value today (mark-to-market sum)
+  let portfolioValue = 0;
+  loansWithAmort.forEach(l => {
+    const last = getCurrentOwnedRoiEntry(l);
+    portfolioValue += last.loanValue || 0;
+  });
+
+  drawerSecondaryTitle.textContent = "Portfolio Value";
+  drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
+
+  // --- Build multi-series chart data ---
+  const weightedSeries = [];
+  const perLoanSeries = [];
+
+  // Find max months across loans
+  const maxMonths = Math.max(
+    ...loansWithAmort.map(l => l.roiSeries.length)
+  );
+
+  for (let m = 1; m <= maxMonths; m++) {
+    let wSum = 0;
+    loansWithAmort.forEach(l => {
+      const entry = l.roiSeries[m-1];
+      if (entry) {
+        wSum += l.purchasePrice * entry.roi;
+      }
+    });
+    weightedSeries.push({
+      x: m,
+      y: wSum / Math.max(1, totalInvested)
+    });
+  }
+
+  // Build per-loan lines
+  loansWithAmort.forEach((l, idx) => {
+    const color = loanColors[idx % loanColors.length];
+    const series = l.roiSeries.map(r => ({
+      x: r.month,
+      y: r.roi
+    }));
+    perLoanSeries.push({
+      name: `Loan ${l.id}`,
+      color,
+      data: series
+    });
+  });
+
+  // --- Draw chart ---
+  createMultiSeriesChart(
+    drawerChartArea,
+    perLoanSeries,
+    weightedSeries,
+    {
+      weightedColor: "#000",
+      weightedWidth: 2.6,
+      startDate: loansWithAmort[0].loanStartDate
+    }
+  );
+
+  // --- Build ROI table ---
+  let tableHTML = "";
+  loansWithAmort.forEach((l, idx) => {
+    const last = getCurrentOwnedRoiEntry(l);
+    const pct = (last.roi * 100).toFixed(2);
+    const color = loanColors[idx % loanColors.length];
+
+    tableHTML += `
+      <tr>
+        <td><span style="color:${color};font-weight:700">Loan ${l.id}</span></td>
+        <td style="text-align:right">${pct}%</td>
+      </tr>
+    `;
+  });
+
+  document.querySelector("#roiLoansTable tbody").innerHTML = tableHTML;
+
+  openDrawer();
+}
+      
     function renderDistributionDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
@@ -1721,6 +1823,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
 <!-- Added customTooltip function -->
 <script>
+
+const loanColors = [
+  "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
+  "#3b82f6", "#6366f1", "#a855f7", "#ec4899", "#14b8a6"
+];
+  
 function customTooltip(context) {
     let tooltipEl = document.getElementById('chartjs-tooltip');
     if (!tooltipEl) {
