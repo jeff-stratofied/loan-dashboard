@@ -1536,16 +1536,17 @@ svg.appendChild(vline);
       drawerExtra.innerHTML = "";
     }
 
-    function openDrawer() {
-      openDrawerBase();
-    }
-
     function openDrawerBase(){
       drawer.classList.add("open");
       drawer.setAttribute("aria-hidden","false");
       drawer.scrollTop = 0;
     }
 
+    function openDrawer() {
+      openDrawerBase();
+    }
+
+    
     function openKpi1(){
       currentLoan = null;
       drawerTitle.textContent = "Total Net Earnings to Date";
