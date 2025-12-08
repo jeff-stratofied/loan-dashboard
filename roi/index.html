@@ -1224,69 +1224,19 @@ function renderTPVDrawer() {
   drawerSecondaryTitle.textContent = "Portfolio Value";
   drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
 
-  // --- Build multi-series chart data (clamped to today) ---
-  const today = new Date();
+const timeline = buildHistoricalRoiTimeline(loansWithAmort);
 
-  // For each loan, keep only ROI points up to today
-  const clampedSeries = loansWithAmort.map(l =>
-    l.roiSeries.filter(r => new Date(r.ownershipDate) <= today)
-  );
-
-  const weightedSeries = [];
-  const perLoanSeries = [];
-
-  // Find max number of points across clamped series
-  const maxPoints = Math.max(
-    ...clampedSeries.map(s => s.length || 0)
-  );
-
-  for (let i = 0; i < maxPoints; i++) {
-    let wSum = 0;
-    clampedSeries.forEach((series, loanIdx) => {
-      const entry = series[i];
-      if (entry) {
-        wSum += loansWithAmort[loanIdx].purchasePrice * entry.roi;
-      }
-    });
-    weightedSeries.push({
-      x: i + 1,
-      y: wSum / Math.max(1, totalInvested)
-    });
+createMultiSeriesChart(
+  drawerChartArea,
+  timeline.perLoanSeries,
+  timeline.weightedSeries,
+  {
+    weightedColor: "#000",
+    weightedWidth: 2.6,
+    dates: timeline.dates
   }
+);
 
-  // Build per-loan lines from the clamped series
-  clampedSeries.forEach((series, idx) => {
-    const color = loanColors[idx % loanColors.length];
-    perLoanSeries.push({
-      name: `Loan ${loansWithAmort[idx].id}`,
-      color,
-      data: series.map((r, i) => ({
-        x: i + 1,
-        y: r.roi
-      }))
-    });
-  });
-
-  // Earliest ownership date (for tooltip month labels)
-  let earliestOwnDate = null;
-  clampedSeries.forEach(series => {
-    if (series.length) {
-      const d = new Date(series[0].ownershipDate);
-      if (!earliestOwnDate || d < earliestOwnDate) earliestOwnDate = d;
-    }
-  });
-
-  // --- Draw chart ---
-  createMultiSeriesChart(
-    drawerChartArea,
-    perLoanSeries,
-    weightedSeries,
-    {
-      weightedColor: "#000",
-      weightedWidth: 2.6,
-      startDate: earliestOwnDate
-    }
-  );
 
 
    // --- Build ROI table (reuse existing helper) ---
