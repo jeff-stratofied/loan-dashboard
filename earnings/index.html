@@ -1620,24 +1620,6 @@ svg.appendChild(vline);
       openDrawer();
     }
 
-    function bindKpiClickHandlers() {
-      document.querySelector('[data-kpi="net"]')
-        ?.closest('.kpi')
-        ?.addEventListener('click', () => openKpi1());
-
-      document.querySelector('[data-kpi="lifetime"]')
-        ?.closest('.kpi')
-        ?.addEventListener('click', () => openKpi2());
-
-      document.querySelector('[data-kpi="avg"]')
-        ?.closest('.kpi')
-        ?.addEventListener('click', () => openKpi3());
-
-      document.querySelector('[data-kpi="fees"]')
-        ?.closest('.kpi')
-        ?.addEventListener('click', () => openKpi4());
-    }
-
     // --------------------------
     // Loan tiles
     // --------------------------
