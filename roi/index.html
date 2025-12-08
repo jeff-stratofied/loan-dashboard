@@ -1119,6 +1119,13 @@ function openDrawerForLoan(loan){
 function renderTPVDrawer() {
   if (!loansWithAmort || !loansWithAmort.length) return;
 
+  currentMode = 'kpi';
+  currentLoan = null;
+
+  drawerAmortContainer.innerHTML = '';
+  drawerLegend.style.display = 'none';
+  drawerChartArea.innerHTML = '';
+  
   // --- Drawer Titles ---
   drawerTitle.textContent = "Portfolio — Weighted ROI (To Date)";
   drawerSub.textContent = "Snapshot";
@@ -1195,24 +1202,40 @@ function renderTPVDrawer() {
     }
   );
 
-  // --- Build ROI table ---
-  let tableHTML = "";
-  loansWithAmort.forEach((l, idx) => {
-    const last = getCurrentOwnedRoiEntry(l);
-    const pct = (last.roi * 100).toFixed(2);
-    const color = loanColors[idx % loanColors.length];
+   // --- Build ROI table (reuse existing helper) ---
+  drawerExtra.innerHTML = `
+    <div style="margin-top:12px">
+      <h3 style="margin:0 0 8px 0">ROI to Date — All Loans</h3>
+      <div style="
+        max-height:300px;
+        overflow:auto;
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:6px;
+        background:var(--card);
+      ">
+        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Loan</th>
+              <th style="text-align:left;">Purchase Date</th>
+              <th style="text-align:left;">Maturity Date</th>
+              <th style="text-align:right;">ROI to Date</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  `;
 
-    tableHTML += `
-      <tr>
-        <td><span style="color:${color};font-weight:700">Loan ${l.id}</span></td>
-        <td style="text-align:right">${pct}%</td>
-      </tr>
-    `;
-  });
+  // fill rows using the helper you already defined
+  populateROILoanTable();
 
-  document.querySelector("#roiLoansTable tbody").innerHTML = tableHTML;
-
-  openDrawer();
+  // open drawer (inline, since there is no openDrawer() helper)
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  drawer.scrollTop = 0;
 }
       
     function renderDistributionDrawer() {
