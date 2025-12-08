@@ -723,27 +723,14 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     wPath.dataset.name = 'Weighted ROI';
   }
 
-  if (opts.startDate && weightedSeries && weightedSeries.length) {
-    const today = new Date();
-    const diffMonthsFromStart = monthDiff(new Date(opts.startDate), today);
-    const cx = xForMonth(diffMonthsFromStart);
-    const curLine = document.createElementNS(svgNS,'line');
-    curLine.setAttribute('x1', cx);
-    curLine.setAttribute('x2', cx);
-    curLine.setAttribute('y1', pad);
-    curLine.setAttribute('y2', h - pad);
-    curLine.setAttribute('stroke', '#111827');
-    curLine.setAttribute('stroke-dasharray', '3 3');
-    curLine.setAttribute('stroke-opacity', '0.6');
-    svg.appendChild(curLine);
-  }
-
   // vertical marker + hover circle
   const vLine = document.createElementNS(svgNS,'line');
   vLine.setAttribute('stroke','var(--text)');
   vLine.setAttribute('stroke-dasharray','3 4');
-  vLine.setAttribute('stroke-opacity','0.6');
+// start hidden; only show during hover
+  vLine.setAttribute('stroke-opacity','0');
   svg.appendChild(vLine);
+
   const hoverG = document.createElementNS(svgNS,'g');
   hoverG.setAttribute('class','hover');
   svg.appendChild(hoverG);
@@ -763,6 +750,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     vLine.setAttribute('x2', cx);
     vLine.setAttribute('y1', pad);
     vLine.setAttribute('y2', h - pad);
+    vLine.setAttribute('stroke-opacity','0.6');
 
     hoverG.innerHTML = '';
     const c = document.createElementNS(svgNS,'circle');
@@ -781,14 +769,15 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
       tooltipEl.style.top = (rectBox.top + cy - 28) + 'px';
       const pct = (pt.y * 100).toFixed(2);
       tooltipEl.innerHTML = `${formatMonthYear(addMonths(new Date(opts.startDate), idx))} • Weighted ROI ${pct}%`;
-
     }
   });
 
   svg.addEventListener('mouseleave', function(){
     hoverG.innerHTML = '';
+    vLine.setAttribute('stroke-opacity','0');
     if(tooltipEl) tooltipEl.style.display='none';
   });
+
 
   containerEl.appendChild(svg);
   return svg;
@@ -1154,41 +1143,56 @@ function renderTPVDrawer() {
   drawerSecondaryTitle.textContent = "Portfolio Value";
   drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
 
-  // --- Build multi-series chart data ---
+  // --- Build multi-series chart data (clamped to today) ---
+  const today = new Date();
+
+  // For each loan, keep only ROI points up to today
+  const clampedSeries = loansWithAmort.map(l =>
+    l.roiSeries.filter(r => new Date(r.ownershipDate) <= today)
+  );
+
   const weightedSeries = [];
   const perLoanSeries = [];
 
-  // Find max months across loans
-  const maxMonths = Math.max(
-    ...loansWithAmort.map(l => l.roiSeries.length)
+  // Find max number of points across clamped series
+  const maxPoints = Math.max(
+    ...clampedSeries.map(s => s.length || 0)
   );
 
-  for (let m = 1; m <= maxMonths; m++) {
+  for (let i = 0; i < maxPoints; i++) {
     let wSum = 0;
-    loansWithAmort.forEach(l => {
-      const entry = l.roiSeries[m-1];
+    clampedSeries.forEach((series, loanIdx) => {
+      const entry = series[i];
       if (entry) {
-        wSum += l.purchasePrice * entry.roi;
+        wSum += loansWithAmort[loanIdx].purchasePrice * entry.roi;
       }
     });
     weightedSeries.push({
-      x: m,
+      x: i + 1,
       y: wSum / Math.max(1, totalInvested)
     });
   }
 
-  // Build per-loan lines
-  loansWithAmort.forEach((l, idx) => {
+  // Build per-loan lines from the clamped series
+  clampedSeries.forEach((series, idx) => {
     const color = loanColors[idx % loanColors.length];
-    const series = l.roiSeries.map(r => ({
-      x: r.month,
-      y: r.roi
-    }));
     perLoanSeries.push({
-      name: `Loan ${l.id}`,
+      name: `Loan ${loansWithAmort[idx].id}`,
       color,
-      data: series
+      data: series.map((r, i) => ({
+        x: i + 1,
+        y: r.roi
+      }))
     });
+  });
+
+  // Earliest ownership date (for tooltip month labels)
+  let earliestOwnDate = null;
+  clampedSeries.forEach(series => {
+    if (series.length) {
+      const d = new Date(series[0].ownershipDate);
+      if (!earliestOwnDate || d < earliestOwnDate) earliestOwnDate = d;
+    }
   });
 
   // --- Draw chart ---
@@ -1199,9 +1203,10 @@ function renderTPVDrawer() {
     {
       weightedColor: "#000",
       weightedWidth: 2.6,
-      startDate: loansWithAmort[0].loanStartDate ? new Date(loansWithAmort[0].loanStartDate) : null
+      startDate: earliestOwnDate
     }
   );
+
 
    // --- Build ROI table (reuse existing helper) ---
   drawerExtra.innerHTML = `
