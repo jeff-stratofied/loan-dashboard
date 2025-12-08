@@ -86,13 +86,19 @@
       -webkit-font-smoothing:antialiased;
     }
 
-    .app{max-width:1200px;margin:20px auto;padding:16px}
+    .app{
+      max-width:1200px;
+      margin:20px auto 0 auto;
+      padding:16px 16px 0 16px;
+    }
+
     /* Match amort layout */
     body > .app {
       background: transparent;
       padding-top: 16px;
       margin-top: 0;
-      }
+    }
+
 
     header {
       display:flex;
@@ -103,6 +109,12 @@
     }
 
     .header-top{display:flex;align-items:center;justify-content:space-between}
+    .header-controls {
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
     h1{ font-size:20px; margin:0 }
     p.lead{ margin:0; color:var(--muted); font-size:13px }
     .current-date{ font-size:13px; color:var(--muted); margin-top:4px }
@@ -155,7 +167,7 @@
     .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; height:calc(100vh - 320px); overflow:auto; padding-right:6px }
     @media(max-width:900px){ .grid{ grid-template-columns:1fr; height:auto } .kpis{ grid-template-columns:repeat(2,1fr) } }
 
-    .tile{ display:flex; align-items:center; justify-content:space-between; padding:12px; border-radius:12px; background:var(--card); min-height:110px; cursor:pointer; overflow:hidden; transition: transform .18s ease, box-shadow .18s ease; border:1px solid var(--border) }
+    .tile{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px; border-radius:12px; background:var(--card); min-height:110px; cursor:pointer; overflow:hidden; transition: transform .18s ease, box-shadow .18s ease; border:1px solid var(--border) }
     .tile-left{ flex:1; padding-right:10px }
     .loan-name{ font-weight:700; font-size:14px }
     .loan-sub{ font-size:12px; color:var(--muted); margin-top:6px }
@@ -257,28 +269,26 @@
   <div class="app" role="main">
 
       <!-- Header here -->
-    <header>
-  <div class="header-top">
-
-    <div>
-      <h1>Loan Portfolio — ROI</h1>
-      <p class="lead">Unified design, dark mode, animations, KPI drawers with primary/secondary cards.</p>
-
-      <div class="current-date" style="margin-top:4px;">
-        <div class="current-date">Current Date: <span id="currentDate"></span></div>
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>Loan Portfolio — ROI</h1>
+        <p class="lead">Unified design, dark mode, animations, KPI drawers with primary/secondary cards.</p>
+      </div>
+  
+      <div class="header-controls">
+        <div style="font-size:13px;color:var(--muted)">
+          User: <strong style="color:var(--brand)">Jeff Customer</strong>
+        </div>
+        <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
       </div>
     </div>
 
-    <!-- User + Toggle aligned to the right -->
-    <div style="display:flex; gap:10px; align-items:center;">
-      <div style="font-size:13px; color:var(--muted)">
-        User: <strong style="color:var(--brand)">Jeff L Customer</strong>
-      </div>
-      <button id="themeToggle" class="theme-icon" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
-    </div>
-
+  <div class="current-date" id="currentDateLabel">
+    Current Date: <span id="currentDate"></span>
   </div>
 </header>
+
 
     <!-- KPI Row -->
     <section class="kpis" id="kpis"></section>
