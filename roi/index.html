@@ -686,8 +686,7 @@
     return d;
   }
 
-      
-// --- Multi-series chart (loan lines + weighted line) ---
+   // --- Multi-series chart (loan lines + weighted line) ---
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
    ============================================================ */
@@ -759,7 +758,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   }
 
   // -----------------------------------
-  // Smooth cubic interpolation helper
+  // Smoothing path helper
   // -----------------------------------
   function smoothPathFromPointsCubic(points) {
     if (points.length < 2) return "";
@@ -777,7 +776,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   }
 
   // -----------------------------------
-  // Plot each loan series
+  // Draw loan lines
   // -----------------------------------
   loanSeriesList.forEach((ls) => {
     const pts = ls.data
@@ -813,16 +812,15 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   }
 
   // -----------------------------------
-  // Draw X-axis Month/Year labels
+  // X-axis
   // -----------------------------------
-  const tickSpacing = 2; // every 2 months
   const axisGroup = document.createElementNS(svgNS, "g");
+  const tickSpacing = 2;
 
   globalDates.forEach((dateObj, idx) => {
     if (idx % tickSpacing !== 0) return;
     const x = dateToX(dateObj);
 
-    // Label
     const lbl = document.createElementNS(svgNS, "text");
     lbl.setAttribute("x", x);
     lbl.setAttribute("y", h - 4);
@@ -831,20 +829,81 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     lbl.setAttribute("fill", "var(--muted)");
     lbl.textContent = formatMonthYear(dateObj);
     axisGroup.appendChild(lbl);
-
-    // Tick
-    const tick = document.createElementNS(svgNS, "line");
-    tick.setAttribute("x1", x);
-    tick.setAttribute("x2", x);
-    tick.setAttribute("y1", h - 22);
-    tick.setAttribute("y2", h - 16);
-    tick.setAttribute("stroke", "var(--border)");
-    axisGroup.appendChild(tick);
   });
 
   svg.appendChild(axisGroup);
+
+  // =======================================================
+  // >>> INSERTED HOVER SYSTEM (Weighted ROI hover only) <<<
+  // =======================================================
+
+  const hoverLine = document.createElementNS(svgNS, 'line');
+  hoverLine.setAttribute('stroke', '#111827');
+  hoverLine.setAttribute('stroke-dasharray', '3 3');
+  hoverLine.setAttribute('stroke-opacity', '0.6');
+  hoverLine.style.display = 'none';
+  svg.appendChild(hoverLine);
+
+  const hoverCircle = document.createElementNS(svgNS, 'circle');
+  hoverCircle.setAttribute('r', 4);
+  hoverCircle.setAttribute('fill', '#000');
+  hoverCircle.setAttribute('stroke', 'var(--card)');
+  hoverCircle.setAttribute('stroke-width', '1');
+  hoverCircle.style.display = 'none';
+  svg.appendChild(hoverCircle);
+
+  svg.addEventListener('mousemove', (ev) => {
+    const rectSvg = svg.getBoundingClientRect();
+    const mouseX = ev.clientX - rectSvg.left;
+
+    let bestIdx = 0;
+    let bestDist = Infinity;
+
+    globalDates.forEach((d, i) => {
+      const x = dateToX(d);
+      const dist = Math.abs(mouseX - x);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestIdx = i;
+      }
+    });
+
+    const date = globalDates[bestIdx];
+    const wPt = weightedSeries[bestIdx];
+    const cx = dateToX(date);
+    const cy = yScale(wPt.y);
+
+    hoverLine.style.display = 'block';
+    hoverLine.setAttribute('x1', cx);
+    hoverLine.setAttribute('x2', cx);
+    hoverLine.setAttribute('y1', pad);
+    hoverLine.setAttribute('y2', h - pad);
+
+    hoverCircle.style.display = 'block';
+    hoverCircle.setAttribute('cx', cx);
+    hoverCircle.setAttribute('cy', cy);
+
+    tooltip.style.display = 'block';
+    tooltip.style.left = (rectSvg.left + cx) + 'px';
+    tooltip.style.top = (rectSvg.top + cy - 30) + 'px';
+    tooltip.innerHTML =
+      `${formatDate(date)}<br>` +
+      `Weighted ROI: ${(wPt.y * 100).toFixed(2)}%`;
+  });
+
+  svg.addEventListener('mouseleave', () => {
+    hoverLine.style.display = 'none';
+    hoverCircle.style.display = 'none';
+    tooltip.style.display = 'none';
+  });
+
+  // END HOVER INSERT
+  // =======================================================
+
   containerEl.appendChild(svg);
 }
+   
+
 
 function createBarChart(containerEl, keys, values, opts = {}) {
   containerEl.innerHTML = '';
