@@ -1536,15 +1536,15 @@ svg.appendChild(vline);
       drawerExtra.innerHTML = "";
     }
 
-    // Wrapper to unify open behavior
-    function openDrawer() {
-      openDrawerBase();
-    }
-
-    function openDrawerBase(){
+    function openDrawerBase() {
       drawer.classList.add("open");
       drawer.setAttribute("aria-hidden","false");
       drawer.scrollTop = 0;
+    }
+
+    // Wrapper to unify open behavior
+    function openDrawer() {
+      openDrawerBase();
     }
 
     
@@ -1560,7 +1560,7 @@ svg.appendChild(vline);
       renderKPI1Chart(loansWithEarnings, "drawerChartArea");
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI1Table(loansWithEarnings, "drawerKpiTable");
-      openDrawerBase();
+      openDrawer();
     }
 
     function openKpi2(){
@@ -1575,7 +1575,7 @@ svg.appendChild(vline);
       renderKPI2Chart(loansWithEarnings, "drawerChartArea");
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI2Table(loansWithEarnings, "drawerKpiTable");
-      openDrawerBase();
+      openDrawer();
     }
 
     function openKpi3(){
@@ -1590,7 +1590,7 @@ svg.appendChild(vline);
       renderKPI3Chart(loansWithEarnings, "drawerChartArea");
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI3Table(loansWithEarnings, "drawerKpiTable");
-      openDrawerBase();
+      openDrawer();
     }
 
     function openKpi4(){
@@ -1605,7 +1605,7 @@ svg.appendChild(vline);
       renderKPI4Chart(loansWithEarnings, "drawerChartArea");
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI4Table(loansWithEarnings, "drawerKpiTable");
-      openDrawerBase();
+      openDrawer();
     }
 
     // --------------------------
@@ -1683,6 +1683,8 @@ svg.appendChild(vline);
 `;
         grid.appendChild(tile);
 
+        tile.addEventListener("click", () => openLoanDrawer(loan));
+
         const mini = tile.querySelector('.mini-chart');
         createMiniStackedEarningsSVG(mini, loan.earningsSchedule, loan);
       });
@@ -1693,15 +1695,6 @@ svg.appendChild(vline);
       rebuildLoansWithEarnings();
       renderKPIs();
       renderLoanTiles();
-      // --- Enable drawer click for each tile ---
-      document.querySelectorAll('.tile').forEach(tile => {
-        tile.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const loanName = tile.getAttribute('data-loan');
-          const loan = window.LoanMap?.[loanName];
-          if (loan) openDrawerForLoan(loan);
-        });
-      });
       bindKpiClickHandlers();
     }
 
@@ -1725,38 +1718,6 @@ svg.appendChild(vline);
       if (e.target.closest(".tile")) return;  // tile click = open another drawer, not close
       closeDrawer();
     });
-
-    function openDrawerForLoan(loan) {
-      currentLoan = loan;
-      resetDrawerContent();
-
-      drawerTitle.textContent = `${loan.loanName} — ${loan.school}`;
-      drawerSub.textContent = `Earnings Details`;
-
-      // Primary + secondary numbers
-      const sched = loan.earningsSchedule || [];
-      const last = sched[sched.length - 1] || {};
-      drawerPrimary.textContent = `$${(last.netEarnings || 0).toLocaleString()}`;
-      drawerSecondary.textContent = `$${(last.cumFees || 0).toLocaleString()}`;
-
-      // Show earnings table
-      amortBody.innerHTML = "";
-      sched.forEach(row => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-      <td>${row.date || ""}</td>
-      <td>$${(row.payment || 0).toFixed(2)}</td>
-      <td>$${(row.principalPaid || 0).toFixed(2)}</td>
-      <td>$${(row.interestPaid || 0).toFixed(2)}</td>
-      <td>$${(row.feesPaid || 0).toFixed(2)}</td>
-      <td>$${(row.netEarnings || 0).toFixed(2)}</td>
-    `;
-        amortBody.appendChild(tr);
-      });
-
-      // OPEN DRAWER CORRECTLY
-      openDrawer();
-    }
 
     function openLoanDrawer(loan){
       currentLoan = loan;
@@ -1834,7 +1795,7 @@ document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.t
           </table>
         </div>
       `;
-      openDrawerBase();
+      openDrawer();
     }
 
     // --------------------------
