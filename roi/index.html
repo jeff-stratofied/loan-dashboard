@@ -780,7 +780,8 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
       tooltipEl.style.left = (rectBox.left + cx) + 'px';
       tooltipEl.style.top = (rectBox.top + cy - 28) + 'px';
       const pct = (pt.y * 100).toFixed(2);
-      tooltipEl.innerHTML = `Date: ${pt.x} • Weighted ROI ${pct}%`;
+      tooltipEl.innerHTML = `${formatMonthYear(addMonths(new Date(opts.startDate), idx))} • Weighted ROI ${pct}%`;
+
     }
   });
 
@@ -1198,7 +1199,7 @@ function renderTPVDrawer() {
     {
       weightedColor: "#000",
       weightedWidth: 2.6,
-      startDate: loansWithAmort[0].loanStartDate
+      startDate: loansWithAmort[0].loanStartDate ? new Date(loansWithAmort[0].loanStartDate) : null
     }
   );
 
@@ -1348,7 +1349,10 @@ function renderTPVDrawer() {
       const segH = (loan.purchasePrice / maxValue) * chartH;
       currentY -= segH;
 
-      const color = palette[(loan.id - 1) % palette.length];
+      const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16',
+                 '#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
+
+      const color = palette[idx % palette.length];
 
       const seg = document.createElementNS(svgNS, 'rect');
       seg.setAttribute('x', x + 6);
