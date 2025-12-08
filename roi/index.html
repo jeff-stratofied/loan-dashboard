@@ -10,84 +10,74 @@
        ==================================== -->
   <style>
 
-  :root {
-    --bg:#f8fafc;
-    --surface:#f1f5f9;
-    --card:#ffffff;
-    --border:#e2e8f0;
-    --text:#0f172a;
-    --muted:#64748b;
-    --brand:#0ea5e9;
-    --accent:#7c3aed;
-    --shadow:0 12px 30px rgba(15,23,42,0.06);
-    --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
+ :root {
+  --bg-light: #f8fafc;
+  --bg-dark: #0b1220;
+  --surface-light: #f1f5f9;
+  --surface-dark: #071829;
+  --card-light: #ffffff;
+  --card-dark: #071022;
+  --border-light: rgba(15,23,42,0.07);
+  --border-dark: #334155;
+  --text-light: #0f172a;
+  --text-dark: #e6eef8;
+  --muted-light: #64748b;
+  --muted-dark: #9aa6b2;
+  --brand-light: #0ea5e9;
+  --brand-dark: #38bdf8;
+  --accent-light: #7c3aed;
+  --accent-dark: #c4b5fd;
+  --shadow-light: 0 12px 30px rgba(15,23,42,0.06);
+  --shadow-dark: 0 12px 30px rgba(2,6,23,0.6);
 
-    --grad-top: var(--surface);
-    --grad-bottom: var(--card);
-    
-    --tooltip-bg:#0f172a;
-    --tooltip-text:#f8fafc;
+  --chart-bg-light: linear-gradient(180deg, #ffffff, #fcfeff);
+  --chart-bg-dark: linear-gradient(180deg, rgba(56,189,248,0.12), rgba(124,58,237,0.16));
+}
 
-    --kpi-hover: translateY(-6px);
-    }
+html[data-theme="light"] {
+  --bg: var(--bg-light);
+  --surface: var(--surface-light);
+  --card: var(--card-light);
+  --border: var(--border-light);
+  --text: var(--text-light);
+  --muted: var(--muted-light);
+  --brand: var(--brand-light);
+  --accent: var(--accent-light);
+  --shadow: var(--shadow-light);
+  --chart-bg: var(--chart-bg-light);
+}
 
+html[data-theme="dark"] {
+  --bg: var(--bg-dark);
+  --surface: var(--surface-dark);
+  --card: var(--card-dark);
+  --border: var(--border-dark);
+  --text: var(--text-dark);
+  --muted: var(--muted-dark);
+  --brand: var(--brand-dark);
+  --accent: var(--accent-dark);
+  --shadow: var(--shadow-dark);
+  --chart-bg: var(--chart-bg-dark);
+}
 
-    html[data-theme="light"] {
-      --bg:#f8fafc;
-      --surface:#f1f5f9;
-      --card:#ffffff;
-      --border:#e2e8f0;
-      --text:#0f172a;
-      --muted:#64748b;
-      --brand:#0ea5e9;
-      --accent:#7c3aed;
-      --shadow:0 12px 30px rgba(15,23,42,0.06);
-      --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
-      --tooltip-bg:#0f172a;
-      --tooltip-text:#f8fafc;
-    }
-
-   html[data-theme="dark"] {
-      --bg:#0b1220;
-      --surface:#071829;
-      --card:#071022;
-      --border:#334155;
-      --text:#e6eef8;
-      --muted:#9aa6b2;
-      --brand:#38bdf8;
-      --accent:#c4b5fd;
-      --shadow:0 12px 30px rgba(2,6,23,0.6);
-      --chart-bg:linear-gradient(180deg,rgba(56,189,248,0.12),rgba(124,58,237,0.16));
-      --tooltip-bg:#0b1220;
-      --tooltip-text:#e6eef8;
-    }
-
-    /* Smooth theme transitions (copied from amortization page) */
-    html, body,
-    .app,
-    header,
-    .kpi, .tile,
-    .drawer, .drawer-head, .drawer-body, .drawer-footer,
-    .info-card, .drawer-chart,
-    table, thead th, td,
-    .tooltip,
-    .theme-icon,
-    svg text {
-      transition:
+/* Global smooth transitions */
+html, body,
+.app,
+header,
+.kpi, .tile,
+.drawer, .drawer-head, .drawer-body, .drawer-footer,
+.info-card,
+.drawer-chart,
+table, thead th, td,
+svg text,
+.theme-icon {
+  transition:
     background-color .25s ease,
     color .25s ease,
     border-color .25s ease,
     box-shadow .25s ease,
     fill .25s ease;
-    }
-
-
-
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;color:var(--text);background-color:var(--bg)}
-    body{
-      background: linear-gradient(180deg, var(--grad-top), var(--grad-bottom));
-      -webkit-font-smoothing: antialiased;
-    }
+}
 
 
     .app{
@@ -2084,29 +2074,26 @@ function renderAvgRateDrawer() {
       initROI();
     });
 
-    // theme toggle
-window.addEventListener("DOMContentLoaded", () => {
-  const toggle = document.getElementById("themeToggle");
-  if (!toggle) return;
+// Unified theme toggle (matches Amort page)
+const root = document.documentElement;
+const toggle = document.getElementById("themeToggle");
 
-  const applyTheme = (theme) => {
-    document.documentElement.setAttribute("data-theme", theme);
-    document.body.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("theme", theme);
-    toggle.textContent = theme === "dark" ? "☀️" : "🌙";
-    toggle.setAttribute("aria-label", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
-    toggle.setAttribute("title", theme === "dark" ? "Switch to light mode" : "Switch to dark mode");
-  };
+function setTheme(mode) {
+  root.setAttribute("data-theme", mode);
+  toggle.textContent = mode === "dark" ? "☀️" : "🌙";
+  localStorage.setItem("theme", mode);
+}
 
-  const saved = localStorage.getItem("theme");
-  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  applyTheme(saved || (prefersDark ? "dark" : "light"));
+// Load saved or default theme
+const saved = localStorage.getItem("theme");
+setTheme(saved || "light");
 
-  toggle.addEventListener("click", () => {
-    const nextTheme = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
-    applyTheme(nextTheme);
-  });
+// Handle click toggle
+toggle.addEventListener("click", () => {
+  const now = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  setTheme(now);
 });
+
 
 </script>
 </body>
