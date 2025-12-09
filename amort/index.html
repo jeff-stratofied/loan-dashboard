@@ -982,20 +982,15 @@ function computeKPIs(list) {
 
       const tr = document.createElement('tr');
 
-      // style for pre-purchase rows
+     // Fade any row before the purchase date
       if (isBeforePurchase) {
       tr.style.opacity = "0.45";
       }
 
-      // style for the purchase row — FULL-WIDTH GREEN BAR
+      // Add a THIN horizontal green line at the top of the purchase-date row
       if (isPurchaseRow) {
-      tr.style.background = "rgba(34,197,94,0.15)";   // light green highlight
-      tr.style.position = "relative";
-
-      // green bar on left (accent)
-      tr.style.boxShadow = "inset 4px 0 0 #22c55e";
-    }
-
+      tr.style.borderTop = "3px solid #22c55e";   // horizontal green line
+      }
 
       tr.innerHTML = `
       <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
