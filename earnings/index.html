@@ -852,7 +852,7 @@ thead th {
     // --------------------------
     function calcAmort(principal, annualRate, termYears, graceYears){
       const monthlyRate = annualRate / 12;
-      const totalMonths = Math.round(termYears * 12);
+      const totalMonths = Math.round((termYears + graceYears) * 12);
       const graceMonths = Math.round(graceYears * 12);
       const repayMonths = Math.max(1, totalMonths - graceMonths);
 
