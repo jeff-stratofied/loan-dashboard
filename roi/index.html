@@ -320,6 +320,23 @@ html[data-theme="dark"] body {
   scrollbar-color: #cbd5e1 var(--surface);
 }
 
+/* Dark mode scrollbar — EXACT match to Amort page */
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1e293b; /* same as var(--surface) in dark */
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
+}
+
+/* Firefox dark mode scrollbar */
+html[data-theme="dark"] * {
+  scrollbar-color: #475569 #1e293b;
+}
 
 
 
