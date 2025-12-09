@@ -1709,17 +1709,22 @@ svg.appendChild(vline);
         tile.addEventListener("click", () => openLoanDrawer(loan));
 
         const mini = tile.querySelector('.mini-chart');
-      createMiniStackedEarningsSVG(
-        mini,
-        portfolioViews.earningsSeries[loan.id],
-        loan
-      );
+        const series = portfolioViews?.earningsSeries?.[loan.id] || loan.earningsSchedule;
+          createMiniStackedEarningsSVG(
+            mini,
+            series,
+            loan
+        );
      });   
     }
 
     async function initPage() {
       await loadLoansFromBackend();
       rebuildLoansWithEarnings();
+// ==== Build portfolio-wide earnings series for charts ====
+let portfolioViews = buildPortfolioViews(loansWithEarnings);
+
+      
       renderKPIs();
       renderLoanTiles();
     }
