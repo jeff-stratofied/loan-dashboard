@@ -408,6 +408,32 @@ export function buildPortfolioViews(loansWithAmort) {
     })
   };
 
+// =============================================
+// Build Portfolio-Wide Earnings Series
+// =============================================
+export function buildPortfolioViews(loans) {
+  const views = { earningsSeries: {} };
+
+  loans.forEach(loan => {
+    const series = [];
+
+    // earningsSchedule already filtered to owned months only
+    (loan.earningsSchedule || []).forEach((r, idx) => {
+      series.push({
+        idx,
+        ownershipDate: r.ownershipDate || r.loanDate,
+        cumPrincipal: r.cumPrincipal,
+        cumInterest: r.cumInterest,
+        cumFees: r.cumFees,
+        netEarnings: r.netEarnings
+      });
+    });
+
+    views.earningsSeries[loan.id] = series;
+  });
+
+  return views;
+}
 
   // ----------------------------------------------
   // Return unified views
@@ -429,4 +455,7 @@ export function buildPortfolioViews(loansWithAmort) {
     earningsSeries,
     earningsKpis
   };
+
+
+  
 }
