@@ -399,6 +399,8 @@ body{
        Script (organized with sections)
        ==================================== -->
   <script>
+    import { buildAmortSchedule } from "../js/loanEngine.js";
+    
     function addMonths(date, months) {
       const d = new Date(date);
       d.setMonth(d.getMonth() + months);
@@ -478,7 +480,7 @@ body{
     // -------------------------------------
     // USE REAL AMORT ENGINE FROM loanEngine.js
     // -------------------------------------
-      const amortSchedule = loanEngine.buildAmortSchedule(l);
+      const amortSchedule = buildAmortSchedule(l);
 
       // Attach ownership flags
       const purchase = new Date(l.purchaseDate);
