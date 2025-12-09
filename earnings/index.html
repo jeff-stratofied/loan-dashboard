@@ -1709,8 +1709,11 @@ svg.appendChild(vline);
         tile.addEventListener("click", () => openLoanDrawer(loan));
 
         const mini = tile.querySelector('.mini-chart');
-        createMiniStackedEarningsSVG(mini, loan.earningsSchedule, loan);
-      });
+      createMiniStackedEarningsSVG(
+        miniSvg,
+        portfolioViews.earningsSeries[loan.id],
+        loan
+      );
     }
 
     async function initPage() {
@@ -1777,7 +1780,7 @@ document.getElementById("drawerSecondaryTitle").textContent = "Fees To Date";
 document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.toLocaleString()}`;
 
       
-      createDrawerStackedChart(drawerChartArea, loan.earningsSchedule, loan);
+      createDrawerStackedChart(drawerChartArea, portfolioViews.earningsSeries[loan.id], loan);
 
       // table
       let rowsHtml = "";
