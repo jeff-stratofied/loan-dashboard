@@ -378,20 +378,29 @@ loansWithAmort.forEach(loan => {
       cumPrincipal += r.principalPaid;
       cumInterest  += r.interest;
 
-      // Support fee tracking later:
       const feeThisMonth = Number(r.feeThisMonth ?? 0);
       cumFees += feeThisMonth;
 
       net = cumPrincipal + cumInterest - cumFees;
 
       return {
-        ownershipDate : r.loanDate,
+        // required by earnings charts + mini charts
+        loanDate: r.loanDate,
+        ownershipDate: r.loanDate,
+        monthIndex: r.monthIndex,
+        payment: r.payment,
+        principalPaid: r.principalPaid,
+        interest: r.interest,
+        balance: r.balance,
+
+        // cumulative values
         cumPrincipal,
         cumInterest,
         cumFees,
-        netEarnings : net
+        netEarnings: net
       };
     });
+
 
   // KPI = last net earnings point
   const last = earningsSeries[loan.id][earningsSeries[loan.id].length - 1];
