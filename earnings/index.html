@@ -1711,11 +1711,12 @@ svg.appendChild(vline);
 
         const mini = tile.querySelector('.mini-chart');
         const series = portfolioViews?.earningsSeries?.[loan.id] || loan.earningsSchedule;
-          createMiniStackedEarningsSVG(
-            mini,
-            series,
-            loan
-        );
+      createMiniStackedEarningsSVG(
+        chartEl,
+        portfolioViews.earningsSeries[loan.id],
+        loan
+      );
+
      });   
     }
 
@@ -1788,11 +1789,16 @@ document.getElementById("drawerSecondaryTitle").textContent = "Fees To Date";
 document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.toLocaleString()}`;
 
       
-      createDrawerStackedChart(drawerChartArea, portfolioViews.earningsSeries[loan.id], loan);
+      createDrawerStackedChart(
+  drawerChartArea,
+  portfolioViews.earningsSeries[loan.id],
+  loan
+);
+
 
       // table
       let rowsHtml = "";
-      loan.earningsSchedule.forEach(r => {
+      portfolioViews.earningsSeries[loan.id].forEach(r => {
         rowsHtml += `
           <tr>
             <td>${formatDate(r.loanDate)}</td>
