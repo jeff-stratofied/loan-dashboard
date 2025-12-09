@@ -53,10 +53,10 @@ export async function loadLoans() {
 
     // Normalize dates
     const loanStartDate =
-      l.loanStartDate ||
-      l.startDate ||
-      l.purchaseDate ||   // fallback
-      "";
+    l.loanStartDate ||
+    l.startDate ||
+    "";
+
 
     const purchaseDate =
       l.purchaseDate ||
