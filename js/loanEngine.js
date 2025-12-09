@@ -313,36 +313,41 @@ export function buildPortfolioViews(loansWithAmort) {
 
     roiSeries[loan.id] = loan.amort.schedule
       .filter(r => r.loanDate >= purchase)
-      .map(r => {
-        // accumulate interest + principal
-        cumInterest  += r.interest;
-        cumPrincipal += r.principalPaid;
+      .map(r => {// accumulate realized components
+      cumInterest  += r.interest;
+      cumPrincipal += r.principalPaid;
 
-        // if you later add per-row fees, put them in r.feeThisMonth
-        const feeThisMonth = Number(r.feeThisMonth ?? 0);
-        cumFees += feeThisMonth;
+      const feeThisMonth = Number(r.feeThisMonth ?? 0);
+      cumFees += feeThisMonth;
 
-        // 👉 your formula:
-        // LoanValueToday = PurchasePrice + cumInterest + cumPrincipal - cumFees
-        const loanValue =
-          purchasePrice + cumInterest + cumPrincipal - cumFees;
+      // MARK-TO-MARKET MODEL (your chosen ROI method):
+      //
+      // realized   = cumPrincipal + cumInterest − cumFees
+      // unrealized = 0.95 × remaining balance
+      // loanValue  = realized + unrealized
+      //
+      const realized   = cumPrincipal + cumInterest - cumFees;
+      const unrealized = r.balance * 0.95;
+      const loanValue  = realized + unrealized;
 
-        const roi = purchasePrice
-          ? (loanValue - purchasePrice) / purchasePrice
-          : 0;
+      const roi = purchasePrice
+        ? (loanValue - purchasePrice) / purchasePrice
+        : 0;
 
-        return {
-          date: r.loanDate,
-          month: r.monthIndex,
-          roi,
-          loanValue,
-          balance: r.balance,
-          cumInterest,
-          cumPrincipal,
-          cumFees,
-          ownershipDate: r.ownershipDate
-        };
-      });
+      return {
+        date: r.loanDate,
+        month: r.monthIndex,
+        roi,
+        loanValue,
+        realized,
+        unrealized,
+        balance: r.balance,
+        cumInterest,
+        cumPrincipal,
+        cumFees,
+        ownershipDate: r.ownershipDate
+    };
+
 
     // Latest ROI KPI for this loan (last point in its series)
     roiKpis[loan.id] =
