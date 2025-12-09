@@ -968,31 +968,20 @@ function computeKPIs(list) {
       drawerAmortContainer.style.display = 'block';
       amortBody.innerHTML = '';
 
-      const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
+  // walk full amort schedule (from loan start),
+  // but mark purchase row and dim pre-purchase rows
+  loan.amort.schedule.forEach((r) => {
+    // calendar date for this row, based on loan START date
+    const rowDate = new Date(loan.loanStartDate + "T00:00:00");
+    rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
 
-      // walk full amort schedule
-      loan.amort.schedule.forEach((r, idx) => {
+    // detect pre- vs post-purchase
+    const isBeforePurchase = rowDate < purchaseDate;
+    const isPurchaseRow   = rowDate.getTime() === purchaseDate.getTime();
 
-      const rowDate = new Date(loan.purchaseDate + "T00:00:00");
-      rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
+    const tr = document.createElement('tr');
 
-      // detect pre-vs-post purchase
-      const isBeforePurchase = rowDate < purchaseDate;
-      const isPurchaseRow = rowDate.getTime() === purchaseDate.getTime();
-
-      const tr = document.createElement('tr');
-
-     // Fade any row before the purchase date
-      if (isBeforePurchase) {
-      tr.style.opacity = "0.45";
-      }
-
-      // Add a THIN horizontal green line at the top of the purchase-date row
-      if (isPurchaseRow) {
-      tr.style.borderTop = "3px solid #22c55e";   // horizontal green line
-      }
-
-      tr.innerHTML = `
+    tr.innerHTML = `
       <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
       <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
       <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
@@ -1000,8 +989,21 @@ function computeKPIs(list) {
       <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
     `;
 
-      amortBody.appendChild(tr);
-    });
+    // lighter text for pre-purchase rows
+    if (isBeforePurchase) {
+      tr.style.opacity = "0.45";
+    }
+
+    // thin green line at the TOP of the purchase row
+    if (isPurchaseRow) {
+      tr.querySelectorAll('td').forEach(td => {
+        td.style.borderTop = "2px solid #22c55e";   // green line across the row
+      });
+    }
+
+    amortBody.appendChild(tr);
+  });
+
 
 
       /* build drawer chart (multi-line with legend & current date marker) */
