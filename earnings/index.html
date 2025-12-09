@@ -1719,15 +1719,16 @@ svg.appendChild(vline);
     }
 
     async function initPage() {
-      await loadLoansFromBackend();
-      rebuildLoansWithEarnings();
-// ==== Build portfolio-wide earnings series for charts ====
-let portfolioViews = buildPortfolioViews(loansWithEarnings);
+  await loadLoansFromBackend();
+  rebuildLoansWithEarnings();
 
-      
-      renderKPIs();
-      renderLoanTiles();
-    }
+  // build portfolio-wide earnings series for charts (mini + drawer + KPI)
+  portfolioViews = buildPortfolioViews(loansWithEarnings);
+
+  renderKPIs();
+  renderLoanTiles();
+}
+
 
     // --------------------------
     // Drawer behavior
