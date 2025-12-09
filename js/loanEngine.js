@@ -353,36 +353,51 @@ export function buildPortfolioViews(loansWithAmort) {
 
   
 
-  // ----------------------------------------------
-  // 3) Earnings Timeline (per-loan & portfolio)
-  // ----------------------------------------------
-  //
-  // Earnings = cumulative interest (owned months only).
-  //
+// ----------------------------------------------
+// 3) Earnings Timeline (per-loan & portfolio)
+// ----------------------------------------------
+//
+// netEarnings = (cumPrincipal + cumInterest) - cumFees
+// Only months the user actually owns the loan (loanDate >= purchaseDate)
+// ----------------------------------------------
 
-  const earningsSeries = {};
-  const earningsKpis = {};
+const earningsSeries = {};
+const earningsKpis = {};
 
-  loansWithAmort.forEach(loan => {
-    const purchase = new Date(loan.purchaseDate);
-    let cum = 0;
+loansWithAmort.forEach(loan => {
+  const purchase = new Date(loan.purchaseDate);
 
-    earningsSeries[loan.id] = loan.amort.schedule
-      .filter(r => r.loanDate >= purchase)
-      .map(r => {
-        cum += r.interest;
-        return {
-          date: r.loanDate,
-          interest: r.interest,
-          cumulative: cum
-        };
-      });
+  let cumPrincipal = 0;
+  let cumInterest  = 0;
+  let cumFees      = 0;   // fees optional
+  let net           = 0;
 
-    earningsKpis[loan.id] =
-      earningsSeries[loan.id].length > 0
-        ? earningsSeries[loan.id][earningsSeries[loan.id].length - 1].cumulative
-        : 0;
-  });
+  earningsSeries[loan.id] = loan.amort.schedule
+    .filter(r => r.loanDate >= purchase) // owned months only
+    .map(r => {
+      cumPrincipal += r.principalPaid;
+      cumInterest  += r.interest;
+
+      // Support fee tracking later:
+      const feeThisMonth = Number(r.feeThisMonth ?? 0);
+      cumFees += feeThisMonth;
+
+      net = cumPrincipal + cumInterest - cumFees;
+
+      return {
+        ownershipDate : r.loanDate,
+        cumPrincipal,
+        cumInterest,
+        cumFees,
+        netEarnings : net
+      };
+    });
+
+  // KPI = last net earnings point
+  const last = earningsSeries[loan.id][earningsSeries[loan.id].length - 1];
+  earningsKpis[loan.id] = last ? last.netEarnings : 0;
+});
+
 
 
   // ----------------------------------------------
