@@ -964,20 +964,45 @@ function computeKPIs(list) {
       drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
       drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
 
-      /* render amort rows */
+    /* render amort rows */
       drawerAmortContainer.style.display = 'block';
       amortBody.innerHTML = '';
-      loan.amort.schedule.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
-          <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
-          <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
-          <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
-          <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
-        `;
-        amortBody.appendChild(tr);
-      });
+
+      const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
+
+      // walk full amort schedule
+      loan.amort.schedule.forEach((r, idx) => {
+
+      const rowDate = new Date(loan.purchaseDate + "T00:00:00");
+      rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
+
+      // detect pre-vs-post purchase
+      const isBeforePurchase = rowDate < purchaseDate;
+      const isPurchaseRow = rowDate.getTime() === purchaseDate.getTime();
+
+      const tr = document.createElement('tr');
+
+      // style for pre-purchase rows
+      if (isBeforePurchase) {
+      tr.style.opacity = "0.45";
+      }
+
+      // style for the purchase row (green bar at left)
+      if (isPurchaseRow) {
+      tr.style.borderLeft = "4px solid #22c55e";   // lime/green-500
+      }
+
+      tr.innerHTML = `
+      <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
+      <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
+      <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
+      <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
+      <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
+    `;
+
+      amortBody.appendChild(tr);
+    });
+
 
       /* build drawer chart (multi-line with legend & current date marker) */
       drawerChartArea.innerHTML = '';
