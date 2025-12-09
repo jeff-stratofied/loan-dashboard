@@ -119,6 +119,30 @@
       "termYears": 10,
       "graceYears": 1,
       "loanId": 10
+    },
+    {
+      "loanName": "WCC 2014 5.00",
+      "school": "Wyoming Catholic College",
+      "loanStartDate": "2014-06-01",
+      "purchaseDate": "2023-06-01",
+      "principal": 22000,
+      "purchasePrice": 15000,
+      "rate": 0.05,
+      "termYears": 10,
+      "graceYears": 4,
+      "loanId": 11
+    },
+    {
+      "loanName": "WCC 2017 5.00",
+      "school": "Wyoming Catholic College",
+      "loanStartDate": "2017-01-01",
+      "purchaseDate": "2023-06-01",
+      "principal": 20000,
+      "purchasePrice": 12000,
+      "rate": 0.05,
+      "termYears": 15,
+      "graceYears": 4,
+      "loanId": 12
     }
   ]
 }
