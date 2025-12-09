@@ -640,7 +640,7 @@ if (USE_DYNAMIC_DATA) {
     &nbsp;·&nbsp;
     Matures: ${
       (() => {
-        const first = new Date(loan.purchaseDate + 'T00:00:00');
+        const first = new Date(loan.loanStartDate + 'T00:00:00');
         const lastIdx = loan.amort.schedule[loan.amort.schedule.length - 1].monthIndex;
         first.setMonth(first.getMonth() + (lastIdx - 1));
         return first.toLocaleDateString(undefined, { month: "short", year: "numeric" });
@@ -738,7 +738,7 @@ svg.innerHTML = `
       tooltip.style.left = (ev.clientX) + 'px';
       tooltip.style.top = (ev.clientY - 10) + 'px';
       tooltip.style.display = 'block';
-      const dateLabel = chartDateLabel(loan.purchaseDate, p.monthIndex);
+      const dateLabel = chartDateLabel(loan.loanStartDate, p.monthIndex);
       tooltip.innerHTML =
       `${dateLabel} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
 
@@ -807,7 +807,7 @@ function getCurrentMonthIndex(loansList) {
 // Per-loan index (today relative to that loan only)
 function getCurrentMonthForLoan(loan) {
   if (!loan?.amort?.schedule?.length) return 1;
-  let months = monthsBetween(loan.purchaseDate);
+   let months = monthsBetween(loan.loanStartDate);
   return Math.min(months, loan.amort.schedule.length);
 }
 // Convert purchaseDate + offset months → "Feb 15, 2025"
@@ -958,7 +958,7 @@ function computeKPIs(list) {
       currentLoan = loan;
 
      drawerTitle.textContent = `${loan.name} — ${loan.school}`;
-drawerSub.textContent = `Purchased: ${loan.purchaseDate}`;
+      drawerSub.textContent = `Purchased: ${loan.purchaseDate}`;
       drawerPrimaryTitle.textContent = 'Purchase Price';
       drawerSecondaryTitle.textContent = 'Rate';
       drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
@@ -970,7 +970,7 @@ drawerSub.textContent = `Purchased: ${loan.purchaseDate}`;
       loan.amort.schedule.forEach(r => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td style="text-align:left">${offsetDateByMonths(loan.purchaseDate, r.monthIndex - 1)}</td>
+          <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
           <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
           <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
@@ -1148,7 +1148,7 @@ svg.addEventListener('mousemove', (ev) => {
   });
 
   // Calendar date label
-  const dateLabel = chartDateLabel(loan.purchaseDate, row.monthIndex);
+  const dateLabel = chartDateLabel(loan.loanStartDate, row.monthIndex);
 
   // Tooltip
   tooltip.style.display = 'block';
