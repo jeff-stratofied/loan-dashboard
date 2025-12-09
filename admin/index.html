@@ -292,10 +292,14 @@ input:focus, select:focus {
   let currentLoans = [];
   let currentSha = null;
 
-  const schoolOptions = [
-    "Penn State","Ohio State","Pitt","Carnegie Mellon",
-    "Michigan","UCLA","USC","NYU"
-  ];
+const schoolOptions = [
+  "Penn State","Ohio State","Pitt","Carnegie Mellon",
+  "Michigan","UCLA","USC","NYU",
+  "Wyoming Catholic College",
+  "Ave Maria University",
+  "Texas Tech University"
+];
+
 
   /* Normalize loan */
   function normalizeLoan(l, idx) {
@@ -350,8 +354,10 @@ input:focus, select:focus {
         <td><input type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears"></td>
 
         <td>
-          <button class="delete-btn" data-action="delete">Delete</button>
+        <button class="delete-btn" data-action="delete">Delete</button>
+        <button class="delete-btn" data-action="duplicate" style="margin-left:6px;">Duplicate</button>
         </td>
+
       `;
       tbody.appendChild(tr);
     });
@@ -464,13 +470,33 @@ async function saveToBackend() {
   document.getElementById("save-btn").onclick = saveToBackend;
 
   document.getElementById("loan-table").addEventListener("click", (e) => {
-    if (e.target.dataset.action === "delete") {
-      const row = e.target.closest("tr");
-      const idx = Array.from(row.parentNode.children).indexOf(row);
+    const action = e.target.dataset.action;
+    if (!action) return;
+
+    const row = e.target.closest("tr");
+    const idx = Array.from(row.parentNode.children).indexOf(row);
+
+    if (action === "delete") {
       currentLoans.splice(idx, 1);
       renderTable();
+      return;
+    }
+
+    if (action === "duplicate") {
+      const clone = { ...currentLoans[idx] };
+
+      // NEW ID = last ID + 1
+      clone.loanId = currentLoans.length + 1;
+
+      // Optionally tweak name
+      clone.loanName = clone.loanName + " (Copy)";
+
+      currentLoans.push(clone);
+      renderTable();
+      return;
     }
   });
+
 
   /* ===========================
      THEME TOGGLE
