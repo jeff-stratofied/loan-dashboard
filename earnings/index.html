@@ -1712,8 +1712,8 @@ svg.appendChild(vline);
         const mini = tile.querySelector('.mini-chart');
         const series = portfolioViews?.earningsSeries?.[loan.id] || loan.earningsSchedule;
       createMiniStackedEarningsSVG(
-        chartEl,
-        portfolioViews.earningsSeries[loan.id],
+        mini,
+        series,
         loan
       );
 
