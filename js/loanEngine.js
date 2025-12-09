@@ -146,7 +146,7 @@ export function buildAmortSchedule(loan) {
   } = loan;
 
   const monthlyRate = nominalRate / 12;
-  const totalMonths = termYears * 12;
+  const totalMonths = (graceYears + termYears) * 12;
   const graceMonths = graceYears * 12;
 
   const start = new Date(loanStartDate);
