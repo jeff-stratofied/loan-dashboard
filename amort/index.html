@@ -987,10 +987,15 @@ function computeKPIs(list) {
       tr.style.opacity = "0.45";
       }
 
-      // style for the purchase row (green bar at left)
+      // style for the purchase row — FULL-WIDTH GREEN BAR
       if (isPurchaseRow) {
-      tr.style.borderLeft = "4px solid #22c55e";   // lime/green-500
-      }
+      tr.style.background = "rgba(34,197,94,0.15)";   // light green highlight
+      tr.style.position = "relative";
+
+      // green bar on left (accent)
+      tr.style.boxShadow = "inset 4px 0 0 #22c55e";
+    }
+
 
       tr.innerHTML = `
       <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
