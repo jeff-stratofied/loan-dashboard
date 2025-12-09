@@ -964,45 +964,49 @@ function computeKPIs(list) {
       drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
       drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
 
-    /* render amort rows */
-      drawerAmortContainer.style.display = 'block';
-      amortBody.innerHTML = '';
+  /* render amort rows */
+drawerAmortContainer.style.display = 'block';
+amortBody.innerHTML = '';
 
-  // walk full amort schedule (from loan start),
-  // but mark purchase row and dim pre-purchase rows
-  loan.amort.schedule.forEach((r) => {
-    // calendar date for this row, based on loan START date
-    const rowDate = new Date(loan.loanStartDate + "T00:00:00");
-    rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
+// *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
+const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
 
-    // detect pre- vs post-purchase
-    const isBeforePurchase = rowDate < purchaseDate;
-    const isPurchaseRow   = rowDate.getTime() === purchaseDate.getTime();
+// walk full amort schedule (from loan start),
+// but mark purchase row and dim pre-purchase rows
+loan.amort.schedule.forEach((r) => {
 
-    const tr = document.createElement('tr');
+  // calendar date for this amortization row
+  const rowDate = new Date(loan.loanStartDate + "T00:00:00");
+  rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
 
-    tr.innerHTML = `
-      <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
-      <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
-    `;
+  const isBeforePurchase = rowDate < purchaseDate;
+  const isPurchaseRow    = rowDate.getTime() === purchaseDate.getTime();
 
-    // lighter text for pre-purchase rows
-    if (isBeforePurchase) {
-      tr.style.opacity = "0.45";
-    }
+  const tr = document.createElement('tr');
 
-    // thin green line at the TOP of the purchase row
-    if (isPurchaseRow) {
-      tr.querySelectorAll('td').forEach(td => {
-        td.style.borderTop = "2px solid #22c55e";   // green line across the row
-      });
-    }
+  tr.innerHTML = `
+    <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
+    <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
+    <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
+    <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
+    <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
+  `;
 
-    amortBody.appendChild(tr);
-  });
+  // lighter rows before purchase date
+  if (isBeforePurchase) {
+    tr.style.opacity = "0.45";
+  }
+
+  // thin green horizontal line at the purchase row
+  if (isPurchaseRow) {
+    tr.querySelectorAll('td').forEach(td => {
+      td.style.borderTop = "2px solid #22c55e";
+    });
+  }
+
+  amortBody.appendChild(tr);
+});
+
 
 
 
