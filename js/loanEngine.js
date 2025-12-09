@@ -155,11 +155,26 @@ export function buildAmortSchedule(loan) {
   const schedule = [];
 
   // Payment formula (post-grace)
-  const N = totalMonths;
-  const P = principal;
   const r = monthlyRate;
+  const N = totalMonths;
+
+  // ----------------------------------------------
+  // FIX: Compute balance after grace period
+  // Payments must amortize the post-grace balance,
+  // not the original principal.
+  // ----------------------------------------------
+  let adjustedBalance = principal;
+  for (let g = 0; g < graceMonths; g++) {
+  adjustedBalance += adjustedBalance * r; // interest-only during grace
+  }
+
+  // ----------------------------------------------
+  // Correct monthly payment based on adjusted balance
+  // ----------------------------------------------
+  const P = adjustedBalance;
   const payment =
     r === 0 ? P / N : (P * r) / (1 - Math.pow(1 + r, -N));
+
 
   let balance = P;
 
