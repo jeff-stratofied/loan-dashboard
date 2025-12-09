@@ -1713,7 +1713,7 @@ svg.appendChild(vline);
         const series = portfolioViews?.earningsSeries?.[loan.id] || loan.earningsSchedule;
       createMiniStackedEarningsSVG(
         mini,
-        series,
+        loan.earningsSchedule,
         loan
       );
 
@@ -1790,15 +1790,15 @@ document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.t
 
       
       createDrawerStackedChart(
-  drawerChartArea,
-  portfolioViews.earningsSeries[loan.id],
-  loan
-);
+        drawerChartArea,
+        loan.earningsSchedule,
+        loan
+    );
 
 
       // table
       let rowsHtml = "";
-      portfolioViews.earningsSeries[loan.id].forEach(r => {
+      loan.earningsSchedule.forEach(r => {
         rowsHtml += `
           <tr>
             <td>${formatDate(r.loanDate)}</td>
