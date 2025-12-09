@@ -136,6 +136,39 @@ html[data-theme="dark"] body {
       margin-top: 0;
     }
 
+    /* Match Amort: scrollbar styles apply ONLY to .app */
+.app::-webkit-scrollbar {
+  width: 12px;
+}
+
+.app::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app::-webkit-scrollbar-thumb {
+  background: rgba(100,116,139,0.40);
+  border-radius: 8px;
+}
+
+.app::-webkit-scrollbar-thumb:hover {
+  background: rgba(100,116,139,0.65);
+}
+
+/* Firefox */
+.app {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100,116,139,0.40) transparent;
+}
+
+/* Dark mode */
+html[data-theme="dark"] .app::-webkit-scrollbar-thumb {
+  background: rgba(148,163,184,0.45);
+}
+
+html[data-theme="dark"] .app::-webkit-scrollbar-thumb:hover {
+  background: rgba(148,163,184,0.70);
+}
+
 
     header {
       display:flex;
@@ -292,42 +325,6 @@ html[data-theme="dark"] body {
     transform:translateY(-1px);
     border-color:rgba(15,23,42,0.14);
     }
-
-/* =========================================
-   Scrollbar – EXACT MATCH to Amort page
-   ========================================= */
-
-::-webkit-scrollbar {
-  width: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.4);
-  border-radius: 8px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.7);
-}
-
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100,116,139,0.4) transparent;
-}
-
-/* Dark mode */
-html[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: rgba(148,163,184,0.45);
-}
-
-html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148,163,184,0.70);
-}
 
 
   </style>
