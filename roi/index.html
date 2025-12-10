@@ -242,45 +242,38 @@ html[data-theme="dark"] body {
   right:0;
   top:0;
   height:100vh;
-  width:760px;                 /* ROI needs wider drawer */
+  max-width:760px;
+  width:760px;
   background:var(--card);
+  border-left:1px solid var(--border);
   box-shadow:-28px 0 80px var(--drawer-shadow);
   transform:translateX(110%);
-  transition:
-    transform .28s cubic-bezier(.2,.9,.3,1),
-    background-color .25s ease,
-    color .25s ease,
-    border-color .25s ease,
-    box-shadow .25s ease;
-  z-index:120;
-  overflow:hidden;
-  padding:0;
-  border-left:1px solid var(--border);
+  transition:transform .28s cubic-bezier(.2,.9,.3,1),
+             background-color .25s ease, color .25s ease,
+             border-color .25s ease, box-shadow .25s ease;
   display:flex;
   flex-direction:column;
+  z-index:120;
 }
 .drawer.open{ transform:translateX(0); }
 
 .drawer-head{
   padding:20px;
-  flex-shrink:0;
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
   gap:8px;
-  border-bottom:1px solid var(--border);
   background:var(--surface);
+  border-bottom:1px solid var(--border);
 }
 
 .drawer-body{
-  flex:1 1 auto;
+  flex:1;
   overflow-y:auto;
-  overflow-x:hidden;
-  padding:0 20px 20px;
+  padding:20px;
 }
 
 .drawer-footer{
-  flex-shrink:0;
   padding:20px;
   border-top:1px solid var(--border);
   background:var(--surface);
@@ -423,19 +416,20 @@ html[data-theme="dark"] .drawer-chart{
   <!-- Drawer -->
  <aside id="drawer" class="drawer" aria-hidden="true">
 
-  <div class="drawer-header">
-    <div class="drawer-head">
-      <div>
-        <h2 id="drawerTitle">Drawer</h2>
-        <div class="muted" id="drawerSub">details</div>
-      </div>
-
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn" id="downloadCsvBtn">Download CSV</button>
-        <button class="close-btn" id="closeBtn" aria-label="Close drawer">✕</button>
-      </div>
-    </div>
+  
+   <div class="drawer-head">
+  <div>
+    <h2 id="drawerTitle"></h2>
+    <div class="muted" id="drawerSub"></div>
   </div>
+
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn" id="downloadCsvBtn">Download CSV</button>
+    <button class="close-btn" id="closeBtn">✕</button>
+  </div>
+</div>
+
+  
 
   <div id="drawerBody" class="drawer-body">
 
@@ -446,7 +440,16 @@ html[data-theme="dark"] .drawer-chart{
     <div class="legend" id="drawerLegend" style="display:none"></div>
 
     <!-- Primary / Secondary cards (amort exact structure, IDs preserved) -->
-    <div style="display:flex;gap:10px;margin-bottom:12px">
+    <div class="info-card">
+  <div class="muted-small" id="drawerPrimaryTitle"></div>
+  <div class="main-val" id="drawerPrimary"></div>
+</div>
+
+<div class="info-card small">
+  <div class="muted-small" id="drawerSecondaryTitle"></div>
+  <div class="main-val" id="drawerSecondary"></div>
+</div>
+
       <div style="flex:1;background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">
         <div class="muted-small" id="drawerPrimaryTitle">Primary</div>
         <div id="drawerPrimary" class="main-val"></div>
