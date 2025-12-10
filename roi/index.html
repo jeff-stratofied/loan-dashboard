@@ -775,11 +775,15 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   };
 
   // -----------------------------------
-  // Draw grid
+  // Draw grid + Y-axis percentage labels
   // -----------------------------------
-  for (let gy = 0; gy < 5; gy++) {
+  const steps = 4; // 5 lines / labels
+  for (let gy = 0; gy <= steps; gy++) {
+    const ratio = gy / steps;
+    const y = pad + ratio * (h - pad * 2);
+
+    // grid line
     const line = document.createElementNS(svgNS, "line");
-    const y = pad + gy * ((h - pad * 2) / 4);
     line.setAttribute("x1", pad);
     line.setAttribute("x2", w - pad);
     line.setAttribute("y1", y);
@@ -787,7 +791,21 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     line.setAttribute("stroke", "var(--border)");
     line.setAttribute("stroke-opacity", "0.16");
     svg.appendChild(line);
+
+    // label value: top = maxY, bottom = minY
+    const value = maxY - ratio * rangeY;
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", pad - 6);
+    label.setAttribute("y", y);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("dominant-baseline", "middle");
+    label.setAttribute("font-size", "10");
+    label.setAttribute("fill", "var(--muted)");
+    label.style.pointerEvents = "none";
+    label.textContent = (value * 100).toFixed(0) + "%";
+    svg.appendChild(label);
   }
+
 
 // -----------------------------------
 // Y-AXIS LABELS (ROI %)
