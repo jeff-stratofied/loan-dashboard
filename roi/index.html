@@ -500,6 +500,21 @@ html[data-theme="dark"] body {
        ==================================== -->
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js";
+
+    const drawer = document.getElementById("drawer");
+    const closeBtn = document.getElementById("closeBtn");
+
+    function openDrawer() {
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+      drawer.scrollTop = 0;
+    }
+
+    closeBtn.addEventListener("click", () => {
+      drawer.classList.remove("open");
+    drawer.setAttribute("aria-hidden", "true");
+    });
+
     
     function addMonths(date, months) {
       const d = new Date(date);
@@ -1297,7 +1312,6 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
     const drawerChartArea = document.getElementById('drawerChartArea');
     const drawerLegend = document.getElementById('drawerLegend');
     const drawerExtra = document.getElementById('drawerExtra');
-    const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
     document.getElementById('closeBtn').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
