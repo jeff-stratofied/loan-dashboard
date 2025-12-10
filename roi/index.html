@@ -1359,61 +1359,6 @@ function populateROILoanTable(){
 }
 
 
-function openDrawerForLoan(loan) {
-  currentMode = 'loan';
-  currentLoan = loan;
-
-  // HEADER
-  drawerTitle.textContent =
-    `${loan.name || ("Loan " + loan.id)} — ${loan.school || "No school"}`;
-
-  drawerSub.textContent =
-    `Purchased: ${loan.purchaseDate} • Balance at Purchase: $${loan.balanceAtPurchase.toLocaleString()}`;
-
-  // STAT CARDS
-  drawerPrimaryTitle.textContent = 'Purchase Price';
-  drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
-
-  drawerSecondaryTitle.textContent = 'Nominal Rate';
-  drawerSecondary.textContent = (loan.nominalRate * 100).toFixed(2) + '%';
-
-  // CLEAR AND PREPARE BODY AREA
-  drawerExtra.innerHTML = '';
-  drawerLegend.style.display = 'flex';
-  drawerLegend.innerHTML =
-    `<div class="item"><span class="sw" style="background:#0f172a"></span>Balance</div>
-     <div class="item"><span class="sw" style="background:#0ea5e9"></span>ROI</div>`;
-
-  // NOW OPEN THE DRAWER
-  openDrawer();
-}
-
-
-      const series = loan.roiSeries.map(s=>({x: formatMonthYear(s.ownershipDate), y:s.roi, ownershipDate: s.ownershipDate}));
-      createLineChart(drawerChartArea, series, { color:'#0ea5e9', loanStartDate: loan.loanStartDate, labelFn:(pt)=>`Date: ${formatDate(pt.ownershipDate)} • ROI ${(pt.y*100).toFixed(2)}%` });
-
-      // ROI-by-month table (replaces amort table)
-      drawerAmortContainer.innerHTML = '<h3 style="margin-top:8px">ROI by Month</h3><div class="amort-wrap"><table><thead><tr><th>Month</th><th style="text-align:right">Balance</th><th style="text-align:right">Cum Interest</th><th style="text-align:right">Cum Payments</th><th style="text-align:right">Cum Fees</th><th style="text-align:right">Loan Value</th><th style="text-align:right">ROI</th></tr></thead><tbody id="roiBody"></tbody></table></div>';
-      const roiBody = document.getElementById('roiBody');
-      roiBody.innerHTML = '';
-      // build rows using cumSchedule and roiSeries, accounting for amortization fees
-      loan.roiSeries.forEach(s => {
-        const month = s.month;
-        const cs = loan.cumSchedule.find(r => r.ownershipMonthIndex === month) || {};
-        const balance = (cs.balance !== undefined) ? cs.balance : '';
-        const cumInterest = (cs.cumInterest !== undefined) ? cs.cumInterest : '';
-        const cumPayments = (cs.cumTotal !== undefined) ? cs.cumTotal : '';
-        const cumFees = s.cumFees ?? 0;
-        const loanValueAdj = s.loanValue ?? 0;
-        const roiAdj = s.roi || 0;
-        const tr = document.createElement('tr');
-        const loanDate = cs.loanDate ? formatDate(cs.loanDate) : '';
-        tr.innerHTML = `<td style="text-align:left">${loanDate}</td><td style="text-align:right">$${Number(balance).toFixed(2)}</td><td style="text-align:right">$${Number(cumInterest).toFixed(2)}</td><td style="text-align:right">$${Number(cumPayments).toFixed(2)}</td><td style="text-align:right">$${Number(cumFees).toFixed(2)}</td><td style="text-align:right">$${Number(loanValueAdj).toFixed(2)}</td><td style="text-align:right">${(roiAdj*100).toFixed(2)}%</td>`;
-        roiBody.appendChild(tr);
-      });
-
-      drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); drawer.scrollTop=0;
-    }
 
     /* ============================================
    HISTORICAL ROI TIMELINE ENGINE
