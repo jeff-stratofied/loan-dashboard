@@ -1092,6 +1092,7 @@ html[data-theme="dark"] .legend .sw {
       let totalFeesToDate = 0;
       let totalPrincipal = 0;
       let monthsCounted = 1;
+      let totalInterestToDate = 0;
 
       const TODAY = new Date();
 
@@ -1112,6 +1113,7 @@ html[data-theme="dark"] .legend .sw {
         totalFeesToDate += atCurrent.cumFees || 0;
         totalNetProjected += atEnd.netEarnings || 0;
         totalPrincipal += l.purchasePrice;
+        totalInterestToDate += atCurrent.cumInterest || 0;
 
         monthsCounted = Math.max(
           monthsCounted,
@@ -1122,12 +1124,13 @@ html[data-theme="dark"] .legend .sw {
       const avgMonthlyEarnings = monthsCounted > 0 ? totalNetToDate / monthsCounted : 0;
 
       return {
-        totalNetToDate,
-        totalNetProjected,
-        totalFeesToDate,
-        avgMonthlyEarnings,
-        monthsCounted
-      };
+      totalNetToDate,
+      totalNetProjected,
+      totalFeesToDate,
+      totalInterestToDate,
+      avgMonthlyEarnings,
+      monthsCounted
+    };
     }
 
     function getCurrentEarningsRow(loan) {
@@ -1647,7 +1650,7 @@ svg.appendChild(vline);
       drawerPrimaryTitle.textContent = "Net Earnings to Date";
       drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
       drawerSecondaryTitle.textContent = "Total Fees to Date";
-      drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
+      drawerSecondary.textContent = `$${kpis.totalInterestToDate.toFixed(2)}`;
       resetDrawerContent();
       renderKPI1Chart(loansWithEarnings, "drawerChartArea");
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
