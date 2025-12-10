@@ -656,6 +656,22 @@ html[data-theme="dark"] body {
       roiSeries,
       miniPts: roiSeries.slice(0, 24).map(r => ({ y: r.roi, ownershipDate: r.ownershipDate }))
     };
+
+
+        const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ y:s.roi, ownershipDate: s.ownershipDate }));
+
+        // return updated loan object
+        return {
+          ...l,
+          amort: amortData,
+          amortSchedule: schedule,
+          monthsSinceStart,
+          scheduleWithOwnership,
+          cumSchedule,
+          balanceAtPurchase,
+          roiSeries,
+          miniPts
+        };
       });
 
     /* -------------------------
@@ -2219,7 +2235,7 @@ function renderAvgRateDrawer() {
 
 
 
-     // END initROI()
+    } // END initROI()
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
