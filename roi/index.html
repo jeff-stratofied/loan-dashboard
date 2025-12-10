@@ -423,7 +423,6 @@ html[data-theme="dark"] .drawer-chart{
   <!-- Drawer -->
  <aside id="drawer" class="drawer" aria-hidden="true">
 
-  <!-- Match amort structure -->
   <div class="drawer-header">
     <div class="drawer-head">
       <div>
@@ -438,52 +437,63 @@ html[data-theme="dark"] .drawer-chart{
     </div>
   </div>
 
+  <div id="drawerBody" class="drawer-body">
 
-    <div class="drawer-body" id="drawerBody">
-      <!-- Match amort primary/secondary card layout -->
-<div style="display:flex;gap:10px;margin-bottom:12px">
-
-  <div style="
-      flex:1;
-      background:var(--surface);
-      padding:12px;
-      border-radius:8px;
-      border:1px solid var(--border);
-    ">
-    <div class="muted-small" id="drawerPrimaryTitle">Primary</div>
-    <div id="drawerPrimary" class="main-val"></div>
-  </div>
-
-  <div style="
-      width:140px;
-      background:var(--surface);
-      padding:12px;
-      border-radius:8px;
-      border:1px solid var(--border);
-    ">
-    <div class="muted-small" id="drawerSecondaryTitle">Secondary</div>
-    <div id="drawerSecondary" class="main-val"></div>
-  </div>
-
-</div>
-
-
-      <div class="drawer-chart" id="drawerChartArea"></div>
-      <div class="legend" id="drawerLegend" style="display:none"></div>
-      <div id="drawerExtra">
-<table id="roiLoansTable" class="roi-table"><thead><tr><th>Loan</th><th>ROI to Date</th></tr></thead><tbody></tbody></table>
-</div>
-
-      <div style="margin-top:12px" id="drawerAmortContainer"></div>
+    <!-- Chart container (matches amort exactly) -->
+    <div class="drawer-chart">
+      <div id="drawerChartArea" style="width:100%;height:100%;"></div>
     </div>
+    <div class="legend" id="drawerLegend" style="display:none"></div>
 
-    <div class="drawer-footer">
-      <div class="actions">
-        <button class="btn" id="printBtn">Print</button>
-        <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
+    <!-- Primary / Secondary cards (amort exact structure, IDs preserved) -->
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <div style="flex:1;background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">
+        <div class="muted-small" id="drawerPrimaryTitle">Primary</div>
+        <div id="drawerPrimary" class="main-val"></div>
+      </div>
+
+      <div style="width:140px;background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">
+        <div class="muted-small" id="drawerSecondaryTitle">Secondary</div>
+        <div id="drawerSecondary" class="main-val"></div>
       </div>
     </div>
-  </aside>
+
+    <!-- For KPI drawers or custom loan content -->
+    <div id="drawerExtra"></div>
+
+    <!-- The ROI table wrapper -->
+    <div id="drawerAmortContainer">
+      <h3 style="margin-top:8px">ROI by Month</h3>
+
+      <div class="amort-wrap" id="amortWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Balance</th>
+              <th>Cum Interest</th>
+              <th>Cum Payments</th>
+              <th>Cum Fees</th>
+              <th>Loan Value</th>
+              <th>ROI</th>
+            </tr>
+          </thead>
+          <tbody id="amortBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="drawer-footer">
+    <div class="actions">
+      <button class="btn" id="printBtn">Print</button>
+      <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
+    </div>
+  </div>
+
+</aside>
+
 
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
