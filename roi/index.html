@@ -292,7 +292,7 @@ html[data-theme="dark"] body {
 
 /* Chart box */
 .drawer-chart{
-  height:260px;
+  height:220px;
   background:var(--chart-bg);
   border-radius:8px;
   border:1px solid rgba(15,23,42,0.06);
@@ -421,29 +421,52 @@ html[data-theme="dark"] .drawer-chart{
   </div>
 
   <!-- Drawer -->
-  <aside id="drawer" class="drawer" aria-hidden="true">
+ <aside id="drawer" class="drawer" aria-hidden="true">
+
+  <!-- Match amort structure -->
+  <div class="drawer-header">
     <div class="drawer-head">
       <div>
         <h2 id="drawerTitle">Drawer</h2>
         <div class="muted" id="drawerSub">details</div>
       </div>
+
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn" id="downloadCsvBtn">Download CSV</button>
         <button class="close-btn" id="closeBtn" aria-label="Close drawer">✕</button>
       </div>
     </div>
+  </div>
+
 
     <div class="drawer-body" id="drawerBody">
-      <div class="drawer-info-row">
-        <div class="info-card" id="drawerPrimaryCard">
-          <div class="muted-small" id="drawerPrimaryTitle">Primary</div>
-          <div id="drawerPrimary" class="main-val"></div>
-        </div>
-        <div class="info-card small" id="drawerSecondaryCard">
-          <div class="muted-small" id="drawerSecondaryTitle">Secondary</div>
-          <div id="drawerSecondary" class="main-val small"></div>
-        </div>
-      </div>
+      <!-- Match amort primary/secondary card layout -->
+<div style="display:flex;gap:10px;margin-bottom:12px">
+
+  <div style="
+      flex:1;
+      background:var(--surface);
+      padding:12px;
+      border-radius:8px;
+      border:1px solid var(--border);
+    ">
+    <div class="muted-small" id="drawerPrimaryTitle">Primary</div>
+    <div id="drawerPrimary" class="main-val"></div>
+  </div>
+
+  <div style="
+      width:140px;
+      background:var(--surface);
+      padding:12px;
+      border-radius:8px;
+      border:1px solid var(--border);
+    ">
+    <div class="muted-small" id="drawerSecondaryTitle">Secondary</div>
+    <div id="drawerSecondary" class="main-val"></div>
+  </div>
+
+</div>
+
 
       <div class="drawer-chart" id="drawerChartArea"></div>
       <div class="legend" id="drawerLegend" style="display:none"></div>
