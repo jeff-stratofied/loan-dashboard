@@ -496,6 +496,33 @@ html[data-theme="dark"] .close-btn {
     color .25s ease;
 }
 
+/* ============================================
+   FIX: Make earnings drawer tables match amort
+   ============================================ */
+
+.drawer table,
+.drawer .amort-wrap table {
+  font-size: 13px !important;        /* match amort */
+}
+
+.drawer thead th,
+.drawer .amort-wrap thead th {
+  font-size: 13px !important;        /* match amort */
+  padding: 8px !important;           /* match amort */
+}
+
+.drawer td,
+.drawer .amort-wrap td {
+  font-size: 13px !important;        /* match amort */
+  padding: 8px !important;           /* match amort */
+  border-bottom: 1px dashed rgba(15,23,42,0.04);
+}
+
+html[data-theme="dark"] .drawer td {
+  border-bottom: 1px dashed rgba(148,163,184,0.24);
+}
+
+    
 .drawer table {
   width: 100%;
   border-collapse: collapse;
