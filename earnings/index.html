@@ -299,31 +299,35 @@
     }
 
 /* ============================================================
-   WIDE DRAWER BASE STRUCTURE (KEEPING YOUR LAYOUT)
+   AMORT-STYLE DRAWER FOR EARNINGS (WIDE VERSION)
    ============================================================ */
 
+/* Base Drawer */
 .drawer {
   position: fixed;
   right: 0;
   top: 0;
   height: 100vh;
-  width: 760px;                 /* KEEP: widescreen charts */
+
+  /* *** KEEP WIDE DRAWER *** */
+  width: 760px;
   max-width: 1000px;
+
   background: var(--card);
   box-shadow: -28px 0 80px rgba(2,6,23,0.14);
   transform: translateX(110%);
-  transition: transform .32s cubic-bezier(.2,.9,.3,1),
-              opacity .24s ease,
-              background-color .3s ease,
-              color .3s ease,
-              border-color .3s ease,
-              box-shadow .3s ease;
+  transition:
+    transform .28s cubic-bezier(.2,.9,.3,1),
+    background-color .25s ease,
+    color .25s ease,
+    border-color .25s ease,
+    box-shadow .25s ease;
   z-index: 120;
-
-  display: flex;                /* KEEP: multi-section drawer */
-  flex-direction: column;
+  overflow: hidden;
   padding: 0;
-  overflow: hidden;             /* scrolling happens in body */
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
   opacity: 0;
 }
 
@@ -338,127 +342,78 @@
   to   { transform: translateX(0);   opacity: 1; }
 }
 
-
-/* ============================================================
-   UNIFIED VISUAL HEADER (MATCHES AMORT)
-   ============================================================ */
-
-.drawer-head {
-  padding: 22px;                /* unified head padding */
+/* Drawer Header */
+.drawer-header {
+  padding: 20px;
   flex-shrink: 0;
   background: var(--card);
-  display: flex;
-  flex-direction: column;
+  transition: background-color .25s ease, color .25s ease;
 }
 
-.drawer-head h2 {
-  margin: 0 0 4px 0;
-  font-size: 18px;
+.drawer-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.drawer h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
   font-weight: 600;
 }
 
-.drawer-head .subhead {
-  margin: 0 0 16px 0;
-  font-size: 13px;
+.muted {
   color: var(--muted);
-}
-/* ==== Unified Stat Boxes (same as amort) ==== */
-.drawer-info-row{
-  display:flex;
-  gap:12px;
-  margin:0 0 12px 0;
-  align-items:center;
+  font-size: 13px;
+  margin-bottom: 10px;
 }
 
-.info-card{
-  flex:1;
-  background:var(--surface);
-  padding:12px;
-  border-radius:10px;
-  border:1px solid var(--border);
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  min-height:56px;
+/* Close Button */
+.close-btn {
+  background: #f1f5f9;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color .25s ease, color .25s ease;
 }
 
-.info-card.small{
-  width:160px;
+html[data-theme="dark"] .close-btn {
+  background: #0f172a;
+  color: var(--text);
 }
 
-.muted-small{
-  font-size:12px;
-  color:var(--muted);
-  margin-bottom:6px;
-}
-
-.main-val{
-  font-size:18px;
-  font-weight:700;
-}
-
-
-/* ============================================================
-   BODY (SCROLLS)
-   ============================================================ */
-
-#drawerBody,
-.drawer-body {
+/* Drawer Body */
+.drawer-body,
+#drawerBody {
   flex: 1 1 auto;
   overflow-y: auto;
-  padding: 22px;
-  padding-bottom: 80px;
+  overflow-x: hidden !important;
+  padding: 0 20px 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.drawer,
-#drawerBody,
-.drawer-body {
-  overflow-x: hidden !important;
-}
-
-
-/* ============================================================
-   UNIFIED STAT BOXES (MATCH AMORT)
-   ============================================================ */
-
-.stat-boxes {
-  display: flex;
-  gap: 12px;
-  margin: 0 0 10px 0;
-}
-
-.stat-box {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 4px;
-}
-
-.stat-value {
-  font-size: 16px;
-  font-weight: 700;
-}
-
-
-/* ============================================================
-   UNIFIED CHART WRAPPER (MATCHES AMORT)
-   ============================================================ */
-
+/* Drawer Chart */
 .drawer-chart {
-  width: 100%;
-  height: 240px;              /* Slightly taller for wide drawer */
+  height: 240px; /* Slightly taller for stacked earnings */
+  background: var(--chart-bg);
   border-radius: 8px;
-  margin: 10px 0 20px 0;
+  border: 1px solid rgba(15,23,42,0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  position: relative;
+  padding: 8px;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.06);
+  transition:
+    background-color .25s ease,
+    color .25s ease,
+    border-color .25s ease,
+    box-shadow .25s ease;
 }
 
 .drawer-chart svg {
@@ -466,10 +421,80 @@
   height: 100%;
 }
 
+.legend {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
 
-/* ============================================================
-   UNIFIED TABLE STYLE (MATCHES AMORT)
-   ============================================================ */
+.legend .item {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.legend .sw {
+  width: 12px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* Primary + Secondary Stat Boxes (matching amort) */
+.stat-boxes,
+.drawer-info-row {
+  display: flex;
+  gap: 12px;
+  margin: 0 0 12px;
+  align-items: center;
+}
+
+.info-card,
+.stat-box {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 56px;
+  transition: background-color .25s ease, border-color .25s ease;
+}
+
+.info-card.small,
+.stat-box.small {
+  width: 160px;
+}
+
+.muted-small,
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.main-val,
+.stat-value {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Drawer Table */
+.amort-wrap {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  max-height: 40vh;
+  overflow: auto;
+  background: var(--card);
+  transition:
+    background-color .25s ease,
+    border-color .25s ease,
+    color .25s ease;
+}
 
 .drawer table {
   width: 100%;
@@ -477,20 +502,10 @@
   margin-top: 10px;
 }
 
-.drawer table tr {
-  border-bottom: 1px solid var(--border);
-}
-
-.drawer table td {
-  padding: 6px 4px;
-  font-size: 12px;
-  color: var(--text);
-}
-
 thead th {
   position: sticky;
   top: 0;
-  background: var(--table-header);
+  background: var(--card);
   padding: 8px;
   text-align: left;
   color: var(--muted);
@@ -498,25 +513,64 @@ thead th {
   border-bottom: 1px solid var(--border);
 }
 
+td {
+  padding: 8px;
+  border-bottom: 1px dashed rgba(15,23,42,0.04);
+  text-align: right;
+  transition: color .25s ease, border-color .25s ease;
+}
 
-/* ============================================================
-   FOOTER
-   ============================================================ */
+td:first-child,
+th:first-child {
+  text-align: left;
+}
 
+/* Footer */
 .drawer-footer {
-  padding: 22px;
+  padding: 20px;
   flex-shrink: 0;
+  background: var(--card);
+  transition: background-color .25s ease;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Dark Mode Overrides (match amort) */
+html[data-theme="dark"] .drawer {
+  background: var(--drawer-bg);
+  border-left: 1px solid var(--border);
+  box-shadow: -28px 0 80px var(--drawer-shadow);
+}
+
+html[data-theme="dark"] .amort-wrap {
   background: var(--card);
 }
 
-
-/* ============================================================
-   MOBILE
-   ============================================================ */
-
-@media(max-width:760px){
-  .drawer{ width:100%; min-width:0; }
+html[data-theme="dark"] thead th {
+  background: var(--surface);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
 }
+
+html[data-theme="dark"] td {
+  border-bottom: 1px dashed rgba(148,163,184,0.24);
+}
+
+html[data-theme="dark"] .legend .sw {
+  opacity: 0.9;
+}
+
+/* Mobile */
+@media(max-width:760px) {
+  .drawer {
+    width: 100%;
+    max-width: none;
+  }
+}
+
 
     /* Theme toggle */
     .theme-icon{
@@ -601,16 +655,60 @@ thead th {
 
   <!-- Drawer -->
   <aside id="drawer" class="drawer" aria-hidden="true">
-    <div class="drawer-head">
-      <div>
-        <h2 id="drawerTitle">Earnings Drawer</h2>
-        <div class="muted-small" id="drawerSub">details</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn" id="downloadCsvBtn">Download CSV</button>
-        <button class="close-btn" id="closeBtn" aria-label="Close drawer">✕</button>
+    <div class="drawer-header">
+      <div class="drawer-head">
+        <div>
+          <h2 id="drawerTitle">Drawer</h2>
+          <div class="muted" id="drawerSub">details</div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="downloadCsvBtn">Download CSV</button>
+          <button class="close-btn" id="closeBtn" aria-label="Close drawer">✕</button>
+        </div>
       </div>
     </div>
+
+    <div id="drawerBody" class="drawer-body">
+      <div class="drawer-chart" id="drawerChartArea"></div>
+      <div class="legend" id="drawerLegend" style="display:none"></div>
+
+      <div style="display:flex;gap:10px;margin-bottom:8px">
+        <div style="flex:1;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--muted)" id="drawerPrimaryTitle">Purchase Price</div>
+          <div id="drawerPrimary" style="font-weight:800;font-size:18px"></div>
+        </div>
+        <div style="width:120px;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--muted)" id="drawerSecondaryTitle">Rate</div>
+          <div id="drawerSecondary" style="font-weight:800;font-size:16px"></div>
+        </div>
+      </div>
+
+      <div id="drawerExtra"></div>
+
+      <div id="drawerAmortContainer">
+        <h3 style="margin-top:8px">Amortization</h3>
+        <div class="amort-wrap" id="amortWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="amortBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <div class="actions">
+        <button class="btn" id="printBtn">Print</button>
+        <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
+      </div>
+    </div>
+</aside>
+
 
     <div class="drawer-info-row">
       <div class="info-card" id="drawerPrimaryCard">
