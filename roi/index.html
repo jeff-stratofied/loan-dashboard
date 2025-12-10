@@ -1258,8 +1258,19 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
   </div>
 `;
 
-      tile.addEventListener('click', e=>{ e.stopPropagation(); openDrawerForLoan(loan); });
-      tile.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawerForLoan(loan); } });
+    tile.addEventListener('click', e => {
+      e.stopPropagation();
+      openDrawerForLoan(loan);
+    });
+    
+      tile.addEventListener('keydown', e=>{ 
+  if(e.key==='Enter'||e.key===' '){ 
+    e.preventDefault(); 
+    renderLoanDrawer(loan);
+    openDrawer();
+  } 
+});
+
       grid.appendChild(tile);
 
       // render mini chart: cumulative ROI points
@@ -1348,14 +1359,35 @@ function populateROILoanTable(){
 }
 
 
-function openDrawerForLoan(loan){
-      currentMode='loan'; currentLoan=loan;
-      drawerTitle.textContent =
-        `Loan ${loan.id} — ${loan.name} (${loan.school || "No school"})`;
-      drawerSub.textContent = 'Purchased: ' + loan.purchaseDate + ' • Balance at Purchase: $' + loan.balanceAtPurchase.toLocaleString();
-      drawerPrimaryTitle.textContent = 'Purchase Price'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
-      drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
-      drawerExtra.innerHTML=''; drawerLegend.style.display='flex'; drawerLegend.innerHTML = '<div class=\"item\"><span class=\"sw\" style=\"background:#0f172a\"></span>Balance</div><div class=\"item\"><span class=\"sw\" style=\"background:#0ea5e9\"></span>ROI</div>';
+function openDrawerForLoan(loan) {
+  currentMode = 'loan';
+  currentLoan = loan;
+
+  // HEADER
+  drawerTitle.textContent =
+    `${loan.name || ("Loan " + loan.id)} — ${loan.school || "No school"}`;
+
+  drawerSub.textContent =
+    `Purchased: ${loan.purchaseDate} • Balance at Purchase: $${loan.balanceAtPurchase.toLocaleString()}`;
+
+  // STAT CARDS
+  drawerPrimaryTitle.textContent = 'Purchase Price';
+  drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
+
+  drawerSecondaryTitle.textContent = 'Nominal Rate';
+  drawerSecondary.textContent = (loan.nominalRate * 100).toFixed(2) + '%';
+
+  // CLEAR AND PREPARE BODY AREA
+  drawerExtra.innerHTML = '';
+  drawerLegend.style.display = 'flex';
+  drawerLegend.innerHTML =
+    `<div class="item"><span class="sw" style="background:#0f172a"></span>Balance</div>
+     <div class="item"><span class="sw" style="background:#0ea5e9"></span>ROI</div>`;
+
+  // NOW OPEN THE DRAWER
+  openDrawer();
+}
+
 
       const series = loan.roiSeries.map(s=>({x: formatMonthYear(s.ownershipDate), y:s.roi, ownershipDate: s.ownershipDate}));
       createLineChart(drawerChartArea, series, { color:'#0ea5e9', loanStartDate: loan.loanStartDate, labelFn:(pt)=>`Date: ${formatDate(pt.ownershipDate)} • ROI ${(pt.y*100).toFixed(2)}%` });
