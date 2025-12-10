@@ -234,128 +234,26 @@ html[data-theme="dark"] body {
     .mini-label{ font-size:12px; color:var(--muted); margin-bottom:6px }
     svg.sparkline{ width:170px; height:48px; display:block }
 
-/* ============================================================
-   WIDE DRAWER — Unified amort/earnings style
-   ============================================================ */
+    /* =========================
+       Drawer (with opening animation)
+       ========================= */
+    .drawer{
+      position:fixed; right:0; top:0; height:100vh; max-width:1000px; width:760px; background:var(--card);
+      box-shadow:-28px 0 80px rgba(2,6,23,0.14); transform:translateX(110%); transition: transform .32s cubic-bezier(.2,.9,.3,1), opacity .24s ease;
+      z-index:120; opacity:0; display:flex; flex-direction:column; overflow:hidden;
+      padding:0; border-left:1px solid var(--border);
+    }
+    .drawer.open{ transform:translateX(0); opacity:1; animation: drawerIn .28s cubic-bezier(.2,.9,.3,1); }
+    @keyframes drawerIn { from { transform: translateX(30%); opacity:0 } to { transform: translateX(0); opacity:1 } }
 
-.drawer {
-  position: fixed;
-  right: 0;
-  top: 0;
-  height: 100vh;
-  width: 760px;
-  max-width: 1000px;
-  background: var(--card);
-  box-shadow: -28px 0 80px rgba(2,6,23,0.14);
-  transform: translateX(110%);
-  transition: transform .32s cubic-bezier(.2,.9,.3,1),
-              opacity .24s ease,
-              background-color .25s ease,
-              color .25s ease,
-              border-color .25s ease,
-              box-shadow .25s ease;
-  z-index: 120;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  overflow: hidden;
-  opacity: 0;
-  border-left: 1px solid var(--border);
-}
+    .drawer-head{ display:flex; align-items:start; justify-content:space-between; gap:8px; padding:20px; flex-shrink:0; border-bottom:1px solid var(--border); background:var(--surface); }
+    .drawer-body{ flex:1 1 auto; overflow-y:auto; overflow-x:hidden; padding:0 20px 20px; }
+    .drawer-footer{ padding:12px 20px 20px; flex-shrink:0; padding-left: 20px; border-top:1px solid var(--border); background:var(--surface); }
+    .drawer-footer .actions{ justify-content:flex-start; }
+    .drawer, #drawerBody, .drawer-body { overflow-x: hidden; }
+    .drawer-chart { width:100%; height:260px; background: var(--chart-bg); border-radius:8px; border:1px solid var(--border); margin-bottom:8px; padding:0; position:relative; display:block }
 
-.drawer.open {
-  transform: translateX(0);
-  opacity: 1;
-}
-
-.drawer-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: start;
-  padding: 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-
-.drawer-body {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.drawer-footer {
-  padding: 20px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-}
-
-/* Info cards (primary + secondary) */
-.drawer-info-row {
-  display: flex;
-  gap: 12px;
-}
-
-.info-card {
-  flex: 1;
-  background: var(--surface);
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-}
-
-.info-card.small {
-  width: 160px;
-}
-
-.muted-small {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.main-val {
-  font-weight: 800;
-  font-size: 18px;
-}
-
-/* Chart */
-.drawer-chart {
-  width: 100%;
-  height: 260px;
-  border-radius: 8px;
-  background: var(--chart-bg);
-  border: 1px solid var(--border);
-}
-
-/* Table */
-.drawer table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.drawer table thead th {
-  background: var(--table-header);
-  padding: 8px;
-  text-align: left;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--muted);
-  border-bottom: 1px solid var(--border);
-}
-
-.drawer table td {
-  padding: 6px 4px;
-  font-size: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-/* Mobile */
-@media (max-width: 760px) {
-  .drawer { width: 100%; }
-}
-
+    }
 
     /* Drawer info row */
     .drawer-info-row { display:flex; gap:12px; margin-bottom:8px; align-items:center }
@@ -482,7 +380,10 @@ html[data-theme="dark"] body {
       <div class="drawer-chart" id="drawerChartArea"></div>
       <div class="legend" id="drawerLegend" style="display:none"></div>
       <div id="drawerExtra">
+<table id="roiLoansTable" class="roi-table"><thead><tr><th>Loan</th><th>ROI to Date</th></tr></thead><tbody></tbody></table>
 </div>
+
+      <div style="margin-top:12px" id="drawerAmortContainer"></div>
     </div>
 
     <div class="drawer-footer">
@@ -500,21 +401,6 @@ html[data-theme="dark"] body {
        ==================================== -->
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js";
-
-    const drawer = document.getElementById("drawer");
-    const closeBtn = document.getElementById("closeBtn");
-
-    function openDrawer() {
-      drawer.classList.add("open");
-      drawer.setAttribute("aria-hidden", "false");
-      drawer.scrollTop = 0;
-    }
-
-    closeBtn.addEventListener("click", () => {
-      drawer.classList.remove("open");
-    drawer.setAttribute("aria-hidden", "true");
-    });
-
     
     function addMonths(date, months) {
       const d = new Date(date);
@@ -1258,19 +1144,8 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
   </div>
 `;
 
-    tile.addEventListener('click', e => {
-      e.stopPropagation();
-      openDrawerForLoan(loan);
-    });
-    
-      tile.addEventListener('keydown', e=>{ 
-  if(e.key==='Enter'||e.key===' '){ 
-    e.preventDefault(); 
-    renderLoanDrawer(loan);
-    openDrawer();
-  } 
-});
-
+      tile.addEventListener('click', e=>{ e.stopPropagation(); openDrawerForLoan(loan); });
+      tile.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawerForLoan(loan); } });
       grid.appendChild(tile);
 
       // render mini chart: cumulative ROI points
@@ -1323,6 +1198,7 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
     const drawerChartArea = document.getElementById('drawerChartArea');
     const drawerLegend = document.getElementById('drawerLegend');
     const drawerExtra = document.getElementById('drawerExtra');
+    const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
     document.getElementById('closeBtn').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
@@ -1359,35 +1235,14 @@ function populateROILoanTable(){
 }
 
 
-function openDrawerForLoan(loan) {
-  currentMode = 'loan';
-  currentLoan = loan;
-
-  // HEADER
-  drawerTitle.textContent =
-    `${loan.name || ("Loan " + loan.id)} — ${loan.school || "No school"}`;
-
-  drawerSub.textContent =
-    `Purchased: ${loan.purchaseDate} • Balance at Purchase: $${loan.balanceAtPurchase.toLocaleString()}`;
-
-  // STAT CARDS
-  drawerPrimaryTitle.textContent = 'Purchase Price';
-  drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
-
-  drawerSecondaryTitle.textContent = 'Nominal Rate';
-  drawerSecondary.textContent = (loan.nominalRate * 100).toFixed(2) + '%';
-
-  // CLEAR AND PREPARE BODY AREA
-  drawerExtra.innerHTML = '';
-  drawerLegend.style.display = 'flex';
-  drawerLegend.innerHTML =
-    `<div class="item"><span class="sw" style="background:#0f172a"></span>Balance</div>
-     <div class="item"><span class="sw" style="background:#0ea5e9"></span>ROI</div>`;
-
-  // NOW OPEN THE DRAWER
-  openDrawer();
-}
-
+function openDrawerForLoan(loan){
+      currentMode='loan'; currentLoan=loan;
+      drawerTitle.textContent =
+        `Loan ${loan.id} — ${loan.name} (${loan.school || "No school"})`;
+      drawerSub.textContent = 'Purchased: ' + loan.purchaseDate + ' • Balance at Purchase: $' + loan.balanceAtPurchase.toLocaleString();
+      drawerPrimaryTitle.textContent = 'Purchase Price'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
+      drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
+      drawerExtra.innerHTML=''; drawerLegend.style.display='flex'; drawerLegend.innerHTML = '<div class=\"item\"><span class=\"sw\" style=\"background:#0f172a\"></span>Balance</div><div class=\"item\"><span class=\"sw\" style=\"background:#0ea5e9\"></span>ROI</div>';
 
       const series = loan.roiSeries.map(s=>({x: formatMonthYear(s.ownershipDate), y:s.roi, ownershipDate: s.ownershipDate}));
       createLineChart(drawerChartArea, series, { color:'#0ea5e9', loanStartDate: loan.loanStartDate, labelFn:(pt)=>`Date: ${formatDate(pt.ownershipDate)} • ROI ${(pt.y*100).toFixed(2)}%` });
@@ -1501,6 +1356,43 @@ function buildHistoricalRoiTimeline(loans) {
     weightedSeries,
     earliestDate: earliestPurchase
   };
+}
+
+/* ==========================================================
+   DATE-ALIGNED CHART ENGINE HELPERS
+   ========================================================== */
+
+// Convert YYYY-MM-DD to Date objects
+function toDate(d) {
+  return (d instanceof Date) ? d : new Date(d);
+}
+
+// Difference in months between two dates
+function monthDiff(a, b) {
+  a = toDate(a);
+  b = toDate(b);
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
+
+// Format ticks (Jan 2024)
+function formatMonthYear(d) {
+  return d.toLocaleString("en-US", { month: "short", year: "numeric" });
+}
+
+// Simple catmull-rom smoothing
+function smoothPath(points) {
+  if (points.length < 3) {
+    return `M${points.map(p => `${p.x},${p.y}`).join(" L")}`;
+  }
+  let d = `M${points[0].x},${points[0].y}`;
+  for (let i = 1; i < points.length - 2; i++) {
+    const xc = (points[i].x + points[i + 1].x) / 2;
+    const yc = (points[i].y + points[i + 1].y) / 2;
+    d += ` Q ${points[i].x},${points[i].y} ${xc},${yc}`;
+  }
+  const n = points.length;
+  d += ` T ${points[n - 1].x},${points[n - 1].y}`;
+  return d;
 }
 
 
