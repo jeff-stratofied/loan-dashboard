@@ -1503,43 +1503,6 @@ function buildHistoricalRoiTimeline(loans) {
   };
 }
 
-/* ==========================================================
-   DATE-ALIGNED CHART ENGINE HELPERS
-   ========================================================== */
-
-// Convert YYYY-MM-DD to Date objects
-function toDate(d) {
-  return (d instanceof Date) ? d : new Date(d);
-}
-
-// Difference in months between two dates
-function monthDiff(a, b) {
-  a = toDate(a);
-  b = toDate(b);
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-}
-
-// Format ticks (Jan 2024)
-function formatMonthYear(d) {
-  return d.toLocaleString("en-US", { month: "short", year: "numeric" });
-}
-
-// Simple catmull-rom smoothing
-function smoothPath(points) {
-  if (points.length < 3) {
-    return `M${points.map(p => `${p.x},${p.y}`).join(" L")}`;
-  }
-  let d = `M${points[0].x},${points[0].y}`;
-  for (let i = 1; i < points.length - 2; i++) {
-    const xc = (points[i].x + points[i + 1].x) / 2;
-    const yc = (points[i].y + points[i + 1].y) / 2;
-    d += ` Q ${points[i].x},${points[i].y} ${xc},${yc}`;
-  }
-  const n = points.length;
-  d += ` T ${points[n - 1].x},${points[n - 1].y}`;
-  return d;
-}
-
 
       
     /* -------------------------
