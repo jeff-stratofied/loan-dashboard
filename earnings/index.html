@@ -711,6 +711,23 @@ html[data-theme="dark"] .legend .sw {
         </div>
       </div>
 
+      <div id="drawerExtra"></div>
+
+      <div id="drawerAmortContainer">
+        <h3 style="margin-top:8px">Amortization</h3>
+        <div class="amort-wrap" id="amortWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="amortBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div class="drawer-footer">
       <div class="actions">
         <button class="btn" id="printBtn">Print</button>
@@ -744,6 +761,7 @@ html[data-theme="dark"] .legend .sw {
     </div>
     <div class="drawer-body">
       <div class="drawer-chart" id="kpi1Chart"></div>
+      <div class="amort-wrap" id="kpi1Table"></div>
     </div>
     <div class="drawer-actions">
       <button class="btn" data-kpi-close="kpiDrawer1">Close</button>
@@ -779,6 +797,7 @@ html[data-theme="dark"] .legend .sw {
     </div>
     <div class="drawer-body">
       <div class="drawer-chart" id="kpi2Chart"></div>
+      <div class="amort-wrap" id="kpi2Table"></div>
     </div>
     <div class="drawer-actions">
       <button class="btn" data-kpi-close="kpiDrawer2">Close</button>
@@ -814,6 +833,7 @@ html[data-theme="dark"] .legend .sw {
     </div>
     <div class="drawer-body">
       <div class="drawer-chart" id="kpi3Chart"></div>
+      <div class="amort-wrap" id="kpi3Table"></div>
     </div>
     <div class="drawer-actions">
       <button class="btn" data-kpi-close="kpiDrawer3">Close</button>
@@ -849,6 +869,7 @@ html[data-theme="dark"] .legend .sw {
     </div>
     <div class="drawer-body">
       <div class="drawer-chart" id="kpi4Chart"></div>
+      <div class="amort-wrap" id="kpi4Table"></div>
     </div>
     <div class="drawer-actions">
       <button class="btn" data-kpi-close="kpiDrawer4">Close</button>
@@ -1648,6 +1669,7 @@ svg.appendChild(vline);
       drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
       resetDrawerContent();
       renderKPI1Chart(loansWithEarnings, "drawerChartArea");
+      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI1Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
     }
@@ -1662,6 +1684,7 @@ svg.appendChild(vline);
       drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
       resetDrawerContent();
       renderKPI2Chart(loansWithEarnings, "drawerChartArea");
+      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI2Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
     }
@@ -1676,6 +1699,7 @@ svg.appendChild(vline);
       drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
       resetDrawerContent();
       renderKPI3Chart(loansWithEarnings, "drawerChartArea");
+      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI3Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
     }
@@ -1690,6 +1714,7 @@ svg.appendChild(vline);
       drawerSecondary.textContent = `${loans.length}`;
       resetDrawerContent();
       renderKPI4Chart(loansWithEarnings, "drawerChartArea");
+      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI4Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
     }
