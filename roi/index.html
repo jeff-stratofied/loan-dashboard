@@ -1428,16 +1428,22 @@ roiMap[key] = roi;
     const roiKeys = Object.keys(roiMap).sort();
     let lastKnownROI = roiKeys.length ? roiMap[roiKeys[0]] : 0;
     
-    const data = dates.map(date => {
-      if (date < purchase) {
-      return { date, y: null };
-      }
+const data = dates.map(date => {
+  if (date < purchase) {
+    return { date, y: null };
+  }
 
-    const key = date.toISOString().slice(0, 10);
-    if (key in roiMap) lastKnownROI = roiMap[key];
+  const key = date.toISOString().slice(0, 10);
 
+  // update last known ROI if this month exists
+  if (roiMap[key] !== undefined) {
     lastKnownROI = roiMap[key];
-    }
+  }
+
+  // forward-fill ROI after the purchase month
+  return { date, y: lastKnownROI };
+});
+
 
     // forward-fill ROI after purchase
     return { date, y: lastKnownROI };
