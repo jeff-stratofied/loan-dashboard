@@ -551,7 +551,23 @@ html[data-theme="dark"] .drawer-chart{
 
 
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
+<script>
+  // Hide tooltip whenever the pointer leaves the drawer or chart container
+  document.addEventListener("mousemove", (ev) => {
+    const tooltip = document.getElementById("tooltip");
+    if (!tooltip) return;
 
+    // If mouse is NOT over any drawer or chart SVG, hide tooltip
+    const overDrawer = ev.target.closest(".drawer");
+    const overChart = ev.target.closest("svg");
+
+    if (!overDrawer && !overChart) {
+      tooltip.style.display = "none";
+    }
+  });
+</script>
+
+  
   <!-- ====================================
        Script (organized with sections)
        ==================================== -->
