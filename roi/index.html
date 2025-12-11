@@ -627,8 +627,13 @@ html[data-theme="dark"] .drawer-chart{
     async function initROI() {
       const TODAY = new Date();
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
+      const formattedLoans = loans.map(l => ({
+        ...l,
+        purchasePrice: Number(l.principal ?? l.purchasePrice ?? 0),
+        nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
+      }));
 
-      const loansWithAmort = loans.map(l => {
+      const loansWithAmort = formattedLoans.map(l => {
         // compute amortization schedule for this loan
     // -------------------------------------
     // USE REAL AMORT ENGINE FROM loanEngine.js
@@ -2413,7 +2418,11 @@ function renderAvgRateDrawer() {
     const segH = (loan.purchasePrice / maxValue) * chartH;
     currentY -= segH;
 
-const color = palette[(loan.id - 1) % palette.length];
+    const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16',
+             '#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
+
+    const color = palette[loanIdx % palette.length];
+
 
       const seg = document.createElementNS(svgNS, 'rect');
       seg.setAttribute('x', x + 6);
