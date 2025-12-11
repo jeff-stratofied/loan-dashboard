@@ -1853,16 +1853,23 @@ function buildProjectedRoiTimeline(loans) {
       }
     });
 
-    let lastKnownROI = 0;
+    // Determine the very first ROI value for this loan
+const roiKeys = Object.keys(roiMap).sort();
+const firstRoiValue = roiKeys.length ? roiMap[roiKeys[0]] : 0;
 
-    const data = dates.map(date => {
-      if (date < purchase) return { date, y: null };
+let lastKnownROI = firstRoiValue;   // <-- FIX: start correctly
 
-      const key = date.toISOString().slice(0,7);
-      if (roiMap[key] != null) lastKnownROI = roiMap[key];
+const data = dates.map(date => {
+  if (date < purchase) return { date, y: null };
 
-      return { date, y: lastKnownROI };
-    });
+  const key = date.toISOString().slice(0,7);
+  if (roiMap[key] != null) {
+    lastKnownROI = roiMap[key];
+  }
+
+  return { date, y: lastKnownROI };
+});
+
 
     return {
       name: `Loan ${loan.id}`,
