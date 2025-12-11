@@ -292,6 +292,16 @@ input:focus, select:focus {
   let currentLoans = [];
   let currentSha = null;
 
+function generateLoanId() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let id = "";
+  for (let i = 0; i < 10; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return id;
+}
+
+  
 const schoolOptions = [
   "Penn State","Ohio State","Pitt","Carnegie Mellon",
   "Michigan","UCLA","USC","NYU",
@@ -303,25 +313,32 @@ const schoolOptions = [
 
   /* Normalize loan */
   function normalizeLoan(l, idx) {
-    return {
-      loanId: l.loanId ?? (idx + 1),
-      loanName: l.loanName ?? `Loan ${l.loanId ?? (idx + 1)}`,
-      school: l.school ?? "Penn State",
-      loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "",
-      purchaseDate: l.purchaseDate ?? "",
-     principal:
-  l.principal === undefined
-    ? 0                    // brand new row with no value yet → default to 0
-    : l.principal === "" 
-        ? currentLoans[idx]?.principal ?? 0  
-        : Number(l.principal),
+  return {
+    // NEW: Always assign a random ID for new loans, keep existing for loaded ones
+    loanId: l.loanId ?? generateLoanId(),
 
-      purchasePrice: Number(l.purchasePrice ?? 0),
-      rate: Number(l.rate ?? 0),
-      termYears: Number(l.termYears ?? 10),
-      graceYears: Number(l.graceYears ?? 0)
-    };
-  }
+    // You enter loanName manually, so default to empty string
+    loanName: l.loanName ?? "",
+
+    school: l.school ?? "Penn State",
+    loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "",
+    purchaseDate: l.purchaseDate ?? "",
+
+    // Keep your existing principal normalization logic exactly as-is
+    principal:
+      l.principal === undefined
+        ? 0
+        : l.principal === ""
+            ? currentLoans[idx]?.principal ?? 0
+            : Number(l.principal),
+
+    purchasePrice: Number(l.purchasePrice ?? 0),
+    rate: Number(l.rate ?? 0),
+    termYears: Number(l.termYears ?? 10),
+    graceYears: Number(l.graceYears ?? 0)
+  };
+}
+
 
   /* Render table */
   function renderTable() {
@@ -359,6 +376,7 @@ const schoolOptions = [
         </td>
 
       `;
+      tr.dataset.loanId = loan.loanId;
       tbody.appendChild(tr);
     });
   }
@@ -382,7 +400,7 @@ const schoolOptions = [
         obj[k] = v;
       });
 
-      obj.loanId = i + 1;
+      obj.loanId = row.dataset.loanId || generateLoanId();
       list.push(obj);
     });
 
@@ -483,18 +501,23 @@ async function saveToBackend() {
     }
 
     if (action === "duplicate") {
-      const clone = { ...currentLoans[idx] };
+    const clone = { ...currentLoans[idx] };
 
-      // NEW ID = last ID + 1
-      clone.loanId = currentLoans.length + 1;
+    // Build a set of existing IDs to avoid accidental collisions
+    const existingIds = new Set(currentLoans.map(l => String(l.loanId)));
+    let newId;
+    do {
+      newId = generateLoanId();
+    } while (existingIds.has(newId));
 
-      // Optionally tweak name
-      clone.loanName = clone.loanName + " (Copy)";
+    clone.loanId = newId;
+    clone.loanName = clone.loanName + " (Copy)";
 
-      currentLoans.push(clone);
-      renderTable();
-      return;
-    }
+    currentLoans.push(clone);
+    renderTable();
+    return;
+  }
+
   });
 
 
