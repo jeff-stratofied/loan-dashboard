@@ -699,7 +699,6 @@ html[data-theme="dark"] .drawer-chart{
       roiSeries,
       miniPts: roiSeries.slice(0, 24).map(r => ({ y: r.roi, ownershipDate: r.ownershipDate }))
     };
-        const miniPts = roiSeries.slice(0, Math.min(24, roiSeries.length)).map(s=>({ y:s.roi, ownershipDate: s.ownershipDate }));
       });
 
     /* -------------------------
