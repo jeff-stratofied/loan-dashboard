@@ -1521,37 +1521,41 @@ function smoothPath(points) {
        ------------------------- */
     function getMonthlyTotals(list){ const totals={}; list.forEach(l=>{ const d=new Date(l.purchaseDate); const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; totals[key]=(totals[key]||0)+l.purchasePrice; }); return totals; }
 
-/* ================================
+/* ============================================================
    TPV Drawer — Weighted ROI To Date
-   ================================ */
+   Using the same stable timeline engine as Projected ROI
+   ============================================================ */
 function renderTPVDrawer() {
-  if (!loansWithAmort || !loansWithAmort.length) return;
-
   currentMode = 'kpi';
   currentLoan = null;
 
+  // Reset drawer
   drawerAmortContainer.innerHTML = '';
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
-  
-  // --- Drawer Titles ---
-  drawerTitle.textContent = "Portfolio — Weighted ROI (To Date)";
-  drawerSub.textContent = "Snapshot";
+  drawerExtra.innerHTML = '';
 
-  // --- Compute weighted ROI to date ---
-  const totalInvested = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
+  drawerTitle.textContent = "Weighted ROI to Date";
+  drawerSub.textContent = "Current Portfolio Snapshot";
+
+  // ===============================
+  // 1. Compute weighted ROI to date
+  // ===============================
+  const totalInv = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
 
   let weightedROI = 0;
   loansWithAmort.forEach(l => {
-    const last = getCurrentOwnedRoiEntry(l);
+    const last = getCurrentOwnedRoiEntry(l); // TODAY'S ROI ENTRY
     weightedROI += l.purchasePrice * (last.roi || 0);
   });
-  weightedROI = weightedROI / Math.max(1, totalInvested);
+  weightedROI = weightedROI / Math.max(1, totalInv);
 
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
   drawerPrimary.textContent = (weightedROI * 100).toFixed(2) + "%";
 
-  // Portfolio value today (mark-to-market sum)
+  // ===============================
+  // 2. Compute portfolio value today
+  // ===============================
   let portfolioValue = 0;
   loansWithAmort.forEach(l => {
     const last = getCurrentOwnedRoiEntry(l);
@@ -1561,85 +1565,289 @@ function renderTPVDrawer() {
   drawerSecondaryTitle.textContent = "Portfolio Value";
   drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
 
-// --- Recompute per-loan ROI series using corrected formula ---
-const recomputedLoans = loansWithAmort.map(l => {
-  const purchase = Number(l.purchasePrice);
-  const series = l.cumSchedule
-    .filter(r => r.isOwned)
-    .map(r => {
-      const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-      const unrealized = r.balance * 0.95;
-      const loanValue = realized + unrealized;
-      const roi = (loanValue - purchase) / purchase;
+  // ===============================
+  // 3. Build TIMELINE using the
+  //    existing stable Projected ROI engine
+  //    BUT using today's ROI values
+  // ===============================
+  const timeline = buildProjectedRoiTimeline(loansWithAmort);
 
-      return {
-        date: r.loanDate,
-        y: roi
-      };
-    });
+  // ===============================
+  // 4. Render multi-series chart
+  // ===============================
+  createMultiSeriesChart(
+    drawerChartArea,
+    timeline.perLoanSeries,
+    timeline.weightedSeries,
+    {
+      weightedColor: "#000",
+      weightedWidth: 2.6,
+      dates: timeline.dates
+    }
+  );
 
-  return { ...l, adjustedSeries: series };
-});
+  // ===============================
+  // 5. ROI-to-Date Table
+  // ===============================
+  drawerExtra.innerHTML = `
+    <div style="margin-top:12px">
+      <h3 style="margin:0 0 8px 0">ROI to Date — All Loans</h3>
+      <div style="
+        max-height:300px;
+        overflow:auto;
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:6px;
+        background:var(--card);
+      ">
+        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Loan</th>
+              <th style="text-align:left;">Purchase Date</th>
+              <th style="text-align:left;">Maturity Date</th>
+              <th style="text-align:right;">ROI to Date</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  `;
 
-// --- Build a unified calendar-aligned timeline ---
-const earliest = new Date(
-  Math.min(...recomputedLoans.map(l => new Date(l.purchaseDate)))
-);
+  populateROILoanTable();  // already implemented
 
-const today = new Date();
-const dates = [];
-const cursor = new Date(earliest);
-while (cursor <= today) {
-  dates.push(new Date(cursor));
-  cursor.setMonth(cursor.getMonth() + 1);
+  // ===============================
+  // 6. Open drawer
+  // ===============================
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden','false');
+  drawer.scrollTop = 0;
 }
 
-// --- Build per-loan date-aligned series ---
-const loanSeries = recomputedLoans.map((l, idx) => {
-  const purchase = new Date(l.purchaseDate);
-  let last = 0;
 
-  const data = dates.map(d => {
-    if (d < purchase) return { date: d, y: null };
 
-    const match = l.adjustedSeries.find(
-      s => s.date.toISOString().slice(0, 7) === d.toISOString().slice(0, 7)
-    );
+function renderAvgRateDrawer() {
+  currentMode = 'kpi';
+  currentLoan = null;
 
-    if (match) last = match.y;
-    return { date: d, y: last };
-  });
+  drawerTitle.textContent = 'Average Interest Rate';
+  drawerSub.textContent = 'Distribution of loan nominal rates';
 
-  return {
-    name: `Loan ${l.id}`,
-    color: loanColors[idx % loanColors.length],
-    data
-  };
-});
+  drawerLegend.style.display = 'none';
+  drawerAmortContainer.innerHTML = '';
+  drawerExtra.innerHTML = '';
+  drawerChartArea.innerHTML = '';
 
-// --- Weighted ROI to date ---
-const total = recomputedLoans.reduce((s, l) => s + l.purchasePrice, 0);
+  if (!loansWithAmort.length) return;
 
-const weightedSeries = dates.map((d, i) => {
-  let w = 0;
-  loanSeries.forEach((ls, idx) => {
-    const roi = ls.data[i].y;
-    if (roi != null) w += roi * recomputedLoans[idx].purchasePrice;
-  });
-  return { date: d, y: w / total };
-});
+  // -------------------------------
+  // Build rate buckets automatically
+  // -------------------------------
+  const rates = loansWithAmort.map(l => l.nominalRate);
+  const minR = Math.min(...rates);
+  const maxR = Math.max(...rates);
 
-// --- Render the corrected chart ---
-createMultiSeriesChart(
-  drawerChartArea,
-  loanSeries,
-  weightedSeries,
-  {
-    weightedColor: "#000",
-    weightedWidth: 2.6,
-    dates
+  const bucketSize = 0.01; // 1% wide
+  const start = Math.floor(minR * 100) / 100;
+  const end = Math.ceil(maxR * 100) / 100;
+
+  const buckets = [];
+  for (let r = start; r < end; r += bucketSize) {
+    const low = r;
+    const high = r + bucketSize;
+    const label = `${(low * 100).toFixed(1)}–${(high * 100).toFixed(1)}%`;
+
+    buckets.push({ label, low, high });
   }
-);
+
+  const labels = buckets.map(b => b.label);
+
+  // -------------------------------
+  // Primary / Secondary KPI numbers
+  // -------------------------------
+  drawerPrimaryTitle.textContent = 'Average Rate';
+  drawerPrimary.textContent = (kpis.avgRate * 100).toFixed(2) + '%';
+
+  drawerSecondaryTitle.textContent = 'Loan Count';
+  drawerSecondary.textContent = loansWithAmort.length;
+
+  // -------------------------------
+  // STACKED COLOR BARCHART
+  // -------------------------------
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const rect = drawerChartArea.getBoundingClientRect();
+  const w = Math.max(360, rect.width || 700);
+  const h = 260;
+
+  const padL = 55, padR = 20, padT = 25, padB = 55;
+
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+  svg.style.display = 'block';
+  drawerChartArea.appendChild(svg);
+
+  // same palette as other KPI drawers
+  const palette = [
+    '#e11d48','#f97316','#f59e0b','#eab308','#84cc16',
+    '#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'
+  ];
+
+  // map each bucket to its loans
+  const bucketLoans = buckets.map(
+    b => loansWithAmort.filter(
+      l => l.nominalRate >= b.low && l.nominalRate < b.high
+    )
+  );
+
+  const maxStack = Math.max(...bucketLoans.map(list => list.length), 1);
+
+  // grid + y labels
+  for (let i = 0; i <= 5; i++) {
+    const y = padT + (h - padT - padB) * (i / 5);
+
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', padL);
+    line.setAttribute('x2', w - padR);
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+    line.setAttribute('stroke', 'var(--border)');
+    line.setAttribute('stroke-opacity', '0.35');
+    svg.appendChild(line);
+
+    const value = maxStack * (1 - i / 5);
+    const lbl = document.createElementNS(svgNS, 'text');
+    lbl.textContent = String(Math.round(value));
+    lbl.setAttribute('x', padL - 10);
+    lbl.setAttribute('y', y + 4);
+    lbl.setAttribute('font-size', '11');
+    lbl.setAttribute('fill', 'var(--text)');
+    lbl.setAttribute('text-anchor', 'end');
+    svg.appendChild(lbl);
+  }
+
+  const barW = (w - padL - padR) / labels.length;
+  const tooltipEl = document.getElementById('tooltip');
+
+  bucketLoans.forEach((loanList, iBucket) => {
+    const x = padL + iBucket * barW;
+    const stackHeight = (loanList.length / maxStack) * (h - padT - padB);
+    let currentY = h - padB;
+
+    // consistent ordering
+    loanList.sort((a, b) => a.id - b.id);
+
+    const bucketCount = loanList.length;
+
+    loanList.forEach((loan) => {
+      const segH = (1 / maxStack) * (h - padT - padB);
+      currentY -= segH;
+
+      const color = palette[(loan.id - 1) % palette.length];
+
+      const seg = document.createElementNS(svgNS, 'rect');
+      seg.setAttribute('x', x + 6);
+      seg.setAttribute('y', currentY);
+      seg.setAttribute('width', barW - 12);
+      seg.setAttribute('height', segH - 1);
+      seg.setAttribute('rx', 3);
+      seg.setAttribute('fill', color);
+      seg.style.cursor = 'pointer';
+
+      // HTML tooltip ABOVE everything
+      seg.addEventListener('mousemove', (ev) => {
+        if (!tooltipEl) return;
+        const countText = bucketCount === 1 ? '1 loan' : `${bucketCount} loans`;
+        const schoolName = loan.school || loan.name;
+        tooltipEl.style.display = 'block';
+        tooltipEl.style.left = ev.clientX + 'px';
+        tooltipEl.style.top = (ev.clientY - 28) + 'px';
+        tooltipEl.innerHTML =
+          `${countText}: ${schoolName}<br>` +
+          `Rate: ${(loan.nominalRate * 100).toFixed(2)}%`;
+      });
+
+      seg.addEventListener('mouseleave', () => {
+        if (tooltipEl) tooltipEl.style.display = 'none';
+      });
+
+      svg.appendChild(seg);
+    });
+
+    // X-axis label
+    const lbl = document.createElementNS(svgNS, 'text');
+    lbl.textContent = labels[iBucket];
+    lbl.setAttribute('x', x + barW / 2);
+    lbl.setAttribute('y', h - padB + 20);
+    lbl.setAttribute('font-size', '11');
+    lbl.setAttribute('fill', 'var(--text)');
+    lbl.setAttribute('text-anchor', 'middle');
+    svg.appendChild(lbl);
+  });
+
+  // -------------------------------
+  // Loan table (color-coded)
+  // -------------------------------
+  drawerExtra.innerHTML = `
+    <div style="margin-top:12px">
+      <h3 style="margin:0 0 8px 0">Loan Rates</h3>
+      <div style="
+        max-height:300px;
+        overflow:auto;
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:6px;
+        background:var(--card);
+      ">
+        <table style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="text-align:left;">Loan</th>
+              <th style="text-align:left;">Purchase Date</th>
+              <th style="text-align:right;">Rate</th>
+              <th style="text-align:right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="avgRateTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  const tbody = document.getElementById('avgRateTableBody');
+  tbody.innerHTML = '';
+
+  loansWithAmort.forEach(l => {
+    const color = palette[(l.id - 1) % palette.length];
+    const row = `
+      <tr>
+        <td style="text-align:left;">
+          <span style="
+            display:inline-block;
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color};
+            margin-right:8px;
+            vertical-align:middle;
+          "></span>
+          ${formatLoanLabel(l)}
+        </td>
+        <td style="text-align:left;">${l.purchaseDate}</td>
+        <td style="text-align:right;color:${color};font-weight:600;">
+          ${(l.nominalRate * 100).toFixed(2)}%
+        </td>
+        <td style="text-align:right;">$${l.purchasePrice.toLocaleString()}</td>
+      </tr>`;
+    tbody.insertAdjacentHTML('beforeend', row);
+  });
+
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+}
+
 
 
 
@@ -1680,219 +1888,7 @@ createMultiSeriesChart(
   drawer.scrollTop = 0;
 }
       
-    function renderDistributionDrawer() {
-  currentMode = 'kpi';
-  currentLoan = null;
 
-  drawerAmortContainer.innerHTML = '';
-  drawerLegend.style.display = 'none';
-  drawerChartArea.innerHTML = '';
-  drawerExtra.innerHTML = '';
-
-  drawerTitle.textContent = 'Total Loans';
-  drawerSub.textContent = 'Loan Purchase Amounts Per Month';
-
-  // same monthly totals as before
-  const totalsObj = getMonthlyTotals(loansWithAmort);  // { '2024-01': 18500, ... }
-  const keys = Object.keys(totalsObj).sort();          // chronological
-  const values = keys.map(k => totalsObj[k]);
-  const totalInv = values.reduce((a, b) => a + b, 0);
-
-  drawerPrimaryTitle.textContent = 'Total Invested';
-  drawerPrimary.textContent = '$' + totalInv.toLocaleString();
-
-  drawerSecondaryTitle.textContent = 'Current Portfolio Value';
-  const portfolioValue = loansWithAmort.reduce((sum, l) => {
-    const row = getCurrentOwnedRoiEntry(l);
-    return sum + (row.loanValue || l.purchasePrice);
-  }, 0);
-  drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
-
-  if (!keys.length) {
-    drawer.classList.add('open');
-    drawer.setAttribute('aria-hidden', 'false');
-    return;
-  }
-
-  // -------------------------------
-  // STACKED BAR CHART (monthly)
-  // -------------------------------
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const rect = drawerChartArea.getBoundingClientRect();
-  const w = Math.max(360, rect.width || 700);
-  const h = 260;
-
-  const padL = 55, padR = 20, padT = 25, padB = 55;
-  const chartH = h - padT - padB;
-
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
-  svg.style.display = 'block';
-  drawerChartArea.appendChild(svg);
-
-  // same palette as the other KPI drawers
-  const palette = [
-    '#e11d48','#f97316','#f59e0b','#eab308','#84cc16',
-    '#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'
-  ];
-
-  // loans per month key (YYYY-MM)
-  const monthLoans = keys.map(key => {
-    return loansWithAmort.filter(l => {
-      if (!l.purchaseDate) return false;
-      const d = new Date(l.purchaseDate);
-      if (Number.isNaN(d.getTime())) return false;
-      const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      return mKey === key;
-    });
-  });
-
-  const maxValue = Math.max(...values, 1);
-  const barW = (w - padL - padR) / keys.length;
-
-  // grid + Y labels ($)
-  for (let i = 0; i <= 5; i++) {
-    const y = padT + chartH * (i / 5);
-
-    const line = document.createElementNS(svgNS, 'line');
-    line.setAttribute('x1', padL);
-    line.setAttribute('x2', w - padR);
-    line.setAttribute('y1', y);
-    line.setAttribute('y2', y);
-    line.setAttribute('stroke', 'var(--border)');
-    line.setAttribute('stroke-opacity', '0.35');
-    svg.appendChild(line);
-
-    const value = maxValue * (1 - i / 5);
-    const lbl = document.createElementNS(svgNS, 'text');
-    lbl.textContent = '$' + Math.round(value).toLocaleString();
-    lbl.setAttribute('x', padL - 10);
-    lbl.setAttribute('y', y + 4);
-    lbl.setAttribute('font-size', '11');
-    lbl.setAttribute('fill', 'var(--text)');
-    lbl.setAttribute('text-anchor', 'end');
-    svg.appendChild(lbl);
-  }
-
-  const tooltipEl = document.getElementById('tooltip');
-
-  keys.forEach((key, i) => {
-    const totalForMonth = totalsObj[key];
-    const loansInMonth = monthLoans[i].slice().sort((a, b) => a.id - b.id);
-    const x = padL + i * barW;
-
-    let currentY = h - padB;
-
-    // stack each loan's amount in this month
-  loansInMonth.forEach((loan, loanIdx) => {
-    const segH = (loan.purchasePrice / maxValue) * chartH;
-    currentY -= segH;
-
-    const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16',
-             '#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
-
-    const color = palette[loanIdx % palette.length];
-
-
-      const seg = document.createElementNS(svgNS, 'rect');
-      seg.setAttribute('x', x + 6);
-      seg.setAttribute('y', currentY);
-      seg.setAttribute('width', barW - 12);
-      seg.setAttribute('height', segH - 1);
-      seg.setAttribute('rx', 3);
-      seg.setAttribute('fill', color);
-      seg.style.cursor = 'pointer';
-
-      seg.addEventListener('mousemove', ev => {
-        if (!tooltipEl) return;
-        const count = loansInMonth.length;
-        const countText = count === 1 ? '1 loan' : `${count} loans`;
-        tooltipEl.style.display = 'block';
-        tooltipEl.style.left = ev.clientX + 'px';
-        tooltipEl.style.top = (ev.clientY - 28) + 'px';
-        tooltipEl.innerHTML =
-          `${key} • ${countText}<br>` +
-          `${formatLoanLabel(loan)} • $${loan.purchasePrice.toLocaleString()}`;
-      });
-
-      seg.addEventListener('mouseleave', () => {
-        if (tooltipEl) tooltipEl.style.display = 'none';
-      });
-
-      svg.appendChild(seg);
-    });
-
-    // X-axis label: month key
-    const lbl = document.createElementNS(svgNS, 'text');
-    lbl.textContent = key;
-    lbl.setAttribute('x', x + barW / 2);
-    lbl.setAttribute('y', h - padB + 20);
-    lbl.setAttribute('font-size', '11');
-    lbl.setAttribute('fill', 'var(--text)');
-    lbl.setAttribute('text-anchor', 'middle');
-    svg.appendChild(lbl);
-  });
-
-  // -------------------------------
-  // Color-coded loans table
-  // -------------------------------
-  drawerExtra.innerHTML = `
-    <h3 style="margin-top:12px;margin-bottom:8px">Loans</h3>
-    <div style="
-      border:1px solid rgba(15,23,42,0.06);
-      border-radius:8px;
-      max-height:260px;
-      overflow:auto;
-      background:var(--card);
-      padding:6px;
-    ">
-      <table style="width:100%;font-size:13px">
-        <thead>
-          <tr>
-            <th style="text-align:left">Loan</th>
-            <th style="text-align:left">Purchase</th>
-            <th style="text-align:right">Amount</th>
-            <th style="text-align:right">Rate</th>
-          </tr>
-        </thead>
-        <tbody id="totalLoansTableBody"></tbody>
-      </table>
-    </div>
-  `;
-
-  const tbody = document.getElementById('totalLoansTableBody');
-  tbody.innerHTML = '';
-
-  loansWithAmort.forEach(l => {
-    const color = palette[(l.id - 1) % palette.length];
-    const row = `
-      <tr>
-        <td style="text-align:left;">
-          <span style="
-            display:inline-block;
-            width:10px;
-            height:10px;
-            border-radius:2px;
-            background:${color};
-            margin-right:8px;
-            vertical-align:middle;
-          "></span>
-          ${formatLoanLabel(l)}
-        </td>
-        <td style="text-align:left;">${l.purchaseDate}</td>
-        <td style="text-align:right;">$${l.purchasePrice.toLocaleString()}</td>
-        <td style="text-align:right;color:${color};font-weight:600;">
-          ${(l.nominalRate * 100).toFixed(2)}%
-        </td>
-      </tr>`;
-    tbody.insertAdjacentHTML('beforeend', row);
-  });
-
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-}
 
       /* ============================================================
    PROJECTED ROI TIMELINE ENGINE
@@ -2296,6 +2292,220 @@ function renderAvgRateDrawer() {
           ${(l.nominalRate * 100).toFixed(2)}%
         </td>
         <td style="text-align:right;">$${l.purchasePrice.toLocaleString()}</td>
+      </tr>`;
+    tbody.insertAdjacentHTML('beforeend', row);
+  });
+
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+}
+
+       function renderDistributionDrawer() {
+  currentMode = 'kpi';
+  currentLoan = null;
+
+  drawerAmortContainer.innerHTML = '';
+  drawerLegend.style.display = 'none';
+  drawerChartArea.innerHTML = '';
+  drawerExtra.innerHTML = '';
+
+  drawerTitle.textContent = 'Total Loans';
+  drawerSub.textContent = 'Loan Purchase Amounts Per Month';
+
+  // same monthly totals as before
+  const totalsObj = getMonthlyTotals(loansWithAmort);  // { '2024-01': 18500, ... }
+  const keys = Object.keys(totalsObj).sort();          // chronological
+  const values = keys.map(k => totalsObj[k]);
+  const totalInv = values.reduce((a, b) => a + b, 0);
+
+  drawerPrimaryTitle.textContent = 'Total Invested';
+  drawerPrimary.textContent = '$' + totalInv.toLocaleString();
+
+  drawerSecondaryTitle.textContent = 'Current Portfolio Value';
+  const portfolioValue = loansWithAmort.reduce((sum, l) => {
+    const row = getCurrentOwnedRoiEntry(l);
+    return sum + (row.loanValue || l.purchasePrice);
+  }, 0);
+  drawerSecondary.textContent = '$' + portfolioValue.toLocaleString();
+
+  if (!keys.length) {
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    return;
+  }
+
+  // -------------------------------
+  // STACKED BAR CHART (monthly)
+  // -------------------------------
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const rect = drawerChartArea.getBoundingClientRect();
+  const w = Math.max(360, rect.width || 700);
+  const h = 260;
+
+  const padL = 55, padR = 20, padT = 25, padB = 55;
+  const chartH = h - padT - padB;
+
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+  svg.style.display = 'block';
+  drawerChartArea.appendChild(svg);
+
+  // same palette as the other KPI drawers
+  const palette = [
+    '#e11d48','#f97316','#f59e0b','#eab308','#84cc16',
+    '#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'
+  ];
+
+  // loans per month key (YYYY-MM)
+  const monthLoans = keys.map(key => {
+    return loansWithAmort.filter(l => {
+      if (!l.purchaseDate) return false;
+      const d = new Date(l.purchaseDate);
+      if (Number.isNaN(d.getTime())) return false;
+      const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      return mKey === key;
+    });
+  });
+
+  const maxValue = Math.max(...values, 1);
+  const barW = (w - padL - padR) / keys.length;
+
+  // grid + Y labels ($)
+  for (let i = 0; i <= 5; i++) {
+    const y = padT + chartH * (i / 5);
+
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', padL);
+    line.setAttribute('x2', w - padR);
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+    line.setAttribute('stroke', 'var(--border)');
+    line.setAttribute('stroke-opacity', '0.35');
+    svg.appendChild(line);
+
+    const value = maxValue * (1 - i / 5);
+    const lbl = document.createElementNS(svgNS, 'text');
+    lbl.textContent = '$' + Math.round(value).toLocaleString();
+    lbl.setAttribute('x', padL - 10);
+    lbl.setAttribute('y', y + 4);
+    lbl.setAttribute('font-size', '11');
+    lbl.setAttribute('fill', 'var(--text)');
+    lbl.setAttribute('text-anchor', 'end');
+    svg.appendChild(lbl);
+  }
+
+  const tooltipEl = document.getElementById('tooltip');
+
+  keys.forEach((key, i) => {
+    const totalForMonth = totalsObj[key];
+    const loansInMonth = monthLoans[i].slice().sort((a, b) => a.id - b.id);
+    const x = padL + i * barW;
+
+    let currentY = h - padB;
+
+    // stack each loan's amount in this month
+  loansInMonth.forEach((loan, loanIdx) => {
+    const segH = (loan.purchasePrice / maxValue) * chartH;
+    currentY -= segH;
+
+    const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16',
+             '#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
+
+    const color = palette[loanIdx % palette.length];
+
+
+      const seg = document.createElementNS(svgNS, 'rect');
+      seg.setAttribute('x', x + 6);
+      seg.setAttribute('y', currentY);
+      seg.setAttribute('width', barW - 12);
+      seg.setAttribute('height', segH - 1);
+      seg.setAttribute('rx', 3);
+      seg.setAttribute('fill', color);
+      seg.style.cursor = 'pointer';
+
+      seg.addEventListener('mousemove', ev => {
+        if (!tooltipEl) return;
+        const count = loansInMonth.length;
+        const countText = count === 1 ? '1 loan' : `${count} loans`;
+        tooltipEl.style.display = 'block';
+        tooltipEl.style.left = ev.clientX + 'px';
+        tooltipEl.style.top = (ev.clientY - 28) + 'px';
+        tooltipEl.innerHTML =
+          `${key} • ${countText}<br>` +
+          `${formatLoanLabel(loan)} • $${loan.purchasePrice.toLocaleString()}`;
+      });
+
+      seg.addEventListener('mouseleave', () => {
+        if (tooltipEl) tooltipEl.style.display = 'none';
+      });
+
+      svg.appendChild(seg);
+    });
+
+    // X-axis label: month key
+    const lbl = document.createElementNS(svgNS, 'text');
+    lbl.textContent = key;
+    lbl.setAttribute('x', x + barW / 2);
+    lbl.setAttribute('y', h - padB + 20);
+    lbl.setAttribute('font-size', '11');
+    lbl.setAttribute('fill', 'var(--text)');
+    lbl.setAttribute('text-anchor', 'middle');
+    svg.appendChild(lbl);
+  });
+
+  // -------------------------------
+  // Color-coded loans table
+  // -------------------------------
+  drawerExtra.innerHTML = `
+    <h3 style="margin-top:12px;margin-bottom:8px">Loans</h3>
+    <div style="
+      border:1px solid rgba(15,23,42,0.06);
+      border-radius:8px;
+      max-height:260px;
+      overflow:auto;
+      background:var(--card);
+      padding:6px;
+    ">
+      <table style="width:100%;font-size:13px">
+        <thead>
+          <tr>
+            <th style="text-align:left">Loan</th>
+            <th style="text-align:left">Purchase</th>
+            <th style="text-align:right">Amount</th>
+            <th style="text-align:right">Rate</th>
+          </tr>
+        </thead>
+        <tbody id="totalLoansTableBody"></tbody>
+      </table>
+    </div>
+  `;
+
+  const tbody = document.getElementById('totalLoansTableBody');
+  tbody.innerHTML = '';
+
+  loansWithAmort.forEach(l => {
+    const color = palette[(l.id - 1) % palette.length];
+    const row = `
+      <tr>
+        <td style="text-align:left;">
+          <span style="
+            display:inline-block;
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color};
+            margin-right:8px;
+            vertical-align:middle;
+          "></span>
+          ${formatLoanLabel(l)}
+        </td>
+        <td style="text-align:left;">${l.purchaseDate}</td>
+        <td style="text-align:right;">$${l.purchasePrice.toLocaleString()}</td>
+        <td style="text-align:right;color:${color};font-weight:600;">
+          ${(l.nominalRate * 100).toFixed(2)}%
+        </td>
       </tr>`;
     tbody.insertAdjacentHTML('beforeend', row);
   });
