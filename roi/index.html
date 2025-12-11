@@ -691,14 +691,14 @@ html[data-theme="dark"] .drawer-chart{
 
     // Return updated loan object
     return {
-      ...l,
-      amort: { schedule: amortSchedule },
-      scheduleWithOwnership,
-      cumSchedule,
-      balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
-      roiSeries,
-      miniPts: roiSeries.slice(0, 24).map(r => ({ y: r.roi, ownershipDate: r.ownershipDate }))
-    };
+    ...l,
+    amort: { schedule: amortSchedule },
+    scheduleWithOwnership,
+    cumSchedule,
+    balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
+    roiSeries
+  };
+
       });
 
     /* -------------------------
@@ -1292,7 +1292,11 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       // render mini chart: cumulative ROI points
       const svg = tile.querySelector('svg.sparkline');
       const w=170,h=48,pad=6;
-      const pts = loan.miniPts && loan.miniPts.length ? loan.miniPts : loan.roiSeries.map(s=>({ y: s.roi, ownershipDate: s.ownershipDate }));
+      const pts = loan.roiSeries.map(s => ({
+      y: s.roi,
+      ownershipDate: s.ownershipDate
+    }));
+
       const ys = pts.map(p=>p.y); const minY=Math.min(...ys); const maxY=Math.max(...ys); const rangeY=Math.max(1e-6,maxY-minY);
       const stepX=(w-pad*2)/Math.max(1,pts.length-1);
       let d=''; pts.forEach((p,i)=>{ const x=pad + i*stepX; const y = pad + (h - pad*2) - ((p.y - minY)/rangeY)*(h - pad*2); d += (i===0?('M '+x+' '+y):(' L '+x+' '+y)); });
