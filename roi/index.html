@@ -1418,8 +1418,8 @@ function buildHistoricalRoiTimeline(loans) {
 
     const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
 
-    const key = row.loanDate.toISOString().slice(0, 7);
-    roiMap[key] = roi;
+    const key = row.loanDate.toISOString().slice(0, 10);   // YYYY-MM-DD
+roiMap[key] = roi;
 });
 
 
@@ -1433,9 +1433,9 @@ function buildHistoricalRoiTimeline(loans) {
       return { date, y: null };
       }
 
-    const key = date.toISOString().slice(0, 7);
+    const key = date.toISOString().slice(0, 10);
+    if (key in roiMap) lastKnownROI = roiMap[key];
 
-    if (key in roiMap) {
     lastKnownROI = roiMap[key];
     }
 
