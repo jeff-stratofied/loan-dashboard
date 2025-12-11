@@ -1672,6 +1672,7 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Total Principal";
       drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
       resetDrawerContent();
+      createDrawerStackedChart(
       drawerChartArea,
         portfolioViews.earningsSeriesAll,
         null
@@ -1690,6 +1691,7 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Months Counted";
       drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
       resetDrawerContent();
+      createDrawerStackedChart(
       drawerChartArea,
         portfolioViews.earningsSeriesAll,
         null
@@ -1708,6 +1710,7 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Total Loans";
       drawerSecondary.textContent = `${loans.length}`;
       resetDrawerContent();
+      createDrawerStackedChart(
       drawerChartArea,
         portfolioViews.earningsSeriesAll,
         null
