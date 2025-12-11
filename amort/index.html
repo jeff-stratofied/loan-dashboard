@@ -522,7 +522,7 @@ function buildStaticLoans() {
 
     return {
       ...l,
-      loanName: "Loan " + l.id,
+      loanName: "Loan " + l.loanId,
       loanStartDate: l.purchaseDate,
       amort,
       cumSchedule,
@@ -629,7 +629,7 @@ if (USE_DYNAMIC_DATA) {
 
   <!-- Line 2: School (bold) -->
   <div class="loan-name" style="font-weight:700;font-size:13px;">
-    ${loan.school || ('School ' + loan.id)}
+    ${loan.school || ('School ')}
   </div>
 
   <!-- Line 3: Rate · Term · Matures -->
@@ -650,7 +650,7 @@ if (USE_DYNAMIC_DATA) {
 
   <!-- Line 4: Loan ID -->
   <div class="loan-sub">
-    Loan ${loan.id}
+    Loan ${loan.loanId}
   </div>
 </div>
 
@@ -1307,7 +1307,7 @@ drawerBody.scrollTop = 0;
               </thead>
               <tbody>
                 ${allLoans.map(l => `<tr>
-                  <td style="text-align:left">Loan ${l.id}</td>
+                  <td style="text-align:left">Loan ${l.loanId}</td>
                   <td style="text-align:left">${l.purchaseDate}</td>
                   <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
                   <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
@@ -1601,7 +1601,7 @@ drawerBody.scrollTop = 0;
               <thead><tr><th>Loan</th><th>Rate</th><th>Purchase</th><th style="text-align:right">Balance</th></tr></thead>
               <tbody>
                 ${sorted.map(l => `<tr>
-                  <td style="text-align:left">Loan ${l.id}</td>
+                  <td style="text-align:left">Loan ${l.loanId}</td>
                   <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
                   <td style="text-align:left">${l.purchaseDate}</td>
                   <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
@@ -1849,7 +1849,7 @@ for (let i = 0; i < months.length; i += skip) {
         const csv = amortToCSV(currentLoan);
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `loan-${currentLoan.id}-amort.csv`;
+        const a = document.createElement('a'); a.href = url; a.download = `loan-${currentLoan.loanId}-amort.csv`;
         document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
       } else {
         alert('Download CSV is supported for individual loan drawers only.');
