@@ -311,26 +311,32 @@ const schoolOptions = [
 ];
 
 
-  /* Normalize loan */
   function normalizeLoan(l, idx) {
-  return {
-    // NEW: Always assign a random ID for new loans, keep existing for loaded ones
-    loanId: l.loanId ?? generateLoanId(),
 
-    // You enter loanName manually, so default to empty string
+  // If backend ID is numeric (old system), replace it with a new random ID
+  let newId;
+  if (!l.loanId || /^[0-9]+$/.test(String(l.loanId))) {
+    newId = generateLoanId();
+  } else {
+    newId = l.loanId; // keep existing random ID
+  }
+
+  return {
+    loanId: newId,
+
+    // loanName stays independent
     loanName: l.loanName ?? "",
 
     school: l.school ?? "Penn State",
     loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "",
     purchaseDate: l.purchaseDate ?? "",
 
-    // Keep your existing principal normalization logic exactly as-is
     principal:
       l.principal === undefined
         ? 0
         : l.principal === ""
-            ? currentLoans[idx]?.principal ?? 0
-            : Number(l.principal),
+          ? currentLoans[idx]?.principal ?? 0
+          : Number(l.principal),
 
     purchasePrice: Number(l.purchasePrice ?? 0),
     rate: Number(l.rate ?? 0),
@@ -338,6 +344,7 @@ const schoolOptions = [
     graceYears: Number(l.graceYears ?? 0)
   };
 }
+
 
 
   /* Render table */
