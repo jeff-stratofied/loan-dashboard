@@ -1652,7 +1652,18 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Total Interest to Date";
       drawerSecondary.textContent = `$${kpis.totalInterestToDate.toFixed(2)}`;
       resetDrawerContent();
-      renderKPI1Chart(loansWithEarnings, "drawerChartArea");
+      // Build portfolio-wide stacked series for KPI charts
+      const mergedSeries = loansWithEarnings
+      .flatMap(l => l.earningsSchedule)
+      .sort((a,b) => a.loanDate - b.loanDate);
+
+      createDrawerStackedChart(
+      drawerChartArea,
+      mergedSeries,
+      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+    );
+
+
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI1Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
@@ -1667,7 +1678,16 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Total Principal";
       drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
       resetDrawerContent();
-      renderKPI2Chart(loansWithEarnings, "drawerChartArea");
+      // Build portfolio-wide stacked series for KPI charts
+      const mergedSeries = loansWithEarnings
+      .flatMap(l => l.earningsSchedule)
+      .sort((a,b) => a.loanDate - b.loanDate);
+
+      createDrawerStackedChart(
+      drawerChartArea,
+      mergedSeries,
+      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+    );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI2Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
@@ -1682,7 +1702,16 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Months Counted";
       drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
       resetDrawerContent();
-      renderKPI3Chart(loansWithEarnings, "drawerChartArea");
+      // Build portfolio-wide stacked series for KPI charts
+      const mergedSeries = loansWithEarnings
+      .flatMap(l => l.earningsSchedule)
+      .sort((a,b) => a.loanDate - b.loanDate);
+
+      createDrawerStackedChart(
+      drawerChartArea,
+      mergedSeries,
+      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+    );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI3Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
@@ -1697,13 +1726,43 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Total Loans";
       drawerSecondary.textContent = `${loans.length}`;
       resetDrawerContent();
-      renderKPI4Chart(loansWithEarnings, "drawerChartArea");
+      // Build portfolio-wide stacked series for KPI charts
+      const mergedSeries = loansWithEarnings
+      .flatMap(l => l.earningsSchedule)
+      .sort((a,b) => a.loanDate - b.loanDate);
+
+      createDrawerStackedChart(
+      drawerChartArea,
+      mergedSeries,
+      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+    );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI4Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
     }
 
+    // ===========================
+    // Drawer global variables
+    // ===========================
+    let currentLoan = null;
+    let currentMode = null;
     
+    // --------------------------
+    // Tile + Drawer Element References (Earnings)
+    // --------------------------
+    const grid = document.getElementById("loanGrid");
+    const drawer = document.getElementById("drawer");
+    const drawerTitle = document.getElementById("drawerTitle");
+    const drawerSub = document.getElementById("drawerSub");
+    const drawerPrimaryTitle = document.getElementById("drawerPrimaryTitle");
+    const drawerPrimary = document.getElementById("drawerPrimary");
+    const drawerSecondaryTitle = document.getElementById("drawerSecondaryTitle");
+    const drawerSecondary = document.getElementById("drawerSecondary");
+    const drawerChartArea = document.getElementById("drawerChartArea");
+    const drawerExtra = document.getElementById("drawerExtra");
+    const amortBody = document.getElementById("amortBody");
+    const closeBtn = document.getElementById("closeBtn");
+
 
     function renderLoanTiles() {
       grid.innerHTML = "";
@@ -1721,7 +1780,7 @@ svg.appendChild(vline);
         const atCurrent = hasSchedule
           ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
           : fallbackRow;
-        const currentMonthLabel = formatMonthYear(atCurrent.ownershipDate || atCurrent.loanDate);
+        const currentMonthLabel = formatMonthYear(new Date());
 
         const tile = document.createElement("div");
         tile.className = "tile";
