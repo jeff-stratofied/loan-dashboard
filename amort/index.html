@@ -537,10 +537,12 @@ if (USE_DYNAMIC_DATA) {
   let apiLoaded = await loadLoans();  // { loans, sha }
   apiLoans = apiLoaded.map(l => ({
   ...l,
-  loanId: l.loanId ?? l.id,   // <-- FIX
-  id: l.id,                   // leave numeric database id alone
+  id: String(l.loanId),     // what tiles should display
+loanId: String(l.loanId), // keep consistent
+
   loanName: l.loanName || ""
 }));
+
 
 apiLoans = attachSchedules(apiLoans);
 
