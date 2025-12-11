@@ -1409,11 +1409,19 @@ function buildHistoricalRoiTimeline(loans) {
 
     // Map ownershipDate -> ROI for quick lookup
     const roiMap = {};
-    loan.roiSeries.forEach(entry => {
-      if (entry.ownershipDate) {
-        roiMap[new Date(entry.ownershipDate).toISOString().slice(0,7)] = entry.roi;
-      }
-    });
+    loan.cumSchedule.forEach(row => {
+    if (!row.isOwned) return;
+
+    const realized = (row.cumPrincipal + row.cumInterest) - row.cumFees;
+    const unrealized = row.balance * 0.95;
+    const loanValue = realized + unrealized;
+
+    const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
+
+    const key = row.loanDate.toISOString().slice(0, 7);
+    roiMap[key] = roi;
+});
+
 
     // Build calendar-aligned ROI (null before purchase)
     let lastKnownROI = 0;
