@@ -1923,11 +1923,20 @@ function buildProjectedRoiTimeline(loans) {
     const purchase = new Date(loan.purchaseDate);
     const roiMap = {};
 
-    loan.roiSeries.forEach(entry => {
-      if (entry.ownershipDate) {
-        roiMap[new Date(entry.ownershipDate).toISOString().slice(0,7)] = entry.roi;
-      }
-    });
+    // Recompute ROI using corrected loan value formula
+loan.cumSchedule.forEach(r => {
+  if (!r.isOwned) return;
+
+  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
+  const unrealized = r.balance * 0.95;
+  const loanValue = realized + unrealized;
+
+  const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
+
+  const key = r.loanDate.toISOString().slice(0, 7);
+  roiMap[key] = roi;
+});
+
 
     // Determine the very first ROI value for this loan
 const roiKeys = Object.keys(roiMap).sort();
