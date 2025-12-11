@@ -519,7 +519,6 @@ html[data-theme="dark"] .drawer-chart{
 
     <!-- The ROI table wrapper -->
     <div id="drawerAmortContainer">
-      <h3 style="margin-top:8px">ROI by Month</h3>
 
       <div class="amort-wrap" id="amortWrap">
         <table>
@@ -1385,7 +1384,7 @@ function openDrawerForLoan(loan){
       drawerTitle.textContent =
         `Loan ${loan.id} — ${loan.name} (${loan.school || "No school"})`;
       drawerSub.textContent = 'Purchased: ' + loan.purchaseDate + ' • Balance at Purchase: $' + loan.balanceAtPurchase.toLocaleString();
-      drawerPrimaryTitle.textContent = 'Purchase Price'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
+      drawerPrimaryTitle.textContent = 'Orig Loan Amount'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
       drawerExtra.innerHTML=''; drawerLegend.style.display='flex'; drawerLegend.innerHTML = '<div class=\"item\"><span class=\"sw\" style=\"background:#0f172a\"></span>Balance</div><div class=\"item\"><span class=\"sw\" style=\"background:#0ea5e9\"></span>ROI</div>';
 
