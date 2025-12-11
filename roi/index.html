@@ -1848,48 +1848,6 @@ function renderAvgRateDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
 }
 
-
-
-
-
-   // --- Build ROI table (reuse existing helper) ---
-  drawerExtra.innerHTML = `
-    <div style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">ROI to Date — All Loans</h3>
-      <div style="
-        max-height:300px;
-        overflow:auto;
-        border:1px solid var(--border);
-        border-radius:8px;
-        padding:6px;
-        background:var(--card);
-      ">
-        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
-          <thead>
-            <tr>
-              <th style="text-align:left;">Loan</th>
-              <th style="text-align:left;">Purchase Date</th>
-              <th style="text-align:left;">Maturity Date</th>
-              <th style="text-align:right;">ROI to Date</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  `;
-
-  // fill rows using the helper you already defined
-  populateROILoanTable();
-
-  // open drawer (inline, since there is no openDrawer() helper)
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  drawer.scrollTop = 0;
-}
-      
-
-
       /* ============================================================
    PROJECTED ROI TIMELINE ENGINE
    Extends to each loan's maturity (NOT to today's date)
