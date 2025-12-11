@@ -1423,9 +1423,11 @@ function buildHistoricalRoiTimeline(loans) {
 });
 
 
-    // Build calendar-aligned ROI (null before purchase)
-    let lastKnownROI = 0;
-
+   // Build calendar-aligned ROI (null before purchase)
+    // Initialize to the ROI of the first owned month to avoid a spike
+    const roiKeys = Object.keys(roiMap).sort();
+    let lastKnownROI = roiKeys.length ? roiMap[roiKeys[0]] : 0;
+    
     const data = dates.map(date => {
       if (date < purchase) {
       return { date, y: null };
