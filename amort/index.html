@@ -534,8 +534,13 @@ function buildStaticLoans() {
 async function init() {
 if (USE_DYNAMIC_DATA) {
   let apiLoaded = await loadLoans();  // { loans, sha }
-  let apiLoans = apiLoaded;           // already the array
-  apiLoans = attachSchedules(apiLoans);
+  let apiLoans = apiLoaded.map(l => ({
+  ...l,
+  id: l.loanId,              // <-- FIX: use loanId as id everywhere
+  loanName: l.loanName || "", 
+}));
+apiLoans = attachSchedules(apiLoans);
+
 
   allLoans = apiLoans.map(l => {
     // ADD cumulative values directly into amort.schedule
@@ -957,7 +962,7 @@ function computeKPIs(list) {
       currentMode = 'loan';
       currentLoan = loan;
 
-     drawerTitle.textContent = `${loan.name} — ${loan.school}`;
+     drawerTitle.textContent = `${loan.loanName} — ${loan.school}`;
       drawerSub.textContent = `Purchased: ${loan.purchaseDate}`;
       drawerPrimaryTitle.textContent = 'Purchase Price';
       drawerSecondaryTitle.textContent = 'Rate';
