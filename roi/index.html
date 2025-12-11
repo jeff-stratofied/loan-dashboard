@@ -629,7 +629,9 @@ html[data-theme="dark"] .drawer-chart{
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
       const formattedLoans = loans.map(l => ({
         ...l,
-        purchasePrice: Number(l.principal ?? l.purchasePrice ?? 0),
+        purchasePrice: Number(l.purchasePrice ?? 0),
+        nominalRate: Number(l.nominalRate ?? 0)
+
         nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
       }));
 
