@@ -1652,11 +1652,17 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Total Interest to Date";
       drawerSecondary.textContent = `$${kpis.totalInterestToDate.toFixed(2)}`;
       resetDrawerContent();
+      // Build portfolio-wide stacked series for KPI charts
+      const mergedSeries = loansWithEarnings
+      .flatMap(l => l.earningsSchedule)
+      .sort((a,b) => a.loanDate - b.loanDate);
+
       createDrawerStackedChart(
       drawerChartArea,
-        portfolioViews.earningsSeriesAll,
-        null
-       );
+      mergedSeries,
+      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+    );
+
 
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI1Table(loansWithEarnings, "drawerKpiTable");
@@ -1672,11 +1678,16 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Total Principal";
       drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
       resetDrawerContent();
+      // Build portfolio-wide stacked series for KPI charts
+      const mergedSeries = loansWithEarnings
+      .flatMap(l => l.earningsSchedule)
+      .sort((a,b) => a.loanDate - b.loanDate);
+
       createDrawerStackedChart(
       drawerChartArea,
-        portfolioViews.earningsSeriesAll,
-        null
-       );
+      mergedSeries,
+      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+    );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI2Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
@@ -1691,11 +1702,16 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Months Counted";
       drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
       resetDrawerContent();
+      // Build portfolio-wide stacked series for KPI charts
+      const mergedSeries = loansWithEarnings
+      .flatMap(l => l.earningsSchedule)
+      .sort((a,b) => a.loanDate - b.loanDate);
+
       createDrawerStackedChart(
       drawerChartArea,
-        portfolioViews.earningsSeriesAll,
-        null
-       );
+      mergedSeries,
+      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+    );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI3Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
@@ -1710,11 +1726,16 @@ svg.appendChild(vline);
       drawerSecondaryTitle.textContent = "Total Loans";
       drawerSecondary.textContent = `${loans.length}`;
       resetDrawerContent();
+      // Build portfolio-wide stacked series for KPI charts
+      const mergedSeries = loansWithEarnings
+      .flatMap(l => l.earningsSchedule)
+      .sort((a,b) => a.loanDate - b.loanDate);
+
       createDrawerStackedChart(
       drawerChartArea,
-        portfolioViews.earningsSeriesAll,
-        null
-       );
+      mergedSeries,
+      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+    );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI4Table(loansWithEarnings, "drawerKpiTable");
       openDrawer();
