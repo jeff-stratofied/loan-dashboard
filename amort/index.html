@@ -436,7 +436,8 @@ html[data-theme="dark"] .close-btn {
     let USE_DYNAMIC_DATA = true;   // stays false until Step 7
     let allLoans = [];              // unified variable replacing allLoans
     let cachedKPIs = null;
-    
+    let apiLoans = [];   // <-- REQUIRED so init() can assign to it
+
    
     /* ============================
        Loan data (dates spread across ~6 months)
