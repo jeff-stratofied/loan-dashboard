@@ -628,7 +628,7 @@ html[data-theme="dark"] .drawer-chart{
       const TODAY = new Date();
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
 
-      const loansWithAmort = formattedLoans.map(l => {
+      const loansWithAmort = loans.map(l => {
         // compute amortization schedule for this loan
     // -------------------------------------
     // USE REAL AMORT ENGINE FROM loanEngine.js
