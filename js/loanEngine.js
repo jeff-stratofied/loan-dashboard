@@ -17,7 +17,8 @@ export async function loadLoans() {
   const items = Array.isArray(raw?.loans) ? raw.loans : [];
 
   return items.map((l, idx) => {
-    const id = Number(l.loanId ?? idx + 1);
+    const id = String(l.loanId ?? (idx + 1));   // ALWAYS KEEP loanId as a string
+
 
     // Normalize names
     const loanName =
