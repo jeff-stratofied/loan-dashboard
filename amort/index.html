@@ -537,8 +537,8 @@ if (USE_DYNAMIC_DATA) {
   let apiLoaded = await loadLoans();  // { loans, sha }
   apiLoans = apiLoaded.map(l => ({
   ...l,
-  id: String(l.loanId),     // what tiles should display
-loanId: String(l.loanId), // keep consistent
+id: String(l.loanId ?? l.id),      // fallback to numeric id if loanId missing
+loanId: String(l.loanId ?? l.id),  // ensures no undefined
 
   loanName: l.loanName || ""
 }));
