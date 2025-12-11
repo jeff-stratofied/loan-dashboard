@@ -10,7 +10,7 @@
       "rate": 0.0883,
       "termYears": 10,
       "graceYears": 1,
-      "loanId": 1
+      "loanId": "7EO4B3SHJY"
     },
     {
       "loanName": "OSU 2024 8.00",
@@ -22,7 +22,7 @@
       "rate": 0.08,
       "termYears": 8,
       "graceYears": 0.5,
-      "loanId": 2
+      "loanId": "C0RAT4N23A"
     },
     {
       "loanName": "PIT 2024 8.25",
@@ -34,7 +34,7 @@
       "rate": 0.0825,
       "termYears": 12,
       "graceYears": 1.5,
-      "loanId": 3
+      "loanId": "HCZB8N2L8Z"
     },
     {
       "loanName": "CMU 2024 9.50",
@@ -46,7 +46,7 @@
       "rate": 0.095,
       "termYears": 9,
       "graceYears": 1,
-      "loanId": 4
+      "loanId": "0MK5TFLK8O"
     },
     {
       "loanName": "MICH 2024 9.00",
@@ -58,7 +58,7 @@
       "rate": 0.09,
       "termYears": 10,
       "graceYears": 0.5,
-      "loanId": 5
+      "loanId": "GXCZPI4VJC"
     },
     {
       "loanName": "UCLA 2025 7.30",
@@ -70,7 +70,7 @@
       "rate": 0.073,
       "termYears": 5,
       "graceYears": 0,
-      "loanId": 6
+      "loanId": "QVGKDMCI3U"
     },
     {
       "loanName": "USC 2025 7.90",
@@ -82,7 +82,7 @@
       "rate": 0.079,
       "termYears": 7,
       "graceYears": 0.5,
-      "loanId": 7
+      "loanId": "BZV8U2T3WU"
     },
     {
       "loanName": "PSU 2025 8.10",
@@ -94,7 +94,7 @@
       "rate": 0.081,
       "termYears": 9,
       "graceYears": 1,
-      "loanId": 8
+      "loanId": "HXLBADG3MP"
     },
     {
       "loanName": "U-M 2025 8.50",
@@ -106,7 +106,7 @@
       "rate": 0.085,
       "termYears": 8,
       "graceYears": 0.5,
-      "loanId": 9
+      "loanId": "S8RIL31Z34"
     },
     {
       "loanName": "NYU 2025 8.70",
@@ -118,7 +118,7 @@
       "rate": 0.087,
       "termYears": 10,
       "graceYears": 1,
-      "loanId": 10
+      "loanId": "X0S5QZ4WHE"
     },
     {
       "loanName": "WCC 2014 5.00",
@@ -130,7 +130,7 @@
       "rate": 0.05,
       "termYears": 10,
       "graceYears": 4,
-      "loanId": 11
+      "loanId": "48FUE6FARN"
     },
     {
       "loanName": "WCC 2017 5.00",
@@ -142,7 +142,7 @@
       "rate": 0.05,
       "termYears": 15,
       "graceYears": 4,
-      "loanId": 12
+      "loanId": "7Q75NE4HOQ"
     }
   ]
 }
