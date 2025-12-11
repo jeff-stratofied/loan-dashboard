@@ -627,13 +627,6 @@ html[data-theme="dark"] .drawer-chart{
     async function initROI() {
       const TODAY = new Date();
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-      const formattedLoans = loans.map(l => ({
-        ...l,
-        purchasePrice: Number(l.purchasePrice ?? 0),
-        nominalRate: Number(l.nominalRate ?? 0)
-
-        nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-      }));
 
       const loansWithAmort = formattedLoans.map(l => {
         // compute amortization schedule for this loan
