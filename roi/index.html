@@ -1551,18 +1551,86 @@ function renderTPVDrawer() {
   drawerSecondaryTitle.textContent = "Portfolio Value";
   drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
 
-const timeline = buildHistoricalRoiTimeline(loansWithAmort);
+// --- Recompute per-loan ROI series using corrected formula ---
+const recomputedLoans = loansWithAmort.map(l => {
+  const purchase = Number(l.purchasePrice);
+  const series = l.cumSchedule
+    .filter(r => r.isOwned)
+    .map(r => {
+      const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
+      const unrealized = r.balance * 0.95;
+      const loanValue = realized + unrealized;
+      const roi = (loanValue - purchase) / purchase;
 
+      return {
+        date: r.loanDate,
+        y: roi
+      };
+    });
+
+  return { ...l, adjustedSeries: series };
+});
+
+// --- Build a unified calendar-aligned timeline ---
+const earliest = new Date(
+  Math.min(...recomputedLoans.map(l => new Date(l.purchaseDate)))
+);
+
+const today = new Date();
+const dates = [];
+const cursor = new Date(earliest);
+while (cursor <= today) {
+  dates.push(new Date(cursor));
+  cursor.setMonth(cursor.getMonth() + 1);
+}
+
+// --- Build per-loan date-aligned series ---
+const loanSeries = recomputedLoans.map((l, idx) => {
+  const purchase = new Date(l.purchaseDate);
+  let last = 0;
+
+  const data = dates.map(d => {
+    if (d < purchase) return { date: d, y: null };
+
+    const match = l.adjustedSeries.find(
+      s => s.date.toISOString().slice(0, 7) === d.toISOString().slice(0, 7)
+    );
+
+    if (match) last = match.y;
+    return { date: d, y: last };
+  });
+
+  return {
+    name: `Loan ${l.id}`,
+    color: loanColors[idx % loanColors.length],
+    data
+  };
+});
+
+// --- Weighted ROI to date ---
+const total = recomputedLoans.reduce((s, l) => s + l.purchasePrice, 0);
+
+const weightedSeries = dates.map((d, i) => {
+  let w = 0;
+  loanSeries.forEach((ls, idx) => {
+    const roi = ls.data[i].y;
+    if (roi != null) w += roi * recomputedLoans[idx].purchasePrice;
+  });
+  return { date: d, y: w / total };
+});
+
+// --- Render the corrected chart ---
 createMultiSeriesChart(
   drawerChartArea,
-  timeline.perLoanSeries,
-  timeline.weightedSeries,
+  loanSeries,
+  weightedSeries,
   {
     weightedColor: "#000",
     weightedWidth: 2.6,
-    dates: timeline.dates
+    dates
   }
 );
+
 
 
 
