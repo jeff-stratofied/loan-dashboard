@@ -19,9 +19,8 @@ async function handleFetch(request) {
       const raw = await res.json();
 
       const parsed = (raw.loans || raw).map(l => ({
-        id: l.loanId,     // ALWAYS use the random loanId supplied from Admin
-loanId: l.loanId, // expose it explicitly as well
-
+        id: l.loanId,               // <-- FIXED
+        loanId: l.loanId,           // <-- FIXED
         name: l.loanName ?? l.name,
         school: l.school,
         purchaseDate: l.purchaseDate,
@@ -31,6 +30,7 @@ loanId: l.loanId, // expose it explicitly as well
         termYears: Number(l.termYears),
         graceYears: Number(l.graceYears)
       }));
+
 
     return Response.json(parsed);
   }
