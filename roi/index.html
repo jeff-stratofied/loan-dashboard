@@ -911,7 +911,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     label.setAttribute("font-size", "10");
     label.setAttribute("fill", "var(--muted)");
     label.style.pointerEvents = "none";
-    label.textContent = (value * 1000).toFixed(1) + "%";
+    label.textContent = (value * 100).toFixed(1) + "%";
     svg.appendChild(label);
   }
 
