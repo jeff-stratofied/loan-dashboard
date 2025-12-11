@@ -832,7 +832,13 @@ html[data-theme="dark"] .drawer-chart{
         tooltip.style.top = (rect.top + cy - 28) + 'px';
         tooltip.innerHTML = (opts.labelFn ? opts.labelFn(point, idx) : (point.ownershipDate ? `Date: ${formatDate(point.ownershipDate)} • ${(point.y * 100).toFixed(2)}%` : (`M${point.x} • ${(point.y * 100).toFixed(2)}%`)));
       });
-      svg.addEventListener('mouseleave', function () { hoverG.innerHTML = ''; tooltip.style.display = 'none'; });
+     svg.addEventListener('mouseleave', function () {
+    hoverG.innerHTML = '';
+    tooltip.style.display = 'none';
+    vLine.setAttribute('x1', -9999); 
+    vLine.setAttribute('x2', -9999);
+});
+
       containerEl.appendChild(svg); return svg;
     }
     function smoothPathFromPoints(points) {
