@@ -439,27 +439,32 @@ html[data-theme="dark"] .drawer-chart{
     </div>
     <div class="legend" id="drawerLegend" style="display:none"></div>
 
-    <!-- Primary / Secondary cards (amort exact structure, IDs preserved) -->
-    <div class="info-card">
-  <div class="muted-small" id="drawerPrimaryTitle"></div>
-  <div class="main-val" id="drawerPrimary"></div>
+   <!-- Correct Primary / Secondary cards block (matches amort exactly) -->
+<div style="display:flex; gap:10px; margin-bottom:12px;">
+
+  <div style="
+    flex:1;
+    background:var(--surface);
+    padding:10px;
+    border-radius:8px;
+    border:1px solid var(--border);
+  ">
+    <div class="muted-small" id="drawerPrimaryTitle"></div>
+    <div class="main-val" id="drawerPrimary"></div>
+  </div>
+
+  <div style="
+    width:120px;
+    background:var(--surface);
+    padding:10px;
+    border-radius:8px;
+    border:1px solid var(--border);
+  ">
+    <div class="muted-small" id="drawerSecondaryTitle"></div>
+    <div class="main-val" id="drawerSecondary"></div>
+  </div>
+
 </div>
-
-<div class="info-card small">
-  <div class="muted-small" id="drawerSecondaryTitle"></div>
-  <div class="main-val" id="drawerSecondary"></div>
-</div>
-
-      <div style="flex:1;background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">
-        <div class="muted-small" id="drawerPrimaryTitle">Primary</div>
-        <div id="drawerPrimary" class="main-val"></div>
-      </div>
-
-      <div style="width:140px;background:var(--surface);padding:12px;border-radius:8px;border:1px solid var(--border)">
-        <div class="muted-small" id="drawerSecondaryTitle">Secondary</div>
-        <div id="drawerSecondary" class="main-val"></div>
-      </div>
-    </div>
 
     <!-- For KPI drawers or custom loan content -->
     <div id="drawerExtra"></div>
