@@ -1736,7 +1736,7 @@ svg.appendChild(vline);
         const atCurrent = hasSchedule
           ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
           : fallbackRow;
-        const currentMonthLabel = formatMonthYear(atCurrent.ownershipDate || atCurrent.loanDate);
+        const currentMonthLabel = formatMonthYear(new Date());
 
         const tile = document.createElement("div");
         tile.className = "tile";
