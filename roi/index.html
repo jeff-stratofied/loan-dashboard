@@ -975,7 +975,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   // X-axis
   // -----------------------------------
   const axisGroup = document.createElementNS(svgNS, "g");
-  const tickSpacing = 12;
+  const tickSpacing = (opts.tickSpacingX || 12);
 
   globalDates.forEach((dateObj, idx) => {
     if (idx % tickSpacing !== 0) return;
@@ -1582,9 +1582,11 @@ function renderTPVDrawer() {
     {
       weightedColor: "#000",
       weightedWidth: 2.6,
-      dates: timeline.dates
+      dates: timeline.dates,
+      tickSpacingX: 2   // label every other month
     }
   );
+
 
   // ===============================
   // 5. ROI-to-Date Table
