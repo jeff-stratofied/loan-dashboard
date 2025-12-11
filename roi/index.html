@@ -1580,69 +1580,6 @@ function buildHistoricalProjectedRoiTimeline(loans) {
     return { dates, perLoanSeries, weightedSeries };
     }
 
-      
-/* ================================
-   TPV Drawer — Weighted ROI To Date
-   USING THE PROJECTED-ROI ENGINE
-   ================================ */
-function renderTPVDrawer() {
-  currentMode = 'kpi';
-  currentLoan = null;
-
-  drawerAmortContainer.innerHTML = '';
-  drawerLegend.style.display = 'none';
-  drawerExtra.innerHTML = '';
-  drawerChartArea.innerHTML = '';
-
-  drawerTitle.textContent = "Portfolio — Weighted ROI (To Date)";
-  drawerSub.textContent = "Snapshot";
-
-  // ---- Compute aggregate ROI today ----
-  const totalInvested = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
-
-  let weightedROI = 0;
-  loansWithAmort.forEach(l => {
-    const last = getCurrentOwnedRoiEntry(l);
-    weightedROI += l.purchasePrice * (last.roi || 0);
-  });
-  weightedROI = weightedROI / Math.max(1, totalInvested);
-
-  drawerPrimaryTitle.textContent = "Weighted ROI to Date";
-  drawerPrimary.textContent = (weightedROI * 100).toFixed(2) + "%";
-
-  // Portfolio MTM value
-  let portfolioValue = 0;
-  loansWithAmort.forEach(l => {
-    const last = getCurrentOwnedRoiEntry(l);
-    portfolioValue += last.loanValue || 0;
-  });
-
-  drawerSecondaryTitle.textContent = "Portfolio Value";
-  drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
-
-  // ---- REUSE THE PROJECTED-ROI TIMELINE ENGINE ----
-  const {
-    dates,
-    perLoanSeries,
-    weightedSeries
-  } = buildHistoricalProjectedRoiTimeline(loansWithAmort);
-
-  // ---- Render multi-series chart (same as Projected ROI drawer) ----
-  createMultiSeriesChart(
-    drawerChartArea,
-    perLoanSeries,
-    weightedSeries,
-    {
-      weightedColor: "#000",
-      weightedWidth: 2.6,
-      dates
-    }
-  );
-
-  drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
-  drawer.scrollTop = 0;
-}
 
       
     function renderDistributionDrawer() {
