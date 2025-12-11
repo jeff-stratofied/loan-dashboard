@@ -1522,24 +1522,82 @@ function smoothPath(points) {
        ------------------------- */
     function getMonthlyTotals(list){ const totals={}; list.forEach(l=>{ const d=new Date(l.purchaseDate); const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; totals[key]=(totals[key]||0)+l.purchasePrice; }); return totals; }
 
+/* ============================================================
+   PROJECTED ROI ENGINE (used to replace Weighted ROI To Date)
+   ============================================================ */
+function buildHistoricalProjectedRoiTimeline(loans) {
+  const today = new Date();
+
+  // Determine global earliest date
+  const earliest = new Date(
+    Math.min(...loans.map(l => new Date(l.purchaseDate)))
+  );
+
+  // Build global monthly timeline
+  const dates = [];
+  const cursor = new Date(earliest);
+  while (cursor <= today) {
+    dates.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  // --- Per-loan aligned series ---
+  const perLoanSeries = loans.map((l, idx) => {
+    const purchase = new Date(l.purchaseDate);
+    let last = 0;
+
+    const data = dates.map(d => {
+      if (d < purchase) return { date: d, y: null };
+
+      const match = l.roiSeries.find(
+        s => s.ownershipDate.toISOString().slice(0,7) === d.toISOString().slice(0,7)
+      );
+
+      if (match) last = match.roi;
+
+      return { date: d, y: last };
+    });
+
+    return {
+      name: `Loan ${l.id}`,
+      color: loanColors[idx % loanColors.length],
+      data
+      };
+    });
+
+    // --- Weighted series ---
+    const total = loans.reduce((s, l) => s + l.purchasePrice, 0);
+
+    const weightedSeries = dates.map((d,i) => {
+      let sum = 0;
+      perLoanSeries.forEach((ls, idx) => {
+        const val = ls.data[i].y;
+        if (val != null) sum += val * loans[idx].purchasePrice;
+      });
+      return { date: d, y: sum / total };
+    });
+
+    return { dates, perLoanSeries, weightedSeries };
+    }
+
+      
 /* ================================
    TPV Drawer — Weighted ROI To Date
+   USING THE PROJECTED-ROI ENGINE
    ================================ */
 function renderTPVDrawer() {
-  if (!loansWithAmort || !loansWithAmort.length) return;
-
   currentMode = 'kpi';
   currentLoan = null;
 
   drawerAmortContainer.innerHTML = '';
   drawerLegend.style.display = 'none';
+  drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
-  
-  // --- Drawer Titles ---
+
   drawerTitle.textContent = "Portfolio — Weighted ROI (To Date)";
   drawerSub.textContent = "Snapshot";
 
-  // --- Compute weighted ROI to date ---
+  // ---- Compute aggregate ROI today ----
   const totalInvested = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
 
   let weightedROI = 0;
@@ -1552,7 +1610,7 @@ function renderTPVDrawer() {
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
   drawerPrimary.textContent = (weightedROI * 100).toFixed(2) + "%";
 
-  // Portfolio value today (mark-to-market sum)
+  // Portfolio MTM value
   let portfolioValue = 0;
   loansWithAmort.forEach(l => {
     const last = getCurrentOwnedRoiEntry(l);
@@ -1562,124 +1620,30 @@ function renderTPVDrawer() {
   drawerSecondaryTitle.textContent = "Portfolio Value";
   drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
 
-// --- Recompute per-loan ROI series using corrected formula ---
-const recomputedLoans = loansWithAmort.map(l => {
-  const purchase = Number(l.purchasePrice);
-  const series = l.cumSchedule
-    .filter(r => r.isOwned)
-    .map(r => {
-      const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-      const unrealized = r.balance * 0.95;
-      const loanValue = realized + unrealized;
-      const roi = (loanValue - purchase) / purchase;
+  // ---- REUSE THE PROJECTED-ROI TIMELINE ENGINE ----
+  const {
+    dates,
+    perLoanSeries,
+    weightedSeries
+  } = buildHistoricalProjectedRoiTimeline(loansWithAmort);
 
-      return {
-        date: r.loanDate,
-        y: roi
-      };
-    });
+  // ---- Render multi-series chart (same as Projected ROI drawer) ----
+  createMultiSeriesChart(
+    drawerChartArea,
+    perLoanSeries,
+    weightedSeries,
+    {
+      weightedColor: "#000",
+      weightedWidth: 2.6,
+      dates
+    }
+  );
 
-  return { ...l, adjustedSeries: series };
-});
-
-// --- Build a unified calendar-aligned timeline ---
-const earliest = new Date(
-  Math.min(...recomputedLoans.map(l => new Date(l.purchaseDate)))
-);
-
-const today = new Date();
-const dates = [];
-const cursor = new Date(earliest);
-while (cursor <= today) {
-  dates.push(new Date(cursor));
-  cursor.setMonth(cursor.getMonth() + 1);
-}
-
-// --- Build per-loan date-aligned series ---
-const loanSeries = recomputedLoans.map((l, idx) => {
-  const purchase = new Date(l.purchaseDate);
-  let last = 0;
-
-  const data = dates.map(d => {
-    if (d < purchase) return { date: d, y: null };
-
-    const match = l.adjustedSeries.find(
-      s => s.date.toISOString().slice(0, 7) === d.toISOString().slice(0, 7)
-    );
-
-    if (match) last = match.y;
-    return { date: d, y: last };
-  });
-
-  return {
-    name: `Loan ${l.id}`,
-    color: loanColors[idx % loanColors.length],
-    data
-  };
-});
-
-// --- Weighted ROI to date ---
-const total = recomputedLoans.reduce((s, l) => s + l.purchasePrice, 0);
-
-const weightedSeries = dates.map((d, i) => {
-  let w = 0;
-  loanSeries.forEach((ls, idx) => {
-    const roi = ls.data[i].y;
-    if (roi != null) w += roi * recomputedLoans[idx].purchasePrice;
-  });
-  return { date: d, y: w / total };
-});
-
-// --- Render the corrected chart ---
-createMultiSeriesChart(
-  drawerChartArea,
-  loanSeries,
-  weightedSeries,
-  {
-    weightedColor: "#000",
-    weightedWidth: 2.6,
-    dates
-  }
-);
-
-
-
-
-   // --- Build ROI table (reuse existing helper) ---
-  drawerExtra.innerHTML = `
-    <div style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">ROI to Date — All Loans</h3>
-      <div style="
-        max-height:300px;
-        overflow:auto;
-        border:1px solid var(--border);
-        border-radius:8px;
-        padding:6px;
-        background:var(--card);
-      ">
-        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
-          <thead>
-            <tr>
-              <th style="text-align:left;">Loan</th>
-              <th style="text-align:left;">Purchase Date</th>
-              <th style="text-align:left;">Maturity Date</th>
-              <th style="text-align:right;">ROI to Date</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  `;
-
-  // fill rows using the helper you already defined
-  populateROILoanTable();
-
-  // open drawer (inline, since there is no openDrawer() helper)
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
   drawer.scrollTop = 0;
 }
+
       
     function renderDistributionDrawer() {
   currentMode = 'kpi';
