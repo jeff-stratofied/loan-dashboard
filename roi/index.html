@@ -1921,21 +1921,21 @@ function buildProjectedRoiTimeline(loans) {
   // ---- 4. Align per-loan ROI series ----
   const perLoanSeries = loans.map((loan, idx) => {
     const purchase = new Date(loan.purchaseDate);
-    const roiMap = {};
+const roiMap = {};
 
-    // Recompute ROI using corrected loan value formula
-loan.cumSchedule.forEach(r => {
-  if (!r.isOwned) return;
+loan.cumSchedule.forEach(row => {
+  if (!row.isOwned) return;
 
-  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-  const unrealized = r.balance * 0.95;
+  const realized = (row.cumPrincipal + row.cumInterest) - row.cumFees;
+  const unrealized = row.balance * 0.95;
   const loanValue = realized + unrealized;
 
   const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
 
-  const key = r.loanDate.toISOString().slice(0, 7);
+  const key = row.loanDate.toISOString().slice(0, 7);
   roiMap[key] = roi;
 });
+
 
 
     // Determine the very first ROI value for this loan
