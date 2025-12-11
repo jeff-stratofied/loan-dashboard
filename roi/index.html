@@ -88,6 +88,27 @@ html[data-theme="dark"] {
   --table-border:#334155;
 }
 
+.info-hover {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  cursor: help;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 50%;
+  line-height: 14px;
+  text-align: center;
+  transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+}
+
+.info-hover:hover {
+  color: var(--text);
+  border-color: var(--text);
+}
+
+    
     /* Smooth theme transitions (copied from amortization page) */
     html, body,
     .app,
@@ -388,8 +409,15 @@ html[data-theme="dark"] .drawer-chart{
     <div class="header-top">
       <div>
         <h1>Loan Portfolio — ROI</h1>
-        <p class="lead">ROI to Date = (Loan Value Today – Purchase Price) / Purchase Price</p>
-        <p class="lead">Projected ROI = (Final Loan Value – Purchase Price) / Purchase Price</p>
+       <p class="lead">
+    ROI to Date = (Loan Value Today – Purchase Price) / Purchase Price
+    <span class="info-hover" title="ROI to Date measures your current return so far. It includes all principal and interest already received, minus fees, plus the discounted value of the outstanding loan balance.">ⓘ</span>
+    </p>
+
+    <p class="lead">
+    Projected ROI = (Final Loan Value – Purchase Price) / Purchase Price
+    <span class="info-hover" title="Projected ROI measures the total return expected if the loan performs as scheduled through maturity. It uses the full amortization schedule of principal, interest, and fees.">ⓘ</span>
+    </p>
       </div>
   
       <div class="header-controls">
