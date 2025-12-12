@@ -1365,117 +1365,140 @@ const currentX = padL + ratio * (w - padL - padR);
       svg.addEventListener("mouseleave", handleLeave);
     }
 
-  // =======================================================
-// NEW: Portfolio KPI Stacked Chart (uses aggregated rows)
 // =======================================================
-function createKpiStackedChart(container, rows) {
-  container.innerHTML = "";
-
+// NEW: Portfolio KPI Stacked Chart (aggregated rows)
+// =======================================================
+function createKpiStackedChart(containerEl, rows){
+  containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
-  const rect = container.getBoundingClientRect();
+  const rect = containerEl.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
   const h = 260;
   const padL = 50, padR = 20, padT = 20, padB = 16;
 
-  // rows = [{ month, p, i, f }]
-  const values = rows.map(r => (r.p + r.i - r.f));
+  const data = rows || [];
 
-  const maxValue = Math.max(...values, 1);
-  const minValue = Math.min(0, ...values);
+  let maxValue = 0;
+  let minValue = 0;
+  data.forEach(d => {
+    const principal = d.cumPrincipal || 0;
+    const interest  = d.cumInterest  || 0;
+    const fees      = d.cumFees      || 0;
 
-  const yRange = maxValue - minValue;
+    const pos = principal + interest;
+    const neg = -fees;
+    if (pos > maxValue) maxValue = pos;
+    if (neg < minValue) minValue = neg;
+  });
+
+  const yMax = Math.max(maxValue, 1);
+  const yMin = minValue < -10 ? minValue : -(yMax * 0.10);
+  const yRange = yMax - yMin || 1;
   const usableHeight = h - padT - padB;
   const scale = usableHeight / yRange;
+  const yZero = padT + (yMax / yRange) * usableHeight;
 
-  const yZero = padT + (maxValue * scale);
-
-  const count = rows.length;
+  const count = data.length;
   const barW = (w - padL - padR) / Math.max(1, count);
 
-  const svg = document.createElementNS(svgNS, "svg");
+  const svg = document.createElementNS(svgNS,"svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.setAttribute("width", "100%");
-  svg.setAttribute("height", "100%");
+  svg.setAttribute("width","100%");
+  svg.setAttribute("height","100%");
 
-  // ----- GRID LINES -----
-  const gridLines = 4;
-  for (let g = 0; g <= gridLines; g++) {
-    const y = padT + (usableHeight * g / gridLines);
-    const gl = document.createElementNS(svgNS, "line");
-    gl.setAttribute("x1", padL);
-    gl.setAttribute("x2", w - padR);
-    gl.setAttribute("y1", y);
-    gl.setAttribute("y2", y);
-    gl.setAttribute("stroke", "var(--grid-light)");
-    gl.setAttribute("stroke-width", "0.7");
-    svg.appendChild(gl);
+  const gridBelowZero = 2;
+  const gridAboveZero = 4;
 
-    const val = maxValue - (yRange * g / gridLines);
-    const lbl = document.createElementNS(svgNS, "text");
-    lbl.textContent = "$" + Math.round(val).toLocaleString();
-    lbl.setAttribute("x", padL - 8);
-    lbl.setAttribute("y", y + 4);
-    lbl.setAttribute("font-size", "11");
-    lbl.setAttribute("fill", "var(--text)");
-    lbl.setAttribute("text-anchor", "end");
-    svg.appendChild(lbl);
+  for (let gy = -gridBelowZero; gy <= gridAboveZero; gy++) {
+    const y = yZero - gy * ((yZero - padT) / gridAboveZero);
+
+    const gridLine = document.createElementNS(svgNS,"line");
+    gridLine.setAttribute("x1",padL);
+    gridLine.setAttribute("x2",w-padR);
+    gridLine.setAttribute("y1",y);
+    gridLine.setAttribute("y2",y);
+    gridLine.setAttribute("stroke", gy >= 0 ? "var(--grid-strong)" : "var(--grid-light)");
+    gridLine.setAttribute("stroke-width","0.7");
+    svg.appendChild(gridLine);
+
+    if(gy > 0){
+      const lbl = document.createElementNS(svgNS,"text");
+      const value = (yMax / gridAboveZero) * gy;
+      lbl.textContent = "$" + Math.round(value).toLocaleString();
+      lbl.setAttribute("x", padL - 10);
+      lbl.setAttribute("y", y + 4);
+      lbl.setAttribute("font-size","11");
+      lbl.setAttribute("fill","var(--text)");
+      lbl.setAttribute("text-anchor","end");
+      svg.appendChild(lbl);
+    }
   }
 
-  // ----- STACKED BARS FOR EACH MONTH -----
-  rows.forEach((r, i) => {
-    const x = padL + i * barW;
-    const bw = Math.max(2, barW - 4);
+  const axis = document.createElementNS(svgNS,"line");
+  axis.setAttribute("x1",padL);
+  axis.setAttribute("x2",w-padR);
+  axis.setAttribute("y1",yZero);
+  axis.setAttribute("y2",yZero);
+  axis.setAttribute("stroke","var(--grid-strong)");
+  axis.setAttribute("stroke-width","1");
+  svg.appendChild(axis);
 
-    const prinH = r.p * scale;
-    const intH = r.i * scale;
-    const feeH = r.f * scale;
+  data.forEach((d, i) => {
+    const x = padL + i*barW;
+    const barWidth = Math.max(2, barW-4);
 
-    // Stack upward (principal + interest)
-    const yInt = yZero - intH;
-    const yPrin = yInt - prinH;
+    const principal = d.cumPrincipal || 0;
+    const interest  = d.cumInterest  || 0;
+    const fees      = d.cumFees      || 0;
+    const negFees   = -fees;
 
-    const rectPrin = document.createElementNS(svgNS, "rect");
-    rectPrin.setAttribute("x", x);
-    rectPrin.setAttribute("y", yPrin);
-    rectPrin.setAttribute("width", bw);
-    rectPrin.setAttribute("height", prinH);
-    rectPrin.setAttribute("fill", "#0ea5e9");
-    svg.appendChild(rectPrin);
+    const hPrin = principal * scale;
+    const hInt  = interest  * scale;
+    const hFees = Math.abs(negFees) * scale;
 
-    const rectInt = document.createElementNS(svgNS, "rect");
-    rectInt.setAttribute("x", x);
-    rectInt.setAttribute("y", yInt);
-    rectInt.setAttribute("width", bw);
-    rectInt.setAttribute("height", intH);
-    rectInt.setAttribute("fill", "#22c55e");
-    svg.appendChild(rectInt);
+    const yInt  = yZero - hInt;
+    const yPrin = yZero - hInt - hPrin;
+    const yFee  = yZero;
 
-    // Fees stack downward
-    const yFee = yZero;
-    const rectFee = document.createElementNS(svgNS, "rect");
-    rectFee.setAttribute("x", x);
-    rectFee.setAttribute("y", yFee);
-    rectFee.setAttribute("width", bw);
-    rectFee.setAttribute("height", feeH);
-    rectFee.setAttribute("fill", "#ef4444");
-    svg.appendChild(rectFee);
+    const rPrin = document.createElementNS(svgNS,"rect");
+    rPrin.setAttribute("x", x+2);
+    rPrin.setAttribute("y", yPrin);
+    rPrin.setAttribute("width", barWidth);
+    rPrin.setAttribute("height", hPrin);
+    rPrin.setAttribute("fill","#0ea5e9");
+    svg.appendChild(rPrin);
 
-    // Month label (every 2 months)
+    const rInt = document.createElementNS(svgNS,"rect");
+    rInt.setAttribute("x", x+2);
+    rInt.setAttribute("y", yInt);
+    rInt.setAttribute("width", barWidth);
+    rInt.setAttribute("height", hInt);
+    rInt.setAttribute("fill","#22c55e");
+    svg.appendChild(rInt);
+
+    const rFee = document.createElementNS(svgNS,"rect");
+    rFee.setAttribute("x", x+2);
+    rFee.setAttribute("y", yFee);
+    rFee.setAttribute("width", barWidth);
+    rFee.setAttribute("height", hFees);
+    rFee.setAttribute("fill","#ef4444");
+    svg.appendChild(rFee);
+
     if (i % 2 === 0) {
-      const lbl = document.createElementNS(svgNS, "text");
-      lbl.textContent = r.month;
-      lbl.setAttribute("x", x + bw / 2);
-      lbl.setAttribute("y", h - padB + 14);
-      lbl.setAttribute("font-size", "11");
-      lbl.setAttribute("fill", "var(--text)");
-      lbl.setAttribute("text-anchor", "middle");
+      const lbl = document.createElementNS(svgNS,"text");
+      const dateLabel = d.ownershipDate || d.loanDate;
+      lbl.textContent = formatMonthYear(dateLabel);
+      lbl.setAttribute("x", x+barWidth/2);
+      lbl.setAttribute("y", h-padB+16);
+      lbl.setAttribute("font-size","11");
+      lbl.setAttribute("fill","var(--text)");
+      lbl.setAttribute("text-anchor","middle");
       svg.appendChild(lbl);
     }
   });
 
-  container.appendChild(svg);
+  containerEl.appendChild(svg);
 }
-
 
 
 
