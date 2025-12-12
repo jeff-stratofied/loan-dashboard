@@ -1366,12 +1366,6 @@ const currentX = padL + ratio * (w - padL - padR);
       svg.addEventListener("mouseleave", handleLeave);
     }
 
-
-
-    // --------------------------
-    // Drawer stacked chart (larger)
-    // --------------------------
-    
     // --------------------------
     // Drawer stacked chart (larger)
     // --------------------------
@@ -1678,8 +1672,33 @@ function buildPortfolioEarningsSchedule(loans) {
       openDrawerBase();
     }
 
+    function convertPortfolioSeriesToLoanRows(series) {
+  const out = [];
+  let prev = { cumPrincipal: 0, cumInterest: 0, cumFees: 0 };
+
+  series.forEach(r => {
+    const p = r.cumPrincipal - prev.cumPrincipal;
+    const i = r.cumInterest - prev.cumInterest;
+    const f = r.cumFees - prev.cumFees;
+
+    out.push({
+      loanDate: r.date,
+      principalPaid: p,
+      interest: i,
+      feeThisMonth: f,
+      cumPrincipal: r.cumPrincipal,
+      cumInterest: r.cumInterest,
+      cumFees: r.cumFees
+    });
+
+    prev = r;
+  });
+
+  return out;
+}
+
     
- function openKpi1(){
+function openKpi1(){
   currentLoan = null;
   drawerTitle.textContent = "Total Net Earnings to Date";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
@@ -1688,11 +1707,20 @@ function buildPortfolioEarningsSchedule(loans) {
   drawerSecondaryTitle.textContent = "Total Fees to Date";
   drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
   resetDrawerContent();
-  renderKPI1Chart(loansWithEarnings, "drawerChartArea");
+
+  const kpiRows = toLoanStyleRows(portfolioViews.earningsSeriesCombined);
+
+  createDrawerStackedChart(
+      drawerChartArea,
+      kpiRows,
+      { loanName: "Portfolio", purchaseDate: kpiRows[0]?.loanDate }
+  );
+
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
   openDrawer();
 }
+
 
 function openKpi2(){
   currentLoan = null;
