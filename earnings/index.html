@@ -1603,25 +1603,6 @@ svg.appendChild(vline);
       });
     });
 
-// -------------------------------------------
-// BUILD AGGREGATED PORTFOLIO EARNINGS SERIES
-// (used by all KPI drawer charts)
-// -------------------------------------------
-
-    
-    function renderKPIs() {
-      kpis = computeEarningsKPIs(loansWithEarnings);
-      totalPrincipal = loans.reduce((s,l)=>s+l.purchasePrice,0);
-      const netEl = document.getElementById("kpiNetToDate");
-      const projEl = document.getElementById("kpiNetProj");
-      const avgEl = document.getElementById("kpiAvgMonth");
-      const feesEl = document.getElementById("kpiFees");
-
-      if (netEl) netEl.textContent = `$${kpis.totalNetToDate.toLocaleString(undefined,{maximumFractionDigits:0})}`;
-      if (projEl) projEl.textContent = `$${kpis.totalNetProjected.toLocaleString(undefined,{maximumFractionDigits:0})}`;
-      if (avgEl) avgEl.textContent = `$${kpis.avgMonthlyEarnings.toFixed(2)}`;
-      if (feesEl) feesEl.textContent = `$${kpis.totalFeesToDate.toLocaleString(undefined,{maximumFractionDigits:0})}`;
-    }
 
     // --------------------------
     // KPI drawers (shared drawer)
