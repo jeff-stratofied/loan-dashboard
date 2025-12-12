@@ -1424,42 +1424,27 @@ const totalNeg = r.contributions
     let yUp = yZero;
     let yDn = yZero;
 
-    r.contributions.forEach(c => {
-      // positive part
-      r.contributions.forEach(c => {
+r.contributions.forEach(c => {
+  const val = c.net;
+  const hVal = Math.abs(val * scale);
 
-  const val = c.net;   // positive or negative
-
-  const h = Math.abs(val * scale);
-
-  const rect = document.createElementNS(svgNS, "rect");
-  rect.setAttribute("x", x);
-  rect.setAttribute("width", bw);
-  rect.setAttribute("height", h);
-  rect.setAttribute("fill", colors[c.loanId]);
+  const bar = document.createElementNS(svgNS, "rect");
+  bar.setAttribute("x", x);
+  bar.setAttribute("width", bw);
+  bar.setAttribute("height", hVal);
+  bar.setAttribute("fill", colors[c.loanId]);
 
   if (val >= 0) {
-    rect.setAttribute("y", yUp - h);
-    yUp -= h;
+    bar.setAttribute("y", yUp - hVal);
+    yUp -= hVal;
   } else {
-    rect.setAttribute("y", yDn);
-    yDn += h;
+    bar.setAttribute("y", yDn);
+    yDn += hVal;
   }
 
-  svg.appendChild(rect);
+  svg.appendChild(bar);
 });
 
-      if (dnHeight > 0) {
-        const dnRect = document.createElementNS(svgNS, "rect");
-        dnRect.setAttribute("x", x);
-        dnRect.setAttribute("y", yDn);
-        dnRect.setAttribute("width", bw);
-        dnRect.setAttribute("height", dnHeight);
-        dnRect.setAttribute("fill", colors[c.loanId]);
-        svg.appendChild(dnRect);
-        yDn += dnHeight;
-      }
-    });
 
     // label every 12 months
     if (i % 12 === 0) {
