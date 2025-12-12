@@ -1671,37 +1671,141 @@ function buildPortfolioEarningsSchedule(loans) {
       openDrawerBase();
     }
 
-function buildPortfolioEarningsSeries(loans) {
-  const map = new Map(); // yyyy-mm -> { date, principalPaid, interest, feeThisMonth, cumPrincipal, cumInterest, cumFees }
+// Build per-loan cumulative earnings series for KPI1
+function buildLoanStackSeries(loans) {
+  // Assign persistent colors
+  const palette = [
+    "#10b981","#3b82f6","#f97316","#a855f7","#14b8a6","#eab308",
+    "#ec4899","#22c55e","#0ea5e9","#f43f5e"
+  ];
 
-  loans.forEach(loan => {
-    loan.earningsSchedule.forEach(r => {
-      const d = r.loanDate;
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
+  return loans.map((loan, idx) => {
+    const color = palette[idx % palette.length];
 
-      if (!map.has(key)) {
-        map.set(key, {
-          date: d,
-          principalPaid: 0,
-          interest: 0,
-          feeThisMonth: 0,
-          cumPrincipal: 0,
-          cumInterest: 0,
-          cumFees: 0
-        });
-      }
+    const series = loan.earningsSchedule.map((row, i) => ({
+      monthIndex: i + 1,
+      date: row.loanDate,
+      loanId: loan.id,
+      loanName: loan.name || `Loan ${idx+1}`,
+      color,
+      cumNet: row.cumInterest + row.cumPrincipal - row.cumFees
+    }));
 
-      const row = map.get(key);
-      row.principalPaid += r.principalPaid || 0;
-      row.interest += r.interest || 0;
-      row.feeThisMonth += r.feeThisMonth || 0;
-      row.cumPrincipal += r.cumPrincipal || 0;
-      row.cumInterest += r.cumInterest || 0;
-      row.cumFees += r.cumFees || 0;
+    return { loan, color, series };
+  });
+}
+
+function renderKPI1StackedLoanChart(container, loans) {
+  container.innerHTML = ""; // clean reset
+  const data = buildLoanStackSeries(loans);
+
+  // Determine number of months
+  const maxMonths = Math.max(...data.map(l => l.series.length));
+
+  // Build stacked rows month-by-month
+  const stacked = [];
+  for (let m = 0; m < maxMonths; m++) {
+    const row = { month: m+1, layers: [] };
+    data.forEach(l => {
+      const point = l.series[m];
+      row.layers.push({
+        loanName: l.loan.name,
+        color: l.color,
+        value: point ? point.cumNet : 0
+      });
+    });
+    stacked.push(row);
+  }
+
+  // SVG setup
+  const w = container.clientWidth || 900;
+  const h = 320;
+  const pad = {top: 20, right: 20, bottom: 40, left: 70};
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+  container.appendChild(svg);
+
+  // Compute max Y
+  const maxY = Math.max(...stacked.map(r =>
+    r.layers.reduce((s,l)=>s+l.value,0)
+  ));
+
+  // Scales
+  const xStep = (w - pad.left - pad.right) / maxMonths;
+  const yScale = v => h - pad.bottom - (v / maxY)*(h-pad.top-pad.bottom);
+
+  // Draw bars
+  stacked.forEach((row, idx) => {
+    let y = yScale(0);
+
+    row.layers.forEach(layer => {
+      const barHeight = yScale(row.layers.reduce((s,l)=>s+l.value,0)) - yScale(row.layers.reduce((s,l)=>s+l.value,0) - layer.value);
+
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x", pad.left + idx * xStep);
+      rect.setAttribute("width", Math.max(3, xStep - 1));
+      rect.setAttribute("y", yScale(row.layers.reduce((s,l)=>s+l.value,0)));
+      rect.setAttribute("height", Math.abs(barHeight));
+      rect.setAttribute("fill", layer.color);
+      svg.appendChild(rect);
     });
   });
 
-  return [...map.values()].sort((a,b) => a.date - b.date);
+  // X-axis labels (M1, M12…)
+  for (let m = 1; m <= maxMonths; m++) {
+    if (m === 1 || m % 12 === 0) {
+      const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+      text.textContent = `M${m}`;
+      text.setAttribute("x", pad.left + (m-1)*xStep);
+      text.setAttribute("y", h - 8);
+      text.setAttribute("font-size", "11px");
+      text.setAttribute("fill", "var(--text)");
+      svg.appendChild(text);
+    }
+  }
+
+  // Hover tooltip
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.style.cssText = `
+    position:absolute; 
+    pointer-events:none;
+    background:var(--card);
+    color:var(--text);
+    border:1px solid var(--border);
+    padding:6px 10px;
+    border-radius:6px;
+    display:none;
+    font-size:12px;
+    z-index:1000;
+  `;
+  container.appendChild(tooltip);
+
+  svg.addEventListener("mousemove", e => {
+    const rectBounds = svg.getBoundingClientRect();
+    const x = e.clientX - rectBounds.left - pad.left;
+    const index = Math.floor(x / xStep);
+
+    if (index >= 0 && index < stacked.length) {
+      const row = stacked[index];
+      let html = `<strong>Month M${row.month}</strong><br/>`;
+
+      row.layers.forEach(l => {
+        html += `<span style="color:${l.color}">●</span> ${l.loanName}: ${l.value.toFixed(2)}<br/>`;
+      });
+
+      tooltip.innerHTML = html;
+      tooltip.style.left = (e.clientX + 10) + "px";
+      tooltip.style.top  = (e.clientY - 10) + "px";
+      tooltip.style.display = "block";
+    }
+  });
+
+  svg.addEventListener("mouseleave", () => {
+    tooltip.style.display = "none";
+  });
 }
 
     
@@ -1715,12 +1819,13 @@ function openKpi1(){
   drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
   resetDrawerContent();
 
-  const kpiRows = buildPortfolioEarningsSeries(loansWithEarnings);
+  renderKPI1StackedLoanChart(drawerChartArea, loansWithEarnings);
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
   openDrawer();
 }
+
 
 
 function openKpi2(){
