@@ -1470,6 +1470,22 @@ r.contributions.forEach(c => {
 
   svg.appendChild(bar);
 });
+
+    // label every 12 months
+    if (i % 12 === 0) {
+      const lbl = document.createElementNS(svgNS, "text");
+      lbl.textContent = r.date.toLocaleString("en-US", { month: "short", year: "numeric" });
+      lbl.setAttribute("x", x + bw / 2);
+      lbl.setAttribute("y", h - 4);
+      lbl.setAttribute("font-size", "11");
+      lbl.setAttribute("fill", "var(--text)");
+      lbl.setAttribute("text-anchor", "middle");
+      svg.appendChild(lbl);
+    }
+  });
+
+  container.appendChild(svg);
+
 // =======================
 // KPI Chart Hover System
 // =======================
@@ -1528,22 +1544,7 @@ function handleLeave() {
 
 svg.addEventListener("mousemove", handleMove);
 svg.addEventListener("mouseleave", handleLeave);
-
-
-    // label every 12 months
-    if (i % 12 === 0) {
-      const lbl = document.createElementNS(svgNS, "text");
-      lbl.textContent = r.date.toLocaleString("en-US", { month: "short", year: "numeric" });
-      lbl.setAttribute("x", x + bw / 2);
-      lbl.setAttribute("y", h - 4);
-      lbl.setAttribute("font-size", "11");
-      lbl.setAttribute("fill", "var(--text)");
-      lbl.setAttribute("text-anchor", "middle");
-      svg.appendChild(lbl);
-    }
-  });
-
-  container.appendChild(svg);
+  
 }
 
 
