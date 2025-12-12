@@ -1404,7 +1404,7 @@ function createKpiStackedChart(container, rows) {
   const svgNS = "http://www.w3.org/2000/svg";
   const rect = container.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
-  const h = 260;
+  const h = 360;
 
   const padL = 50, padR = 20, padT = 20, padB = 20;
 
@@ -1469,6 +1469,56 @@ r.contributions.forEach(c => {
   }
 
   svg.appendChild(bar);
+
+  // ------------------------------
+// KPI CHART HOVER BEHAVIOR
+// ------------------------------
+let lensInstance = null;
+const lensRadius = 20;
+const lensScale = 2;
+
+function handleMove(e){
+  const rect = svg.getBoundingClientRect();
+  const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+  const mouseY = ((e.clientY - rect.top) / rect.height) * h;
+  const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
+  const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
+
+  if(!lensInstance){
+    lensInstance = createLens(svg, lensRadius, lensScale);
+    const barClones = Array.from(svg.querySelectorAll("rect"))
+      .filter(r => r.__value !== undefined || r.getAttribute("fill"));
+    barClones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
+    svg.appendChild(lensInstance.group);
+  }
+
+  updateLens(lensInstance, x, y);
+
+  // determine hovered month
+  const idx = Math.max(0, Math.min(rows.length - 1, Math.floor((x - padL) / barW)));
+  const row = rows[idx];
+
+  const tooltipLines = [
+    `Month: ${idx + 1}`,
+    `Principal: $${row.cumPrincipal.toFixed(2)}`,
+    `Interest: $${row.cumInterest.toFixed(2)}`,
+    `Fees: -$${row.cumFees.toFixed(2)}`,
+    `Net: $${row.net.toFixed(2)}`
+  ];
+
+  setMiniTooltipContent(tooltipLines);
+  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+}
+
+function handleLeave(){
+  removeLens(svg, lensInstance);
+  lensInstance = null;
+  hideMiniTooltip();
+}
+
+svg.addEventListener("mousemove", handleMove);
+svg.addEventListener("mouseleave", handleLeave);
+
 });
 
 
