@@ -1849,7 +1849,20 @@ function openKpi4(){
   // build portfolio-wide earnings series for charts (mini + drawer + KPI)
   portfolioViews = buildPortfolioViews(loansWithEarnings);
 
-  renderKPIs();
+  kpis = computeEarningsKPIs(loansWithEarnings);
+
+document.getElementById("kpiNetToDate").textContent =
+  `$${kpis.totalNetToDate.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+
+document.getElementById("kpiNetProj").textContent =
+  `$${kpis.totalNetProjected.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+
+document.getElementById("kpiAvgMonth").textContent =
+  `$${kpis.avgMonthlyEarnings.toFixed(2)}`;
+
+document.getElementById("kpiFees").textContent =
+  `$${kpis.totalFeesToDate.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+
   renderLoanTiles();
 }
 
