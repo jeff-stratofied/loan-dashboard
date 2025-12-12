@@ -1368,137 +1368,97 @@ const currentX = padL + ratio * (w - padL - padR);
 // =======================================================
 // NEW: Portfolio KPI Stacked Chart (aggregated rows)
 // =======================================================
-function createKpiStackedChart(containerEl, rows){
-  containerEl.innerHTML = "";
+function createKpiStackedChart(container, pointsByLoan) {
+  container.innerHTML = "";
+
   const svgNS = "http://www.w3.org/2000/svg";
-  const rect = containerEl.getBoundingClientRect();
+  const rect = container.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
   const h = 260;
-  const padL = 50, padR = 20, padT = 20, padB = 16;
+  const padL = 50, padR = 20, padT = 20, padB = 30;
 
-  const data = rows || [];
+  const loanIds = Object.keys(pointsByLoan);
 
-  let maxValue = 0;
-  let minValue = 0;
-  data.forEach(d => {
-    const principal = d.cumPrincipal || 0;
-    const interest  = d.cumInterest  || 0;
-    const fees      = d.cumFees      || 0;
-
-    const pos = principal + interest;
-    const neg = -fees;
-    if (pos > maxValue) maxValue = pos;
-    if (neg < minValue) minValue = neg;
+  // Build unified month list
+  const monthMap = new Map();
+  loanIds.forEach(id => {
+    pointsByLoan[id].forEach(p => {
+      const key = p.date.getTime();
+      if (!monthMap.has(key)) monthMap.set(key, []);
+    });
   });
 
-  const yMax = Math.max(maxValue, 1);
-  const yMin = minValue < -10 ? minValue : -(yMax * 0.10);
-  const yRange = yMax - yMin || 1;
-  const usableHeight = h - padT - padB;
-  const scale = usableHeight / yRange;
-  const yZero = padT + (yMax / yRange) * usableHeight;
+  const months = [...monthMap.keys()].sort().map(t => new Date(t));
 
-  const count = data.length;
-  const barW = (w - padL - padR) / Math.max(1, count);
+  const barW = (w - padL - padR) / months.length;
+
+  // Determine max height of stacked segments
+  let maxStack = 0;
+  months.forEach(d => {
+    let sum = 0;
+    loanIds.forEach(id => {
+      const p = pointsByLoan[id].find(pp => pp.date.getTime() === d.getTime());
+      if (p) sum += p.value;
+    });
+    if (sum > maxStack) maxStack = sum;
+  });
+  if (maxStack < 1) maxStack = 1;
+
+  const usable = h - padT - padB;
+  const scale = usable / maxStack;
 
   const svg = document.createElementNS(svgNS,"svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.setAttribute("width","100%");
   svg.setAttribute("height","100%");
 
-  const gridBelowZero = 2;
-  const gridAboveZero = 4;
+  // Assign a color per loan (old file style)
+  const palette = [
+    "#0ea5e9","#22c55e","#ef4444","#a855f7","#f97316",
+    "#6366f1","#14b8a6","#eab308","#ec4899","#475569",
+    "#06b6d4","#84cc16"
+  ];
+  const colors = {};
+  loanIds.forEach((id,i)=>colors[id] = palette[i % palette.length]);
 
-  for (let gy = -gridBelowZero; gy <= gridAboveZero; gy++) {
-    const y = yZero - gy * ((yZero - padT) / gridAboveZero);
+  // Draw stacked bars
+  months.forEach((d, monthIndex) => {
+    let yTop = h - padB;
+    const x = padL + monthIndex * barW;
 
-    const gridLine = document.createElementNS(svgNS,"line");
-    gridLine.setAttribute("x1",padL);
-    gridLine.setAttribute("x2",w-padR);
-    gridLine.setAttribute("y1",y);
-    gridLine.setAttribute("y2",y);
-    gridLine.setAttribute("stroke", gy >= 0 ? "var(--grid-strong)" : "var(--grid-light)");
-    gridLine.setAttribute("stroke-width","0.7");
-    svg.appendChild(gridLine);
+    loanIds.forEach(id => {
+      const p = pointsByLoan[id].find(pp => pp.date.getTime() === d.getTime());
+      if (!p) return;
 
-    if(gy > 0){
+      const hSeg = p.value * scale;
+      const y = yTop - hSeg;
+
+      const rectEl = document.createElementNS(svgNS,"rect");
+      rectEl.setAttribute("x", x+2);
+      rectEl.setAttribute("y", y);
+      rectEl.setAttribute("width", Math.max(2, barW - 4));
+      rectEl.setAttribute("height", hSeg);
+      rectEl.setAttribute("fill", colors[id]);
+      svg.appendChild(rectEl);
+
+      yTop = y;
+    });
+
+    if (monthIndex % 3 === 0) {
       const lbl = document.createElementNS(svgNS,"text");
-      const value = (yMax / gridAboveZero) * gy;
-      lbl.textContent = "$" + Math.round(value).toLocaleString();
-      lbl.setAttribute("x", padL - 10);
-      lbl.setAttribute("y", y + 4);
-      lbl.setAttribute("font-size","11");
-      lbl.setAttribute("fill","var(--text)");
-      lbl.setAttribute("text-anchor","end");
-      svg.appendChild(lbl);
-    }
-  }
-
-  const axis = document.createElementNS(svgNS,"line");
-  axis.setAttribute("x1",padL);
-  axis.setAttribute("x2",w-padR);
-  axis.setAttribute("y1",yZero);
-  axis.setAttribute("y2",yZero);
-  axis.setAttribute("stroke","var(--grid-strong)");
-  axis.setAttribute("stroke-width","1");
-  svg.appendChild(axis);
-
-  data.forEach((d, i) => {
-    const x = padL + i*barW;
-    const barWidth = Math.max(2, barW-4);
-
-    const principal = d.cumPrincipal || 0;
-    const interest  = d.cumInterest  || 0;
-    const fees      = d.cumFees      || 0;
-    const negFees   = -fees;
-
-    const hPrin = principal * scale;
-    const hInt  = interest  * scale;
-    const hFees = Math.abs(negFees) * scale;
-
-    const yInt  = yZero - hInt;
-    const yPrin = yZero - hInt - hPrin;
-    const yFee  = yZero;
-
-    const rPrin = document.createElementNS(svgNS,"rect");
-    rPrin.setAttribute("x", x+2);
-    rPrin.setAttribute("y", yPrin);
-    rPrin.setAttribute("width", barWidth);
-    rPrin.setAttribute("height", hPrin);
-    rPrin.setAttribute("fill","#0ea5e9");
-    svg.appendChild(rPrin);
-
-    const rInt = document.createElementNS(svgNS,"rect");
-    rInt.setAttribute("x", x+2);
-    rInt.setAttribute("y", yInt);
-    rInt.setAttribute("width", barWidth);
-    rInt.setAttribute("height", hInt);
-    rInt.setAttribute("fill","#22c55e");
-    svg.appendChild(rInt);
-
-    const rFee = document.createElementNS(svgNS,"rect");
-    rFee.setAttribute("x", x+2);
-    rFee.setAttribute("y", yFee);
-    rFee.setAttribute("width", barWidth);
-    rFee.setAttribute("height", hFees);
-    rFee.setAttribute("fill","#ef4444");
-    svg.appendChild(rFee);
-
-    if (i % 2 === 0) {
-      const lbl = document.createElementNS(svgNS,"text");
-      const dateLabel = d.ownershipDate || d.loanDate;
-      lbl.textContent = formatMonthYear(dateLabel);
-      lbl.setAttribute("x", x+barWidth/2);
-      lbl.setAttribute("y", h-padB+16);
-      lbl.setAttribute("font-size","11");
-      lbl.setAttribute("fill","var(--text)");
-      lbl.setAttribute("text-anchor","middle");
+      lbl.textContent = formatMonthYear(d);
+      lbl.setAttribute("x", x + barW/2);
+      lbl.setAttribute("y", h - padB + 16);
+      lbl.setAttribute("fill", "var(--text)");
+      lbl.setAttribute("font-size", "11");
+      lbl.setAttribute("text-anchor", "middle");
       svg.appendChild(lbl);
     }
   });
 
-  containerEl.appendChild(svg);
+  container.appendChild(svg);
 }
+
 
 
 
@@ -1761,51 +1721,31 @@ svg.appendChild(vline);
       openDrawerBase();
     }
 
-  function buildPortfolioDrawerRows(loans) {
-  const today = new Date();
-  today.setHours(0,0,0,0);
+function buildPortfolioDrawerRows(loans) {
 
-  let earliest = Infinity;
-
-  // Determine earliest purchase date
-  loans.forEach(l => {
-    const t = new Date(l.purchaseDate).getTime();
-    if (t < earliest) earliest = t;
-  });
-
-  const monthly = new Map(); // YYYY-MM → aggregated row
+  // pointsByLoan = { loanId: [ { date, value } ] }
+  const pointsByLoan = {};
 
   loans.forEach(loan => {
-    (loan.earningsSchedule || []).forEach(r => {
+    const loanId = loan.loanId;
+    pointsByLoan[loanId] = [];
+
+    loan.earningsSchedule.forEach(r => {
+      const net = (r.principalPaid || 0) + (r.interest || 0) - (r.feeThisMonth || 0);
       const d = new Date(r.loanDate);
       d.setHours(0,0,0,0);
 
-      if (d.getTime() < earliest || d > today) return;
-
-      const key = `${d.getFullYear()}-${d.getMonth()+1}`;
-
-      if (!monthly.has(key)) {
-        monthly.set(key, {
-          loanDate: d,
-          ownershipDate: d,
-          // monthly amounts (not cumulative)
-          cumPrincipal: 0,
-          cumInterest: 0,
-          cumFees: 0
-        });
-      }
-
-      const row = monthly.get(key);
-
-      // Monthly contribution
-      row.cumPrincipal += (r.principalPaid || 0);
-      row.cumInterest += (r.interest || 0);
-      row.cumFees     += (r.feeThisMonth || 0);
+      pointsByLoan[loanId].push({
+        date: d,
+        value: net
+      });
     });
   });
 
-  return [...monthly.values()].sort((a,b) => a.loanDate - b.loanDate);
+  return pointsByLoan;
 }
+
+
 
 function openKpi1(){
   currentLoan = null;
