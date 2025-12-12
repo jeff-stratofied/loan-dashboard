@@ -745,7 +745,6 @@ html[data-theme="dark"] .legend .sw {
       </div>
     </div>
     <div class="drawer-body">
-      <div class="drawer-chart" id="kpi1Chart"></div>
     </div>
     <div class="drawer-actions">
       <button class="btn" data-kpi-close="kpiDrawer1">Close</button>
@@ -1717,12 +1716,6 @@ function openKpi1(){
   resetDrawerContent();
 
   const kpiRows = buildPortfolioEarningsSeries(loansWithEarnings);
-
-  createDrawerStackedChart(
-      drawerChartArea,
-      kpiRows,
-      { loanName: "Portfolio", purchaseDate: kpiRows[0]?.loanDate }
-  );
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
