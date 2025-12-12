@@ -1607,35 +1607,6 @@ svg.appendChild(vline);
 // BUILD AGGREGATED PORTFOLIO EARNINGS SERIES
 // (used by all KPI drawer charts)
 // -------------------------------------------
-function buildPortfolioEarningsSchedule(loans) {
-  const map = new Map();  // key: yyyy-mm, value: {date, cumPrincipal, cumInterest, cumFees, netEarnings}
-
-  loans.forEach(l => {
-    l.earningsSchedule.forEach(row => {
-      const d = row.loanDate;
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-
-      if (!map.has(key)) {
-        map.set(key, {
-          date: new Date(d),
-          cumPrincipal: 0,
-          cumInterest: 0,
-          cumFees: 0,
-          netEarnings: 0
-        });
-      }
-
-      const o = map.get(key);
-
-      o.cumPrincipal += row.cumPrincipal;
-      o.cumInterest  += row.cumInterest;
-      o.cumFees      += row.cumFees;
-      o.netEarnings  += row.netEarnings;
-    });
-  });
-
-  return [...map.values()].sort((a,b) => a.date - b.date);
-}
 
     
     function renderKPIs() {
