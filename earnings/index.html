@@ -1708,7 +1708,9 @@ function openKpi1(){
   drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
   resetDrawerContent();
 
-  const kpiRows = toLoanStyleRows(portfolioViews.earningsSeriesCombined);
+  const kpiRows = convertPortfolioSeriesToLoanRows(
+  portfolioViews.earningsSeriesCombined
+);
 
   createDrawerStackedChart(
       drawerChartArea,
