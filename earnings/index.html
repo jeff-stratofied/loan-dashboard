@@ -1680,95 +1680,67 @@ function buildPortfolioEarningsSchedule(loans) {
 
     
     function openKpi1(){
-      currentLoan = null;
-      drawerTitle.textContent = "Total Net Earnings to Date";
-      drawerSub.textContent = "Portfolio-level earnings across all loans.";
-      drawerPrimaryTitle.textContent = "Net Earnings to Date";
-      drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
-      drawerSecondaryTitle.textContent = "Total Interest to Date";
-      drawerSecondary.textContent = `$${kpis.totalInterestToDate.toFixed(2)}`;
-      resetDrawerContent();
-      // Build portfolio-wide stacked series for KPI charts
-      const portfolioSeries = buildPortfolioEarningsSchedule(loansWithEarnings);
+  currentLoan = null;
+  drawerTitle.textContent = "Total Net Earnings to Date";
+  drawerSub.textContent = "Portfolio-level earnings across all loans.";
+  drawerPrimaryTitle.textContent = "Net Earnings to Date";
+  drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
+  drawerSecondaryTitle.textContent = "Total Fees to Date";
+  drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
+  resetDrawerContent();
+  renderKPI1Chart(loansWithEarnings, "drawerChartArea");
+  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  renderKPI1Table(loansWithEarnings, "drawerKpiTable");
+  openDrawer();
+}
 
-      createDrawerStackedChart(
-      drawerChartArea,
-      portfolioSeries,
-      { loanName: "Portfolio", purchaseDate: portfolioSeries[0]?.date }
-    );
+function openKpi2(){
+  currentLoan = null;
+  drawerTitle.textContent = "Projected Lifetime Earnings";
+  drawerSub.textContent = "Net earnings at maturity for all loans.";
+  drawerPrimaryTitle.textContent = "Projected Lifetime Net";
+  drawerPrimary.textContent = `$${kpis.totalNetProjected.toFixed(2)}`;
+  drawerSecondaryTitle.textContent = "Total Principal";
+  drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
+  resetDrawerContent();
+  renderKPI2Chart(loansWithEarnings, "drawerChartArea");
+  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  renderKPI2Table(loansWithEarnings, "drawerKpiTable");
+  openDrawer();
+}
+
+function openKpi3(){
+  currentLoan = null;
+  drawerTitle.textContent = "Average Monthly Earnings";
+  drawerSub.textContent = `Based on net earnings through ${formatDate(new Date())}.`;
+  drawerPrimaryTitle.textContent = "Avg Monthly Earnings";
+  drawerPrimary.textContent = `$${kpis.avgMonthlyEarnings.toFixed(2)}`;
+  drawerSecondaryTitle.textContent = "Months Counted";
+  drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
+  resetDrawerContent();
+  renderKPI3Chart(loansWithEarnings, "drawerChartArea");
+  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  renderKPI3Table(loansWithEarnings, "drawerKpiTable");
+  openDrawer();
+}
+
+function openKpi4(){
+  currentLoan = null;
+  drawerTitle.textContent = "Total Fees to Date";
+  drawerSub.textContent = "Cumulative monthly fees across all loans.";
+  drawerPrimaryTitle.textContent = "Total Fees";
+  drawerPrimary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
+  drawerSecondaryTitle.textContent = "Total Loans";
+  drawerSecondary.textContent = `${loans.length}`;
+  resetDrawerContent();
+  renderKPI4Chart(loansWithEarnings, "drawerChartArea");
+  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  renderKPI4Table(loansWithEarnings, "drawerKpiTable");
+  openDrawer();
+}
 
 
-
-      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-      renderKPI1Table(loansWithEarnings, "drawerKpiTable");
-      openDrawer();
-    }
-
-    function openKpi2(){
-      currentLoan = null;
-      drawerTitle.textContent = "Projected Lifetime Earnings";
-      drawerSub.textContent = "Net earnings at maturity for all loans.";
-      drawerPrimaryTitle.textContent = "Projected Lifetime Net";
-      drawerPrimary.textContent = `$${kpis.totalNetProjected.toFixed(2)}`;
-      drawerSecondaryTitle.textContent = "Total Principal";
-      drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
-      resetDrawerContent();
-      // Build portfolio-wide stacked series for KPI charts
-      const portfolioSeries = buildPortfolioEarningsSchedule(loansWithEarnings);
-
-      createDrawerStackedChart(
-      drawerChartArea,
-      portfolioSeries,
-      { loanName: "Portfolio", purchaseDate: portfolioSeries[0]?.date }
-    );
-      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-      renderKPI2Table(loansWithEarnings, "drawerKpiTable");
-      openDrawer();
-    }
-
-    function openKpi3(){
-      currentLoan = null;
-      drawerTitle.textContent = "Average Monthly Earnings";
-      drawerSub.textContent = `Based on net earnings through ${formatDate(new Date())}.`;
-      drawerPrimaryTitle.textContent = "Avg Monthly Earnings";
-      drawerPrimary.textContent = `$${kpis.avgMonthlyEarnings.toFixed(2)}`;
-      drawerSecondaryTitle.textContent = "Months Counted";
-      drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
-      resetDrawerContent();
-      // Build portfolio-wide stacked series for KPI charts
-      const portfolioSeries = buildPortfolioEarningsSchedule(loansWithEarnings);
-
-      createDrawerStackedChart(
-      drawerChartArea,
-      portfolioSeries,
-      { loanName: "Portfolio", purchaseDate: portfolioSeries[0]?.date }
-    );
-      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-      renderKPI3Table(loansWithEarnings, "drawerKpiTable");
-      openDrawer();
-    }
-
-    function openKpi4(){
-      currentLoan = null;
-      drawerTitle.textContent = "Total Fees to Date";
-      drawerSub.textContent = "Cumulative monthly fees across all loans.";
-      drawerPrimaryTitle.textContent = "Total Fees";
-      drawerPrimary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
-      drawerSecondaryTitle.textContent = "Total Loans";
-      drawerSecondary.textContent = `${loans.length}`;
-      resetDrawerContent();
-      // Build portfolio-wide stacked series for KPI charts
-      const portfolioSeries = buildPortfolioEarningsSchedule(loansWithEarnings);
-
-      createDrawerStackedChart(
-      drawerChartArea,
-      portfolioSeries,
-      { loanName: "Portfolio", purchaseDate: portfolioSeries[0]?.date }
-    );
-      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-      renderKPI4Table(loansWithEarnings, "drawerKpiTable");
-      openDrawer();
-    }
+    
 
     // ===========================
     // Drawer global variables
