@@ -966,34 +966,39 @@ html[data-theme="dark"] .legend .sw {
 
     let loansWithEarnings = [];
 
-    function rebuildLoansWithEarnings() {
-      loansWithEarnings = loans.map((raw, idx) => {
-        // Normalize fields from backend
-        const id = raw.loanId ?? raw.id ?? (idx + 1);
-        const purchasePrice = Number(raw.purchasePrice ?? raw.principal ?? 0);
-        const nominalRate = Number(raw.nominalRate ?? raw.rate ?? 0);
-        const termYears = Number(raw.termYears ?? 0);
-        const graceYears = Number(raw.graceYears ?? 0);
+function rebuildLoansWithEarnings() {
+  loansWithEarnings = loans.map((raw, idx) => {
+    // Normalize fields from backend
+    // Keep a NUMERIC internal id for charts/colors,
+    // and a separate loanId that can be your random 10-char ID.
+    const id = raw.id ?? (idx + 1);
+    const loanId = raw.loanId ?? id;
 
-        const upfrontFee = Number(raw.upfrontFee ?? 150);           // flat fee in month 1
-        const monthlyFeeStart = Number(raw.monthlyFeeStart ??       // starting monthly fee
-                                       raw.feePerMonth ?? 9);
+    const purchasePrice = Number(raw.purchasePrice ?? raw.principal ?? 0);
+    const nominalRate = Number(raw.nominalRate ?? raw.rate ?? 0);
+    const termYears = Number(raw.termYears ?? 0);
+    const graceYears = Number(raw.graceYears ?? 0);
 
-        const normalizedLoan = {
-          ...raw,
-          loanId: id,
-          id,
-          loanName: raw.loanName ?? `Loan ${id}`,
-          school: raw.school ?? "No school listed",
-          loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
-          purchaseDate: raw.purchaseDate || "",
-          purchasePrice,
-          nominalRate,
-          termYears,
-          graceYears,
-          upfrontFee,
-          monthlyFeeStart
-        };
+    const upfrontFee = Number(raw.upfrontFee ?? 150);           // flat fee in month 1
+    const monthlyFeeStart = Number(raw.monthlyFeeStart ??       // starting monthly fee
+                                   raw.feePerMonth ?? 9);
+
+    const normalizedLoan = {
+      ...raw,
+      loanId,
+      id,
+      loanName: raw.loanName ?? `Loan ${loanId}`,
+      school: raw.school ?? "No school listed",
+      loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
+      purchaseDate: raw.purchaseDate || "",
+      purchasePrice,
+      nominalRate,
+      termYears,
+      graceYears,
+      upfrontFee,
+      monthlyFeeStart
+    };
+
 
         const amort = calcAmort(
           normalizedLoan.purchasePrice,
@@ -1768,17 +1773,16 @@ function openKpi1(){
 
   resetDrawerContent();
 
-  // Build correct monthly aggregated totals for lens chart (API-driven)
-  const rows = buildPortfolioDrawerRows(loansWithEarnings);
-
-  // Draw KPI1 chart using KPI-specific portfolio engine
-  createKpiStackedChart(drawerChartArea, rows);
+  // Use the original KPI1 chart engine (same logic as static earnings page)
+  // This uses loansWithEarnings (already built from the API data)
+  renderKPI1Chart(loansWithEarnings, "drawerChartArea");
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
 
   openDrawer();
 }
+
 
 
     
