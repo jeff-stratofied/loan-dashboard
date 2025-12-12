@@ -1405,14 +1405,8 @@ function createKpiStackedChart(container, rows) {
   rows.forEach(r => r.contributions.forEach(c => loanIds.add(c.loanId)));
   const loanIdList = [...loanIds];
 
-  // Generate stable colors
-  // Use global loan color map (built at page initialization)
-  const colors = window.KPI_COLOR_MAP;
-
-  loanIdList.forEach((id, i) => {
-    const hue = (i * 31) % 360;
-    colors[id] = `hsl(${hue}, 70%, 50%)`;
-  });
+// Use global color map (already built in initPage)
+const colors = window.KPI_COLOR_MAP;
 
   // Determine Y scale
   let maxVal = 0;
