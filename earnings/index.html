@@ -1398,8 +1398,14 @@ function createKpiStackedChart(container, rows) {
   // Determine Y scale
   let maxVal = 0;
   rows.forEach(r => {
-    const totalPos = r.contributions.reduce((s,c) => s + c.principal + c.interest, 0);
-    const totalNeg = r.contributions.reduce((s,c) => s + c.fees, 0);
+    const totalPos = r.contributions
+  .filter(c => c.net >= 0)
+  .reduce((s,c) => s + c.net, 0);
+
+const totalNeg = r.contributions
+  .filter(c => c.net < 0)
+  .reduce((s,c) => s + Math.abs(c.net), 0);
+
     maxVal = Math.max(maxVal, totalPos, Math.abs(totalNeg));
   });
   if (maxVal < 1) maxVal = 1;
@@ -1420,18 +1426,29 @@ function createKpiStackedChart(container, rows) {
 
     r.contributions.forEach(c => {
       // positive part
-      const upHeight = (c.principal + c.interest) * scale;
-      const upRect = document.createElementNS(svgNS, "rect");
-      upRect.setAttribute("x", x);
-      upRect.setAttribute("y", yUp - upHeight);
-      upRect.setAttribute("width", bw);
-      upRect.setAttribute("height", upHeight);
-      upRect.setAttribute("fill", colors[c.loanId]);
-      svg.appendChild(upRect);
-      yUp -= upHeight;
+      r.contributions.forEach(c => {
 
-      // negative (fees)
-      const dnHeight = c.fees * scale;
+  const val = c.net;   // positive or negative
+
+  const h = Math.abs(val * scale);
+
+  const rect = document.createElementNS(svgNS, "rect");
+  rect.setAttribute("x", x);
+  rect.setAttribute("width", bw);
+  rect.setAttribute("height", h);
+  rect.setAttribute("fill", colors[c.loanId]);
+
+  if (val >= 0) {
+    rect.setAttribute("y", yUp - h);
+    yUp -= h;
+  } else {
+    rect.setAttribute("y", yDn);
+    yDn += h;
+  }
+
+  svg.appendChild(rect);
+});
+
       if (dnHeight > 0) {
         const dnRect = document.createElementNS(svgNS, "rect");
         dnRect.setAttribute("x", x);
@@ -1444,8 +1461,8 @@ function createKpiStackedChart(container, rows) {
       }
     });
 
-    // label every 2 months
-    if (i % 2 === 0) {
+    // label every 12 months
+    if (i % 12 === 0) {
       const lbl = document.createElementNS(svgNS, "text");
       lbl.textContent = r.date.toLocaleString("en-US", { month: "short", year: "numeric" });
       lbl.setAttribute("x", x + bw / 2);
@@ -1741,11 +1758,10 @@ function buildPortfolioDrawerRows(loans) {
       }
 
       monthly.get(key).contributions.push({
-        loanId: loan.loanId,
-        principal: r.principalPaid,
-        interest: r.interest,
-        fees: r.feeThisMonth
-      });
+  loanId: loan.loanId,
+  net: (r.principalPaid + r.interest - r.feeThisMonth)
+});
+
     });
   });
 
