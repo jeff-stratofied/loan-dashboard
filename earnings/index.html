@@ -1751,37 +1751,50 @@ svg.appendChild(vline);
       openDrawerBase();
     }
 
+// Build aggregated rows for KPI charts (by month across loans)
+// IMPORTANT: only owned months, and only up to TODAY
 function buildPortfolioDrawerRows(loans) {
-  const monthly = new Map();
+  const TODAY = new Date();
+  TODAY.setHours(0, 0, 0, 0);
+
+  const monthly = new Map(); // key: YYYY-MM
 
   loans.forEach(loan => {
-    loan.earningsSchedule
-      .filter(r => r.isOwned)              // ONLY include months after purchase
-      .forEach(r => {
+    (loan.earningsSchedule || []).forEach(r => {
+      // skip any non-owned rows, just in case
+      if (!r.isOwned) return;
 
-        const d = new Date(r.ownershipDate || r.loanDate);
-        d.setHours(0,0,0,0);
+      // use ownershipDate when present (purchase-based timeline)
+      const rawDate = r.ownershipDate || r.loanDate;
+      if (!rawDate) return;
 
-        const key = `${d.getFullYear()}-${d.getMonth()+1}`;
+      const d = new Date(rawDate);
+      d.setHours(0, 0, 0, 0);
 
-        if (!monthly.has(key)) {
-          monthly.set(key, {
-            date: d,
-            contributions: []
-          });
-        }
+      // do not show future months in the KPI drawers
+      if (d > TODAY) return;
 
-        monthly.get(key).contributions.push({
-          loanId: loan.loanId,
-          net: r.principalPaid + r.interest - r.feeThisMonth
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+
+      if (!monthly.has(key)) {
+        monthly.set(key, {
+          date: d,
+          contributions: []
         });
+      }
+
+      monthly.get(key).contributions.push({
+        loanId: loan.loanId,
+        net: (r.principalPaid || 0) +
+             (r.interest || 0) -
+             (r.feeThisMonth || 0)
       });
+    });
   });
 
-  return [...monthly.values()].sort((a,b) => a.date - b.date);
+  // return rows sorted by calendar month
+  return [...monthly.values()].sort((a, b) => a.date - b.date);
 }
-
-
 
 
 
@@ -2385,13 +2398,20 @@ const currentX = padL + todayIndex * barW;
     }
 
 
-    function renderKPI1Chart(data, containerId = "kpi1Chart"){
-      const limitedData = data.map(loan => ({
-        ...loan,
-        earningsSchedule: loan.earningsSchedule.slice(0, 18)
-      }));
-      buildKpiStackedChart(containerId, limitedData, row => row.netEarnings || 0, false, "kpi1");
-    }
+    // KPI 1: Total Net Earnings to Date (portfolio stacked chart)
+function renderKPI1Chart(loans, containerId = "drawerChartArea") {
+  const containerEl = document.getElementById(containerId);
+  if (!containerEl) return;
+
+  // Build portfolio-level monthly rows using ownership dates,
+  // and only up to TODAY
+  const rows = buildPortfolioDrawerRows(loans);
+
+  // Use the new aggregated stacked chart engine which already
+  // uses window.KPI_COLOR_MAP for colors
+  createKpiStackedChart(containerEl, rows);
+}
+
     
     function renderKPI2Chart(data, containerId = "kpi2Chart"){
       buildKpiStackedChart(containerId, data, row => row.netEarnings || 0, true, "kpi2");
