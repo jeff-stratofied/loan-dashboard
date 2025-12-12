@@ -1672,29 +1672,37 @@ function buildPortfolioEarningsSchedule(loans) {
       openDrawerBase();
     }
 
-    function convertPortfolioSeriesToLoanRows(series) {
-  const out = [];
-  let prev = { cumPrincipal: 0, cumInterest: 0, cumFees: 0 };
+function buildPortfolioEarningsSeries(loans) {
+  const map = new Map(); // yyyy-mm -> { date, principalPaid, interest, feeThisMonth, cumPrincipal, cumInterest, cumFees }
 
-  series.forEach(r => {
-    const p = r.cumPrincipal - prev.cumPrincipal;
-    const i = r.cumInterest - prev.cumInterest;
-    const f = r.cumFees - prev.cumFees;
+  loans.forEach(loan => {
+    loan.earningsSchedule.forEach(r => {
+      const d = r.loanDate;
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
 
-    out.push({
-      loanDate: r.date,
-      principalPaid: p,
-      interest: i,
-      feeThisMonth: f,
-      cumPrincipal: r.cumPrincipal,
-      cumInterest: r.cumInterest,
-      cumFees: r.cumFees
+      if (!map.has(key)) {
+        map.set(key, {
+          date: d,
+          principalPaid: 0,
+          interest: 0,
+          feeThisMonth: 0,
+          cumPrincipal: 0,
+          cumInterest: 0,
+          cumFees: 0
+        });
+      }
+
+      const row = map.get(key);
+      row.principalPaid += r.principalPaid || 0;
+      row.interest += r.interest || 0;
+      row.feeThisMonth += r.feeThisMonth || 0;
+      row.cumPrincipal += r.cumPrincipal || 0;
+      row.cumInterest += r.cumInterest || 0;
+      row.cumFees += r.cumFees || 0;
     });
-
-    prev = r;
   });
 
-  return out;
+  return [...map.values()].sort((a,b) => a.date - b.date);
 }
 
     
@@ -1708,9 +1716,7 @@ function openKpi1(){
   drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
   resetDrawerContent();
 
-  const kpiRows = convertPortfolioSeriesToLoanRows(
-  portfolioViews.earningsSeriesCombined
-);
+  const kpiRows = buildPortfolioEarningsSeries(loansWithEarnings);
 
   createDrawerStackedChart(
       drawerChartArea,
