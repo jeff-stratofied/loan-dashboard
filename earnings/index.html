@@ -1688,7 +1688,14 @@ function buildPortfolioEarningsSchedule(loans) {
   drawerSecondaryTitle.textContent = "Total Fees to Date";
   drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
   resetDrawerContent();
-  renderKPI1Chart(loansWithEarnings, "drawerChartArea");
+  const series = buildPortfolioEarningsSchedule(loansWithEarnings);
+
+createDrawerStackedChart(
+    drawerChartArea,
+    series,
+    { loanName: "Portfolio", purchaseDate: series[0]?.date }
+);
+
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
   openDrawer();
@@ -1703,7 +1710,14 @@ function openKpi2(){
   drawerSecondaryTitle.textContent = "Total Principal";
   drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
   resetDrawerContent();
-  renderKPI2Chart(loansWithEarnings, "drawerChartArea");
+  const series = buildPortfolioEarningsSchedule(loansWithEarnings);
+
+createDrawerStackedChart(
+    drawerChartArea,
+    series,
+    { loanName: "Portfolio", purchaseDate: series[0]?.date }
+);
+
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI2Table(loansWithEarnings, "drawerKpiTable");
   openDrawer();
@@ -1718,7 +1732,14 @@ function openKpi3(){
   drawerSecondaryTitle.textContent = "Months Counted";
   drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
   resetDrawerContent();
-  renderKPI3Chart(loansWithEarnings, "drawerChartArea");
+  const series = buildPortfolioEarningsSchedule(loansWithEarnings);
+
+createDrawerStackedChart(
+    drawerChartArea,
+    series,
+    { loanName: "Portfolio", purchaseDate: series[0]?.date }
+);
+
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI3Table(loansWithEarnings, "drawerKpiTable");
   openDrawer();
@@ -1733,7 +1754,14 @@ function openKpi4(){
   drawerSecondaryTitle.textContent = "Total Loans";
   drawerSecondary.textContent = `${loans.length}`;
   resetDrawerContent();
-  renderKPI4Chart(loansWithEarnings, "drawerChartArea");
+  const series = buildPortfolioEarningsSchedule(loansWithEarnings);
+
+createDrawerStackedChart(
+    drawerChartArea,
+    series,
+    { loanName: "Portfolio", purchaseDate: series[0]?.date }
+);
+
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI4Table(loansWithEarnings, "drawerKpiTable");
   openDrawer();
