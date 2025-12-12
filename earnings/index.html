@@ -1087,6 +1087,18 @@ function rebuildLoansWithEarnings() {
       );
     }
 
+    function buildLoanColorMap(loans) {
+      const map = {};
+      loans.forEach((loan, i) => {
+        const hue = (i * 31) % 360;
+        map[loan.loanId] = `hsl(${hue}, 70%, 50%)`;
+      });
+      window.KPI_COLOR_MAP = map;
+    }
+
+
+
+    
     // --------------------------
     // KPI calculations
     // --------------------------
@@ -1394,7 +1406,9 @@ function createKpiStackedChart(container, rows) {
   const loanIdList = [...loanIds];
 
   // Generate stable colors
-  const colors = {};
+  // Use global loan color map (built at page initialization)
+  const colors = window.KPI_COLOR_MAP;
+
   loanIdList.forEach((id, i) => {
     const hue = (i * 31) % 360;
     colors[id] = `hsl(${hue}, 70%, 50%)`;
@@ -1935,6 +1949,9 @@ function openKpi4(){
   // build portfolio-wide earnings series for charts (mini + drawer + KPI)
   portfolioViews = buildPortfolioViews(loansWithEarnings);
 
+      buildLoanColorMap(loansWithEarnings);
+
+
   kpis = computeEarningsKPIs(loansWithEarnings);
 
 document.getElementById("kpiNetToDate").textContent =
@@ -2394,19 +2411,31 @@ const currentX = padL + todayIndex * barW;
       `;
     }
 
-    function renderKPI1Table(data, containerId = "kpi1Table"){
-      const rows = data.map(l => {
-        const { row: atCur } = getCurrentEarningsRow(l);
-        return [
-          `${l.loanName}`,
-          `$${atCur.netEarnings.toFixed(2)}`,
-          `$${atCur.cumPrincipal.toFixed(2)}`,
-          `$${atCur.cumInterest.toFixed(2)}`,
-          `-$${atCur.cumFees.toFixed(2)}`
-        ];
-      });
-      renderKpiTable(containerId, ["Loan","Net Earnings","Principal","Interest","Fees"], rows);
+    function renderKPI1Table(data, containerId = "kpi1Table") {
+  const rows = data.map(l => {
+    const { row: atCur } = getCurrentEarningsRow(l);
+
+    // Get the color for this loan
+    const color = window.KPI_COLOR_MAP?.[l.loanId] || "inherit";
+
+    return [
+      `<span style="color:${color}">${l.loanName}</span>`,
+      `<span style="color:${color}">$${atCur.netEarnings.toFixed(2)}</span>`,
+      `<span style="color:${color}">$${atCur.cumPrincipal.toFixed(2)}</span>`,
+      `<span style="color:${color}">$${atCur.cumInterest.toFixed(2)}</span>`,
+      `<span style="color:${color}">-$${atCur.cumFees.toFixed(2)}</span>`
+    ];
+  });
+
+  renderKpiTable(
+    containerId,
+    ["Loan","Net Earnings","Principal","Interest","Fees"],
+    rows
+  );
+}
+
     }
+    
     function renderKPI2Table(data, containerId = "kpi2Table"){
       const rows = data.map(l => {
         const lastRow = l.earningsSchedule[l.earningsSchedule.length-1] || { netEarnings: 0 };
@@ -2420,6 +2449,7 @@ const currentX = padL + todayIndex * barW;
       });
       renderKpiTable(containerId, ["Loan","Projected Net","Principal","Term","Grace"], rows);
     }
+    
     function renderKPI3Table(data, containerId = "kpi3Table"){
       const rows = data.map(l => {
         const { row: atCur, monthsCounted } = getCurrentEarningsRow(l);
@@ -2435,6 +2465,7 @@ const currentX = padL + todayIndex * barW;
       });
       renderKpiTable(containerId, ["Loan","Avg / Mo","Net to Date","Months","Fees"], rows);
     }
+    
     function renderKPI4Table(data, containerId = "kpi4Table"){
       const rows = data.map(l => {
         const { row: atCur } = getCurrentEarningsRow(l);
