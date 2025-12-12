@@ -1368,89 +1368,90 @@ const currentX = padL + ratio * (w - padL - padR);
 // =======================================================
 // NEW: Portfolio KPI Stacked Chart (aggregated rows)
 // =======================================================
-function createKpiStackedChart(container, pointsByLoan) {
+function createKpiStackedChart(container, rows) {
   container.innerHTML = "";
 
   const svgNS = "http://www.w3.org/2000/svg";
   const rect = container.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
   const h = 260;
-  const padL = 50, padR = 20, padT = 20, padB = 30;
 
-  const loanIds = Object.keys(pointsByLoan);
+  const padL = 50, padR = 20, padT = 20, padB = 20;
 
-  // Build unified month list
-  const monthMap = new Map();
-  loanIds.forEach(id => {
-    pointsByLoan[id].forEach(p => {
-      const key = p.date.getTime();
-      if (!monthMap.has(key)) monthMap.set(key, []);
-    });
-  });
-
-  const months = [...monthMap.keys()].sort().map(t => new Date(t));
-
-  const barW = (w - padL - padR) / months.length;
-
-  // Determine max height of stacked segments
-  let maxStack = 0;
-  months.forEach(d => {
-    let sum = 0;
-    loanIds.forEach(id => {
-      const p = pointsByLoan[id].find(pp => pp.date.getTime() === d.getTime());
-      if (p) sum += p.value;
-    });
-    if (sum > maxStack) maxStack = sum;
-  });
-  if (maxStack < 1) maxStack = 1;
-
-  const usable = h - padT - padB;
-  const scale = usable / maxStack;
-
-  const svg = document.createElementNS(svgNS,"svg");
+  const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.setAttribute("width","100%");
-  svg.setAttribute("height","100%");
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
 
-  // Assign a color per loan (old file style)
-  const palette = [
-    "#0ea5e9","#22c55e","#ef4444","#a855f7","#f97316",
-    "#6366f1","#14b8a6","#eab308","#ec4899","#475569",
-    "#06b6d4","#84cc16"
-  ];
+  // Collect all loanIds for color mapping
+  const loanIds = new Set();
+  rows.forEach(r => r.contributions.forEach(c => loanIds.add(c.loanId)));
+  const loanIdList = [...loanIds];
+
+  // Generate stable colors
   const colors = {};
-  loanIds.forEach((id,i)=>colors[id] = palette[i % palette.length]);
+  loanIdList.forEach((id, i) => {
+    const hue = (i * 31) % 360;
+    colors[id] = `hsl(${hue}, 70%, 50%)`;
+  });
 
-  // Draw stacked bars
-  months.forEach((d, monthIndex) => {
-    let yTop = h - padB;
-    const x = padL + monthIndex * barW;
+  // Determine Y scale
+  let maxVal = 0;
+  rows.forEach(r => {
+    const totalPos = r.contributions.reduce((s,c) => s + c.principal + c.interest, 0);
+    const totalNeg = r.contributions.reduce((s,c) => s + c.fees, 0);
+    maxVal = Math.max(maxVal, totalPos, Math.abs(totalNeg));
+  });
+  if (maxVal < 1) maxVal = 1;
 
-    loanIds.forEach(id => {
-      const p = pointsByLoan[id].find(pp => pp.date.getTime() === d.getTime());
-      if (!p) return;
+  const usableH = h - padT - padB;
+  const scale = usableH / (2 * maxVal); // center at mid
+  const yZero = padT + usableH / 2;
 
-      const hSeg = p.value * scale;
-      const y = yTop - hSeg;
+  // Bar width
+  const barW = (w - padL - padR) / rows.length;
 
-      const rectEl = document.createElementNS(svgNS,"rect");
-      rectEl.setAttribute("x", x+2);
-      rectEl.setAttribute("y", y);
-      rectEl.setAttribute("width", Math.max(2, barW - 4));
-      rectEl.setAttribute("height", hSeg);
-      rectEl.setAttribute("fill", colors[id]);
-      svg.appendChild(rectEl);
+  rows.forEach((r, i) => {
+    const x = padL + i * barW;
+    const bw = Math.max(2, barW - 3);
 
-      yTop = y;
+    let yUp = yZero;
+    let yDn = yZero;
+
+    r.contributions.forEach(c => {
+      // positive part
+      const upHeight = (c.principal + c.interest) * scale;
+      const upRect = document.createElementNS(svgNS, "rect");
+      upRect.setAttribute("x", x);
+      upRect.setAttribute("y", yUp - upHeight);
+      upRect.setAttribute("width", bw);
+      upRect.setAttribute("height", upHeight);
+      upRect.setAttribute("fill", colors[c.loanId]);
+      svg.appendChild(upRect);
+      yUp -= upHeight;
+
+      // negative (fees)
+      const dnHeight = c.fees * scale;
+      if (dnHeight > 0) {
+        const dnRect = document.createElementNS(svgNS, "rect");
+        dnRect.setAttribute("x", x);
+        dnRect.setAttribute("y", yDn);
+        dnRect.setAttribute("width", bw);
+        dnRect.setAttribute("height", dnHeight);
+        dnRect.setAttribute("fill", colors[c.loanId]);
+        svg.appendChild(dnRect);
+        yDn += dnHeight;
+      }
     });
 
-    if (monthIndex % 3 === 0) {
-      const lbl = document.createElementNS(svgNS,"text");
-      lbl.textContent = formatMonthYear(d);
-      lbl.setAttribute("x", x + barW/2);
-      lbl.setAttribute("y", h - padB + 16);
-      lbl.setAttribute("fill", "var(--text)");
+    // label every 2 months
+    if (i % 2 === 0) {
+      const lbl = document.createElementNS(svgNS, "text");
+      lbl.textContent = r.date.toLocaleString("en-US", { month: "short", year: "numeric" });
+      lbl.setAttribute("x", x + bw / 2);
+      lbl.setAttribute("y", h - 4);
       lbl.setAttribute("font-size", "11");
+      lbl.setAttribute("fill", "var(--text)");
       lbl.setAttribute("text-anchor", "middle");
       svg.appendChild(lbl);
     }
@@ -1458,6 +1459,7 @@ function createKpiStackedChart(container, pointsByLoan) {
 
   container.appendChild(svg);
 }
+
 
 
 
@@ -1722,28 +1724,34 @@ svg.appendChild(vline);
     }
 
 function buildPortfolioDrawerRows(loans) {
-
-  // pointsByLoan = { loanId: [ { date, value } ] }
-  const pointsByLoan = {};
+  const monthly = new Map(); // key = YYYY-MM
 
   loans.forEach(loan => {
-    const loanId = loan.loanId;
-    pointsByLoan[loanId] = [];
-
     loan.earningsSchedule.forEach(r => {
-      const net = (r.principalPaid || 0) + (r.interest || 0) - (r.feeThisMonth || 0);
       const d = new Date(r.loanDate);
-      d.setHours(0,0,0,0);
+      d.setHours(0, 0, 0, 0);
 
-      pointsByLoan[loanId].push({
-        date: d,
-        value: net
+      const key = `${d.getFullYear()}-${d.getMonth()+1}`;
+
+      if (!monthly.has(key)) {
+        monthly.set(key, {
+          date: d,
+          contributions: []   // <-- each loan's monthly p/i/f
+        });
+      }
+
+      monthly.get(key).contributions.push({
+        loanId: loan.loanId,
+        principal: r.principalPaid,
+        interest: r.interest,
+        fees: r.feeThisMonth
       });
     });
   });
 
-  return pointsByLoan;
+  return [...monthly.values()].sort((a,b) => a.date - b.date);
 }
+
 
 
 
