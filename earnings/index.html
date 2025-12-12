@@ -1087,14 +1087,27 @@ function rebuildLoansWithEarnings() {
       );
     }
 
-    function buildLoanColorMap(loans) {
-      const map = {};
-      loans.forEach((loan, i) => {
-        const hue = (i * 31) % 360;
-        map[loan.loanId] = `hsl(${hue}, 70%, 50%)`;
-      });
-      window.KPI_COLOR_MAP = map;
-    }
+// Build a stable color map using first appearance order in the portfolio
+function buildLoanColorMap(loans) {
+  const map = {};
+  let index = 0;
+
+  // Go through portfolio rows in chronological order
+  const allRows = buildPortfolioDrawerRows(loans);
+
+  allRows.forEach(row => {
+    row.contributions.forEach(c => {
+      if (!map[c.loanId]) {
+        const hue = (index * 31) % 360;
+        map[c.loanId] = `hsl(${hue}, 70%, 50%)`;
+        index++;
+      }
+    });
+  });
+
+  window.KPI_COLOR_MAP = map;
+}
+
 
 
 
@@ -1738,30 +1751,28 @@ svg.appendChild(vline);
       openDrawerBase();
     }
 
-function buildPortfolioDrawerRows(loans) {
-  const monthly = new Map(); // key = YYYY-MM
+loan.earningsSchedule
+  .filter(r => r.isOwned)              // <-- ONLY include months after purchase
+  .forEach(r => {
 
-  loans.forEach(loan => {
-    loan.earningsSchedule.forEach(r => {
-      const d = new Date(r.loanDate);
-      d.setHours(0, 0, 0, 0);
+    const d = new Date(r.ownershipDate || r.loanDate);
+    d.setHours(0,0,0,0);
 
-      const key = `${d.getFullYear()}-${d.getMonth()+1}`;
+    const key = `${d.getFullYear()}-${d.getMonth()+1}`;
 
-      if (!monthly.has(key)) {
-        monthly.set(key, {
-          date: d,
-          contributions: []   // <-- each loan's monthly p/i/f
-        });
-      }
+    if (!monthly.has(key)) {
+      monthly.set(key, {
+        date: d,
+        contributions: []
+      });
+    }
 
-      monthly.get(key).contributions.push({
-  loanId: loan.loanId,
-  net: (r.principalPaid + r.interest - r.feeThisMonth)
+    monthly.get(key).contributions.push({
+      loanId: loan.loanId,
+      net: r.principalPaid + r.interest - r.feeThisMonth
+    });
 });
 
-    });
-  });
 
   return [...monthly.values()].sort((a,b) => a.date - b.date);
 }
