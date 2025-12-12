@@ -1469,48 +1469,58 @@ r.contributions.forEach(c => {
   }
 
   svg.appendChild(bar);
-
-  // ------------------------------
-// KPI CHART HOVER BEHAVIOR
-// ------------------------------
+});
+// =======================
+// KPI Chart Hover System
+// =======================
 let lensInstance = null;
-const lensRadius = 20;
-const lensScale = 2;
+const lensRadius = 22;
+const lensScale = 1.8;
 
-function handleMove(e){
+function handleMove(e) {
   const rect = svg.getBoundingClientRect();
   const mouseX = ((e.clientX - rect.left) / rect.width) * w;
   const mouseY = ((e.clientY - rect.top) / rect.height) * h;
+
   const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
   const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
 
-  if(!lensInstance){
+  if (!lensInstance) {
     lensInstance = createLens(svg, lensRadius, lensScale);
-    const barClones = Array.from(svg.querySelectorAll("rect"))
-      .filter(r => r.__value !== undefined || r.getAttribute("fill"));
-    barClones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
+    const clones = Array.from(svg.querySelectorAll("rect"));
+    clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
     svg.appendChild(lensInstance.group);
   }
 
   updateLens(lensInstance, x, y);
 
-  // determine hovered month
   const idx = Math.max(0, Math.min(rows.length - 1, Math.floor((x - padL) / barW)));
   const row = rows[idx];
 
+  // compute totals
+  const principal = row.contributions
+    .filter(c => c.net >= 0)
+    .reduce((s,c)=>s+c.net,0);
+
+  const fees = row.contributions
+    .filter(c => c.net < 0)
+    .reduce((s,c)=>s+Math.abs(c.net),0);
+
+  const interest = 0; // you can add this later if needed
+  const net = principal - fees;
+
   const tooltipLines = [
-    `Month: ${idx + 1}`,
-    `Principal: $${row.cumPrincipal.toFixed(2)}`,
-    `Interest: $${row.cumInterest.toFixed(2)}`,
-    `Fees: -$${row.cumFees.toFixed(2)}`,
-    `Net: $${row.net.toFixed(2)}`
+    `Date: ${formatMonthYear(row.date)}`,
+    `Principal: $${principal.toFixed(2)}`,
+    `Fees: -$${fees.toFixed(2)}`,
+    `Net: $${net.toFixed(2)}`
   ];
 
   setMiniTooltipContent(tooltipLines);
   positionMiniTooltip(e.clientX, e.clientY, lensRadius);
 }
 
-function handleLeave(){
+function handleLeave() {
   removeLens(svg, lensInstance);
   lensInstance = null;
   hideMiniTooltip();
@@ -1518,8 +1528,6 @@ function handleLeave(){
 
 svg.addEventListener("mousemove", handleMove);
 svg.addEventListener("mouseleave", handleLeave);
-
-});
 
 
     // label every 12 months
