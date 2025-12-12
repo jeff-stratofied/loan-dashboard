@@ -1809,22 +1809,90 @@ function renderKPI1StackedLoanChart(container, loans) {
 }
 
     
-function openKpi1(){
-  currentLoan = null;
-  drawerTitle.textContent = "Total Net Earnings to Date";
-  drawerSub.textContent = "Portfolio-level earnings across all loans.";
-  drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
-  drawerSecondaryTitle.textContent = "Total Fees to Date";
-  drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
-  resetDrawerContent();
+    function openKpi1(){
+      currentLoan = null;
 
-  renderKPI1StackedLoanChart(drawerChartArea, loansWithEarnings);
+      // Header + stat cards
+      drawerTitle.textContent = "Total Net Earnings to Date";
+      drawerSub.textContent = "Portfolio-level earnings across all loans.";
+      drawerPrimaryTitle.textContent = "Net Earnings to Date";
+      drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
+      drawerSecondaryTitle.textContent = "Total Fees to Date";
+      drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
 
-  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-  renderKPI1Table(loansWithEarnings, "drawerKpiTable");
-  openDrawer();
-}
+      // Clear previous contents
+      resetDrawerContent();
+
+      // Build a portfolio-level cumulative earnings schedule
+      const portfolioSchedule = buildPortfolioEarningsSchedule(loansWithEarnings);
+
+      // Earliest purchase date across all loans, used for the "today" vertical line
+      const startTimes = loansWithEarnings
+        .map(l => new Date(l.purchaseDate).getTime())
+        .filter(t => Number.isFinite(t));
+      const earliestPurchase = startTimes.length
+        ? new Date(Math.min(...startTimes))
+        : new Date();
+
+      // Pseudo-loan object so createDrawerStackedChart can compute the today line
+      const portfolioLoan = {
+        purchaseDate: earliestPurchase,
+        earningsSchedule: portfolioSchedule
+      };
+
+      // 🔹 Use the same stacked drawer chart engine as the loan drawers
+      createDrawerStackedChart(drawerChartArea, portfolioSchedule, portfolioLoan);
+
+      // Table stays the same
+      drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+      renderKPI1Table(loansWithEarnings, "drawerKpiTable");
+
+      openDrawer();
+    }
+
+    // Build a portfolio-level earnings schedule by month
+    function buildPortfolioEarningsSchedule(loans) {
+      const schedules = loans
+        .map(l => l.earningsSchedule || [])
+        .filter(arr => arr.length);
+
+      if (!schedules.length) return [];
+
+      const maxLen = Math.max(...schedules.map(arr => arr.length));
+      const portfolio = [];
+
+      for (let i = 0; i < maxLen; i++) {
+        let cumPrincipal = 0;
+        let cumInterest = 0;
+        let cumFees = 0;
+        let loanDate = null;
+        let ownershipDate = null;
+
+        schedules.forEach(arr => {
+          const row = arr[Math.min(i, arr.length - 1)];
+          if (!row) return;
+
+          cumPrincipal += Number(row.cumPrincipal || 0);
+          cumInterest += Number(row.cumInterest || 0);
+          cumFees += Number(row.cumFees || 0);
+
+          if (!loanDate && row.loanDate) loanDate = row.loanDate;
+          if (!ownershipDate && row.ownershipDate) ownershipDate = row.ownershipDate;
+        });
+
+        const d = loanDate || ownershipDate || new Date();
+
+        portfolio.push({
+          loanDate: d,
+          ownershipDate: d,
+          cumPrincipal,
+          cumInterest,
+          cumFees
+        });
+      }
+
+      return portfolio;
+    }
 
 
 
