@@ -1689,7 +1689,7 @@ function buildPortfolioEarningsSchedule(loans) {
   drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
   resetDrawerContent();
   renderKPI1Chart(loansWithEarnings, "drawerChartArea");
-);
+;
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
@@ -1706,7 +1706,7 @@ function openKpi2(){
   drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
   resetDrawerContent();
   renderKPI2Chart(loansWithEarnings, "drawerChartArea");
-);
+;
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI2Table(loansWithEarnings, "drawerKpiTable");
@@ -1723,7 +1723,7 @@ function openKpi3(){
   drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
   resetDrawerContent();
   renderKPI3Chart(loansWithEarnings, "drawerChartArea");
-);
+;
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI3Table(loansWithEarnings, "drawerKpiTable");
@@ -1740,7 +1740,7 @@ function openKpi4(){
   drawerSecondary.textContent = `${loans.length}`;
   resetDrawerContent();
   renderKPI4Chart(loansWithEarnings, "drawerChartArea");
-);
+;
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI4Table(loansWithEarnings, "drawerKpiTable");
