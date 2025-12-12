@@ -1751,31 +1751,36 @@ svg.appendChild(vline);
       openDrawerBase();
     }
 
-loan.earningsSchedule
-  .filter(r => r.isOwned)              // <-- ONLY include months after purchase
-  .forEach(r => {
+function buildPortfolioDrawerRows(loans) {
+  const monthly = new Map();
 
-    const d = new Date(r.ownershipDate || r.loanDate);
-    d.setHours(0,0,0,0);
+  loans.forEach(loan => {
+    loan.earningsSchedule
+      .filter(r => r.isOwned)              // ONLY include months after purchase
+      .forEach(r => {
 
-    const key = `${d.getFullYear()}-${d.getMonth()+1}`;
+        const d = new Date(r.ownershipDate || r.loanDate);
+        d.setHours(0,0,0,0);
 
-    if (!monthly.has(key)) {
-      monthly.set(key, {
-        date: d,
-        contributions: []
+        const key = `${d.getFullYear()}-${d.getMonth()+1}`;
+
+        if (!monthly.has(key)) {
+          monthly.set(key, {
+            date: d,
+            contributions: []
+          });
+        }
+
+        monthly.get(key).contributions.push({
+          loanId: loan.loanId,
+          net: r.principalPaid + r.interest - r.feeThisMonth
+        });
       });
-    }
-
-    monthly.get(key).contributions.push({
-      loanId: loan.loanId,
-      net: r.principalPaid + r.interest - r.feeThisMonth
-    });
-});
-
+  });
 
   return [...monthly.values()].sort((a,b) => a.date - b.date);
 }
+
 
 
 
