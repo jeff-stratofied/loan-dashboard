@@ -1688,12 +1688,7 @@ function buildPortfolioEarningsSchedule(loans) {
   drawerSecondaryTitle.textContent = "Total Fees to Date";
   drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
   resetDrawerContent();
-  const series = buildPortfolioEarningsSchedule(loansWithEarnings);
-
-createDrawerStackedChart(
-    drawerChartArea,
-    series,
-    { loanName: "Portfolio", purchaseDate: series[0]?.date }
+  renderKPI1Chart(loansWithEarnings, "drawerChartArea");
 );
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -1710,12 +1705,7 @@ function openKpi2(){
   drawerSecondaryTitle.textContent = "Total Principal";
   drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
   resetDrawerContent();
-  const series = buildPortfolioEarningsSchedule(loansWithEarnings);
-
-createDrawerStackedChart(
-    drawerChartArea,
-    series,
-    { loanName: "Portfolio", purchaseDate: series[0]?.date }
+  renderKPI2Chart(loansWithEarnings, "drawerChartArea");
 );
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -1732,12 +1722,7 @@ function openKpi3(){
   drawerSecondaryTitle.textContent = "Months Counted";
   drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
   resetDrawerContent();
-  const series = buildPortfolioEarningsSchedule(loansWithEarnings);
-
-createDrawerStackedChart(
-    drawerChartArea,
-    series,
-    { loanName: "Portfolio", purchaseDate: series[0]?.date }
+  renderKPI3Chart(loansWithEarnings, "drawerChartArea");
 );
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -1754,12 +1739,7 @@ function openKpi4(){
   drawerSecondaryTitle.textContent = "Total Loans";
   drawerSecondary.textContent = `${loans.length}`;
   resetDrawerContent();
-  const series = buildPortfolioEarningsSchedule(loansWithEarnings);
-
-createDrawerStackedChart(
-    drawerChartArea,
-    series,
-    { loanName: "Portfolio", purchaseDate: series[0]?.date }
+  renderKPI4Chart(loansWithEarnings, "drawerChartArea");
 );
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
