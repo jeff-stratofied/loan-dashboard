@@ -2439,7 +2439,7 @@ const currentX = padL + todayIndex * barW;
 
     }
     
-    function renderKPI2Table(data, containerId = "kpi2Table"){
+function renderKPI2Table(data, containerId = "kpi2Table") {
   const rows = data.map(l => {
     const color = window.KPI_COLOR_MAP?.[l.loanId] || "inherit";
     const lastRow = l.earningsSchedule[l.earningsSchedule.length - 1] || { netEarnings: 0 };
@@ -2455,19 +2455,19 @@ const currentX = padL + todayIndex * barW;
 
   renderKpiTable(
     containerId,
-    ["Loan","Projected Net","Principal","Term","Grace"],
+    ["Loan", "Projected Net", "Principal", "Term", "Grace"],
     rows
   );
 }
 
-    
-   function renderKPI3Table(data, containerId = "kpi3Table"){
+
+ function renderKPI3Table(data, containerId = "kpi3Table") {
   const rows = data.map(l => {
     const { row: atCur, monthsCounted } = getCurrentEarningsRow(l);
     const color = window.KPI_COLOR_MAP?.[l.loanId] || "inherit";
 
     const monthsForAvg = Math.max(1, monthsCounted);
-    const avg = monthsForAvg > 0 ? atCur.netEarnings / monthsForAvg : 0;
+    const avg = atCur.netEarnings / monthsForAvg;
 
     return [
       `<span style="color:${color}">${l.loanName}</span>`,
@@ -2480,13 +2480,13 @@ const currentX = padL + todayIndex * barW;
 
   renderKpiTable(
     containerId,
-    ["Loan","Avg / Mo","Net to Date","Months","Fees"],
+    ["Loan", "Avg / Mo", "Net to Date", "Months", "Fees"],
     rows
   );
 }
 
-    
-    function renderKPI4Table(data, containerId = "kpi4Table"){
+
+  function renderKPI4Table(data, containerId = "kpi4Table") {
   const rows = data.map(l => {
     const { row: atCur } = getCurrentEarningsRow(l);
     const color = window.KPI_COLOR_MAP?.[l.loanId] || "inherit";
@@ -2502,7 +2502,7 @@ const currentX = padL + todayIndex * barW;
 
   renderKpiTable(
     containerId,
-    ["Loan","Purchase","Fee / Mo","Fees to Date","Net to Date"],
+    ["Loan", "Purchase", "Fee / Mo", "Fees to Date", "Net to Date"],
     rows
   );
 }
