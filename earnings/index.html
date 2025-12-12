@@ -1609,6 +1609,42 @@ svg.appendChild(vline);
         openDrawer();   // ensure drawer opens
       });
     });
+
+// -------------------------------------------
+// BUILD AGGREGATED PORTFOLIO EARNINGS SERIES
+// (used by all KPI drawer charts)
+// -------------------------------------------
+function buildPortfolioEarningsSchedule(loans) {
+  const map = new Map();  // key: yyyy-mm, value: {date, cumPrincipal, cumInterest, cumFees, netEarnings}
+
+  loans.forEach(l => {
+    l.earningsSchedule.forEach(row => {
+      const d = row.loanDate;
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          date: new Date(d),
+          cumPrincipal: 0,
+          cumInterest: 0,
+          cumFees: 0,
+          netEarnings: 0
+        });
+      }
+
+      const o = map.get(key);
+
+      o.cumPrincipal += row.cumPrincipal;
+      o.cumInterest  += row.cumInterest;
+      o.cumFees      += row.cumFees;
+      o.netEarnings  += row.netEarnings;
+    });
+  });
+
+  return [...map.values()].sort((a,b) => a.date - b.date);
+}
+
+    
     function renderKPIs() {
       kpis = computeEarningsKPIs(loansWithEarnings);
       totalPrincipal = loans.reduce((s,l)=>s+l.purchasePrice,0);
@@ -1653,15 +1689,14 @@ svg.appendChild(vline);
       drawerSecondary.textContent = `$${kpis.totalInterestToDate.toFixed(2)}`;
       resetDrawerContent();
       // Build portfolio-wide stacked series for KPI charts
-      const mergedSeries = loansWithEarnings
-      .flatMap(l => l.earningsSchedule)
-      .sort((a,b) => a.loanDate - b.loanDate);
+      const portfolioSeries = buildPortfolioEarningsSchedule(loansWithEarnings);
 
       createDrawerStackedChart(
       drawerChartArea,
-      mergedSeries,
-      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+      portfolioSeries,
+      { loanName: "Portfolio", purchaseDate: portfolioSeries[0]?.date }
     );
+
 
 
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -1679,14 +1714,12 @@ svg.appendChild(vline);
       drawerSecondary.textContent = `$${totalPrincipal.toLocaleString()}`;
       resetDrawerContent();
       // Build portfolio-wide stacked series for KPI charts
-      const mergedSeries = loansWithEarnings
-      .flatMap(l => l.earningsSchedule)
-      .sort((a,b) => a.loanDate - b.loanDate);
+      const portfolioSeries = buildPortfolioEarningsSchedule(loansWithEarnings);
 
       createDrawerStackedChart(
       drawerChartArea,
-      mergedSeries,
-      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+      portfolioSeries,
+      { loanName: "Portfolio", purchaseDate: portfolioSeries[0]?.date }
     );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI2Table(loansWithEarnings, "drawerKpiTable");
@@ -1703,14 +1736,12 @@ svg.appendChild(vline);
       drawerSecondary.textContent = `${kpis.monthsCounted || 0} months`;
       resetDrawerContent();
       // Build portfolio-wide stacked series for KPI charts
-      const mergedSeries = loansWithEarnings
-      .flatMap(l => l.earningsSchedule)
-      .sort((a,b) => a.loanDate - b.loanDate);
+      const portfolioSeries = buildPortfolioEarningsSchedule(loansWithEarnings);
 
       createDrawerStackedChart(
       drawerChartArea,
-      mergedSeries,
-      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+      portfolioSeries,
+      { loanName: "Portfolio", purchaseDate: portfolioSeries[0]?.date }
     );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI3Table(loansWithEarnings, "drawerKpiTable");
@@ -1727,14 +1758,12 @@ svg.appendChild(vline);
       drawerSecondary.textContent = `${loans.length}`;
       resetDrawerContent();
       // Build portfolio-wide stacked series for KPI charts
-      const mergedSeries = loansWithEarnings
-      .flatMap(l => l.earningsSchedule)
-      .sort((a,b) => a.loanDate - b.loanDate);
+      const portfolioSeries = buildPortfolioEarningsSchedule(loansWithEarnings);
 
       createDrawerStackedChart(
       drawerChartArea,
-      mergedSeries,
-      { loanName: "Portfolio", purchaseDate: mergedSeries[0]?.loanDate }
+      portfolioSeries,
+      { loanName: "Portfolio", purchaseDate: portfolioSeries[0]?.date }
     );
       drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
       renderKPI4Table(loansWithEarnings, "drawerKpiTable");
