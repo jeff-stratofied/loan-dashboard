@@ -1928,19 +1928,14 @@ function openKpi1(){
 
   resetDrawerContent();
 
-  // Use the original KPI1 chart engine (same logic as static earnings page)
-  // This uses loansWithEarnings (already built from the API data)
-  renderKPI1Chart(loansWithEarnings, "drawerChartArea");
+  const rows = buildPortfolioDrawerRows(loansWithEarnings);
+createKpiStackedChart(drawerChartArea, rows, { denseXAxis: true });
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
 
   openDrawer();
-}
-
-
-
-    
+}  
 
 function openKpi2(){
   currentLoan = null;
