@@ -1564,7 +1564,7 @@ sortedContribs.forEach(c => {
 
 
     // X-axis labels (denser for KPI1, sparse for others)
-    if ((denseXAxis && i % 2 === 0) || (!denseXAxis && i % 12 === 0)) {
+    if ((denseXAxis && i % 4 === 0) || (!denseXAxis && i % 24 === 0)) {
       const lbl = document.createElementNS(svgNS, "text");
       lbl.textContent = r.date.toLocaleString("en-US", {
         month: "short",
