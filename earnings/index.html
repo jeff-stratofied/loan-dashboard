@@ -1842,17 +1842,50 @@ function buildPortfolioDrawerRows(loans) {
         });
       }
 
-      monthly.get(key).contributions.push({
+       monthly.get(key).contributions.push({
       loanId: loan.loanId,
-      net: r.netEarnings   // <<< cumulative net earnings up to this month
+      net: r.netEarnings,
+      hasData: true
       });
-
     });
   });
 
-  // return rows sorted by calendar month
-  return [...monthly.values()].sort((a, b) => a.date - b.date);
+// convert Map → sorted array BEFORE normalizing
+const sorted = [...monthly.values()].sort((a, b) => a.date - b.date);
+
+// Normalize alignment: every row must include every loan
+const allLoanIds = loans.map(l => l.loanId);
+
+for (let i = 0; i < sorted.length; i++) {
+  const row = sorted[i];
+  const present = new Set(row.contributions.map(c => c.loanId));
+
+  allLoanIds.forEach(id => {
+    if (!present.has(id)) {
+
+      // carry forward the last known cumulative for this loan
+      let last = 0;
+
+      // IMPORTANT: look backward only in sorted order
+      for (let j = i - 1; j >= 0; j--) {
+        const prev = sorted[j].contributions.find(c => c.loanId === id);
+        if (prev) {
+          last = prev.net;
+          break;
+        }
+      }
+
+      row.contributions.push({
+        loanId: id,
+        net: last,
+        hasData: false
+      });
+    }
+  });
 }
+
+return sorted;
+
 
 
 
