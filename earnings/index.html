@@ -1928,7 +1928,14 @@ function openKpi1(){
   resetDrawerContent();
 
   const rows = buildPortfolioDrawerRows(loansWithEarnings);
-  buildKpiStackedChart("drawerChartArea", rows, r => r.net, true, "kpi1");
+
+// KPI1 uses dense x-axis
+buildKpiStackedChart(
+  document.getElementById("drawerChartArea"),
+  rows,
+  { denseXAxis: true }
+);
+
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
