@@ -1843,11 +1843,10 @@ function buildPortfolioDrawerRows(loans) {
       }
 
       monthly.get(key).contributions.push({
-        loanId: loan.loanId,
-        net: (r.principalPaid || 0) +
-             (r.interest || 0) -
-             (r.feeThisMonth || 0)
+      loanId: loan.loanId,
+      net: r.netEarnings   // <<< cumulative net earnings up to this month
       });
+
     });
   });
 
