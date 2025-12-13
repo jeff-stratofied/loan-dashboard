@@ -1493,7 +1493,8 @@ function createKpiStackedChart(container, rows, opts = {}) {
 
   rows.forEach((r, i) => {
     const x = padL + i * barW;
-    const bw = Math.max(2, barW - 3);
+    const bw = Math.max(1, barW - 6);   // thinner bars for KPI1
+
 
     let yUp = yZero;
     let yDn = yZero;
