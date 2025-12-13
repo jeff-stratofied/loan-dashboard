@@ -1630,11 +1630,13 @@ sortedContribs.forEach(c => {
     const net = principal + interest - fees;
 
     const tooltipLines = [
-      `Date: ${formatMonthYear(row.date)}`,
-      `Principal: ${formatCurrency(principal)}`,
-      `Fees: -${formatCurrency(fees)}`,
-      `Net: ${formatCurrency(net)}`
+    `Date: ${formatMonthYear(row.date)}`,
+    `Principal: ${formatCurrency(principal)}`,
+    `Interest: ${formatCurrency(interest)}`,
+    `Fees: -${formatCurrency(fees)}`,
+    `Net: ${formatCurrency(net)}`
     ];
+
 
 
     setMiniTooltipContent(tooltipLines);
