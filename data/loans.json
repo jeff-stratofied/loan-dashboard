@@ -138,7 +138,7 @@
       "loanStartDate": "2017-01-01",
       "purchaseDate": "2023-06-01",
       "principal": 20000,
-      "purchasePrice": 1000,
+      "purchasePrice": 8000,
       "rate": 0.05,
       "termYears": 15,
       "graceYears": 4,
