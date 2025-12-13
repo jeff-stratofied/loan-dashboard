@@ -543,7 +543,7 @@ thead th {
 td {
   padding: 8px;
   border-bottom: 1px dashed rgba(15,23,42,0.04);
-  text-align: right;
+  text-align: left;
   transition: color .25s ease, border-color .25s ease;
 }
 
@@ -1619,14 +1619,15 @@ sortedContribs.forEach(c => {
     const row = rows[idx];
 
     const principal = row.contributions
-      .filter(c => c.net >= 0)
-      .reduce((s, c) => s + c.net, 0);
+    .reduce((s, c) => s + (c.principal ?? 0), 0);
+
+    const interest = row.contributions
+    .reduce((s, c) => s + (c.interest ?? 0), 0);
 
     const fees = row.contributions
-      .filter(c => c.net < 0)
-      .reduce((s, c) => s + Math.abs(c.net), 0);
+    .reduce((s, c) => s + (c.fees ?? 0), 0);
 
-    const net = principal - fees;
+    const net = principal + interest - fees;
 
     const tooltipLines = [
       `Date: ${formatMonthYear(row.date)}`,
@@ -1945,9 +1946,13 @@ function buildPortfolioDrawerRows(loans) {
 
        monthly.get(key).contributions.push({
       loanId: loan.loanId,
-      net: r.netEarnings,
+      principal: r.cumPrincipal,
+      interest: r.cumInterest,
+      fees: r.cumFees,
+      net: r.cumPrincipal + r.cumInterest - r.cumFees,
       hasData: true
-      });
+    });
+
     });
   });
 
@@ -1976,17 +1981,34 @@ for (let i = 0; i < sorted.length; i++) {
         }
       }
 
-      row.contributions.push({
-        loanId: id,
-        net: last,
-        hasData: false
-      });
+      // carry forward the last known cumulative values for this loan
+      let last = {
+      principal: 0,
+      interest: 0,
+      fees: 0,
+      net: 0
+      };
+
+      // IMPORTANT: look backward only in sorted order
+      for (let j = i - 1; j >= 0; j--) {
+      const prev = sorted[j].contributions.find(c => c.loanId === id);
+      if (prev) {
+      last = prev;
+      break;
+      }
+    }
+    row.contributions.push({
+      loanId: id,
+      principal: last.principal,
+      interest: last.interest,
+      fees: last.fees,
+      net: last.net,
+      hasData: false
+    });
     }
   });
 }
 
-
-  
 return sorted;
 }
 
@@ -2682,10 +2704,20 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
   });
 
   renderKpiTable(
-    containerId,
-    ["", "Loan", "Net Earnings", "Principal", "Interest", "Fees"],
-    rows
-  );
+  containerId,
+  [
+    `<span title="Hover to highlight loan • Click to toggle loan on/off">
+      Loan On/Off
+     </span>`,
+    "Loan",
+    "Net Earnings",
+    "Principal",
+    "Interest",
+    "Fees"
+  ],
+  rows
+);
+
 
   const table = document.getElementById(containerId);
   if (!table) return;
