@@ -876,6 +876,16 @@ html[data-theme="dark"] .legend .sw {
     // --------------------------
     // Settings & base data
     // --------------------------
+   
+    function formatCurrency(value) {
+  if (!Number.isFinite(value)) return "$0.00";
+  return "$" + value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+    
     function OLD_addMonths(date, months) {
       const d = new Date(date);
       d.setMonth(d.getMonth() + months);
@@ -1419,7 +1429,7 @@ function createKpiStackedChart(container, rows, opts = {}) {
   const w = Math.max(360, rect.width || 700);
   const h = container.offsetHeight || 360;
 
-  const padL = 30, padR = 10, padT = 20, padB = 20;
+  const padL = 64, padR = 10, padT = 20, padB = 20;
 
 
   const svg = document.createElementNS(svgNS, "svg");
@@ -1481,7 +1491,7 @@ const yZero = padT + usableH;
       const lbl = document.createElementNS(svgNS, "text");
       const value = (maxVal / gridAboveZero) * gy;
       lbl.textContent = "$" + Math.round(value).toLocaleString();
-      lbl.setAttribute("x", padL - 10);
+      lbl.setAttribute("x", padL - 12);
       lbl.setAttribute("y", y + 4);
       lbl.setAttribute("font-size", "11");
       lbl.setAttribute("fill", "var(--text)");
@@ -1615,10 +1625,11 @@ sortedContribs.forEach(c => {
 
     const tooltipLines = [
       `Date: ${formatMonthYear(row.date)}`,
-      `Principal: $${principal.toFixed(2)}`,
-      `Fees: -$${fees.toFixed(2)}`,
-      `Net: $${net.toFixed(2)}`
+      `Principal: ${formatCurrency(principal)}`,
+      `Fees: -${formatCurrency(fees)}`,
+      `Net: ${formatCurrency(net)}`
     ];
+
 
     setMiniTooltipContent(tooltipLines);
     positionMiniTooltip(e.clientX, e.clientY, lensRadius);
@@ -1981,9 +1992,9 @@ function openKpi1(){
   drawerTitle.textContent = "Total Net Earnings to Date";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
   drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
+  drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
   drawerSecondaryTitle.textContent = "Total Fees to Date";
-  drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
+  drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
 
   resetDrawerContent();
 
@@ -2651,10 +2662,10 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
 
         // Existing columns
         `${l.loanName}`,
-        `$${atCur.netEarnings.toFixed(2)}`,
-        `$${atCur.cumPrincipal.toFixed(2)}`,
-        `$${atCur.cumInterest.toFixed(2)}`,
-        `-$${atCur.cumFees.toFixed(2)}`
+        formatCurrency(atCur.netEarnings),
+        formatCurrency(atCur.cumPrincipal),
+        formatCurrency(atCur.cumInterest),
+        "-" + formatCurrency(atCur.cumFees)
       ]
     };
   });
