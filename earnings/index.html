@@ -1515,13 +1515,13 @@ if (opts.thinBars) {
     String(a.loanId).localeCompare(String(b.loanId))
     );
 
-    sortedContribs.forEach(c => {
-    let prevNet = 0;
+let prevNet = 0;
 
+// stacked-area cumulative bands (matches old static chart)
 sortedContribs.forEach(c => {
   const currNet = c.net || 0;
 
-  // stacked-area style band height
+  // band height = delta of cumulative nets
   const bandVal = currNet - prevNet;
   prevNet = currNet;
 
@@ -1540,23 +1540,6 @@ sortedContribs.forEach(c => {
   svg.appendChild(bar);
 });
 
-
-    if (!Number.isFinite(hVal) || hVal <= 0) return;
-
-      if (!Number.isFinite(hVal) || hVal <= 0) return;
-
-      const bar = document.createElementNS(svgNS, "rect");
-      bar.setAttribute("x", x);
-      bar.setAttribute("width", bw);
-      bar.setAttribute("height", hVal);
-      bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
-
-      bar.setAttribute("y", yUp - hVal);
-      yUp -= hVal;
-
-
-      svg.appendChild(bar);
-    });
 
     // X-axis labels (denser for KPI1, sparse for others)
     if ((denseXAxis && i % 2 === 0) || (!denseXAxis && i % 12 === 0)) {
