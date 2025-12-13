@@ -1509,7 +1509,6 @@ if (opts.thinBars) {
 }
 
     let yUp = yZero;
-    let yDn = yZero;
 
     // SORT to ensure stacking order is consistent every month
     const sortedContribs = [...r.contributions].sort((a, b) =>
@@ -1519,7 +1518,8 @@ if (opts.thinBars) {
     sortedContribs.forEach(c => {
     const val = c.net;      // cumulative value for this loan
 
-    const hVal = Math.abs(val * scale);
+    const hVal = Math.max(0, val * scale);
+
     if (!Number.isFinite(hVal) || hVal <= 0) return;
 
       if (!Number.isFinite(hVal) || hVal <= 0) return;
@@ -1530,13 +1530,9 @@ if (opts.thinBars) {
       bar.setAttribute("height", hVal);
       bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
 
-      if (val >= 0) {
-        bar.setAttribute("y", yUp - hVal);
-        yUp -= hVal;
-      } else {
-        bar.setAttribute("y", yDn);
-        yDn += hVal;
-      }
+      bar.setAttribute("y", yUp - hVal);
+      yUp -= hVal;
+
 
       svg.appendChild(bar);
     });
@@ -1956,27 +1952,7 @@ for (let i = 0; i < sorted.length; i++) {
     }
   });
 }
-// ----------------------------
-// CONVERT cumulative → delta
-// ----------------------------
 
-// For every month after the first, compute monthly delta for each loan
-for (let i = sorted.length - 1; i >= 1; i--) {
-  const row = sorted[i];
-  const prev = sorted[i - 1];
-
-  row.contributions.forEach(c => {
-    const prevC = prev.contributions.find(p => p.loanId === c.loanId);
-    const prevVal = prevC ? prevC.net : 0;
-
-    c.delta = c.net - prevVal;   // monthly contribution for stacked bars
-  });
-}
-
-// First month gets delta = net (no previous month)
-sorted[0].contributions.forEach(c => {
-  c.delta = c.net;
-});
 
   
 return sorted;
