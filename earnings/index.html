@@ -1511,9 +1511,17 @@ if (opts.thinBars) {
     let yUp = yZero;
     let yDn = yZero;
 
-    r.contributions.forEach(c => {
-      const val = c.net;              // cumulative net for that loan
-      const hVal = Math.abs(val * scale);
+    // SORT to ensure stacking order is consistent every month
+    const sortedContribs = [...r.contributions].sort((a, b) =>
+    String(a.loanId).localeCompare(String(b.loanId))
+    );
+
+    sortedContribs.forEach(c => {
+    const val = c.net;      // cumulative value for this loan
+
+    const hVal = Math.abs(val * scale);
+    if (!Number.isFinite(hVal) || hVal <= 0) return;
+
       if (!Number.isFinite(hVal) || hVal <= 0) return;
 
       const bar = document.createElementNS(svgNS, "rect");
