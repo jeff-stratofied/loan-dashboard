@@ -999,6 +999,31 @@ const balanceForAmort = Number(
   purchasePrice
 );
 
+// Normalize rate and term inputs explicitly
+const nominalRate = Number(
+  raw.nominalRate ??
+  raw.rate ??
+  raw.interestRate ??
+  0
+);
+
+const termYears = Number(
+  raw.termYears ??
+  raw.term ??
+  raw.years ??
+  0
+);
+
+const graceYears = Number(
+  raw.graceYears ??
+  raw.grace ??
+  0
+);
+
+const upfrontFee = Number(raw.upfrontFee ?? 0);
+const monthlyFeeStart = Number(raw.monthlyFeeStart ?? 0);
+
+    
 const normalizedLoan = {
   ...raw,
   loanId,
