@@ -990,17 +990,14 @@ function rebuildLoansWithEarnings() {
     // Purchase price is what you paid (should NOT drive amort math)
 const purchasePrice = Number(raw.purchasePrice ?? 0);
 
-// Loan balance/principal is what drives amort math (this SHOULD drive payments)
 const balanceForAmort = Number(
   raw.balanceAtPurchase ??
   raw.principal ??
   raw.balance ??
   raw.originalBalance ??
   raw.faceValue ??
-  purchasePrice // last resort fallback
+  purchasePrice
 );
-
-...
 
 const normalizedLoan = {
   ...raw,
@@ -1011,7 +1008,7 @@ const normalizedLoan = {
   loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
   purchaseDate: raw.purchaseDate || "",
   purchasePrice,
-  balanceForAmort,          // <-- add this
+  balanceForAmort,
   nominalRate,
   termYears,
   graceYears,
@@ -1020,12 +1017,11 @@ const normalizedLoan = {
 };
 
 const amort = calcAmort(
-  normalizedLoan.balanceForAmort,   // <-- use balance, not purchasePrice
+  normalizedLoan.balanceForAmort,
   normalizedLoan.nominalRate,
   normalizedLoan.termYears,
   normalizedLoan.graceYears
 );
-
 
         const loanStart = new Date(normalizedLoan.loanStartDate);
         const purchaseDt = new Date(normalizedLoan.purchaseDate);
