@@ -975,6 +975,9 @@ html[data-theme="dark"] .legend .sw {
     }
 
     let loansWithEarnings = [];
+    // Loans hidden via KPI1 table toggle
+const hiddenLoans = new Set();
+
 
 function rebuildLoansWithEarnings() {
   loansWithEarnings = loans.map((raw, idx) => {
@@ -1533,6 +1536,7 @@ if (opts.thinBars) {
 
     // SORT to ensure stacking order is consistent every month
     const sortedContribs = loansWithEarnings
+  .filter(l => !hiddenLoans.has(l.loanId))
   .map(l => r.contributions.find(c => c.loanId === l.loanId))
   .filter(Boolean);
 
@@ -2632,17 +2636,18 @@ function renderKpiTable(containerId, headers, rows) {
 
   rows.forEach(r => {
     const color = colors[r.loanId] || "inherit";
-    html += `<tr>`;
+
+    html += `<tr data-loan-id="${r.loanId}">`;
     r.cells.forEach(c => {
       html += `<td style="color:${color}">${c}</td>`;
     });
-    html += `<tr data-loan-id="${r.loanId}">`;
+    html += `</tr>`;
   });
 
   html += `</tbody></table>`;
-
   container.innerHTML = html;
 }
+
     
 function renderKPI1Table(data, containerId = "kpi1Table") {
   const rows = data.map(l => {
@@ -2650,9 +2655,9 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
     const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
 
     return {
-      loanId: l.loanId, // REQUIRED for tr[data-loan-id]
+      loanId: l.loanId,
       cells: [
-        // Color swatch column
+        // Color swatch
         `<div
           class="loan-swatch"
           data-loan-id="${l.loanId}"
@@ -2667,10 +2672,7 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
           "
         ></div>`,
 
-        // Loan name
-        `${l.loanName}`,
-
-        // Values
+        l.loanName,
         formatCurrency(atCur.netEarnings),
         formatCurrency(atCur.cumPrincipal),
         formatCurrency(atCur.cumInterest),
@@ -2685,32 +2687,40 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
     rows
   );
 
-  // --- KPI1 table interactions ---
   const table = document.getElementById(containerId);
   if (!table) return;
 
-  // Row hover → highlight chart bands
+  // -------------------------
+  // Row hover → highlight chart
+  // -------------------------
   table.querySelectorAll("tr[data-loan-id]").forEach(tr => {
     const loanId = tr.dataset.loanId;
 
     tr.addEventListener("mouseenter", () => {
-      document.querySelectorAll("#drawerChartArea svg rect").forEach(r => {
-        r.style.opacity = (r.dataset.loanId === loanId) ? "1" : "0.25";
-      });
+      document
+        .querySelectorAll("#drawerChartArea svg rect")
+        .forEach(r => {
+          r.style.opacity =
+            r.dataset.loanId === loanId ? "1" : "0.2";
+        });
     });
 
     tr.addEventListener("mouseleave", () => {
-      document.querySelectorAll("#drawerChartArea svg rect").forEach(r => {
-        r.style.opacity = "1";
-      });
+      document
+        .querySelectorAll("#drawerChartArea svg rect")
+        .forEach(r => {
+          r.style.opacity = "1";
+        });
     });
   });
 
-  // Swatch click → toggle loan visibility
+  // -------------------------
+  // Swatch click → toggle loan
+  // -------------------------
   table.querySelectorAll(".loan-swatch").forEach(sw => {
     const loanId = sw.dataset.loanId;
 
-    sw.addEventListener("click", (e) => {
+    sw.addEventListener("click", e => {
       e.stopPropagation();
 
       if (hiddenLoans.has(loanId)) {
@@ -2718,7 +2728,7 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
         sw.style.opacity = "1";
       } else {
         hiddenLoans.add(loanId);
-        sw.style.opacity = "0.25";
+        sw.style.opacity = "0.3";
       }
 
       const rows = buildPortfolioDrawerRows(loansWithEarnings);
@@ -2730,6 +2740,7 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
     });
   });
 }
+
 
 
 
