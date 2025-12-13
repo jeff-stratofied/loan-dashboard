@@ -1441,8 +1441,10 @@ function createKpiStackedChart(container, rows, opts = {}) {
   if (maxVal < 1) maxVal = 1;
 
   const usableH = h - padT - padB;
-  const scale = usableH / (2 * maxVal);      // symmetric around zero
-  const yZero = padT + usableH / 2;
+  // Full vertical range for positive earnings (zero at bottom)
+const scale = usableH / maxVal;
+const yZero = padT + usableH;
+
 
   // Horizontal grid lines + Y-axis labels (like KPI2 / drawer chart)
   const gridBelowZero = 2;
@@ -1495,14 +1497,16 @@ function createKpiStackedChart(container, rows, opts = {}) {
 const barW = (w - padL - padR) / rows.length;
 
 
-
   rows.forEach((r, i) => {
     const x = padL + i * barW;
    // Make bars thinner but keep correct spacing
-    const bw = Math.max(1, barW * 0.35);
-
-  
-
+    // Allow overriding bar thickness (default: thick, fills width)
+let bw;
+if (opts.thinBars) {
+  bw = Math.max(1, barW * 0.35);    // thin mode
+} else {
+  bw = Math.max(2, barW * 0.85);    // thick, fills horizontal space
+}
 
     let yUp = yZero;
     let yDn = yZero;
@@ -1989,9 +1993,8 @@ function openKpi1(){
 createKpiStackedChart(
   document.getElementById("drawerChartArea"),
   rows,
-  { denseXAxis: true, thinBars: true }
+  { denseXAxis: true, thinBars: false }
 );
-
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
