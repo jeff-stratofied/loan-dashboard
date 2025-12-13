@@ -1489,11 +1489,18 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // ----------------------------
   // Stacked bars
   // ----------------------------
-  const barW = (w - padL - padR) / rows.length;
+  // Make KPI1 bars thinner (fixed width instead of auto-fill)
+let barW;
+if (opts.denseXAxis) {
+  barW = 6; // <--- Thin bar width for KPI1
+} else {
+  barW = (w - padL - padR) / rows.length;
+}
+
 
   rows.forEach((r, i) => {
     const x = padL + i * barW;
-    const bw = Math.max(1, barW - 6);   // thinner bars for KPI1
+    const bw = Math.max(1, barW - 3);  
 
 
     let yUp = yZero;
