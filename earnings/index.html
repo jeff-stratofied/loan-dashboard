@@ -2635,10 +2635,21 @@ function renderKpiTable(containerId, headers, rows) {
 function renderKPI1Table(data, containerId = "kpi1Table") {
   const rows = data.map(l => {
     const { row: atCur } = getCurrentEarningsRow(l);
+    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
 
     return {
       loanId: l.loanId,
       cells: [
+        // Color swatch column
+        `<div style="
+          width:10px;
+          height:10px;
+          border-radius:2px;
+          background:${color};
+          margin:4px auto;
+        "></div>`,
+
+        // Existing columns
         `${l.loanName}`,
         `$${atCur.netEarnings.toFixed(2)}`,
         `$${atCur.cumPrincipal.toFixed(2)}`,
@@ -2650,10 +2661,11 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
 
   renderKpiTable(
     containerId,
-    ["Loan","Net Earnings","Principal","Interest","Fees"],
+    ["", "Loan", "Net Earnings", "Principal", "Interest", "Fees"],
     rows
   );
 }
+
 
 function renderKPI2Table(data, containerId = "kpi2Table") {
   const rows = data.map(l => {
