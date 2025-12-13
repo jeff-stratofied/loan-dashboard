@@ -1420,29 +1420,75 @@ function createKpiStackedChart(container, rows, opts = {}) {
   rows.forEach(r => r.contributions.forEach(c => loanIds.add(c.loanId)));
   const loanIdList = [...loanIds];
 
-// Use global color map (already built in initPage)
-const colors = window.KPI_COLOR_MAP;
+  // Use global color map (already built in rebuildLoansWithEarnings)
+  const colors = window.KPI_COLOR_MAP || {};
 
-  // Determine Y scale
+  // ----------------------------
+  // Y scale + gridlines (KPI2 style)
+  // ----------------------------
   let maxVal = 0;
   rows.forEach(r => {
     const totalPos = r.contributions
-  .filter(c => c.net >= 0)
-  .reduce((s,c) => s + c.net, 0);
+      .filter(c => c.net >= 0)
+      .reduce((s, c) => s + c.net, 0);
+    const totalNeg = r.contributions
+      .filter(c => c.net < 0)
+      .reduce((s, c) => s + Math.abs(c.net), 0);
 
-const totalNeg = r.contributions
-  .filter(c => c.net < 0)
-  .reduce((s,c) => s + Math.abs(c.net), 0);
-
-    maxVal = Math.max(maxVal, totalPos, Math.abs(totalNeg));
+    maxVal = Math.max(maxVal, totalPos, totalNeg);
   });
   if (maxVal < 1) maxVal = 1;
 
   const usableH = h - padT - padB;
-  const scale = usableH / (2 * maxVal); // center at mid
+  const scale = usableH / (2 * maxVal);      // symmetric around zero
   const yZero = padT + usableH / 2;
 
-  // Bar width
+  // Horizontal grid lines + Y-axis labels (like KPI2 / drawer chart)
+  const gridBelowZero = 2;
+  const gridAboveZero = 4;
+
+  for (let gy = -gridBelowZero; gy <= gridAboveZero; gy++) {
+    const y = yZero - gy * ((yZero - padT) / gridAboveZero);
+
+    const gridLine = document.createElementNS(svgNS, "line");
+    gridLine.setAttribute("x1", padL);
+    gridLine.setAttribute("x2", w - padR);
+    gridLine.setAttribute("y1", y);
+    gridLine.setAttribute("y2", y);
+    gridLine.setAttribute(
+      "stroke",
+      gy >= 0 ? "var(--grid-strong)" : "var(--grid-light)"
+    );
+    gridLine.setAttribute("stroke-width", "0.7");
+    svg.appendChild(gridLine);
+
+    // Positive ticks get labels
+    if (gy > 0) {
+      const lbl = document.createElementNS(svgNS, "text");
+      const value = (maxVal / gridAboveZero) * gy;
+      lbl.textContent = "$" + Math.round(value).toLocaleString();
+      lbl.setAttribute("x", padL - 10);
+      lbl.setAttribute("y", y + 4);
+      lbl.setAttribute("font-size", "11");
+      lbl.setAttribute("fill", "var(--text)");
+      lbl.setAttribute("text-anchor", "end");
+      svg.appendChild(lbl);
+    }
+  }
+
+  // Zero axis
+  const axis = document.createElementNS(svgNS, "line");
+  axis.setAttribute("x1", padL);
+  axis.setAttribute("x2", w - padR);
+  axis.setAttribute("y1", yZero);
+  axis.setAttribute("y2", yZero);
+  axis.setAttribute("stroke", "var(--grid-strong)");
+  axis.setAttribute("stroke-width", "1");
+  svg.appendChild(axis);
+
+  // ----------------------------
+  // Stacked bars
+  // ----------------------------
   const barW = (w - padL - padR) / rows.length;
 
   rows.forEach((r, i) => {
@@ -1452,34 +1498,35 @@ const totalNeg = r.contributions
     let yUp = yZero;
     let yDn = yZero;
 
-r.contributions.forEach(c => {
-  const val = c.net;
-  const hVal = Math.abs(val * scale);
+    r.contributions.forEach(c => {
+      const val = c.net;              // cumulative net for that loan
+      const hVal = Math.abs(val * scale);
+      if (!Number.isFinite(hVal) || hVal <= 0) return;
 
-  const bar = document.createElementNS(svgNS, "rect");
-  bar.setAttribute("x", x);
-  bar.setAttribute("width", bw);
-  bar.setAttribute("height", hVal);
-  bar.setAttribute("fill", colors[c.loanId]);
+      const bar = document.createElementNS(svgNS, "rect");
+      bar.setAttribute("x", x);
+      bar.setAttribute("width", bw);
+      bar.setAttribute("height", hVal);
+      bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
 
-  if (val >= 0) {
-    bar.setAttribute("y", yUp - hVal);
-    yUp -= hVal;
-  } else {
-    bar.setAttribute("y", yDn);
-    yDn += hVal;
-  }
+      if (val >= 0) {
+        bar.setAttribute("y", yUp - hVal);
+        yUp -= hVal;
+      } else {
+        bar.setAttribute("y", yDn);
+        yDn += hVal;
+      }
 
-  svg.appendChild(bar);
-});
+      svg.appendChild(bar);
+    });
 
-    // label every 12 months
-    // KPI1 (dense) → label every 2 months
-    // Other KPIs → label every 12 months
-      if ((denseXAxis && i % 2 === 0) || (!denseXAxis && i % 12 === 0)) {
-
+    // X-axis labels (denser for KPI1, sparse for others)
+    if ((denseXAxis && i % 2 === 0) || (!denseXAxis && i % 12 === 0)) {
       const lbl = document.createElementNS(svgNS, "text");
-      lbl.textContent = r.date.toLocaleString("en-US", { month: "short", year: "numeric" });
+      lbl.textContent = r.date.toLocaleString("en-US", {
+        month: "short",
+        year: "numeric"
+      });
       lbl.setAttribute("x", x + bw / 2);
       lbl.setAttribute("y", h - 4);
       lbl.setAttribute("font-size", "11");
@@ -1491,68 +1538,68 @@ r.contributions.forEach(c => {
 
   container.appendChild(svg);
 
-// =======================
-// KPI Chart Hover System
-// =======================
-let lensInstance = null;
-const lensRadius = 22;
-const lensScale = 1.8;
+  // =======================
+  // KPI Chart Hover System
+  // (lens size matches KPI2 / drawer)
+  // =======================
+  let lensInstance = null;
+  const lensRadius = 40;   // match KPI2 / loan drawer
+  const lensScale = 1.5;
 
-function handleMove(e) {
-  const rect = svg.getBoundingClientRect();
-  const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-  const mouseY = ((e.clientY - rect.top) / rect.height) * h;
+  function handleMove(e) {
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+    const mouseY = ((e.clientY - rect.top) / rect.height) * h;
 
-  const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
-  const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
+    const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
+    const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
 
-  if (!lensInstance) {
-    lensInstance = createLens(svg, lensRadius, lensScale);
-    const clones = Array.from(svg.querySelectorAll("rect"));
-    clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-    svg.appendChild(lensInstance.group);
+    if (!lensInstance) {
+      lensInstance = createLens(svg, lensRadius, lensScale);
+      const clones = Array.from(svg.querySelectorAll("rect"));
+      clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
+      svg.appendChild(lensInstance.group);
+    }
+
+    updateLens(lensInstance, x, y);
+
+    // Map lens X position → month index
+    const idx = Math.max(
+      0,
+      Math.min(rows.length - 1, Math.floor((x - padL) / barW))
+    );
+    const row = rows[idx];
+
+    const principal = row.contributions
+      .filter(c => c.net >= 0)
+      .reduce((s, c) => s + c.net, 0);
+
+    const fees = row.contributions
+      .filter(c => c.net < 0)
+      .reduce((s, c) => s + Math.abs(c.net), 0);
+
+    const net = principal - fees;
+
+    const tooltipLines = [
+      `Date: ${formatMonthYear(row.date)}`,
+      `Principal: $${principal.toFixed(2)}`,
+      `Fees: -$${fees.toFixed(2)}`,
+      `Net: $${net.toFixed(2)}`
+    ];
+
+    setMiniTooltipContent(tooltipLines);
+    positionMiniTooltip(e.clientX, e.clientY, lensRadius);
   }
 
-  updateLens(lensInstance, x, y);
+  function handleLeave() {
+    removeLens(svg, lensInstance);
+    lensInstance = null;
+    hideMiniTooltip();
+  }
 
-  const idx = Math.max(0, Math.min(rows.length - 1, Math.floor((x - padL) / barW)));
-  const row = rows[idx];
-
-  // compute totals
-  const principal = row.contributions
-    .filter(c => c.net >= 0)
-    .reduce((s,c)=>s+c.net,0);
-
-  const fees = row.contributions
-    .filter(c => c.net < 0)
-    .reduce((s,c)=>s+Math.abs(c.net),0);
-
-  const interest = 0; // you can add this later if needed
-  const net = principal - fees;
-
-  const tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Principal: $${principal.toFixed(2)}`,
-    `Fees: -$${fees.toFixed(2)}`,
-    `Net: $${net.toFixed(2)}`
-  ];
-
-  setMiniTooltipContent(tooltipLines);
-  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+  svg.addEventListener("mousemove", handleMove);
+  svg.addEventListener("mouseleave", handleLeave);
 }
-
-function handleLeave() {
-  removeLens(svg, lensInstance);
-  lensInstance = null;
-  hideMiniTooltip();
-}
-
-svg.addEventListener("mousemove", handleMove);
-svg.addEventListener("mouseleave", handleLeave);
-  
-}
-
-
 
 
 
