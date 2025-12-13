@@ -1227,15 +1227,30 @@ function buildLoanColorMap(sortedLoans) {
     function positionMiniTooltip(clientX, clientY, radius) {
       const el = getMiniHtmlTooltip();
       const rect = el.getBoundingClientRect();
-      const offsetX = radius * 0.3;
-      const offsetY = radius * 1.1;
-      let x = clientX + offsetX;
-      let y = clientY - offsetY - rect.height;
+
+      const padding = 12;
+
+      // Default: centered above lens
+      let x = clientX - rect.width / 2;
+      let y = clientY - radius - rect.height - 8;
+
+      // Clamp horizontally to viewport
+      if (x < padding) {
+        x = padding;
+      } else if (x + rect.width > window.innerWidth - padding) {
+        x = window.innerWidth - rect.width - padding;
+      }
+
+      // If too close to top, move below lens
+      if (y < padding) {
+        y = clientY + radius + 8;
+      }
 
       el.style.left = `${x}px`;
       el.style.top  = `${y}px`;
       el.style.display = "block";
     }
+
 
     function hideMiniTooltip() {
       if (miniHtmlTooltip) miniHtmlTooltip.style.display = "none";
