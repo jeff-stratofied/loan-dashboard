@@ -1082,35 +1082,46 @@ function rebuildLoansWithEarnings() {
         };
       });
 
+// Canonical loan order: earliest purchase date first
+loansWithEarnings.sort((a, b) => {
+  const da = new Date(a.purchaseDate).getTime() || 0;
+  const db = new Date(b.purchaseDate).getTime() || 0;
+  return da - db;
+});
+
+// Build stable color map from this order
+buildLoanColorMap(loansWithEarnings);
+
+  
       window.LoanMap = Object.fromEntries(
         loansWithEarnings.map(l => [l.loanName, l])
       );
     }
 
-// Build a stable color map using first appearance order in the portfolio
-function buildLoanColorMap(loans) {
+// High-contrast categorical palette (no yellow)
+const KPI_PALETTE = [
+  "#2563eb", // blue
+  "#dc2626", // red
+  "#16a34a", // green
+  "#7c3aed", // purple
+  "#ea580c", // orange
+  "#0891b2", // cyan
+  "#9333ea", // violet
+  "#15803d", // dark green
+  "#b91c1c", // dark red
+  "#1e40af", // navy
+  "#c2410c", // burnt orange
+  "#0f766e"  // teal
+];
+
+// Build color map based on SORTED loan order
+function buildLoanColorMap(sortedLoans) {
   const map = {};
-  let index = 0;
-
-  // Go through portfolio rows in chronological order
-  const allRows = buildPortfolioDrawerRows(loans);
-
-  allRows.forEach(row => {
-    row.contributions.forEach(c => {
-      if (!map[c.loanId]) {
-        const hue = (index * 31) % 360;
-        map[c.loanId] = `hsl(${hue}, 70%, 50%)`;
-        index++;
-      }
-    });
+  sortedLoans.forEach((loan, idx) => {
+    map[loan.loanId] = KPI_PALETTE[idx % KPI_PALETTE.length];
   });
-
   window.KPI_COLOR_MAP = map;
 }
-
-
-
-
     
     // --------------------------
     // KPI calculations
@@ -1511,9 +1522,10 @@ if (opts.thinBars) {
     let yUp = yZero;
 
     // SORT to ensure stacking order is consistent every month
-    const sortedContribs = [...r.contributions].sort((a, b) =>
-    String(a.loanId).localeCompare(String(b.loanId))
-    );
+    const sortedContribs = loansWithEarnings
+  .map(l => r.contributions.find(c => c.loanId === l.loanId))
+  .filter(Boolean);
+
 
 let prevNet = 0;
 
