@@ -2329,142 +2329,79 @@ document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.t
           svg.appendChild(r);
         });
 
-        // ------------------------------
-// Date-based X-axis labels
-// KPI1 → every 3 months
-// KPI2–4 → every 12 months
-// ------------------------------
-const labelInterval =
-  key === "kpi1" ? 3 :   // KPI1 = Net Earnings → show more detail
-  12;                    // Other KPIs → annual labels
+// ------------------------------------------------------
+// KPI STACKED CHART HOVER (CUMULATIVE + MATCH AMORT STYLE)
+// ------------------------------------------------------
+let lensInstance = null;
+const lensRadius = 32;    // bigger lens like amort KPI
+const lensScale  = 2.0;   // bigger magnification like amort
 
-const monthIndex = idx;  // 0,1,2,…
+const tooltip = document.getElementById("tooltip");
 
-if (monthIndex % labelInterval === 0) {
-  const lbl = document.createElementNS(svgNS, "text");
-  lbl.textContent = m.monthDate.toLocaleString("en-US", {
+svg.addEventListener("mousemove", handleMove);
+svg.addEventListener("mouseleave", handleLeave);
+
+function handleMove(ev) {
+  const rect = svg.getBoundingClientRect();
+  const x = ev.clientX - rect.left;
+
+  // find closest bar index
+  const idx = Math.floor((x - padL) / barW);
+  if (idx < 0 || idx >= rows.length) return;
+
+  const row = rows[idx];
+  if (!row) return;
+
+  const dateStr = row.date.toLocaleDateString("en-US", {
     month: "short",
     year: "numeric"
   });
-  lbl.setAttribute("x", x + barWidth / 2);
-  lbl.setAttribute("y", h - padB + 16);
-  lbl.setAttribute("font-size", "11");
-  lbl.setAttribute("fill", "var(--text)");
-  lbl.setAttribute("text-anchor", "middle");
-  svg.appendChild(lbl);
+
+  // cumulative sums
+  const principal = row.contributions.reduce((s,c)=>s + (c.cumPrincipal || 0), 0);
+  const interest  = row.contributions.reduce((s,c)=>s + (c.cumInterest  || 0), 0);
+  const fees      = row.contributions.reduce((s,c)=>s + (c.cumFees      || 0), 0);
+  const net       = row.contributions.reduce((s,c)=>s + (c.net          || 0), 0);
+
+  // show tooltip
+  tooltip.style.display = "block";
+  tooltip.innerHTML = `
+    <strong>Date: ${dateStr}</strong><br>
+    Principal: $${principal.toFixed(2)}<br>
+    Interest: $${interest.toFixed(2)}<br>
+    Fees: -$${Math.abs(fees).toFixed(2)}<br>
+    Net: $${net.toFixed(2)}
+  `;
+
+  const barX = padL + idx * barW + barW / 2;
+  const barY = yZero - (net * scale);
+
+  tooltip.style.left = `${barX + 12}px`;
+  tooltip.style.top  = `${barY - 12}px`;
+
+  // draw lens
+  if (!lensInstance) {
+    lensInstance = document.createElementNS(svgNS, "circle");
+    lensInstance.setAttribute("r", lensRadius);
+    lensInstance.setAttribute("fill", "rgba(255,255,255,0.05)");
+    lensInstance.setAttribute("stroke", "var(--text)");
+    lensInstance.setAttribute("stroke-width", "2");
+    svg.appendChild(lensInstance);
+  }
+
+  // center lens on bar
+  lensInstance.setAttribute("cx", barX);
+  lensInstance.setAttribute("cy", barY);
 }
 
-      });
+function handleLeave() {
+  if (tooltip) tooltip.style.display = "none";
+  if (lensInstance) {
+    svg.removeChild(lensInstance);
+    lensInstance = null;
+  }
+}
 
-      if(showCurrentLine){
-        // ---------------------------------------
-// Correct Today-Line positioning by DATE
-// ---------------------------------------
-const todayIdx = months.findIndex(m =>
-  m.monthDate.getFullYear() === TODAY.getFullYear() &&
-  m.monthDate.getMonth() === TODAY.getMonth()
-);
-
-const todayIndex = todayIdx >= 0 ? todayIdx : months.length - 1;
-const currentX = padL + todayIndex * barW;
-
-        const vline = document.createElementNS(svgNS, "line");
-        vline.setAttribute("x1", currentX);
-        vline.setAttribute("x2", currentX);
-        vline.setAttribute("y1", 0);
-        vline.setAttribute("y2", h);
-        vline.setAttribute("stroke", "#64748b");
-        vline.setAttribute("stroke-dasharray", "4,3");
-        vline.setAttribute("stroke-width", "1.5");
-        svg.appendChild(vline);
-      }
-
-      container.appendChild(svg);
-
-      let lensInstance = null;
-      let tooltipInstance = null;
-      const lensRadius = 40;
-      const lensScale = 1.5;
-
-      function handleMove(e){
-        const rect = svg.getBoundingClientRect();
-        const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-        const mouseY = ((e.clientY - rect.top) / rect.height) * h;
-        const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
-        const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
-
-        if(!lensInstance){
-          lensInstance = createLens(svg, lensRadius, lensScale);
-          const barClones = Array.from(svg.querySelectorAll("rect"))
-            .filter(r => r.__value !== undefined || r.getAttribute("fill"));
-          barClones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-          svg.appendChild(lensInstance.group);
-        }
-
-        if(!tooltipInstance){
-          tooltipInstance = createTooltip(svg, true);
-        }
-
-        updateLens(lensInstance, x, y);
-
-        const idx = Math.max(0, Math.min(months.length - 1, Math.floor((x - padL) / barW)));
-        const monthRow = months[idx];
-        const month = monthRow.month;
-
-        const aggregates = data.reduce((acc, loan) => {
-          const row = loan.earningsSchedule[Math.min(idx, loan.earningsSchedule.length-1)] || {};
-          acc.principal += row.cumPrincipal || 0;
-          acc.interest += row.cumInterest || 0;
-          acc.fees += row.cumFees || 0;
-          acc.net += row.netEarnings || 0;
-          return acc;
-        }, {principal:0, interest:0, fees:0, net:0});
-
-        let tooltipLines = [];
-        if(key === "kpi1"){ // Net earnings to date
-          tooltipLines = [
-            `Date: ${formatMonthYear(monthRow.monthDate)}`,
-  `Net: $${aggregates.net.toFixed(2)}`,
-  `Principal: $${aggregates.principal.toFixed(2)}`,
-  `Interest: $${aggregates.interest.toFixed(2)}`,
-  `Fees: -$${aggregates.fees.toFixed(2)}`
-          ];
-        } else if(key === "kpi2"){ // Projected lifetime
-          tooltipLines = [
-            `Date: ${formatMonthYear(monthRow.monthDate)}`,
-  `Projected Net: $${(monthRow.posTotal + monthRow.negTotal).toFixed(2)}`
-          ];
-        } else if(key === "kpi3"){ // Average monthly
-          const avg = month > 0 ? aggregates.net / month : 0;
-          tooltipLines = [
-             `Date: ${formatMonthYear(monthRow.monthDate)}`,
-  `Avg / Month: $${avg.toFixed(2)}`,
-  `Net to Date: $${aggregates.net.toFixed(2)}`
-          ];
-        } else if(key === "kpi4"){ // Fees
-          tooltipLines = [
-            `Date: ${formatMonthYear(monthRow.monthDate)}`,
-  `Fees: -$${aggregates.fees.toFixed(2)}`,
-  `Net: $${aggregates.net.toFixed(2)}`
-          ];
-        }
-
-        updateTooltipContent(tooltipInstance, tooltipLines, true);
-        updateTooltipPosition(tooltipInstance, x, y, lensRadius);
-      }
-
-      function handleLeave(){
-        removeLens(svg, lensInstance);
-        lensInstance = null;
-        if(tooltipInstance){
-          tooltipInstance.group.remove();
-          tooltipInstance = null;
-        }
-      }
-
-      svg.addEventListener("mousemove", handleMove);
-      svg.addEventListener("mouseleave", handleLeave);
-    }
 
 
     // KPI 1: Total Net Earnings to Date (portfolio stacked chart)
