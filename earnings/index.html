@@ -1408,7 +1408,8 @@ function createKpiStackedChart(container, rows, opts = {}) {
   const w = Math.max(360, rect.width || 700);
   const h = container.offsetHeight || 360;
 
-  const padL = 50, padR = 20, padT = 20, padB = 20;
+  const padL = 30, padR = 10, padT = 20, padB = 20;
+
 
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
@@ -1489,11 +1490,19 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // ----------------------------
   // Stacked bars
   // ----------------------------
-const barW = (w - padL - padR) / rows.length;
+// Make KPI1 bars thinner (fixed width instead of auto-fill)
+let barW;
+if (opts.denseXAxis) {
+  barW = 6; // <--- Thin bar width for KPI1
+} else {
+  barW = (w - padL - padR) / rows.length;
+}
+
 
   rows.forEach((r, i) => {
     const x = padL + i * barW;
-    const bw = Math.max(2, barW - 3);  
+    const bw = barW; // use exact barW (fixed 6px when denseXAxis)
+  
 
 
     let yUp = yZero;
