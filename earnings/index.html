@@ -1398,7 +1398,9 @@ const currentX = padL + ratio * (w - padL - padR);
 // =======================================================
 // NEW: Portfolio KPI Stacked Chart (aggregated rows)
 // =======================================================
-function createKpiStackedChart(container, rows) {
+function createKpiStackedChart(container, rows, opts = {}) {
+  const denseXAxis = opts.denseXAxis || false;
+
   container.innerHTML = "";
 
   const svgNS = "http://www.w3.org/2000/svg";
@@ -1472,7 +1474,10 @@ r.contributions.forEach(c => {
 });
 
     // label every 12 months
-    if (i % 12 === 0) {
+    // KPI1 (dense) → label every 2 months
+    // Other KPIs → label every 12 months
+      if ((denseXAxis && i % 2 === 0) || (!denseXAxis && i % 12 === 0)) {
+
       const lbl = document.createElementNS(svgNS, "text");
       lbl.textContent = r.date.toLocaleString("en-US", { month: "short", year: "numeric" });
       lbl.setAttribute("x", x + bw / 2);
@@ -2522,10 +2527,9 @@ function renderKPI1Chart(loans, containerId = "drawerChartArea") {
 
   // Use the new aggregated stacked chart engine which already
   // uses window.KPI_COLOR_MAP for colors
-  createKpiStackedChart(containerEl, rows);
-}
+  createKpiStackedChart(drawerChartArea, portfolioViews.rows, { denseXAxis: true });
 
-    
+}
     function renderKPI2Chart(data, containerId = "kpi2Chart"){
       buildKpiStackedChart(containerId, data, row => row.netEarnings || 0, true, "kpi2");
     }
@@ -2567,8 +2571,7 @@ function renderKpiTable(containerId, headers, rows) {
 
   container.innerHTML = html;
 }
-
-
+    
 function renderKPI1Table(data, containerId = "kpi1Table") {
   const rows = data.map(l => {
     const { row: atCur } = getCurrentEarningsRow(l);
