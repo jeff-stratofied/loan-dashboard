@@ -1516,9 +1516,30 @@ if (opts.thinBars) {
     );
 
     sortedContribs.forEach(c => {
-    const val = c.net;      // cumulative value for this loan
+    let prevNet = 0;
 
-    const hVal = Math.max(0, val * scale);
+sortedContribs.forEach(c => {
+  const currNet = c.net || 0;
+
+  // stacked-area style band height
+  const bandVal = currNet - prevNet;
+  prevNet = currNet;
+
+  const hVal = Math.max(0, bandVal * scale);
+  if (!Number.isFinite(hVal) || hVal <= 0) return;
+
+  const bar = document.createElementNS(svgNS, "rect");
+  bar.setAttribute("x", x);
+  bar.setAttribute("width", bw);
+  bar.setAttribute("height", hVal);
+  bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
+
+  bar.setAttribute("y", yUp - hVal);
+  yUp -= hVal;
+
+  svg.appendChild(bar);
+});
+
 
     if (!Number.isFinite(hVal) || hVal <= 0) return;
 
