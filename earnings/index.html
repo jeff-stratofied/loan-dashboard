@@ -1883,7 +1883,29 @@ for (let i = 0; i < sorted.length; i++) {
     }
   });
 }
+// ----------------------------
+// CONVERT cumulative → delta
+// ----------------------------
 
+// For every month after the first, compute monthly delta for each loan
+for (let i = sorted.length - 1; i >= 1; i--) {
+  const row = sorted[i];
+  const prev = sorted[i - 1];
+
+  row.contributions.forEach(c => {
+    const prevC = prev.contributions.find(p => p.loanId === c.loanId);
+    const prevVal = prevC ? prevC.net : 0;
+
+    c.delta = c.net - prevVal;   // monthly contribution for stacked bars
+  });
+}
+
+// First month gets delta = net (no previous month)
+sorted[0].contributions.forEach(c => {
+  c.delta = c.net;
+});
+
+  
 return sorted;
 }
 
