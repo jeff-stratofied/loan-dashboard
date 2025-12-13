@@ -1930,12 +1930,11 @@ function openKpi1(){
   const rows = buildPortfolioDrawerRows(loansWithEarnings);
 
 // KPI1 uses dense x-axis
-buildKpiStackedChart(
+createKpiStackedChart(
   document.getElementById("drawerChartArea"),
   rows,
   { denseXAxis: true }
 );
-
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
