@@ -1489,14 +1489,7 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // ----------------------------
   // Stacked bars
   // ----------------------------
-  // Make KPI1 bars thinner (fixed width instead of auto-fill)
-let barW;
-if (opts.denseXAxis) {
-  barW = 6; // <--- Thin bar width for KPI1
-} else {
-  barW = (w - padL - padR) / rows.length;
-}
-
+const barW = (w - padL - padR) / rows.length;
 
   rows.forEach((r, i) => {
     const x = padL + i * barW;
@@ -1988,8 +1981,9 @@ function openKpi1(){
 createKpiStackedChart(
   document.getElementById("drawerChartArea"),
   rows,
-  { denseXAxis: true }
+  { denseXAxis: true, thinBars: true }
 );
+
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
