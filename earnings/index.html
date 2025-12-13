@@ -1929,7 +1929,8 @@ function openKpi1(){
   resetDrawerContent();
 
   const rows = buildPortfolioDrawerRows(loansWithEarnings);
-createKpiStackedChart(drawerChartArea, rows, { denseXAxis: true });
+// KPI1 should use the same beautiful chart engine as KPI2
+buildKpiStackedChart("drawerChartArea", portfolioViews.rows, r => r.net, true, "kpi1");
 
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
