@@ -1591,18 +1591,9 @@ if (opts.thinBars) {
   .map(l => r.contributions.find(c => c.loanId === l.loanId))
   .filter(Boolean);
 
-
-let prevNet = 0;
-
-// stacked-area cumulative bands (matches old static chart)
 sortedContribs.forEach(c => {
-  const currNet = c.net || 0;
-
-  // band height = delta of cumulative nets
-  const bandVal = currNet - prevNet;
-  prevNet = currNet;
-
-  const hVal = Math.max(0, bandVal * scale);
+  const net = c.net || 0;
+  const hVal = Math.max(0, net * scale);
   if (!Number.isFinite(hVal) || hVal <= 0) return;
 
   const bar = document.createElementNS(svgNS, "rect");
@@ -1617,6 +1608,7 @@ sortedContribs.forEach(c => {
 
   svg.appendChild(bar);
 });
+
 
 
     // X-axis labels (denser for KPI1, sparse for others)
