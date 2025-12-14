@@ -1104,6 +1104,7 @@ function computeEarningsKPIs(list) {
   let totalNetToDate = 0;
   let totalNetProjected = 0;
   let totalFeesToDate = 0;
+  let totalFeesProjected = 0;
   let totalPrincipal = 0;
   let monthsCounted = 1;
 
@@ -1134,6 +1135,7 @@ function computeEarningsKPIs(list) {
     // projected = last owned-row in schedule (future owned months exist in sched)
     const atEnd = sched[lastIdx];
     totalNetProjected += Number(atEnd.netEarnings || 0);
+    totalFeesProjected += Number(atEnd.cumFees || 0);
 
     monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
   });
@@ -1141,13 +1143,15 @@ function computeEarningsKPIs(list) {
   const avgMonthlyNet = monthsCounted ? totalNetToDate / monthsCounted : 0;
 
   return {
-    totalNetToDate,
-    totalNetProjected,
-    totalFeesToDate,
-    totalPrincipal,
-    avgMonthlyNet,
-    monthsCounted
-  };
+  totalNetToDate,
+  totalNetProjected,
+  totalFeesToDate,
+  totalFeesProjected,
+  totalPrincipal,
+  avgMonthlyNet,
+  monthsCounted
+};
+
 }
 
 
