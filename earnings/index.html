@@ -1541,8 +1541,9 @@ if (isKpi3) {
     const bw = Math.max(2, barW * 0.6);
 
     // ---- Average bar ----
-    const hAvg = row.avgNet * scale;
-    const yAvg = yZero - hAvg;
+    const hAvg = Math.abs(row.avgNet * scale);
+    const yAvg = row.avgNet >= 0 ? yZero - hAvg : yZero;
+
 
     const avgBar = document.createElementNS(svgNS, "rect");
     avgBar.setAttribute("x", x);
@@ -1560,13 +1561,15 @@ if (isKpi3) {
       if (hiddenLoans.has(loanId)) return;
 
       const color = window.KPI_COLOR_MAP?.[loanId] || "#64748b";
-      const mh = (net / row.activeCount) * scale;
+      const mh = Math.abs((net / row.activeCount) * scale);
+const my = net >= 0 ? yZero - mh : yZero;
 
-      const m = document.createElementNS(svgNS, "rect");
-      m.setAttribute("x", mx);
-      m.setAttribute("y", yZero - mh);
-      m.setAttribute("width", markerW);
-      m.setAttribute("height", mh);
+const m = document.createElementNS(svgNS, "rect");
+m.setAttribute("x", mx);
+m.setAttribute("y", my);
+m.setAttribute("width", markerW);
+m.setAttribute("height", mh);
+
       m.setAttribute("fill", color);
       m.setAttribute("data-loan-id", loanId);
 
@@ -1589,7 +1592,7 @@ if (isKpi3) {
 
   // IMPORTANT: do NOT fall through to stacked logic
   container.appendChild(svg);
-  gotoHoverSetup();
+
   return;
 }
 
