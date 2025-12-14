@@ -1020,9 +1020,30 @@ const graceYears = Number(
   0
 );
 
-const upfrontFee = Number(raw.upfrontFee ?? 0);
-const monthlyFeeStart = Number(raw.monthlyFeeStart ?? 0);
-const monthlyFee = Number(raw.monthlyFee ?? 0);
+// Normalize fee inputs (restore legacy backend fields)
+const upfrontFee = Number(
+  raw.upfrontFee ??
+  raw.upfront_fee ??
+  raw.originationFee ??
+  0
+);
+
+// Monthly servicing fee (legacy-compatible)
+const monthlyFee = Number(
+  raw.monthlyFee ??
+  raw.monthlyServicingFee ??
+  raw.servicingFee ??
+  raw.fee ??
+  0
+);
+
+// Month (ownership-based) when monthly fee begins
+const monthlyFeeStart = Number(
+  raw.monthlyFeeStart ??
+  raw.feeStartMonth ??
+  1
+);
+
 
     
 const normalizedLoan = {
