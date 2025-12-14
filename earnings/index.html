@@ -1696,101 +1696,95 @@ sortedContribs.forEach(c => {
 
   
   container.appendChild(svg);
+// =======================
+// KPI Chart Hover System
+// =======================
+let lensInstance = null;
+const lensRadius = 40;
+const lensScale = 1.5;
 
-  // =======================
-  // KPI Chart Hover System
-  // (lens size matches KPI2 / drawer)
-  // =======================
-  let lensInstance = null;
-  const lensRadius = 40;   // match KPI2 / loan drawer
-  const lensScale = 1.5;
-
-  function handleMove(e) {
-    const rect = svg.getBoundingClientRect();
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    const mouseY = ((e.clientY - rect.top) / rect.height) * h;
-
-    // Lens position (CLAMPED so lens stays on screen)
-    const lensX = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
-    const lensY = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
-
-
-    if (!lensInstance) {
-      lensInstance = createLens(svg, lensRadius, lensScale);
-      const clones = Array.from(svg.querySelectorAll("rect"));
-      clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-      svg.appendChild(lensInstance.group);
-    }
-
-    updateLens(lensInstance, lensX, lensY);
-
-    // Map lens X position → month index
-    const idx = Math.max(
-  0,
-  Math.min(
-    rows.length - 1,
-    Math.floor((mouseX - padL) / barW)
-  )
-);
-
-    const row = rows[idx];
-
-// =============================
-// KPI-aware hover logic
-// =============================
-
-// KPI3 rows have avgNet instead of contributions
+// Detect KPI3 once
 const isKpi3 = rows.length && rows[0].avgNet !== undefined;
 
-if (isKpi3) {
-  // ----- KPI3: Average Monthly Earnings -----
+function handleMove(e) {
+  const rect = svg.getBoundingClientRect();
+  const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+  const mouseY = ((e.clientY - rect.top) / rect.height) * h;
+
+  // Allow lens to reach chart edges
+  const lensX = Math.max(0, Math.min(w, mouseX));
+  const lensY = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
+
+  if (!lensInstance) {
+    lensInstance = createLens(svg, lensRadius, lensScale);
+    const clones = Array.from(svg.querySelectorAll("rect"));
+    clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
+    svg.appendChild(lensInstance.group);
+  }
+
+  updateLens(lensInstance, lensX, lensY);
+
+  // Map mouse X → row index
+  const idx = Math.max(
+    0,
+    Math.min(rows.length - 1, Math.floor((mouseX - padL) / barW))
+  );
+
+  const row = rows[idx];
+  if (!row) return;
+
+  // ---------- KPI3 ----------
+  if (isKpi3) {
+    const tooltipLines = [
+      `Date: ${formatMonthYear(row.date)}`,
+      `Avg / Month: ${formatCurrency(row.avgNet)}`,
+      `Active Loans: ${row.activeCount}`,
+      `Net to Date: ${formatCurrency(row.netToDate)}`
+    ];
+
+    setMiniTooltipContent(tooltipLines);
+    positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+    return;
+  }
+
+  // ---------- KPI1 / KPI2 ----------
+  const principal = row.contributions.reduce(
+    (s, c) => s + (c.principal ?? 0),
+    0
+  );
+
+  const interest = row.contributions.reduce(
+    (s, c) => s + (c.interest ?? 0),
+    0
+  );
+
+  const fees = row.contributions.reduce(
+    (s, c) => s + (c.fees ?? 0),
+    0
+  );
+
+  const net = principal + interest - fees;
+
   const tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
-    `Avg / Month: ${formatCurrency(row.avgNet)}`,
-    `Active Loans: ${row.activeCount}`,
-    `Net to Date: ${formatCurrency(row.netToDate)}`
+    `Principal: ${formatCurrency(principal)}`,
+    `Interest: ${formatCurrency(interest)}`,
+    `Fees: -${formatCurrency(fees)}`,
+    `Net: ${formatCurrency(net)}`
   ];
 
   setMiniTooltipContent(tooltipLines);
   positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-  return;
 }
 
-// ----- KPI1 / KPI2: cumulative earnings -----
-const principal = row.contributions
-  .reduce((s, c) => s + (c.principal ?? 0), 0);
-
-const interest = row.contributions
-  .reduce((s, c) => s + (c.interest ?? 0), 0);
-
-const fees = row.contributions
-  .reduce((s, c) => s + (c.fees ?? 0), 0);
-
-const net = principal + interest - fees;
-
-const tooltipLines = [
-  `Date: ${formatMonthYear(row.date)}`,
-  `Principal: ${formatCurrency(principal)}`,
-  `Interest: ${formatCurrency(interest)}`,
-  `Fees: -${formatCurrency(fees)}`,
-  `Net: ${formatCurrency(net)}`
-];
-
-setMiniTooltipContent(tooltipLines);
-positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-
-
-  }
-  function handleLeave() {
-    removeLens(svg, lensInstance);
-    lensInstance = null;
-    hideMiniTooltip();
-  }
-
-  svg.addEventListener("mousemove", handleMove);
-  svg.addEventListener("mouseleave", handleLeave);
+function handleLeave() {
+  removeLens(svg, lensInstance);
+  lensInstance = null;
+  hideMiniTooltip();
 }
 
+svg.addEventListener("mousemove", handleMove);
+svg.addEventListener("mouseleave", handleLeave);
 
 
     
