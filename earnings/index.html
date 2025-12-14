@@ -1633,30 +1633,65 @@ sortedContribs.forEach(c => {
     );
     const row = rows[idx];
 
-    const principal = row.contributions
+    // =============================
+// KPI-aware hover logic
+// =============================
+
+// Detect KPI3 rows (monthly flow only)
+const isKpi3 =
+  row.contributions.length &&
+  row.contributions[0].net !== undefined &&
+  row.contributions[0].principal === undefined;
+
+if (isKpi3) {
+  // ----- KPI3: Avg Monthly Earnings -----
+  let monthlyNet = 0;
+  for (const c of row.contributions) {
+    monthlyNet += Number(c.net || 0);
+  }
+
+  let netToDate = 0;
+  for (let i = 0; i <= idx; i++) {
+    const r = rows[i];
+    for (const c of r.contributions) {
+      netToDate += Number(c.net || 0);
+    }
+  }
+
+  const tooltipLines = [
+    `Date: ${formatMonthYear(row.date)}`,
+    `Avg / Month: ${formatCurrency(monthlyNet)}`,
+    `Net to Date: ${formatCurrency(netToDate)}`
+  ];
+
+  setMiniTooltipContent(tooltipLines);
+  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+
+} else {
+  // ----- KPI1 / KPI2: cumulative earnings -----
+  const principal = row.contributions
     .reduce((s, c) => s + (c.principal ?? 0), 0);
 
-    const interest = row.contributions
+  const interest = row.contributions
     .reduce((s, c) => s + (c.interest ?? 0), 0);
 
-    const fees = row.contributions
+  const fees = row.contributions
     .reduce((s, c) => s + (c.fees ?? 0), 0);
 
-    const net = principal + interest - fees;
+  const net = principal + interest - fees;
 
-    const tooltipLines = [
+  const tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
     `Principal: ${formatCurrency(principal)}`,
     `Interest: ${formatCurrency(interest)}`,
     `Fees: -${formatCurrency(fees)}`,
     `Net: ${formatCurrency(net)}`
-    ];
+  ];
 
+  setMiniTooltipContent(tooltipLines);
+  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+}
 
-
-    setMiniTooltipContent(tooltipLines);
-    positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-  }
 
   function handleLeave() {
     removeLens(svg, lensInstance);
