@@ -2176,7 +2176,7 @@ function openKpi3() {
     <div class="amort-wrap" id="kpi3Table"></div>
   `;
 
-  // 🚫 Do NOT render table yet
+  renderKPI3Table(loansWithEarnings, "kpi3Table");
 
   openDrawer();
 }
@@ -2985,26 +2985,46 @@ function renderKPI2Table(data, containerId = "kpi2Table") {
 
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
-  const rows = data.map(l => {
-    const avg = l.earningsSchedule.length
-      ? l.earningsSchedule[l.earningsSchedule.length - 1].netEarnings /
-        l.earningsSchedule.length
-      : 0;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const rows = data.map(loan => {
+    const sched = loan.earningsSchedule || [];
+    if (!sched.length) return null;
+
+    // Average monthly net earnings over owned months
+    const totalNet = sched[sched.length - 1].netEarnings;
+    const months = sched.length || 1;
+    const avgMonthly = totalNet / months;
+
+    const color = window.KPI_COLOR_MAP?.[loan.loanId] || "#64748b";
 
     return {
-      loanId: l.loanId,
+      loanId: loan.loanId,
       cells: [
-        `${l.loanName}`,
-        `$${avg.toFixed(2)}`
+        // Color swatch
+        `<div
+          style="
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color};
+            margin:4px auto;
+          "
+        ></div>`,
+
+        loan.loanName,
+        formatCurrency(avgMonthly)
       ]
     };
-  });
+  }).filter(Boolean);
 
-  renderKpiTable(containerId,
-    ["Loan","Avg Monthly Earnings"],
+  renderGenericTable(container, {
+    headers: ["", "Loan", "Avg Monthly Earnings"],
     rows
-  );
+  });
 }
+
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
   const rows = data.map(l => {
