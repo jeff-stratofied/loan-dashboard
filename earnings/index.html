@@ -3187,6 +3187,36 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
       </tbody>
     </table>
   `;
+    // ===============================
+  // KPI3 table → chart hover link
+  // ===============================
+  const chartEl = document.getElementById("drawerChartArea");
+  if (!chartEl) return;
+
+  container.querySelectorAll("tbody tr").forEach(tr => {
+    const loanId = tr.getAttribute("data-loan-id");
+    if (!loanId) return;
+
+    tr.addEventListener("mouseenter", () => {
+      // Dim all bars
+      chartEl
+        .querySelectorAll("rect[data-loan-id]")
+        .forEach(r => (r.style.opacity = "0.15"));
+
+      // Highlight hovered loan bars
+      chartEl
+        .querySelectorAll(`rect[data-loan-id="${loanId}"]`)
+        .forEach(r => (r.style.opacity = "1"));
+    });
+
+    tr.addEventListener("mouseleave", () => {
+      // Restore all bars
+      chartEl
+        .querySelectorAll("rect[data-loan-id]")
+        .forEach(r => (r.style.opacity = ""));
+    });
+  });
+
 }
 
 
