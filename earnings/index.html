@@ -1116,11 +1116,11 @@ const upfrontFeeThisMonth =
     ? 150
     : 0;
 
-// 25 bps (.25%) of current balance each owned month
+// 12.5 bps (0.125%) of current balance each owned month
 const balance = Number(row.balance ?? 0);
 const monthlyBalanceFee =
   row.isOwned && balance > 0
-    ? +(balance * 0.0025).toFixed(2)
+    ? +(balance * 0.00125).toFixed(2)
     : 0;
 
 const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
