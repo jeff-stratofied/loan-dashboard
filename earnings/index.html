@@ -1121,7 +1121,23 @@ const recurringFee =
     ? normalizedLoan.monthlyFee
     : 0;
 
-const feeThisMonth = upfront + recurringFee;
+// Fallback: infer fee from amort payment if no explicit fees exist
+let inferredFee = 0;
+
+if (
+  row.isOwned &&
+  upfront === 0 &&
+  recurringFee === 0 &&
+  Number.isFinite(row.payment)
+) {
+  inferredFee = Math.max(
+    0,
+    row.payment - row.principalPaid - row.interest
+  );
+}
+
+const feeThisMonth = upfront + recurringFee + inferredFee;
+
 
           if (row.isOwned) {
             cumFees      = +(cumFees + feeThisMonth).toFixed(2);
