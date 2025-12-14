@@ -2081,6 +2081,63 @@ for (let i = 0; i < sorted.length; i++) {
 return sorted;
 }
 
+    function buildProjectedDrawerRows(loans) {
+  const monthly = new Map(); // key = absolute month index (1-based)
+
+  loans.forEach(loan => {
+    (loan.earningsSchedule || []).forEach(r => {
+      const m = r.ownershipMonthIndex;
+      if (!m || m < 1) return;
+
+      if (!monthly.has(m)) {
+        monthly.set(m, {
+          monthIndex: m,
+          contributions: []
+        });
+      }
+
+      monthly.get(m).contributions.push({
+        loanId: loan.loanId,
+        net: r.netEarnings,
+        hasData: true
+      });
+    });
+  });
+
+  // Convert → sorted array
+  const sorted = [...monthly.values()].sort(
+    (a, b) => a.monthIndex - b.monthIndex
+  );
+
+  // Normalize: every row must include every loan
+  const allLoanIds = loans.map(l => l.loanId);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const row = sorted[i];
+    const present = new Set(row.contributions.map(c => c.loanId));
+
+    allLoanIds.forEach(id => {
+      if (!present.has(id)) {
+        let last = 0;
+        for (let j = i - 1; j >= 0; j--) {
+          const prev = sorted[j].contributions.find(c => c.loanId === id);
+          if (prev) {
+            last = prev.net;
+            break;
+          }
+        }
+        row.contributions.push({
+          loanId: id,
+          net: last,
+          hasData: false
+        });
+      }
+    });
+  }
+
+  return sorted;
+}
+
 
 function openKpi1(){
   currentLoan = null;
@@ -2128,12 +2185,12 @@ function openKpi2() {
     }, 0)
   );
 
-  resetDrawerContent();
+resetDrawerContent();
 
-// Chart container (chart added next step)
-drawerChartArea.innerHTML = "";
+// Build KPI2 chart
+renderKPI2Chart(loansWithEarnings);
 
-// Table container
+// Table
 drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpi2Table"></div>`;
 renderKPI2Table(loansWithEarnings, "drawerKpi2Table");
 
@@ -2715,9 +2772,20 @@ function renderKPI1Chart(loans, containerId = "drawerChartArea") {
   createKpiStackedChart(drawerChartArea, portfolioViews.rows, { denseXAxis: true });
 
 }
-    function renderKPI2Chart(data, containerId = "kpi2Chart"){
-      buildKpiStackedChart(containerId, data, row => row.netEarnings || 0, true, "kpi2");
+    function renderKPI2Chart(loans) {
+  const rows = buildProjectedDrawerRows(loans);
+
+  createKpiStackedChart(
+    document.getElementById("drawerChartArea"),
+    rows,
+    {
+      denseXAxis: false,     // monthly ticks (M1, M12, M24…)
+      thinBars: true,        // long horizon looks better thinner
+      projected: true        // flag for styling if needed later
     }
+  );
+}
+
     
     function renderKPI3Chart(data, containerId = "kpi3Chart"){
       buildKpiStackedChart(containerId, data, (row, month) => {
