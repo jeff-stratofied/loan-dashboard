@@ -1022,6 +1022,7 @@ const graceYears = Number(
 
 const upfrontFee = Number(raw.upfrontFee ?? 0);
 const monthlyFeeStart = Number(raw.monthlyFeeStart ?? 0);
+const monthlyFee = Number(raw.monthlyFee ?? 0);
 
     
 const normalizedLoan = {
@@ -1039,6 +1040,7 @@ const normalizedLoan = {
   graceYears,
   upfrontFee,
   monthlyFeeStart
+  monthlyFee
 };
 
 const amort = calcAmort(
@@ -1084,13 +1086,22 @@ const amort = calcAmort(
           const m = row.monthIndex;
 
           // Upfront fee only at ownership month 1
-          const upfront = (row.isOwned && row.ownershipMonthIndex === 1 ? normalizedLoan.upfrontFee : 0);
+const upfront = (
+  row.isOwned && row.ownershipMonthIndex === 1
+    ? normalizedLoan.upfrontFee
+    : 0
+);
 
-          // Sliding monthly fee from monthlyFeeStart → 0 over the term
-          let monthlyFee = normalizedLoan.monthlyFeeStart * (1 - m / termMonths);
-          if (!Number.isFinite(monthlyFee) || monthlyFee < 0) monthlyFee = 0;
+// Fixed monthly servicing fee starting at monthlyFeeStart
+const recurringFee =
+  row.isOwned &&
+  normalizedLoan.monthlyFee > 0 &&
+  row.ownershipMonthIndex >= normalizedLoan.monthlyFeeStart
+    ? normalizedLoan.monthlyFee
+    : 0;
 
-          const feeThisMonth = row.isOwned ? upfront + monthlyFee : 0;
+const feeThisMonth = upfront + recurringFee;
+
           if (row.isOwned) {
             cumFees      = +(cumFees + feeThisMonth).toFixed(2);
             cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
