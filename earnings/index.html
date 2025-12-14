@@ -1589,11 +1589,7 @@ m.setAttribute("height", mh);
       svg.appendChild(lbl);
     }
   });
-
-  // IMPORTANT: do NOT fall through to stacked logic
-  container.appendChild(svg);
 }
-
   
   // ----------------------------
   // Stacked bars
@@ -1602,7 +1598,7 @@ m.setAttribute("height", mh);
 // Correct bar spacing across the full chart width
 const barW = (w - padL - padR) / rows.length;
 
-
+if (!isKpi3) {
   rows.forEach((r, i) => {
     const x = padL + i * barW;
    // Make bars thinner but keep correct spacing
@@ -1640,8 +1636,6 @@ sortedContribs.forEach(c => {
   svg.appendChild(bar);
 });
 
-
-
     // X-axis labels (denser for KPI1, sparse for others)
     if ((denseXAxis && i % 4 === 0) || (!denseXAxis && i % 24 === 0)) {
       const lbl = document.createElementNS(svgNS, "text");
@@ -1657,6 +1651,8 @@ sortedContribs.forEach(c => {
       svg.appendChild(lbl);
     }
   });
+}
+  
   // ==========================
   // TODAY vertical dotted line
   // ==========================
