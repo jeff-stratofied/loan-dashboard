@@ -1106,37 +1106,25 @@ const amort = calcAmort(
         const earningsSchedule = amort.schedule.map(row => {
           const m = row.monthIndex;
 
-          // Upfront fee only at ownership month 1
-const upfront = (
-  row.isOwned && row.ownershipMonthIndex === 1
-    ? normalizedLoan.upfrontFee
-    : 0
-);
+// ---------------------------
+// FEES (explicit business rule)
+// ---------------------------
 
-// Fixed monthly servicing fee starting at monthlyFeeStart
-const recurringFee =
-  row.isOwned &&
-  normalizedLoan.monthlyFee > 0 &&
-  row.ownershipMonthIndex >= normalizedLoan.monthlyFeeStart
-    ? normalizedLoan.monthlyFee
+// $150 upfront fee at ownership month 1
+const upfrontFeeThisMonth =
+  row.isOwned && row.ownershipMonthIndex === 1
+    ? 150
     : 0;
 
-// Fallback: infer fee from amort payment if no explicit fees exist
-let inferredFee = 0;
+// 150 bps (1.5%) of current balance each owned month
+const balance = Number(row.balance ?? 0);
+const monthlyBalanceFee =
+  row.isOwned && balance > 0
+    ? +(balance * 0.015).toFixed(2)
+    : 0;
 
-if (
-  row.isOwned &&
-  upfront === 0 &&
-  recurringFee === 0 &&
-  Number.isFinite(row.payment)
-) {
-  inferredFee = Math.max(
-    0,
-    row.payment - row.principalPaid - row.interest
-  );
-}
+const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
 
-const feeThisMonth = upfront + recurringFee + inferredFee;
 
 
           if (row.isOwned) {
