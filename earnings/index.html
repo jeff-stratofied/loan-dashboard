@@ -2992,9 +2992,15 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     const sched = loan.earningsSchedule || [];
     if (!sched.length) return null;
 
+    // Avg monthly net earnings
     const totalNet = sched[sched.length - 1].netEarnings;
     const months = sched.length || 1;
     const avgMonthly = totalNet / months;
+
+    // Maturity date = last owned month
+    const maturityDate =
+      sched[sched.length - 1].ownershipDate ||
+      sched[sched.length - 1].loanDate;
 
     const color = window.KPI_COLOR_MAP?.[loan.loanId] || "#64748b";
 
@@ -3009,7 +3015,9 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
           "></div>
         </td>
         <td>${loan.loanName}</td>
+        <td>${loan.school || "—"}</td>
         <td>${formatCurrency(avgMonthly)}</td>
+        <td>${formatMonthYear(maturityDate)}</td>
       </tr>
     `;
   }).filter(Boolean).join("");
@@ -3020,7 +3028,9 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
         <tr>
           <th></th>
           <th>Loan</th>
+          <th>School</th>
           <th>Avg Monthly Earnings</th>
+          <th>Maturity</th>
         </tr>
       </thead>
       <tbody>
@@ -3029,6 +3039,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     </table>
   `;
 }
+
 
 
 
