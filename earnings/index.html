@@ -1563,7 +1563,42 @@ sortedContribs.forEach(c => {
       svg.appendChild(lbl);
     }
   });
+  // ==========================
+  // TODAY vertical dotted line
+  // ==========================
+  const TODAY = new Date();
+  TODAY.setHours(0, 0, 0, 0);
 
+  // rows[].date is already ownership-based and capped to TODAY
+  const firstDate = rows[0]?.date;
+  const lastDate  = rows[rows.length - 1]?.date;
+
+  if (firstDate && lastDate) {
+    const totalMonths = monthDiff(firstDate, lastDate);
+    let monthsToToday = monthDiff(firstDate, TODAY);
+
+    if (!Number.isFinite(monthsToToday)) monthsToToday = 0;
+
+    monthsToToday = Math.max(0, Math.min(monthsToToday, totalMonths));
+
+    const ratio = totalMonths > 0 ? monthsToToday / totalMonths : 0;
+
+    const todayX = padL + ratio * (w - padL - padR);
+
+    const todayLine = document.createElementNS(svgNS, "line");
+    todayLine.setAttribute("x1", todayX);
+    todayLine.setAttribute("x2", todayX);
+    todayLine.setAttribute("y1", padT);
+    todayLine.setAttribute("y2", h - padB);
+    todayLine.setAttribute("stroke", "#64748b");
+    todayLine.setAttribute("stroke-dasharray", "4,3");
+    todayLine.setAttribute("stroke-width", "1");
+    todayLine.setAttribute("pointer-events", "none");
+
+    svg.appendChild(todayLine);
+  }
+
+  
   container.appendChild(svg);
 
   // =======================
