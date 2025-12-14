@@ -1703,9 +1703,6 @@ let lensInstance = null;
 const lensRadius = 40;
 const lensScale = 1.5;
 
-// Detect KPI3 once
-const isKpi3 = rows.length && rows[0].avgNet !== undefined;
-
 function handleMove(e) {
   const rect = svg.getBoundingClientRect();
   const mouseX = ((e.clientX - rect.left) / rect.width) * w;
