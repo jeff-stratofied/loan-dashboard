@@ -1732,17 +1732,32 @@ function handleMove(e) {
 
   // ---------- KPI3 ----------
   if (isKpi3) {
-    const tooltipLines = [
-      `Date: ${formatMonthYear(row.date)}`,
-      `Avg / Month: ${formatCurrency(row.avgNet)}`,
-      `Active Loans: ${row.activeCount}`,
-      `Net to Date: ${formatCurrency(row.netToDate)}`
-    ];
+  // --- Tooltip ---
+  const tooltipLines = [
+    `Date: ${formatMonthYear(row.date)}`,
+    `Avg / Month: ${formatCurrency(row.avgNet)}`,
+    `Active Loans: ${row.activeCount}`,
+    `Net to Date: ${formatCurrency(row.netToDate)}`
+  ];
 
-    setMiniTooltipContent(tooltipLines);
-    positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-    return;
-  }
+  setMiniTooltipContent(tooltipLines);
+  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+
+  // --- Visual hover feedback ---
+  // Dim all loan markers
+  svg.querySelectorAll("rect[data-loan-id]").forEach(r => {
+    r.style.opacity = "0.15";
+  });
+
+  // Highlight active loan markers only
+  Object.keys(row.loanValues || {}).forEach(loanId => {
+    svg.querySelectorAll(`rect[data-loan-id="${loanId}"]`)
+      .forEach(r => (r.style.opacity = "1"));
+  });
+
+  return;
+}
+
 
   // ---------- KPI1 / KPI2 ----------
   const principal = row.contributions.reduce(
@@ -1778,7 +1793,13 @@ function handleLeave() {
   removeLens(svg, lensInstance);
   lensInstance = null;
   hideMiniTooltip();
+
+  // Reset marker opacity
+  svg.querySelectorAll("rect[data-loan-id]").forEach(r => {
+    r.style.opacity = "";
+  });
 }
+
 
 svg.addEventListener("mousemove", handleMove);
 svg.addEventListener("mouseleave", handleLeave);
