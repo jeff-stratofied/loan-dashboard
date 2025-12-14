@@ -757,110 +757,7 @@ html[data-theme="dark"] .legend .sw {
     </div>
   </aside>
 
-  <aside id="kpiDrawer2" class="drawer kpi-drawer" aria-hidden="true">
-    <div class="drawer-head">
-      <div>
-        <h2 id="kpi2Title">KPI 2</h2>
-        <div id="kpi2Sub" class="drawer-subtitle"></div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn" id="downloadCsvBtn">Download CSV</button>
-        <button class="close-btn kpi-close" data-kpi-close="kpiDrawer2" aria-label="Close KPI drawer">✕</button>
-      </div>
-    </div>
-    <div class="drawer-info-row">
-      <div class="info-card">
-        <div class="muted-small" id="kpi2PrimaryTitle"></div>
-        <div id="kpi2Primary" class="main-val"></div>
-      </div>
-      <div class="info-card small">
-        <div class="muted-small" id="kpi2SecondaryTitle"></div>
-        <div id="kpi2Secondary" class="main-val small"></div>
-      </div>
-    </div>
-    <div class="drawer-body">
-      <div class="drawer-chart" id="kpi2Chart"></div>
-    </div>
-    <div class="drawer-actions">
-      <button class="btn" data-kpi-close="kpiDrawer2">Close</button>
-      <div class="spacer"></div>
-      <button class="btn primary">Export</button>
-    </div>
-    <div class="actions" style="padding-top:10px">
-      <button class="btn" id="printBtn">Print</button>
-      <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
-    </div>
-  </aside>
 
-  <aside id="kpiDrawer3" class="drawer kpi-drawer" aria-hidden="true">
-    <div class="drawer-head">
-      <div>
-        <h2 id="kpi3Title">KPI 3</h2>
-        <div id="kpi3Sub" class="drawer-subtitle"></div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn" id="downloadCsvBtn">Download CSV</button>
-        <button class="close-btn kpi-close" data-kpi-close="kpiDrawer3" aria-label="Close KPI drawer">✕</button>
-      </div>
-    </div>
-    <div class="drawer-info-row">
-      <div class="info-card">
-        <div class="muted-small" id="kpi3PrimaryTitle"></div>
-        <div id="kpi3Primary" class="main-val"></div>
-      </div>
-      <div class="info-card small">
-        <div class="muted-small" id="kpi3SecondaryTitle"></div>
-        <div id="kpi3Secondary" class="main-val small"></div>
-      </div>
-    </div>
-    <div class="drawer-body">
-      <div class="drawer-chart" id="kpi3Chart"></div>
-    </div>
-    <div class="drawer-actions">
-      <button class="btn" data-kpi-close="kpiDrawer3">Close</button>
-      <div class="spacer"></div>
-      <button class="btn primary">Export</button>
-    </div>
-    <div class="actions" style="padding-top:10px">
-      <button class="btn" id="printBtn">Print</button>
-      <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
-    </div>
-  </aside>
-
-  <aside id="kpiDrawer4" class="drawer kpi-drawer" aria-hidden="true">
-    <div class="drawer-head">
-      <div>
-        <h2 id="kpi4Title">KPI 4</h2>
-        <div id="kpi4Sub" class="drawer-subtitle"></div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn" id="downloadCsvBtn">Download CSV</button>
-        <button class="close-btn kpi-close" data-kpi-close="kpiDrawer4" aria-label="Close KPI drawer">✕</button>
-      </div>
-    </div>
-    <div class="drawer-info-row">
-      <div class="info-card">
-        <div class="muted-small" id="kpi4PrimaryTitle"></div>
-        <div id="kpi4Primary" class="main-val"></div>
-      </div>
-      <div class="info-card small">
-        <div class="muted-small" id="kpi4SecondaryTitle"></div>
-        <div id="kpi4Secondary" class="main-val small"></div>
-      </div>
-    </div>
-    <div class="drawer-body">
-      <div class="drawer-chart" id="kpi4Chart"></div>
-    </div>
-    <div class="drawer-actions">
-      <button class="btn" data-kpi-close="kpiDrawer4">Close</button>
-      <div class="spacer"></div>
-      <button class="btn primary">Export</button>
-    </div>
-    <div class="actions" style="padding-top:10px">
-      <button class="btn" id="printBtn">Print</button>
-      <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
-    </div>
-  </aside>
 
   <script type="module">
     import {
@@ -2081,10 +1978,10 @@ for (let i = 0; i < sorted.length; i++) {
 return sorted;
 }
 
-    function buildProjectedDrawerRows(loans) {
+function buildProjectedDrawerRows(loans) {
   const monthly = new Map(); // key = ownership month index (1-based)
 
-  // Anchor projected timeline to earliest purchase date
+  // Anchor timeline to earliest purchase date
   const purchaseDates = loans
     .map(l => new Date(l.purchaseDate))
     .filter(d => !isNaN(d));
@@ -2103,8 +2000,7 @@ return sorted;
         d.setMonth(d.getMonth() + (m - 1));
 
         monthly.set(m, {
-          monthIndex: m,
-          date: d,                // ✅ REQUIRED for chart
+          date: d,                 // ✅ REQUIRED
           contributions: []
         });
       }
@@ -2121,7 +2017,7 @@ return sorted;
   });
 
   const sorted = [...monthly.values()].sort(
-    (a, b) => a.monthIndex - b.monthIndex
+    (a, b) => a.date - b.date
   );
 
   // Normalize alignment (same as KPI1)
@@ -2133,12 +2029,7 @@ return sorted;
 
     allLoanIds.forEach(id => {
       if (!present.has(id)) {
-        let last = {
-          principal: 0,
-          interest: 0,
-          fees: 0,
-          net: 0
-        };
+        let last = { principal: 0, interest: 0, fees: 0, net: 0 };
 
         for (let j = i - 1; j >= 0; j--) {
           const prev = sorted[j].contributions.find(c => c.loanId === id);
@@ -2162,6 +2053,7 @@ return sorted;
 
   return sorted;
 }
+
 
 
   loans.forEach(loan => {
@@ -2249,34 +2141,34 @@ createKpiStackedChart(
 function openKpi2() {
   currentLoan = null;
 
-  // ===== Drawer header =====
-  drawerTitle.textContent = "Projected Lifetime Net Earnings";
-  drawerSub.textContent = "Net earnings at maturity across all loans.";
+  drawerTitle.textContent = "Projected Total Net Earnings";
+  drawerSub.textContent =
+    "Projected lifetime earnings across all loans, assuming full term.";
 
-  // ===== Stat boxes =====
   drawerPrimaryTitle.textContent = "Projected Net Earnings";
   drawerPrimary.textContent = formatCurrency(kpis.totalNetProjected);
 
   drawerSecondaryTitle.textContent = "Projected Total Fees";
   drawerSecondary.textContent = formatCurrency(
     loansWithEarnings.reduce((s, l) => {
-      const sched = l.earningsSchedule || [];
-      return s + (sched.length ? sched[sched.length - 1].cumFees : 0);
+      const last = l.earningsSchedule?.slice(-1)[0];
+      return s + (last?.cumFees || 0);
     }, 0)
   );
 
-resetDrawerContent();
+  resetDrawerContent();
 
-// Build KPI2 chart
-renderKPI2Chart(loansWithEarnings);
+  const rows = buildProjectedDrawerRows(loansWithEarnings);
 
-// Table
-drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpi2Table"></div>`;
-renderKPI2Table(loansWithEarnings, "drawerKpi2Table");
+  createKpiStackedChart(
+    document.getElementById("drawerChartArea"),
+    rows,
+    { denseXAxis: false, thinBars: true }
+  );
 
-openDrawer();
-
+  openDrawer();
 }
+
 
 
 
