@@ -2093,25 +2093,25 @@ function openKpi2() {
   drawerPrimary.textContent = formatCurrency(kpis.totalNetProjected);
 
   drawerSecondaryTitle.textContent = "Projected Total Fees";
-  drawerSecondary.textContent = formatCurrency(
-    loansWithEarnings.reduce((s, l) => {
-      const last = l.earningsSchedule?.slice(-1)[0];
-      return s + (last?.cumFees || 0);
-    }, 0)
-  );
+  drawerSecondary.textContent = formatCurrency(kpis.totalFeesProjected);
 
   resetDrawerContent();
 
-  const rows = buildProjectedDrawerRows(loansWithEarnings);
+  // --- Chart ---
+  renderKPI2Chart(loansWithEarnings);
 
-  createKpiStackedChart(
-    document.getElementById("drawerChartArea"),
-    rows,
-    { denseXAxis: false, thinBars: true }
-  );
+  // ✅ ADD THIS BLOCK (missing today)
+  drawerExtra.innerHTML = `
+    <div class="amort-wrap" id="kpi2Table"></div>
+  `;
+
+  // ✅ Render table into the container you just created
+  renderKPI2Table(loansWithEarnings, "kpi2Table");
 
   openDrawer();
 }
+
+
 
 
 
