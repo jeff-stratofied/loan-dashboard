@@ -1957,6 +1957,9 @@ document.addEventListener("click", e => {
   const sw = e.target.closest(".loan-swatch");
   if (!sw) return;
 
+  e.preventDefault();
+  e.stopPropagation();   // ✅ THIS IS THE KEY FIX
+
   const id = sw.dataset.loanId;
   if (!id) return;
 
@@ -1967,7 +1970,16 @@ document.addEventListener("click", e => {
     hiddenLoans.add(id);
     sw.style.opacity = "0.3";
   }
+
+  // Re-render KPI3 chart only (do NOT reopen drawer)
+  const rows = buildAvgMonthlyDrawerRows(loansWithEarnings);
+  createKpiStackedChart(
+    drawerChartArea,
+    rows,
+    { denseXAxis: false, thinBars: true }
+  );
 });
+
     
     function openDrawerBase() {
       drawer.classList.add("open");
@@ -3160,56 +3172,67 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     };
   }).filter(Boolean);
 
-  // Use the same renderer pattern as KPI1/KPI2
   renderKpiTable(container, rows, {
     headers: ["Loan On/Off", "Loan", "School", "Avg Monthly Earnings", "Maturity"]
   });
 
-  // Bind interactions ONCE (avoid stacking listeners on rerender)
-  if (!container.dataset.bound) {
-    container.dataset.bound = "1";
+  // ================================
+  // Interactions (bind once)
+  // ================================
+  if (container.dataset.bound) return;
+  container.dataset.bound = "1";
 
-    // Click swatch: toggle loan + redraw KPI3 (do NOT let click bubble)
-    container.addEventListener("click", (e) => {
-      const sw = e.target.closest(".loan-swatch");
-      if (!sw) return;
+  // ---- Swatch click: toggle loan (NO drawer rebuild) ----
+  container.addEventListener("click", (e) => {
+    const sw = e.target.closest(".loan-swatch");
+    if (!sw) return;
 
-      e.preventDefault();
-      e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
 
-      const loanId = sw.dataset.loanId;
-      if (!loanId) return;
+    const loanId = sw.dataset.loanId;
+    if (!loanId) return;
 
-      if (hiddenLoans.has(loanId)) hiddenLoans.delete(loanId);
-      else hiddenLoans.add(loanId);
+    if (hiddenLoans.has(loanId)) hiddenLoans.delete(loanId);
+    else hiddenLoans.add(loanId);
 
-      // Keep drawer open; just redraw chart+table using openKpi3 logic
-      // (openKpi3 now respects hiddenLoans)
-      openKpi3();
-    });
+    // Redraw KPI3 chart ONLY
+    const activeLoans = loansWithEarnings.filter(
+      l => !hiddenLoans.has(l.loanId)
+    );
 
-    // Hover row -> highlight that loan in the chart (same mechanism KPI2 uses)
-    container.addEventListener("mouseover", (e) => {
-      const tr = e.target.closest("tr[data-loan-id]");
-      if (!tr) return;
-      const loanId = tr.getAttribute("data-loan-id");
-      if (!loanId) return;
+    const rows = buildAvgMonthlyDrawerRows(activeLoans);
+    createKpiStackedChart(
+      drawerChartArea,
+      rows,
+      { denseXAxis: false, thinBars: true }
+    );
+  });
 
-      // Dim all bars, then undim hovered loan bars (assumes chart rects are tagged)
-      const chart = document.getElementById("drawerChartArea");
-      if (!chart) return;
+  // ---- Hover row: highlight loan in chart ----
+  container.addEventListener("mouseover", (e) => {
+    const sw = e.target.closest(".loan-swatch");
+    if (!sw) return;
 
-      chart.querySelectorAll("rect[data-loan-id]").forEach(r => (r.style.opacity = "0.15"));
-      chart.querySelectorAll(`rect[data-loan-id="${loanId}"]`).forEach(r => (r.style.opacity = "1"));
-    });
+    const loanId = sw.dataset.loanId;
+    if (!loanId) return;
 
-    container.addEventListener("mouseleave", () => {
-      const chart = document.getElementById("drawerChartArea");
-      if (!chart) return;
-      chart.querySelectorAll("rect[data-loan-id]").forEach(r => (r.style.opacity = ""));
-    });
-  }
+    drawerChartArea
+      .querySelectorAll("rect[data-loan-id]")
+      .forEach(r => (r.style.opacity = "0.15"));
+
+    drawerChartArea
+      .querySelectorAll(`rect[data-loan-id="${loanId}"]`)
+      .forEach(r => (r.style.opacity = "1"));
+  });
+
+  container.addEventListener("mouseleave", () => {
+    drawerChartArea
+      .querySelectorAll("rect[data-loan-id]")
+      .forEach(r => (r.style.opacity = ""));
+  });
 }
+
 
 
 
