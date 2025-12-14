@@ -2276,10 +2276,11 @@ function openKpi3() {
   const rows = buildAvgMonthlyDrawerRows(loansWithEarnings);
 
   createKpiStackedChart(
-    document.getElementById("drawerChartArea"),
-    rows,
-    { denseXAxis: true, thinBars: true }
-  );
+  document.getElementById("drawerChartArea"),
+  rows,
+  { denseXAxis: false, thinBars: true }
+);
+
 
   // ===== KPI3 TABLE =====
   drawerExtra.innerHTML = `
@@ -3116,18 +3117,38 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 
     return `
       <tr>
+        <!-- Loan On / Off swatch -->
         <td>
-          <div style="
-            width:10px;
-            height:10px;
-            border-radius:2px;
-            background:${color};
-          "></div>
+          <div
+            class="loan-swatch"
+            data-loan-id="${loan.loanId}"
+            title="Toggle loan"
+            style="
+              width:10px;
+              height:10px;
+              border-radius:2px;
+              background:${color};
+              cursor:pointer;
+              margin:4px auto;
+            ">
+          </div>
         </td>
-        <td>${loan.loanName}</td>
-        <td>${loan.school || "—"}</td>
-        <td>${formatCurrency(avgMonthly)}</td>
-        <td>${formatMonthYear(maturityDate)}</td>
+
+        <td style="color:${color}; font-weight:600">
+          ${loan.loanName}
+        </td>
+
+        <td style="color:${color}">
+          ${loan.school || "—"}
+        </td>
+
+        <td style="color:${color}">
+          ${formatCurrency(avgMonthly)}
+        </td>
+
+        <td style="color:${color}">
+          ${formatMonthYear(maturityDate)}
+        </td>
       </tr>
     `;
   }).filter(Boolean).join("");
@@ -3136,7 +3157,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     <table>
       <thead>
         <tr>
-          <th></th>
+          <th title="Loan On / Off">On/Off</th>
           <th>Loan</th>
           <th>School</th>
           <th>Avg Monthly Earnings</th>
@@ -3149,8 +3170,6 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     </table>
   `;
 }
-
-
 
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
