@@ -2055,62 +2055,6 @@ function buildProjectedDrawerRows(loans) {
 }
 
 
-
-  loans.forEach(loan => {
-    (loan.earningsSchedule || []).forEach(r => {
-      const m = r.ownershipMonthIndex;
-      if (!m || m < 1) return;
-
-      if (!monthly.has(m)) {
-        monthly.set(m, {
-          monthIndex: m,
-          contributions: []
-        });
-      }
-
-      monthly.get(m).contributions.push({
-        loanId: loan.loanId,
-        net: r.netEarnings,
-        hasData: true
-      });
-    });
-  });
-
-  // Convert → sorted array
-  const sorted = [...monthly.values()].sort(
-    (a, b) => a.monthIndex - b.monthIndex
-  );
-
-  // Normalize: every row must include every loan
-  const allLoanIds = loans.map(l => l.loanId);
-
-  for (let i = 0; i < sorted.length; i++) {
-    const row = sorted[i];
-    const present = new Set(row.contributions.map(c => c.loanId));
-
-    allLoanIds.forEach(id => {
-      if (!present.has(id)) {
-        let last = 0;
-        for (let j = i - 1; j >= 0; j--) {
-          const prev = sorted[j].contributions.find(c => c.loanId === id);
-          if (prev) {
-            last = prev.net;
-            break;
-          }
-        }
-        row.contributions.push({
-          loanId: id,
-          net: last,
-          hasData: false
-        });
-      }
-    });
-  }
-
-  return sorted;
-}
-
-
 function openKpi1(){
   currentLoan = null;
 
