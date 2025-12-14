@@ -2276,6 +2276,8 @@ function openKpi2() {
 function openKpi3() {
   currentLoan = null;
 
+  resetDrawerContent();
+  
   drawerTitle.textContent = "Average Monthly Earnings";
   drawerSub.textContent =
     "Average monthly net earnings across the portfolio (actual to date, projected thereafter).";
@@ -2286,7 +2288,6 @@ function openKpi3() {
   drawerSecondaryTitle.textContent = "Months Counted";
   drawerSecondary.textContent = kpis.monthsCounted.toLocaleString();
 
-  resetDrawerContent();
 
   // ===== KPI3 CHART + TABLE (respect hiddenLoans) =====
   const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
