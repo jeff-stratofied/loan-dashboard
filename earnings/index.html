@@ -3130,9 +3130,9 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const rows = data.map(loan => {
+  const rowsHtml = data.map(loan => {
     const sched = loan.earningsSchedule || [];
-    if (!sched.length) return null;
+    if (!sched.length) return "";
 
     const totalNet = sched[sched.length - 1].netEarnings || 0;
     const months = Math.max(1, sched.length);
@@ -3145,93 +3145,50 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     const color = window.KPI_COLOR_MAP?.[loan.loanId] || "#64748b";
     const isHidden = hiddenLoans.has(loan.loanId);
 
-    return {
-      loanId: loan.loanId,
-      cells: [
-        // Swatch cell (toggle)
-        `<div
-          class="loan-swatch"
-          data-loan-id="${loan.loanId}"
-          title="Toggle loan"
-          style="
-            width:10px;
-            height:10px;
-            border-radius:2px;
-            background:${color};
-            margin:4px auto;
-            cursor:pointer;
-            opacity:${isHidden ? 0.25 : 1};
-          "
-        ></div>`,
+    return `
+      <tr data-loan-id="${loan.loanId}">
+        <td>
+          <div
+            class="loan-swatch"
+            data-loan-id="${loan.loanId}"
+            title="Toggle loan"
+            style="
+              width:10px;
+              height:10px;
+              border-radius:2px;
+              background:${color};
+              margin:4px auto;
+              cursor:pointer;
+              opacity:${isHidden ? 0.25 : 1};
+            "
+          ></div>
+        </td>
+        <td style="color:${color}; font-weight:600">${loan.loanName}</td>
+        <td style="color:${color}">${loan.school || "—"}</td>
+        <td style="color:${color}">${formatCurrency(avgMonthly)}</td>
+        <td style="color:${color}">${formatMonthYear(maturityDate)}</td>
+      </tr>
+    `;
+  }).join("");
 
-        `<span style="color:${color}; font-weight:600">${loan.loanName}</span>`,
-        `<span style="color:${color}">${loan.school || "—"}</span>`,
-        `<span style="color:${color}">${formatCurrency(avgMonthly)}</span>`,
-        `<span style="color:${color}">${formatMonthYear(maturityDate)}</span>`
-      ]
-    };
-  }).filter(Boolean);
-
-  renderKpiTable(container, rows, {
-    headers: ["Loan On/Off", "Loan", "School", "Avg Monthly Earnings", "Maturity"]
-  });
-
-  // ================================
-  // Interactions (bind once)
-  // ================================
-  if (container.dataset.bound) return;
-  container.dataset.bound = "1";
-
-  // ---- Swatch click: toggle loan (NO drawer rebuild) ----
-  container.addEventListener("click", (e) => {
-    const sw = e.target.closest(".loan-swatch");
-    if (!sw) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const loanId = sw.dataset.loanId;
-    if (!loanId) return;
-
-    if (hiddenLoans.has(loanId)) hiddenLoans.delete(loanId);
-    else hiddenLoans.add(loanId);
-
-    // Redraw KPI3 chart ONLY
-    const activeLoans = loansWithEarnings.filter(
-      l => !hiddenLoans.has(l.loanId)
-    );
-
-    const rows = buildAvgMonthlyDrawerRows(activeLoans);
-    createKpiStackedChart(
-      drawerChartArea,
-      rows,
-      { denseXAxis: false, thinBars: true }
-    );
-  });
-
-  // ---- Hover row: highlight loan in chart ----
-  container.addEventListener("mouseover", (e) => {
-    const sw = e.target.closest(".loan-swatch");
-    if (!sw) return;
-
-    const loanId = sw.dataset.loanId;
-    if (!loanId) return;
-
-    drawerChartArea
-      .querySelectorAll("rect[data-loan-id]")
-      .forEach(r => (r.style.opacity = "0.15"));
-
-    drawerChartArea
-      .querySelectorAll(`rect[data-loan-id="${loanId}"]`)
-      .forEach(r => (r.style.opacity = "1"));
-  });
-
-  container.addEventListener("mouseleave", () => {
-    drawerChartArea
-      .querySelectorAll("rect[data-loan-id]")
-      .forEach(r => (r.style.opacity = ""));
-  });
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th title="Loan On / Off">On/Off</th>
+          <th>Loan</th>
+          <th>School</th>
+          <th>Avg Monthly Earnings</th>
+          <th>Maturity</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+      </tbody>
+    </table>
+  `;
 }
+
 
 
 
