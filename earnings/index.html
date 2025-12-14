@@ -1614,8 +1614,10 @@ sortedContribs.forEach(c => {
     const mouseX = ((e.clientX - rect.left) / rect.width) * w;
     const mouseY = ((e.clientY - rect.top) / rect.height) * h;
 
-    const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
-    const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
+    // Lens position (CLAMPED so lens stays on screen)
+    const lensX = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
+    const lensY = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
+
 
     if (!lensInstance) {
       lensInstance = createLens(svg, lensRadius, lensScale);
@@ -1624,13 +1626,17 @@ sortedContribs.forEach(c => {
       svg.appendChild(lensInstance.group);
     }
 
-    updateLens(lensInstance, x, y);
+    updateLens(lensInstance, lensX, lensY);
 
     // Map lens X position → month index
     const idx = Math.max(
-      0,
-      Math.min(rows.length - 1, Math.floor((x - padL) / barW))
-    );
+  0,
+  Math.min(
+    rows.length - 1,
+    Math.floor((mouseX - padL) / barW)
+  )
+);
+
     const row = rows[idx];
 
     // =============================
