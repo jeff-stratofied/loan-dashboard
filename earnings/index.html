@@ -2150,25 +2150,37 @@ function openKpi2() {
   openDrawer();
 }
 
-
-
-
-
-
-function openKpi3(){
+function openKpi3() {
   currentLoan = null;
-  drawerTitle.textContent = "Total Net Earnings to Date";
-  drawerSub.textContent = "Portfolio-level earnings across all loans.";
-  drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
-  drawerSecondaryTitle.textContent = "Total Fees to Date";
-  drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
+
+  // Title + subtitle (Average Monthly Earnings)
+  drawerTitle.textContent = "Average Monthly Earnings";
+  drawerSub.textContent =
+    "Average monthly net earnings across all owned months.";
+
+  // Primary + secondary stat boxes
+  drawerPrimaryTitle.textContent = "Avg Monthly Earnings";
+  drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
+
+  drawerSecondaryTitle.textContent = "Months Counted";
+  drawerSecondary.textContent = kpis.monthsCounted.toLocaleString();
+
+  // Clear previous drawer contents
   resetDrawerContent();
-  renderKPI3Chart(loansWithEarnings, "drawerChartArea");
-  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-  renderKPI3Table(loansWithEarnings, "drawerKpiTable");
+
+  // 🚫 NO chart yet (we will add later)
+  // 🚫 NO table render yet
+
+  // Create table container (same pattern as KPI1 / KPI2)
+  drawerExtra.innerHTML = `
+    <div class="amort-wrap" id="kpi3Table"></div>
+  `;
+
+  // 🚫 Do NOT render table yet
+
   openDrawer();
 }
+
 
 
 function openKpi4(){
