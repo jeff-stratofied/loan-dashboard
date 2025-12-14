@@ -2992,38 +2992,44 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     const sched = loan.earningsSchedule || [];
     if (!sched.length) return null;
 
-    // Average monthly net earnings over owned months
     const totalNet = sched[sched.length - 1].netEarnings;
     const months = sched.length || 1;
     const avgMonthly = totalNet / months;
 
     const color = window.KPI_COLOR_MAP?.[loan.loanId] || "#64748b";
 
-    return {
-      loanId: loan.loanId,
-      cells: [
-        // Color swatch
-        `<div
-          style="
+    return `
+      <tr>
+        <td>
+          <div style="
             width:10px;
             height:10px;
             border-radius:2px;
             background:${color};
-            margin:4px auto;
-          "
-        ></div>`,
+          "></div>
+        </td>
+        <td>${loan.loanName}</td>
+        <td>${formatCurrency(avgMonthly)}</td>
+      </tr>
+    `;
+  }).filter(Boolean).join("");
 
-        loan.loanName,
-        formatCurrency(avgMonthly)
-      ]
-    };
-  }).filter(Boolean);
-
-  renderGenericTable(container, {
-    headers: ["", "Loan", "Avg Monthly Earnings"],
-    rows
-  });
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th></th>
+          <th>Loan</th>
+          <th>Avg Monthly Earnings</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `;
 }
+
 
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
