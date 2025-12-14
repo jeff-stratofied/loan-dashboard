@@ -1967,11 +1967,6 @@ document.addEventListener("click", e => {
     hiddenLoans.add(id);
     sw.style.opacity = "0.3";
   }
-
-  // Re-render current KPI chart
-  if (drawerTitle.textContent.includes("Average Monthly")) {
-    openKpi3();
-  }
 });
     
     function openDrawerBase() {
@@ -2293,21 +2288,22 @@ function openKpi3() {
 
   resetDrawerContent();
 
-  // ===== KPI3 CHART =====
-  const rows = buildAvgMonthlyDrawerRows(loansWithEarnings);
+  // ===== KPI3 CHART + TABLE (respect hiddenLoans) =====
+  const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
+
+  const rows = buildAvgMonthlyDrawerRows(activeLoans);
 
   createKpiStackedChart(
-  document.getElementById("drawerChartArea"),
-  rows,
-  { denseXAxis: false, thinBars: true }
-);
+    document.getElementById("drawerChartArea"),
+    rows,
+    { denseXAxis: false, thinBars: true }
+  );
 
-
-  // ===== KPI3 TABLE =====
   drawerExtra.innerHTML = `
     <div class="amort-wrap" id="kpi3Table"></div>
   `;
-  renderKPI3Table(loansWithEarnings, "kpi3Table");
+  renderKPI3Table(activeLoans, "kpi3Table");
+
 
   openDrawer();
 }
@@ -3125,73 +3121,95 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     const sched = loan.earningsSchedule || [];
     if (!sched.length) return null;
 
-    // Avg monthly net earnings
-    const totalNet = sched[sched.length - 1].netEarnings;
-    const months = sched.length || 1;
+    const totalNet = sched[sched.length - 1].netEarnings || 0;
+    const months = Math.max(1, sched.length);
     const avgMonthly = totalNet / months;
 
-    // Maturity date = last owned month
     const maturityDate =
       sched[sched.length - 1].ownershipDate ||
       sched[sched.length - 1].loanDate;
 
     const color = window.KPI_COLOR_MAP?.[loan.loanId] || "#64748b";
+    const isHidden = hiddenLoans.has(loan.loanId);
 
-    return `
-      <tr>
-        <!-- Loan On / Off swatch -->
-        <td>
-          <div
-            class="loan-swatch"
-            data-loan-id="${loan.loanId}"
-            title="Toggle loan"
-            style="
-              width:10px;
-              height:10px;
-              border-radius:2px;
-              background:${color};
-              cursor:pointer;
-              margin:4px auto;
-            ">
-          </div>
-        </td>
+    return {
+      loanId: loan.loanId,
+      cells: [
+        // Swatch cell (toggle)
+        `<div
+          class="loan-swatch"
+          data-loan-id="${loan.loanId}"
+          title="Toggle loan"
+          style="
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color};
+            margin:4px auto;
+            cursor:pointer;
+            opacity:${isHidden ? 0.25 : 1};
+          "
+        ></div>`,
 
-        <td style="color:${color}; font-weight:600">
-          ${loan.loanName}
-        </td>
+        `<span style="color:${color}; font-weight:600">${loan.loanName}</span>`,
+        `<span style="color:${color}">${loan.school || "—"}</span>`,
+        `<span style="color:${color}">${formatCurrency(avgMonthly)}</span>`,
+        `<span style="color:${color}">${formatMonthYear(maturityDate)}</span>`
+      ]
+    };
+  }).filter(Boolean);
 
-        <td style="color:${color}">
-          ${loan.school || "—"}
-        </td>
+  // Use the same renderer pattern as KPI1/KPI2
+  renderKpiTable(container, rows, {
+    headers: ["Loan On/Off", "Loan", "School", "Avg Monthly Earnings", "Maturity"]
+  });
 
-        <td style="color:${color}">
-          ${formatCurrency(avgMonthly)}
-        </td>
+  // Bind interactions ONCE (avoid stacking listeners on rerender)
+  if (!container.dataset.bound) {
+    container.dataset.bound = "1";
 
-        <td style="color:${color}">
-          ${formatMonthYear(maturityDate)}
-        </td>
-      </tr>
-    `;
-  }).filter(Boolean).join("");
+    // Click swatch: toggle loan + redraw KPI3 (do NOT let click bubble)
+    container.addEventListener("click", (e) => {
+      const sw = e.target.closest(".loan-swatch");
+      if (!sw) return;
 
-  container.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th title="Loan On / Off">On/Off</th>
-          <th>Loan</th>
-          <th>School</th>
-          <th>Avg Monthly Earnings</th>
-          <th>Maturity</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-      </tbody>
-    </table>
-  `;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const loanId = sw.dataset.loanId;
+      if (!loanId) return;
+
+      if (hiddenLoans.has(loanId)) hiddenLoans.delete(loanId);
+      else hiddenLoans.add(loanId);
+
+      // Keep drawer open; just redraw chart+table using openKpi3 logic
+      // (openKpi3 now respects hiddenLoans)
+      openKpi3();
+    });
+
+    // Hover row -> highlight that loan in the chart (same mechanism KPI2 uses)
+    container.addEventListener("mouseover", (e) => {
+      const tr = e.target.closest("tr[data-loan-id]");
+      if (!tr) return;
+      const loanId = tr.getAttribute("data-loan-id");
+      if (!loanId) return;
+
+      // Dim all bars, then undim hovered loan bars (assumes chart rects are tagged)
+      const chart = document.getElementById("drawerChartArea");
+      if (!chart) return;
+
+      chart.querySelectorAll("rect[data-loan-id]").forEach(r => (r.style.opacity = "0.15"));
+      chart.querySelectorAll(`rect[data-loan-id="${loanId}"]`).forEach(r => (r.style.opacity = "1"));
+    });
+
+    container.addEventListener("mouseleave", () => {
+      const chart = document.getElementById("drawerChartArea");
+      if (!chart) return;
+      chart.querySelectorAll("rect[data-loan-id]").forEach(r => (r.style.opacity = ""));
+    });
+  }
 }
+
 
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
