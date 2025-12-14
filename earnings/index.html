@@ -1415,6 +1415,13 @@ function createKpiStackedChart(container, rows, opts = {}) {
 
   container.innerHTML = "";
 
+// ------------------------------------
+// Detect KPI3 (Average Monthly Earnings)
+// KPI3 rows have avgNet instead of contributions
+// ------------------------------------
+const isKpi3 = rows.length && rows[0].avgNet !== undefined;
+
+  
   const svgNS = "http://www.w3.org/2000/svg";
   const rect = container.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
@@ -1501,6 +1508,70 @@ const yZero = padT + usableH;
   axis.setAttribute("stroke-width", "1");
   svg.appendChild(axis);
 
+// ==================================================
+// KPI3: Average Monthly Earnings (AVG bar + markers)
+// ==================================================
+if (isKpi3) {
+  const barW = (w - padL - padR) / rows.length;
+
+  rows.forEach((row, i) => {
+    const x = padL + i * barW;
+    const bw = Math.max(2, barW * 0.6);
+
+    // ---- Average bar ----
+    const hAvg = row.avgNet * scale;
+    const yAvg = yZero - hAvg;
+
+    const avgBar = document.createElementNS(svgNS, "rect");
+    avgBar.setAttribute("x", x);
+    avgBar.setAttribute("y", yAvg);
+    avgBar.setAttribute("width", bw);
+    avgBar.setAttribute("height", hAvg);
+    avgBar.setAttribute("fill", "rgba(148,163,184,0.35)");
+    svg.appendChild(avgBar);
+
+    // ---- Loan contribution markers ----
+    const markerW = Math.max(1.5, bw * 0.12);
+    let mx = x + bw * 0.45;
+
+    Object.entries(row.loanValues).forEach(([loanId, net]) => {
+      if (hiddenLoans.has(loanId)) return;
+
+      const color = window.KPI_COLOR_MAP?.[loanId] || "#64748b";
+      const mh = (net / row.activeCount) * scale;
+
+      const m = document.createElementNS(svgNS, "rect");
+      m.setAttribute("x", mx);
+      m.setAttribute("y", yZero - mh);
+      m.setAttribute("width", markerW);
+      m.setAttribute("height", mh);
+      m.setAttribute("fill", color);
+      m.setAttribute("data-loan-id", loanId);
+
+      svg.appendChild(m);
+      mx += markerW + 1;
+    });
+
+    // X-axis labels (same cadence as KPI2)
+    if ((!opts.denseXAxis && i % 24 === 0) || (opts.denseXAxis && i % 4 === 0)) {
+      const lbl = document.createElementNS(svgNS, "text");
+      lbl.textContent = formatMonthYear(row.date);
+      lbl.setAttribute("x", x + bw / 2);
+      lbl.setAttribute("y", h - 4);
+      lbl.setAttribute("font-size", "11");
+      lbl.setAttribute("fill", "var(--text)");
+      lbl.setAttribute("text-anchor", "middle");
+      svg.appendChild(lbl);
+    }
+  });
+
+  // IMPORTANT: do NOT fall through to stacked logic
+  container.appendChild(svg);
+  gotoHoverSetup();
+  return;
+}
+
+  
   // ----------------------------
   // Stacked bars
   // ----------------------------
@@ -1639,64 +1710,50 @@ sortedContribs.forEach(c => {
 
     const row = rows[idx];
 
-    // =============================
+// =============================
 // KPI-aware hover logic
 // =============================
 
-// Detect KPI3 rows (monthly flow only)
-const isKpi3 =
-  row.contributions.length &&
-  row.contributions[0].net !== undefined &&
-  row.contributions[0].principal === undefined;
+// KPI3 rows have avgNet instead of contributions
+const isKpi3 = rows.length && rows[0].avgNet !== undefined;
 
 if (isKpi3) {
-  // ----- KPI3: Avg Monthly Earnings -----
-  let monthlyNet = 0;
-  for (const c of row.contributions) {
-    monthlyNet += Number(c.net || 0);
-  }
-
-  let netToDate = 0;
-  for (let i = 0; i <= idx; i++) {
-    const r = rows[i];
-    for (const c of r.contributions) {
-      netToDate += Number(c.net || 0);
-    }
-  }
-
+  // ----- KPI3: Average Monthly Earnings -----
   const tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
-    `Avg / Month: ${formatCurrency(monthlyNet)}`,
-    `Net to Date: ${formatCurrency(netToDate)}`
+    `Avg / Month: ${formatCurrency(row.avgNet)}`,
+    `Active Loans: ${row.activeCount}`,
+    `Net to Date: ${formatCurrency(row.netToDate)}`
   ];
 
   setMiniTooltipContent(tooltipLines);
   positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-
-} else {
-  // ----- KPI1 / KPI2: cumulative earnings -----
-  const principal = row.contributions
-    .reduce((s, c) => s + (c.principal ?? 0), 0);
-
-  const interest = row.contributions
-    .reduce((s, c) => s + (c.interest ?? 0), 0);
-
-  const fees = row.contributions
-    .reduce((s, c) => s + (c.fees ?? 0), 0);
-
-  const net = principal + interest - fees;
-
-  const tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Principal: ${formatCurrency(principal)}`,
-    `Interest: ${formatCurrency(interest)}`,
-    `Fees: -${formatCurrency(fees)}`,
-    `Net: ${formatCurrency(net)}`
-  ];
-
-  setMiniTooltipContent(tooltipLines);
-  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+  return;
 }
+
+// ----- KPI1 / KPI2: cumulative earnings -----
+const principal = row.contributions
+  .reduce((s, c) => s + (c.principal ?? 0), 0);
+
+const interest = row.contributions
+  .reduce((s, c) => s + (c.interest ?? 0), 0);
+
+const fees = row.contributions
+  .reduce((s, c) => s + (c.fees ?? 0), 0);
+
+const net = principal + interest - fees;
+
+const tooltipLines = [
+  `Date: ${formatMonthYear(row.date)}`,
+  `Principal: ${formatCurrency(principal)}`,
+  `Interest: ${formatCurrency(interest)}`,
+  `Fees: -${formatCurrency(fees)}`,
+  `Net: ${formatCurrency(net)}`
+];
+
+setMiniTooltipContent(tooltipLines);
+positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+
 
   }
   function handleLeave() {
@@ -2162,77 +2219,74 @@ function buildProjectedDrawerRows(loans) {
   return sorted;
 }
 
-    // =======================================================
-// KPI3: Average Monthly Net Earnings (actual + projected)
-// =======================================================
+    // Updated KPI3 chart - avg earnings
 function buildAvgMonthlyDrawerRows(loans) {
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
-  // ---- Global timeline ----
-  const purchaseDates = loans
-    .map(l => new Date(l.purchaseDate))
-    .filter(d => !isNaN(d));
+  const purchaseDates = loans.map(l => new Date(l.purchaseDate)).filter(d => !isNaN(d));
+  const endDates = loans.map(l => {
+    const s = l.earningsSchedule || [];
+    return s.length ? new Date(s[s.length - 1].ownershipDate) : null;
+  }).filter(Boolean);
 
-  const maturityDates = loans
-    .map(l => {
-      const s = l.earningsSchedule || [];
-      return s.length ? new Date(s[s.length - 1].ownershipDate) : null;
-    })
-    .filter(d => d && !isNaN(d));
+  if (!purchaseDates.length || !endDates.length) return [];
 
-  if (!purchaseDates.length || !maturityDates.length) return [];
+  const start = new Date(Math.min(...purchaseDates));
+  const end   = new Date(Math.max(...endDates));
 
-  const startDate = new Date(Math.min(...purchaseDates));
-  const endDate   = new Date(Math.max(...maturityDates));
+  start.setHours(0,0,0,0);
+  end.setHours(0,0,0,0);
 
-  startDate.setHours(0, 0, 0, 0);
-  endDate.setHours(0, 0, 0, 0);
-
-  const totalMonths = monthDiff(startDate, endDate) + 1;
+  const months = monthDiff(start, end) + 1;
   const rows = [];
+  let cumulativeNet = 0;
 
-  for (let i = 0; i < totalMonths; i++) {
-    const d = new Date(startDate);
+  for (let i = 0; i < months; i++) {
+    const d = new Date(start);
     d.setMonth(d.getMonth() + i);
 
-    const contributions = [];
+    let sum = 0;
+    let count = 0;
+    const loanValues = {};
 
     loans.forEach(loan => {
       const sched = loan.earningsSchedule || [];
-      if (!sched.length) {
-        contributions.push({ loanId: loan.loanId, net: 0 });
-        return;
-      }
+      if (!sched.length) return;
 
       const purchase = new Date(loan.purchaseDate);
-      purchase.setHours(0, 0, 0, 0);
+      purchase.setHours(0,0,0,0);
 
       const idx = monthDiff(purchase, d);
+      if (idx < 0) return;
 
-      // Not owned yet
-      if (idx < 0) {
-        contributions.push({ loanId: loan.loanId, net: 0 });
-        return;
+      const last = Math.min(idx, sched.length - 1);
+      const cur  = sched[last]?.netEarnings ?? 0;
+      const prev = last > 0 ? sched[last - 1]?.netEarnings ?? 0 : 0;
+      const net  = cur - prev;
+
+      if (net !== 0) {
+        sum += net;
+        count++;
+        loanValues[loan.loanId] = net;
       }
-
-      const lastIdx = sched.length - 1;
-      const curIdx = Math.min(idx, lastIdx);
-
-      const curNet  = sched[curIdx]?.netEarnings ?? 0;
-      const prevNet = curIdx > 0 ? sched[curIdx - 1]?.netEarnings ?? 0 : 0;
-
-      contributions.push({
-        loanId: loan.loanId,
-        net: curNet - prevNet
-      });
     });
 
-    rows.push({ date: d, contributions });
+    const avg = count ? sum / count : 0;
+    cumulativeNet += avg;
+
+    rows.push({
+      date: d,
+      avgNet: avg,
+      netToDate: cumulativeNet,
+      activeCount: count,
+      loanValues
+    });
   }
 
   return rows;
 }
+
 
 
 function openKpi1(){
