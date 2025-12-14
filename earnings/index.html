@@ -2130,16 +2130,15 @@ function openKpi2() {
 
   resetDrawerContent();
 
-  // NOTE: chart + table come later (next steps)
-  // For now, leave chart area empty so mechanics are correct
+// Chart container (chart added next step)
+drawerChartArea.innerHTML = "";
 
-  drawerExtra.innerHTML = `
-    <div class="muted" style="padding:8px 0">
-      Table and chart will be added next
-    </div>
-  `;
+// Table container
+drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpi2Table"></div>`;
+renderKPI2Table(loansWithEarnings, "drawerKpi2Table");
 
-  openDrawer();
+openDrawer();
+
 }
 
 
@@ -2866,24 +2865,89 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
 
 function renderKPI2Table(data, containerId = "kpi2Table") {
   const rows = data.map(l => {
-    const last = l.earningsSchedule[l.earningsSchedule.length - 1];
+    const sched = l.earningsSchedule || [];
+    if (!sched.length) return null;
+
+    const last = sched[sched.length - 1];
+    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
+
     return {
       loanId: l.loanId,
       cells: [
-        `${l.loanName}`,
-        `$${last.netEarnings.toFixed(2)}`,
-        `$${last.cumPrincipal.toFixed(2)}`,
-        `$${last.cumInterest.toFixed(2)}`,
-        `-$${last.cumFees.toFixed(2)}`
+        // Color swatch (toggle + hover)
+        `<div
+          class="loan-swatch"
+          data-loan-id="${l.loanId}"
+          title="Toggle loan"
+          style="
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color};
+            margin:4px auto;
+            cursor:pointer;
+          "
+        ></div>`,
+
+        l.loanName,
+        formatCurrency(last.netEarnings),
+        formatCurrency(last.cumPrincipal),
+        formatCurrency(last.cumInterest),
+        "-" + formatCurrency(last.cumFees)
       ]
     };
-  });
+  }).filter(Boolean);
 
-  renderKpiTable(containerId,
-    ["Loan","Net Earnings","Principal","Interest","Fees"],
+  renderKpiTable(
+    containerId,
+    ["Loan On/Off", "Loan", "Projected Net", "Principal", "Interest", "Fees"],
     rows
   );
+
+  // -------------------------
+  // KPI2 table interactions
+  // -------------------------
+  const table = document.getElementById(containerId);
+  if (!table) return;
+
+  // Row hover → highlight chart bands (same as KPI1)
+  table.querySelectorAll("tr[data-loan-id]").forEach(tr => {
+    const loanId = tr.dataset.loanId;
+
+    tr.addEventListener("mouseenter", () => {
+      document.querySelectorAll("#drawerChartArea svg rect").forEach(r => {
+        r.style.opacity = (r.dataset.loanId === loanId) ? "1" : "0.25";
+      });
+    });
+
+    tr.addEventListener("mouseleave", () => {
+      document.querySelectorAll("#drawerChartArea svg rect").forEach(r => {
+        r.style.opacity = "1";
+      });
+    });
+  });
+
+  // Swatch click → toggle loan visibility
+  table.querySelectorAll(".loan-swatch").forEach(sw => {
+    const loanId = sw.dataset.loanId;
+
+    sw.addEventListener("click", e => {
+      e.stopPropagation();
+
+      if (hiddenLoans.has(loanId)) {
+        hiddenLoans.delete(loanId);
+        sw.style.opacity = "1";
+      } else {
+        hiddenLoans.add(loanId);
+        sw.style.opacity = "0.25";
+      }
+
+      // Re-render KPI2 chart (added next step)
+      renderKPI2Chart(loansWithEarnings);
+    });
+  });
 }
+
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
   const rows = data.map(l => {
