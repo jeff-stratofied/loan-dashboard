@@ -2093,6 +2093,78 @@ function buildProjectedDrawerRows(loans) {
   return sorted;
 }
 
+    // =======================================================
+// KPI3: Average Monthly Net Earnings (actual + projected)
+// =======================================================
+function buildAvgMonthlyDrawerRows(loans) {
+  const TODAY = new Date();
+  TODAY.setHours(0, 0, 0, 0);
+
+  // ---- Global timeline ----
+  const purchaseDates = loans
+    .map(l => new Date(l.purchaseDate))
+    .filter(d => !isNaN(d));
+
+  const maturityDates = loans
+    .map(l => {
+      const s = l.earningsSchedule || [];
+      return s.length ? new Date(s[s.length - 1].ownershipDate) : null;
+    })
+    .filter(d => d && !isNaN(d));
+
+  if (!purchaseDates.length || !maturityDates.length) return [];
+
+  const startDate = new Date(Math.min(...purchaseDates));
+  const endDate   = new Date(Math.max(...maturityDates));
+
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  const totalMonths = monthDiff(startDate, endDate) + 1;
+  const rows = [];
+
+  for (let i = 0; i < totalMonths; i++) {
+    const d = new Date(startDate);
+    d.setMonth(d.getMonth() + i);
+
+    const contributions = [];
+
+    loans.forEach(loan => {
+      const sched = loan.earningsSchedule || [];
+      if (!sched.length) {
+        contributions.push({ loanId: loan.loanId, net: 0 });
+        return;
+      }
+
+      const purchase = new Date(loan.purchaseDate);
+      purchase.setHours(0, 0, 0, 0);
+
+      const idx = monthDiff(purchase, d);
+
+      // Not owned yet
+      if (idx < 0) {
+        contributions.push({ loanId: loan.loanId, net: 0 });
+        return;
+      }
+
+      const lastIdx = sched.length - 1;
+      const curIdx = Math.min(idx, lastIdx);
+
+      const curNet  = sched[curIdx]?.netEarnings ?? 0;
+      const prevNet = curIdx > 0 ? sched[curIdx - 1]?.netEarnings ?? 0 : 0;
+
+      contributions.push({
+        loanId: loan.loanId,
+        net: curNet - prevNet
+      });
+    });
+
+    rows.push({ date: d, contributions });
+  }
+
+  return rows;
+}
+
 
 function openKpi1(){
   currentLoan = null;
@@ -2153,33 +2225,36 @@ function openKpi2() {
 function openKpi3() {
   currentLoan = null;
 
-  // Title + subtitle (Average Monthly Earnings)
   drawerTitle.textContent = "Average Monthly Earnings";
   drawerSub.textContent =
-    "Average monthly net earnings across all owned months.";
+    "Average monthly net earnings across the portfolio (actual to date, projected thereafter).";
 
-  // Primary + secondary stat boxes
   drawerPrimaryTitle.textContent = "Avg Monthly Earnings";
   drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
 
   drawerSecondaryTitle.textContent = "Months Counted";
   drawerSecondary.textContent = kpis.monthsCounted.toLocaleString();
 
-  // Clear previous drawer contents
   resetDrawerContent();
 
-  // 🚫 NO chart yet (we will add later)
-  // 🚫 NO table render yet
+  // ===== KPI3 CHART =====
+  const rows = buildAvgMonthlyDrawerRows(loansWithEarnings);
 
-  // Create table container (same pattern as KPI1 / KPI2)
+  createKpiStackedChart(
+    document.getElementById("drawerChartArea"),
+    rows,
+    { denseXAxis: true, thinBars: true }
+  );
+
+  // ===== KPI3 TABLE =====
   drawerExtra.innerHTML = `
     <div class="amort-wrap" id="kpi3Table"></div>
   `;
-
   renderKPI3Table(loansWithEarnings, "kpi3Table");
 
   openDrawer();
 }
+
 
 
 
