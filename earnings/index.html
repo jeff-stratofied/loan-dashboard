@@ -1953,6 +1953,27 @@ svg.appendChild(vline);
       if (drawerExtra) drawerExtra.innerHTML = "";
     }
 
+document.addEventListener("click", e => {
+  const sw = e.target.closest(".loan-swatch");
+  if (!sw) return;
+
+  const id = sw.dataset.loanId;
+  if (!id) return;
+
+  if (hiddenLoans.has(id)) {
+    hiddenLoans.delete(id);
+    sw.style.opacity = "1";
+  } else {
+    hiddenLoans.add(id);
+    sw.style.opacity = "0.3";
+  }
+
+  // Re-render current KPI chart
+  if (drawerTitle.textContent.includes("Average Monthly")) {
+    openKpi3();
+  }
+});
+    
     function openDrawerBase() {
       drawer.classList.add("open");
       drawer.setAttribute("aria-hidden","false");
@@ -2402,27 +2423,6 @@ function openKpi4(){
 
      });   
     }
-
-document.addEventListener("click", e => {
-  const sw = e.target.closest(".loan-swatch");
-  if (!sw) return;
-
-  const id = sw.dataset.loanId;
-  if (!id) return;
-
-  if (hiddenLoans.has(id)) {
-    hiddenLoans.delete(id);
-    sw.style.opacity = "1";
-  } else {
-    hiddenLoans.add(id);
-    sw.style.opacity = "0.3";
-  }
-
-  // Re-render current KPI chart
-  if (drawerTitle.textContent.includes("Average Monthly")) {
-    openKpi3();
-  }
-});
 
     
     async function initPage() {
