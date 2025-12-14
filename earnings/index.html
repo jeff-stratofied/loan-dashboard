@@ -1450,20 +1450,35 @@ const loanIdList = [...loanIds];
   // Use global color map (already built in rebuildLoansWithEarnings)
   const colors = window.KPI_COLOR_MAP || {};
 
-  // ----------------------------
-  // Y scale + gridlines (KPI2 style)
-  // ----------------------------
-  let maxVal = 0;
+// ----------------------------
+// Y scale + gridlines
+// ----------------------------
+let maxVal = 0;
+
+if (isKpi3) {
+  // KPI3: scale based on average values
   rows.forEach(r => {
+    maxVal = Math.max(maxVal, Math.abs(r.avgNet || 0));
+  });
+} else {
+  // KPI1 / KPI2: scale based on stacked contributions
+  rows.forEach(r => {
+    if (!r.contributions) return;
+
     const totalPos = r.contributions
       .filter(c => c.net >= 0)
       .reduce((s, c) => s + c.net, 0);
+
     const totalNeg = r.contributions
       .filter(c => c.net < 0)
       .reduce((s, c) => s + Math.abs(c.net), 0);
 
     maxVal = Math.max(maxVal, totalPos, totalNeg);
   });
+}
+
+if (maxVal < 1) maxVal = 1;
+
   if (maxVal < 1) maxVal = 1;
 
   const usableH = h - padT - padB;
