@@ -2086,9 +2086,9 @@ function openKpi2(){
   drawerTitle.textContent = "Total Net Earnings to Date";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
   drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
+  drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
   drawerSecondaryTitle.textContent = "Total Fees to Date";
-  drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
+  drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
   resetDrawerContent();
   renderKPI2Chart(loansWithEarnings, "drawerChartArea");
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -2102,9 +2102,9 @@ function openKpi3(){
   drawerTitle.textContent = "Total Net Earnings to Date";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
   drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
+  drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
   drawerSecondaryTitle.textContent = "Total Fees to Date";
-  drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
+  drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
   resetDrawerContent();
   renderKPI3Chart(loansWithEarnings, "drawerChartArea");
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -2118,9 +2118,9 @@ function openKpi4(){
   drawerTitle.textContent = "Total Net Earnings to Date";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
   drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = `$${kpis.totalNetToDate.toFixed(2)}`;
+  drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
   drawerSecondaryTitle.textContent = "Total Fees to Date";
-  drawerSecondary.textContent = `$${kpis.totalFeesToDate.toFixed(2)}`;
+  drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
   resetDrawerContent();
   renderKPI4Chart(loansWithEarnings, "drawerChartArea");
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
@@ -2235,16 +2235,16 @@ function openKpi4(){
   kpis = computeEarningsKPIs(loansWithEarnings);
 
 document.getElementById("kpiNetToDate").textContent =
-  `$${kpis.totalNetToDate.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+ formatCurrency(kpis.totalNetToDate);
 
 document.getElementById("kpiNetProj").textContent =
-  `$${kpis.totalNetProjected.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+  formatCurrency(kpis.totalNetProjected);
 
 document.getElementById("kpiAvgMonth").textContent =
-  `$${kpis.avgMonthlyEarnings.toFixed(2)}`;
+  formatCurrency(kpis.avgMonthlyNet);
 
 document.getElementById("kpiFees").textContent =
-  `$${kpis.totalFeesToDate.toLocaleString(undefined,{maximumFractionDigits:0})}`;
+  formatCurrency(kpis.totalFeesToDate);
 
   renderLoanTiles();
 }
