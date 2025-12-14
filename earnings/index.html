@@ -2109,20 +2109,39 @@ createKpiStackedChart(
   openDrawer();
 }  
 
-function openKpi2(){
+function openKpi2() {
   currentLoan = null;
-  drawerTitle.textContent = "Total Net Earnings to Date";
-  drawerSub.textContent = "Portfolio-level earnings across all loans.";
-  drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
-  drawerSecondaryTitle.textContent = "Total Fees to Date";
-  drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
+
+  // ===== Drawer header =====
+  drawerTitle.textContent = "Projected Lifetime Net Earnings";
+  drawerSub.textContent = "Net earnings at maturity across all loans.";
+
+  // ===== Stat boxes =====
+  drawerPrimaryTitle.textContent = "Projected Net Earnings";
+  drawerPrimary.textContent = formatCurrency(kpis.totalNetProjected);
+
+  drawerSecondaryTitle.textContent = "Projected Total Fees";
+  drawerSecondary.textContent = formatCurrency(
+    loansWithEarnings.reduce((s, l) => {
+      const sched = l.earningsSchedule || [];
+      return s + (sched.length ? sched[sched.length - 1].cumFees : 0);
+    }, 0)
+  );
+
   resetDrawerContent();
-  renderKPI2Chart(loansWithEarnings, "drawerChartArea");
-  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-  renderKPI2Table(loansWithEarnings, "drawerKpiTable");
+
+  // NOTE: chart + table come later (next steps)
+  // For now, leave chart area empty so mechanics are correct
+
+  drawerExtra.innerHTML = `
+    <div class="muted" style="padding:8px 0">
+      Table and chart will be added next
+    </div>
+  `;
+
   openDrawer();
 }
+
 
 
 function openKpi3(){
