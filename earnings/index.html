@@ -1435,10 +1435,17 @@ const isKpi3 = rows.length && rows[0].avgNet !== undefined;
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
 
-  // Collect all loanIds for color mapping
-  const loanIds = new Set();
-  rows.forEach(r => r.contributions.forEach(c => loanIds.add(c.loanId)));
-  const loanIdList = [...loanIds];
+ // Collect all loanIds for color mapping (KPI1 / KPI2 only)
+const loanIds = new Set();
+
+if (!isKpi3) {
+  rows.forEach(r => {
+    if (!r.contributions) return;
+    r.contributions.forEach(c => loanIds.add(c.loanId));
+  });
+}
+
+const loanIdList = [...loanIds];
 
   // Use global color map (already built in rebuildLoansWithEarnings)
   const colors = window.KPI_COLOR_MAP || {};
