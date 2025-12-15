@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Loan Portfolio — Earnings</title>
- 
+
   <style>
    :root {
     --bg:#f0f4f8;
@@ -2406,6 +2406,7 @@ const avg = cumulativeNet / portfolioMonths;
     date: m.date,
     avg,
     netToDate: cumulativeNet,
+    monthsElapsed
   };
 });
 
@@ -2940,6 +2941,10 @@ const currentX = padL + todayIndex * barW;
   // Use TRUE portfolio lifetime (calendar months)
   const portfolioStart = window.__PORTFOLIO_START__;
 
+  const monthsElapsed = portfolioStart
+    ? Math.max(1, monthDiff(portfolioStart, monthRow.monthDate) + 1)
+    : 1;
+
   const avg = aggregates.net / monthsElapsed;
 
   tooltipLines = [
@@ -3265,7 +3270,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 
   renderKpiTable(
     containerId,
-    ["Loan", "School", "Avg Monthly Earnings To Date", "Purchase Date"],
+    ["Loan", "School", "Avg Monthly Earnings To Date", "Purchase Date"]
     rows
   );
 }
