@@ -1506,13 +1506,18 @@ function createKpiStackedChart(container, rows, opts = {}) {
   let maxVal = 0;
   rows.forEach(r => {
   let totalPos = 0;
-  let totalNeg = 0;
+let totalNeg = 0;
 
-  r.contributions.forEach(c => {
-    const net =
-      (c.principal ?? 0) +
-      (c.interest ?? 0) -
-      (c.fees ?? 0);
+r.contributions.forEach(c => {
+  const net =
+    (c.principalPaid ?? 0) +
+    (c.interestPaid ?? 0) -
+    (c.feeThisMonth ?? 0);
+
+  if (net >= 0) totalPos += net;
+  else totalNeg += Math.abs(net);
+});
+
 
     if (net >= 0) totalPos += net;
     else totalNeg += Math.abs(net);
@@ -1600,12 +1605,15 @@ if (opts.thinBars) {
   .filter(Boolean);
 
 sortedContribs.forEach(c => {
-  const net =
-    (c.principal ?? 0) +
-    (c.interest ?? 0) -
-    (c.fees ?? 0);
+  // ✅ MONTHLY values (NOT cumulative)
+  const principal = Number(c.principalPaid ?? 0);
+  const interest  = Number(c.interestPaid ?? 0);
+  const fees      = Number(c.feeThisMonth ?? 0);
 
-  const hVal = Math.max(0, net * scale);
+  const net = principal + interest - fees;
+  if (net <= 0) return;
+
+  const hVal = net * scale;
   if (!Number.isFinite(hVal) || hVal <= 0) return;
 
   const bar = document.createElementNS(svgNS, "rect");
@@ -1614,12 +1622,12 @@ sortedContribs.forEach(c => {
   bar.setAttribute("width", bw);
   bar.setAttribute("height", hVal);
   bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
-
   bar.setAttribute("y", yUp - hVal);
-  yUp -= hVal;
 
+  yUp -= hVal;
   svg.appendChild(bar);
 });
+
 
 
 
