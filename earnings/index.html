@@ -2254,16 +2254,31 @@ function openKpi3() {
   const rows = buildPortfolioDrawerRows(loansWithEarnings);
 
   // Convert cumulative net → avg-to-date series
-  const avgRows = rows.map((r, i) => {
-    const totalNet = r.contributions.reduce(
-      (s, c) => s + (c.net || 0),
-      0
-    );
-    return {
-      date: r.date,
-      avg: totalNet / (i + 1)
-    };
-  });
+  let cumulativeNet = 0;
+
+const avgRows = rows.map((r, i) => {
+  const monthNet = r.contributions.reduce(
+    (s, c) => s + (c.net || 0),
+    0
+  );
+
+  cumulativeNet += monthNet;
+
+console.log(
+  formatMonthYear(r.date),
+  cumulativeNet,
+  i + 1,
+  cumulativeNet / (i + 1)
+);
+
+
+  
+  return {
+    date: r.date,
+    avg: cumulativeNet / (i + 1)
+  };
+});
+
 
   // Draw chart
   renderKpi3AvgLineChart(
