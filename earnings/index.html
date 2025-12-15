@@ -2233,7 +2233,6 @@ function openKpi2() {
   openDrawer();
 }
 
-
 function openKpi3() {
   currentLoan = null;
 
@@ -2241,55 +2240,109 @@ function openKpi3() {
   drawerSub.textContent =
     "Total net earnings divided by months since portfolio inception.";
 
-  // PRIMARY = KPI tile value (same source)
+  // PRIMARY = KPI tile value
   drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
   drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
 
   // SECONDARY = months counted
-  drawerSecondaryTitle.textContent = "Months Counted";
+  drawerSecondaryTitle.innerHTML = `
+  Months Counted
+  <span class="info-icon" title="Months counted is the total months each loan has been owned.">ⓘ</span>
+`;
   drawerSecondary.textContent = kpis.monthsCounted.toString();
 
-resetDrawerContent();
+  resetDrawerContent();
 
-// KPI3 — Avg Monthly Earnings To Date (Method A)
-const rows = buildPortfolioDrawerRows(
-  loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId))
+  // Active loans only
+  const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
+
+  // rows from your existing portfolio aggregator (may skip empty months)
+  const rows = buildPortfolioDrawerRows(activeLoans);
+
+  // Use the SAME portfolio start KPI3 uses
+  const portfolioStart = window.__PORTFOLIO_START__
+    ? new Date(window.__PORTFOLIO_START__)
+    : (rows.length ? new Date(rows[0].date) : new Date());
+
+  portfolioStart.setHours(0, 0, 0, 0);
+
+  const TODAY = new Date();
+  TODAY.setHours(0, 0, 0, 0);
+
+  // Map existing rows by YYYY-MM
+  const rowByMonth = new Map();
+  rows.forEach(r => {
+    const d = new Date(r.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    rowByMonth.set(key, r);
+  });
+
+  // Build FULL calendar months from portfolioStart → TODAY
+  const fullMonths = [];
+  const cursor = new Date(portfolioStart.getFullYear(), portfolioStart.getMonth(), 1);
+  const end = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+
+  while (cursor <= end) {
+    const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+    const existing = rowByMonth.get(key);
+
+    fullMonths.push({
+      date: new Date(cursor),
+      contributions: existing?.contributions || []
+    });
+
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+// -----------------------------------
+// Trim leading zero months for chart
+// -----------------------------------
+const firstNonZeroIdx = fullMonths.findIndex(
+  m => (m.contributions || []).some(c => c.hasData)
 );
 
-let cumulativeNet = 0;
+const chartMonths =
+  firstNonZeroIdx >= 0
+    ? fullMonths.slice(firstNonZeroIdx)
+    : fullMonths;
 
-const avgRows = rows.map((r, i) => {
-  const monthNet = r.contributions.reduce(
-    (s, c) => s + (Number(c.net) || 0),
+  
+  // Compute avg rows using CALENDAR months elapsed (NOT i+1)
+  let cumulativeNet = 0;
+
+const avgRows = chartMonths.map(m => {
+  const monthNet = (m.contributions || []).reduce(
+    (sum, c) => sum + (c.hasData ? (Number(c.net) || 0) : 0),
     0
   );
 
   cumulativeNet += monthNet;
 
+  const portfolioMonths =
+  Math.max(1, monthDiff(window.__PORTFOLIO_START__, new Date()) + 1);
+
+const avg = cumulativeNet / portfolioMonths;
+
   return {
-    date: r.date,
-    avg: cumulativeNet / (i + 1),
-    netToDate: cumulativeNet
+    date: m.date,
+    avg,
+    netToDate: cumulativeNet,
   };
 });
 
-renderKpi3AvgLineChart(
-  document.getElementById("drawerChartArea"),
-  avgRows
-);
 
+  // Draw chart
+  renderKpi3AvgLineChart(
+    document.getElementById("drawerChartArea"),
+    avgRows
+  );
 
-
-  // Table (loan productivity, not driving chart)
-  drawerExtra.innerHTML =
-    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-  renderKPI3Table(loansWithEarnings, "drawerKpiTable");
+  // Table
+  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  renderKPI3Table(activeLoans, "drawerKpiTable");
 
   openDrawer();
 }
-
-
-
 
 
 function openKpi4(){
