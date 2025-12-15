@@ -2112,6 +2112,34 @@ svg.appendChild(vline);
     // --------------------------
     // Render KPI tiles
     // --------------------------
+   function renderKPITiles() {
+  // recompute KPIs from current loan state
+  kpis = computeEarningsKPIs(loansWithEarnings);
+
+  const netEl  = document.getElementById("kpiNetToDate");
+  const projEl = document.getElementById("kpiNetProj");
+  const avgEl  = document.getElementById("kpiAvgMonth");
+  const kpi4El = document.getElementById("kpiFees"); // reused slot
+
+  if (netEl) {
+    netEl.textContent = formatCurrency(kpis.totalNetToDate);
+  }
+
+  if (projEl) {
+    projEl.textContent = formatCurrency(kpis.totalNetProjected);
+  }
+
+  if (avgEl) {
+    avgEl.textContent = formatCurrency(kpis.avgMonthlyNet);
+  }
+
+  if (kpi4El) {
+    kpi4El.textContent = formatCurrency(kpis.projectedAvgMonthlyNet);
+  }
+}
+
+    
+    
     const kpisEl = document.getElementById("kpis");
     const kpiCards = document.querySelectorAll('.kpi');
 
@@ -2583,6 +2611,7 @@ function openKpi4(){
     async function initPage() {
   await loadLoansFromBackend();
   rebuildLoansWithEarnings();
+  renderKPITiles();
 
   // build portfolio-wide earnings series for charts (mini + drawer + KPI)
   portfolioViews = buildPortfolioViews(loansWithEarnings);
