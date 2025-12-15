@@ -1746,23 +1746,7 @@ if (isKpi3) {
   setMiniTooltipContent(tooltipLines);
   positionMiniTooltip(e.clientX, e.clientY, lensRadius);
 
-  // --- Visual hover feedback ---
-
-  // Dim average line
-  svg.querySelectorAll("path").forEach(p => {
-    p.style.opacity = "0.25";
-  });
-
-  // Dim all loan ribbons
-  svg.querySelectorAll("[data-loan-id]").forEach(el => {
-    el.style.opacity = "0.15";
-  });
-
-  // Highlight active loan ribbons for this month
-  Object.keys(row.loanValues || {}).forEach(loanId => {
-    svg.querySelectorAll(`[data-loan-id="${loanId}"]`)
-      .forEach(el => (el.style.opacity = "1"));
-  });
+  
 
   return;
 }
@@ -3323,10 +3307,42 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     });
   });
 
+// =============================
+// KPI3 table → chart hover link
+// =============================
+container.addEventListener("mouseover", e => {
+  const tr = e.target.closest("tr[data-loan-id]");
+  if (!tr) return;
+
+  const loanId = tr.dataset.loanId;
+  const svg = document.querySelector("#drawerChartArea svg");
+  if (!svg) return;
+
+  // Dim avg line
+  svg.querySelectorAll("path").forEach(p => {
+    p.style.opacity = "0.25";
+  });
+
+  // Dim all loan ribbons
+  svg.querySelectorAll("[data-loan-id]").forEach(el => {
+    el.style.opacity = "0.15";
+  });
+
+  // Highlight hovered loan ribbon
+  svg.querySelectorAll(`[data-loan-id="${loanId}"]`).forEach(el => {
+    el.style.opacity = "1";
+  });
+});
+
+container.addEventListener("mouseleave", () => {
+  const svg = document.querySelector("#drawerChartArea svg");
+  if (!svg) return;
+
+  svg.querySelectorAll("[data-loan-id], path").forEach(el => {
+    el.style.opacity = "";
+  });
+}); 
 }
-
-
-
 
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
