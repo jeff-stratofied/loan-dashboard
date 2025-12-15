@@ -1232,10 +1232,6 @@ function computeEarningsKPIs(list) {
     // --------------------------
     // Mini stacked earnings chart (per tile)
     // --------------------------
-    
-    // --------------------------
-    // Mini stacked earnings chart (per tile)
-    // --------------------------
     function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan){
       containerEl.innerHTML = "";
       const svgNS = "http://www.w3.org/2000/svg";
@@ -1754,17 +1750,12 @@ svg.appendChild(vline);
 // ----------------------------------
 if (row.netToDate !== undefined && row.avgNet !== undefined) {
   // Lifetime average up to this month
-  const monthsElapsed = idx + 1;
-  const lifetimeAvg =
-    monthsElapsed > 0
-      ? row.netToDate / monthsElapsed
-      : 0;
-
   tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Avg / Month: ${formatCurrency(lifetimeAvg)}`,
-    `Net to Date: ${formatCurrency(row.netToDate)}`
-  ];
+  `Date: ${formatMonthYear(row.date)}`,
+  `Avg / Month: ${formatCurrency(row.avgNet)}`,
+  `Net to Date: ${formatCurrency(row.netToDate)}`
+];
+
 
 } else {
   // ----------------------------------
@@ -2030,36 +2021,84 @@ function buildProjectedDrawerRows(loans) {
     // Updated KPI3 chart - avg earnings
 function buildAvgMonthlyDrawerRows(loans) {
   const rows = [];
-  const monthly = new Map(); // date → cumulative net
+
+  // Map<timestamp, { total:number, loanValues:Object, active:Set }>
+  const monthly = new Map();
 
   loans.forEach(loan => {
-    (loan.earningsSchedule || []).forEach(r => {
-      const d = new Date(r.ownershipDate);
-      d.setHours(0,0,0,0);
-      if (!monthly.has(d.getTime())) {
-        monthly.set(d.getTime(), 0);
+    const sched = loan.earningsSchedule || [];
+    if (!sched.length) return;
+
+    // r.netEarnings is CUMULATIVE for the loan, so we must convert to monthly delta.
+    let prevCum = 0;
+
+    sched.forEach(r => {
+      // If your schedule includes non-owned rows, skip them (but keep prevCum in sync)
+      const cum = Number(r.netEarnings ?? 0);
+      const isOwned = (r.isOwned === undefined) ? true : !!r.isOwned;
+
+      const rawDate = r.ownershipDate || r.loanDate;
+      if (!rawDate) {
+        prevCum = cum;
+        return;
       }
-      monthly.set(
-        d.getTime(),
-        monthly.get(d.getTime()) + r.netEarnings
-      );
+
+      const d = new Date(rawDate);
+      d.setHours(0, 0, 0, 0);
+      const ts = d.getTime();
+
+      // Monthly delta from cumulative series
+      const delta = cum - prevCum;
+      prevCum = cum;
+
+      if (!isOwned) return;
+
+      if (!monthly.has(ts)) {
+        monthly.set(ts, { total: 0, loanValues: {}, active: new Set() });
+      }
+
+      const bucket = monthly.get(ts);
+
+      // Add this loan's monthly contribution
+      bucket.total += delta;
+
+      // Save per-loan contribution for future “ribbons/lines on hover” work
+      bucket.loanValues[loan.loanId] = delta;
+      bucket.active.add(loan.loanId);
     });
   });
 
-  const dates = [...monthly.keys()].sort((a,b) => a - b);
-  let cumulative = 0;
+  const dates = [...monthly.keys()].sort((a, b) => a - b);
 
-  dates.forEach((ts, i) => {
-    cumulative += monthly.get(ts);
+  let cumulative = 0;
+  let monthsCounted = 0;
+
+  dates.forEach(ts => {
+    const bucket = monthly.get(ts);
+    if (!bucket) return;
+
+    monthsCounted += 1;
+    cumulative += bucket.total;
+
     rows.push({
       date: new Date(ts),
+
+      // correct cumulative net-to-date (portfolio)
       netToDate: cumulative,
-      avgNet: cumulative / (i + 1)
+
+      // lifetime average net per month up to this point (this is what should match the tile at "today")
+      avgNet: monthsCounted ? (cumulative / monthsCounted) : 0,
+
+      // optional but useful
+      monthNet: bucket.total,
+      activeCount: bucket.active.size,
+      loanValues: bucket.loanValues
     });
   });
 
   return rows;
 }
+
 
 
 
