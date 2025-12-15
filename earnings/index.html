@@ -1485,34 +1485,59 @@ function createKpiStackedChart(container, rows, opts = {}) {
   let lens = null;
   const lensRadius = 36;
 
-  function handleMove(e) {
-    const rect = svg.getBoundingClientRect();
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    const idx = Math.max(
-      0,
-      Math.min(rows.length - 1,
-        Math.round((mouseX - padL) / ((w - padL - padR) / (rows.length - 1)))
+function handleMove(e) {
+  const rect = svg.getBoundingClientRect();
+  const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+
+  const idx = Math.max(
+    0,
+    Math.min(
+      rows.length - 1,
+      Math.round(
+        (mouseX - padL) /
+        ((w - padL - padR) / (rows.length - 1))
       )
-    );
+    )
+  );
 
-    const row = rows[idx];
-    if (!row) return;
+  const row = rows[idx];
+  if (!row) return;
 
-    if (!lens) {
-      lens = createLens(svg, lensRadius, 1.5);
-      svg.appendChild(lens.group);
-    }
+  // ----------------------------------
+  // Lifetime average (MATCHES KPI TILE)
+  // ----------------------------------
+  const lifetimeAvg =
+    rows.length > 0
+      ? rows[rows.length - 1].netToDate / rows.length
+      : 0;
 
-    updateLens(lens, mouseX, yZero - (row.netToDate / (idx + 1)) * scale);
-
-    setMiniTooltipContent([
-      `Date: ${formatMonthYear(row.date)}`,
-      `Avg / Month: ${formatCurrency(row.netToDate / (idx + 1))}`,
-      `Net to Date: ${formatCurrency(row.netToDate)}`
-    ]);
-
-    positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+  // ----------------------------------
+  // Lens setup
+  // ----------------------------------
+  if (!lens) {
+    lens = createLens(svg, lensRadius, 1.5);
+    svg.appendChild(lens.group);
   }
+
+  // Lock lens to lifetime average line
+  updateLens(
+    lens,
+    mouseX,
+    yZero - lifetimeAvg * scale
+  );
+
+  // ----------------------------------
+  // Tooltip (single, correct meaning)
+  // ----------------------------------
+  setMiniTooltipContent([
+    `Date: ${formatMonthYear(row.date)}`,
+    `Avg / Month: ${formatCurrency(lifetimeAvg)}`,
+    `Net to Date: ${formatCurrency(row.netToDate)}`
+  ]);
+
+  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
+}
+
 
   function handleLeave() {
     if (lens) {
@@ -2004,71 +2029,38 @@ function buildProjectedDrawerRows(loans) {
 
     // Updated KPI3 chart - avg earnings
 function buildAvgMonthlyDrawerRows(loans) {
-  const TODAY = new Date();
-  TODAY.setHours(0, 0, 0, 0);
-
-  const purchaseDates = loans.map(l => new Date(l.purchaseDate)).filter(d => !isNaN(d));
-  const endDates = loans.map(l => {
-    const s = l.earningsSchedule || [];
-    return s.length ? new Date(s[s.length - 1].ownershipDate) : null;
-  }).filter(Boolean);
-
-  if (!purchaseDates.length || !endDates.length) return [];
-
-  const start = new Date(Math.min(...purchaseDates));
-  const end   = new Date(Math.max(...endDates));
-
-  start.setHours(0,0,0,0);
-  end.setHours(0,0,0,0);
-
-  const months = monthDiff(start, end) + 1;
   const rows = [];
-  let cumulativeNet = 0;
+  const monthly = new Map(); // date → cumulative net
 
-  for (let i = 0; i < months; i++) {
-    const d = new Date(start);
-    d.setMonth(d.getMonth() + i);
-
-    let sum = 0;
-    let count = 0;
-    const loanValues = {};
-
-    loans.forEach(loan => {
-      const sched = loan.earningsSchedule || [];
-      if (!sched.length) return;
-
-      const purchase = new Date(loan.purchaseDate);
-      purchase.setHours(0,0,0,0);
-
-      const idx = monthDiff(purchase, d);
-      if (idx < 0) return;
-
-      const last = Math.min(idx, sched.length - 1);
-      const cur  = sched[last]?.netEarnings ?? 0;
-      const prev = last > 0 ? sched[last - 1]?.netEarnings ?? 0 : 0;
-      const net  = cur - prev;
-
-      if (net !== 0) {
-        sum += net;
-        count++;
-        loanValues[loan.loanId] = net;
+  loans.forEach(loan => {
+    (loan.earningsSchedule || []).forEach(r => {
+      const d = new Date(r.ownershipDate);
+      d.setHours(0,0,0,0);
+      if (!monthly.has(d.getTime())) {
+        monthly.set(d.getTime(), 0);
       }
+      monthly.set(
+        d.getTime(),
+        monthly.get(d.getTime()) + r.netEarnings
+      );
     });
+  });
 
-    const avg = count ? sum / count : 0;
-    cumulativeNet += avg;
+  const dates = [...monthly.keys()].sort((a,b) => a - b);
+  let cumulative = 0;
 
+  dates.forEach((ts, i) => {
+    cumulative += monthly.get(ts);
     rows.push({
-      date: d,
-      avgNet: avg,
-      netToDate: cumulativeNet,
-      activeCount: count,
-      loanValues
+      date: new Date(ts),
+      netToDate: cumulative,
+      avgNet: cumulative / (i + 1)
     });
-  }
+  });
 
   return rows;
 }
+
 
 
 
