@@ -2716,14 +2716,11 @@ const currentX = padL + todayIndex * barW;
   ];
 }
 
-
-        } else if(key === "kpi4"){ // Fees
           tooltipLines = [
             `Date: ${formatMonthYear(monthRow.monthDate)}`,
   `Fees: -$${aggregates.fees.toFixed(2)}`,
   `Net: $${aggregates.net.toFixed(2)}`
           ];
-        }
 
         updateTooltipContent(tooltipInstance, tooltipLines, true);
         updateTooltipPosition(tooltipInstance, x, y, lensRadius);
