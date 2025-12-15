@@ -1691,6 +1691,65 @@ sortedContribs.forEach(c => {
   svg.addEventListener("mouseleave", handleLeave);
 }
 
+function renderKpi3AvgLineChart(container, rows) {
+  container.innerHTML = "";
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const w = container.clientWidth || 700;
+  const h = container.clientHeight || 240;
+
+  const padL = 60, padR = 20, padT = 20, padB = 30;
+
+  const maxVal = Math.max(...rows.map(r => r.avg), 1);
+  const scaleY = (h - padT - padB) / maxVal;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+
+  // Grid + labels
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + i * ((h - padT - padB) / 4);
+    const val = maxVal * (1 - i / 4);
+
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", padL);
+    line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "var(--grid-light)");
+    svg.appendChild(line);
+
+    const txt = document.createElementNS(svgNS, "text");
+    txt.textContent = formatCurrency(val);
+    txt.setAttribute("x", padL - 8);
+    txt.setAttribute("y", y + 4);
+    txt.setAttribute("font-size", "11");
+    txt.setAttribute("text-anchor", "end");
+    txt.setAttribute("fill", "var(--text)");
+    svg.appendChild(txt);
+  }
+
+  // Line path
+  const path = document.createElementNS(svgNS, "path");
+  const stepX = (w - padL - padR) / Math.max(1, rows.length - 1);
+
+  let d = "";
+  rows.forEach((r, i) => {
+    const x = padL + i * stepX;
+    const y = h - padB - r.avg * scaleY;
+    d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+  });
+
+  path.setAttribute("d", d);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "var(--brand)");
+  path.setAttribute("stroke-width", "2.5");
+  svg.appendChild(path);
+
+  container.appendChild(svg);
+}
 
 
     
@@ -2174,24 +2233,52 @@ function openKpi2() {
 }
 
 
-
-
-
-
-function openKpi3(){
+function openKpi3() {
   currentLoan = null;
-  drawerTitle.textContent = "Total Net Earnings to Date";
-  drawerSub.textContent = "Portfolio-level earnings across all loans.";
-  drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
-  drawerSecondaryTitle.textContent = "Total Fees to Date";
-  drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
+
+  drawerTitle.textContent = "Avg Monthly Earnings To Date";
+  drawerSub.textContent =
+    "Total net earnings divided by months since portfolio inception.";
+
+  // PRIMARY = KPI tile value (same source)
+  drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
+  drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
+
+  // SECONDARY = months counted (useful context)
+  drawerSecondaryTitle.textContent = "Months Counted";
+  drawerSecondary.textContent = kpis.monthsCounted.toString();
+
   resetDrawerContent();
-  renderKPI3Chart(loansWithEarnings, "drawerChartArea");
-  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+
+  // Build calendar-month portfolio rows (already correct logic)
+  const rows = buildPortfolioDrawerRows(loansWithEarnings);
+
+  // Convert cumulative net → avg-to-date series
+  const avgRows = rows.map((r, i) => {
+    const totalNet = r.contributions.reduce(
+      (s, c) => s + (c.net || 0),
+      0
+    );
+    return {
+      date: r.date,
+      avg: totalNet / (i + 1)
+    };
+  });
+
+  // Draw chart
+  renderKpi3AvgLineChart(
+    document.getElementById("drawerChartArea"),
+    avgRows
+  );
+
+  // Keep table (unchanged)
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI3Table(loansWithEarnings, "drawerKpiTable");
+
   openDrawer();
 }
+
 
 
 function openKpi4(){
