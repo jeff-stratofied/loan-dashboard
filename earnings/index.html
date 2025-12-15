@@ -1111,18 +1111,20 @@ function computeEarningsKPIs(list) {
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
-// --- TRUE portfolio start: first aggregated earnings month ---
-const portfolioRows = buildPortfolioDrawerRows(list);
+// --- KPI3 start for Method A: earliest LOAN start month (calendar timeline) ---
+const startTimes = list
+  .map(l => new Date(l.loanStartDate || l.purchaseDate || TODAY).getTime())
+  .filter(t => Number.isFinite(t));
 
-const portfolioStart =
-  portfolioRows.length
-    ? new Date(portfolioRows[0].date)
-    : TODAY;
+const portfolioStart = startTimes.length
+  ? new Date(Math.min(...startTimes))
+  : TODAY;
 
-portfolioStart.setHours(0, 0, 0, 0);
+portfolioStart.setHours(0,0,0,0);
 
-  // expose portfolio start for KPI3 chart math
+// expose portfolio start for KPI3 chart math (if used elsewhere)
 window.__PORTFOLIO_START__ = portfolioStart;
+
 
 
   list.forEach(l => {
@@ -1144,7 +1146,8 @@ window.__PORTFOLIO_START__ = portfolioStart;
     const atCurrent = sched[currentIdx];
 
     // KPI3 requires TRUE cumulative net-to-date per loan
-totalNetToDate += Number(sched[lastIdx]?.netToDate || sched[lastIdx]?.netEarnings || 0);
+    totalNetToDate += Number(atCurrent?.netEarnings || 0);
+
 
     totalFeesToDate += Number(atCurrent.cumFees || 0);
 
@@ -1162,14 +1165,6 @@ const portfolioMonths =
 
 const avgMonthlyNet = totalNetToDate / portfolioMonths;
 const monthsCountedKpi3 = portfolioMonths;
-
-console.log(
-  "KPI3 FINAL CHECK",
-  totalNetToDate,
-  portfolioMonths,
-  avgMonthlyNet
-);
-  
 
   return {
   totalNetToDate,
