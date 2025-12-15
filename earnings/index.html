@@ -1150,14 +1150,13 @@ portfolioStart.setHours(0, 0, 0, 0);
     monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
   });
 
-// --- KPI3 Avg Monthly Earnings MUST match KPI3 chart ---
-const avgRows = buildAvgMonthlyDrawerRows(list); // only owned months, up to TODAY
-const lastAvgRow = avgRows.length
-  ? avgRows[avgRows.length - 1]
-  : null;
+// --- KPI3 Avg Monthly Earnings (Method A) ---
+// portfolioRows already represent owned months up to TODAY
+const portfolioMonths = portfolioRows.length || 1;
 
-const avgMonthlyNet = lastAvgRow ? lastAvgRow.avgNet : 0;
-const monthsCountedKpi3 = avgRows.length || monthsCounted;
+const avgMonthlyNet = totalNetToDate / portfolioMonths;
+const monthsCountedKpi3 = portfolioMonths;
+
 
   return {
   totalNetToDate,
