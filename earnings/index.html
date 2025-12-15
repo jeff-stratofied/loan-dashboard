@@ -298,6 +298,16 @@
       width:100%;
     }
 
+.info-icon {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: help;
+  vertical-align: middle;
+}
+
+    
 /* ============================================================
    AMORT-STYLE DRAWER FOR EARNINGS (WIDE VERSION)
    ============================================================ */
@@ -631,6 +641,13 @@ html[data-theme="dark"] .legend .sw {
       white-space: nowrap;
     }
 
+  /* ================================
+   KPI3 table: neutral text color
+   ================================ */
+  #kpi3Table td {
+  color: var(--text);
+  }
+    
   </style>
 </head>
 <body>
@@ -2327,7 +2344,10 @@ function openKpi3() {
   drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
 
   // SECONDARY = months counted
-  drawerSecondaryTitle.textContent = "Months Counted";
+  drawerSecondaryTitle.innerHTML = `
+  Months Counted
+  <span class="info-icon" title="Months counted is the total months each loan has been owned.">ⓘ</span>
+`;
   drawerSecondary.textContent = kpis.monthsCounted.toString();
 
   resetDrawerContent();
