@@ -2073,30 +2073,16 @@ for (let i = 0; i < sorted.length; i++) {
   allLoanIds.forEach(id => {
     if (!present.has(id)) {
 
-      // carry forward the last known cumulative values for this loan
-      let last = {
-      principal: 0,
-      interest: 0,
-      fees: 0,
-      net: 0
-      };
+     // For MONTHLY values, missing loans contribute 0 this month (no carry-forward)
+row.contributions.push({
+  loanId: id,
+  principal: 0,
+  interest: 0,
+  fees: 0,
+  net: 0,
+  hasData: false
+});
 
-      // IMPORTANT: look backward only in sorted order
-      for (let j = i - 1; j >= 0; j--) {
-      const prev = sorted[j].contributions.find(c => c.loanId === id);
-      if (prev) {
-      last = prev;
-      break;
-      }
-    }
-    row.contributions.push({
-      loanId: id,
-      principal: last.principal,
-      interest: last.interest,
-      fees: last.fees,
-      net: last.net,
-      hasData: false
-    });
     }
   });
 }
@@ -2269,9 +2255,10 @@ function openKpi3() {
   const avgRows = rows.map((r, i) => {
     // MONTHLY net only (not cumulative)
     const monthNet = r.contributions.reduce(
-      (sum, c) => sum + (Number(c.net) || 0),
-      0
-    );
+  (sum, c) => sum + (c.hasData ? (Number(c.net) || 0) : 0),
+  0
+);
+
 
     cumulativeNet += monthNet;
 
