@@ -1503,21 +1503,18 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // ----------------------------
   // Y scale + gridlines (KPI2 style)
   // ----------------------------
-  let maxVal = 0;
-  rows.forEach(r => {
+let maxVal = 0;
+
+rows.forEach(r => {
   let totalPos = 0;
-let totalNeg = 0;
+  let totalNeg = 0;
 
-r.contributions.forEach(c => {
-  const net =
-    (c.principalPaid ?? 0) +
-    (c.interestPaid ?? 0) -
-    (c.feeThisMonth ?? 0);
+  r.contributions.forEach(c => {
+    const principal = Number(c.principalPaid ?? 0);
+    const interest  = Number(c.interestPaid ?? 0);
+    const fees      = Number(c.feeThisMonth ?? 0);
 
-  if (net >= 0) totalPos += net;
-  else totalNeg += Math.abs(net);
-});
-
+    const net = principal + interest - fees;
 
     if (net >= 0) totalPos += net;
     else totalNeg += Math.abs(net);
@@ -1526,7 +1523,8 @@ r.contributions.forEach(c => {
   maxVal = Math.max(maxVal, totalPos, totalNeg);
 });
 
-  if (maxVal < 1) maxVal = 1;
+if (maxVal < 1) maxVal = 1;
+
 
   const usableH = h - padT - padB;
   // Full vertical range for positive earnings (zero at bottom)
