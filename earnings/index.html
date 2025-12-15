@@ -690,7 +690,7 @@ html[data-theme="dark"] .legend .sw {
       </div>
 
       <div class="kpi" data-kpi="fees">
-        <h3>Projected Avg Monthly Earnings</h3>
+        <h3>Total Fees to Date</h3>
         <p id="kpiFees">--</p>
       </div>
     </section>
@@ -1142,6 +1142,8 @@ portfolioStart.setHours(0,0,0,0);
 // expose portfolio start for KPI3 chart math (if used elsewhere)
 window.__PORTFOLIO_START__ = portfolioStart;
 
+
+
   list.forEach(l => {
     totalPrincipal += Number(l.purchasePrice || 0);
 
@@ -1181,28 +1183,6 @@ const portfolioMonths =
 const avgMonthlyNet = totalNetToDate / portfolioMonths;
 const monthsCountedKpi3 = portfolioMonths;
 
-// -----------------------------------
-// KPI4 — Projected Avg Monthly Earnings
-// -----------------------------------
-
-// Portfolio start already computed above
-// (calendar-based, earliest loan start)
-const finalMaturity = list.reduce((latest, l) => {
-  const d = new Date(l.maturityDate);
-  return (!latest || d > latest) ? d : latest;
-}, null);
-
-const projectedMonths = finalMaturity
-  ? Math.max(1, monthDiff(portfolioStart, finalMaturity) + 1)
-  : 1;
-
-// totalNetProjected already computed correctly above
-const projectedAvgMonthlyNet =
-  projectedMonths > 0
-    ? totalNetProjected / projectedMonths
-    : 0;
-
-  
   return {
   totalNetToDate,
   totalNetProjected,
@@ -1210,12 +1190,8 @@ const projectedAvgMonthlyNet =
   totalFeesProjected,
   totalPrincipal,
   avgMonthlyNet,
-  monthsCounted: monthsCountedKpi3,
-
-  // KPI4
-  projectedMonths,
-  projectedAvgMonthlyNet
-};
+  monthsCounted: monthsCountedKpi3
+  };
   }
 
 
@@ -1503,28 +1479,18 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // ----------------------------
   // Y scale + gridlines (KPI2 style)
   // ----------------------------
-let maxVal = 0;
+  let maxVal = 0;
+  rows.forEach(r => {
+    const totalPos = r.contributions
+      .filter(c => c.net >= 0)
+      .reduce((s, c) => s + c.net, 0);
+    const totalNeg = r.contributions
+      .filter(c => c.net < 0)
+      .reduce((s, c) => s + Math.abs(c.net), 0);
 
-rows.forEach(r => {
-  let totalPos = 0;
-  let totalNeg = 0;
-
-  r.contributions.forEach(c => {
-    const principal = Number(c.principalPaid ?? 0);
-    const interest  = Number(c.interestPaid ?? 0);
-    const fees      = Number(c.feeThisMonth ?? 0);
-
-    const net = principal + interest - fees;
-
-    if (net >= 0) totalPos += net;
-    else totalNeg += Math.abs(net);
+    maxVal = Math.max(maxVal, totalPos, totalNeg);
   });
-
-  maxVal = Math.max(maxVal, totalPos, totalNeg);
-});
-
-if (maxVal < 1) maxVal = 1;
-
+  if (maxVal < 1) maxVal = 1;
 
   const usableH = h - padT - padB;
   // Full vertical range for positive earnings (zero at bottom)
@@ -1603,15 +1569,8 @@ if (opts.thinBars) {
   .filter(Boolean);
 
 sortedContribs.forEach(c => {
-  // ✅ MONTHLY values (NOT cumulative)
-  const principal = Number(c.principalPaid ?? 0);
-  const interest  = Number(c.interestPaid ?? 0);
-  const fees      = Number(c.feeThisMonth ?? 0);
-
-  const net = principal + interest - fees;
-  if (net <= 0) return;
-
-  const hVal = net * scale;
+  const net = c.net || 0;
+  const hVal = Math.max(0, net * scale);
   if (!Number.isFinite(hVal) || hVal <= 0) return;
 
   const bar = document.createElementNS(svgNS, "rect");
@@ -1620,13 +1579,12 @@ sortedContribs.forEach(c => {
   bar.setAttribute("width", bw);
   bar.setAttribute("height", hVal);
   bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
-  bar.setAttribute("y", yUp - hVal);
 
+  bar.setAttribute("y", yUp - hVal);
   yUp -= hVal;
+
   svg.appendChild(bar);
 });
-
-
 
 
 
@@ -2130,34 +2088,6 @@ svg.appendChild(vline);
     // --------------------------
     // Render KPI tiles
     // --------------------------
-   function renderKPITiles() {
-  // recompute KPIs from current loan state
-  kpis = computeEarningsKPIs(loansWithEarnings);
-
-  const netEl  = document.getElementById("kpiNetToDate");
-  const projEl = document.getElementById("kpiNetProj");
-  const avgEl  = document.getElementById("kpiAvgMonth");
-  const kpi4El = document.getElementById("kpiFees"); // reused slot
-
-  if (netEl) {
-    netEl.textContent = formatCurrency(kpis.totalNetToDate);
-  }
-
-  if (projEl) {
-    projEl.textContent = formatCurrency(kpis.totalNetProjected);
-  }
-
-  if (avgEl) {
-    avgEl.textContent = formatCurrency(kpis.avgMonthlyNet);
-  }
-
-  if (kpi4El) {
-    kpi4El.textContent = formatCurrency(kpis.projectedAvgMonthlyNet);
-  }
-}
-
-    
-    
     const kpisEl = document.getElementById("kpis");
     const kpiCards = document.querySelectorAll('.kpi');
 
@@ -2629,7 +2559,6 @@ function openKpi4(){
     async function initPage() {
   await loadLoansFromBackend();
   rebuildLoansWithEarnings();
-  renderKPITiles();
 
   // build portfolio-wide earnings series for charts (mini + drawer + KPI)
   portfolioViews = buildPortfolioViews(loansWithEarnings);
@@ -2649,7 +2578,7 @@ document.getElementById("kpiAvgMonth").textContent =
   formatCurrency(kpis.avgMonthlyNet);
 
 document.getElementById("kpiFees").textContent =
-  formatCurrency(kpis.projectedAvgMonthlyNet);
+  formatCurrency(kpis.totalFeesToDate);
 
   renderLoanTiles();
 }
