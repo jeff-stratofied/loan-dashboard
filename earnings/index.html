@@ -1111,6 +1111,18 @@ function computeEarningsKPIs(list) {
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
+  // --- Portfolio lifetime start (earliest purchase date) ---
+const purchaseDates = list
+  .map(l => new Date(l.purchaseDate))
+  .filter(d => !isNaN(d));
+
+const portfolioStart = purchaseDates.length
+  ? new Date(Math.min(...purchaseDates))
+  : TODAY;
+
+portfolioStart.setHours(0, 0, 0, 0);
+
+
   list.forEach(l => {
     totalPrincipal += Number(l.purchasePrice || 0);
 
@@ -1140,7 +1152,12 @@ function computeEarningsKPIs(list) {
     monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
   });
 
-  const avgMonthlyNet = monthsCounted ? totalNetToDate / monthsCounted : 0;
+  // --- TRUE portfolio average monthly earnings ---
+const portfolioMonths =
+  Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
+
+const avgMonthlyNet = totalNetToDate / portfolioMonths;
+
 
   return {
   totalNetToDate,
@@ -1149,7 +1166,7 @@ function computeEarningsKPIs(list) {
   totalFeesProjected,
   totalPrincipal,
   avgMonthlyNet,
-  monthsCounted
+  monthsCounted: portfolioMonths
 };
 
 }
