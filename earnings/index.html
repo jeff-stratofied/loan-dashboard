@@ -1700,15 +1700,16 @@ function renderKpi3AvgLineChart(container, rows) {
 
   const padL = 60, padR = 20, padT = 20, padB = 30;
 
-  const maxVal = Math.max(...rows.map(r => r.avg), 1);
-  const scaleY = (h - padT - padB) / maxVal;
-
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
 
-  // Grid + labels
+  const maxVal = Math.max(...rows.map(r => r.avg), 1);
+  const scaleY = (h - padT - padB) / maxVal;
+  const scaleX = (w - padL - padR) / Math.max(1, rows.length - 1);
+
+  // Y grid + labels
   for (let i = 0; i <= 4; i++) {
     const y = padT + i * ((h - padT - padB) / 4);
     const val = maxVal * (1 - i / 4);
@@ -1731,92 +1732,25 @@ function renderKpi3AvgLineChart(container, rows) {
     svg.appendChild(txt);
   }
 
-  // Line path
-  const path = document.createElementNS(svgNS, "path");
-  const stepX = (w - padL - padR) / Math.max(1, rows.length - 1);
-
+  // Line
   let d = "";
   rows.forEach((r, i) => {
-    const x = padL + i * stepX;
+    const x = padL + i * scaleX;
     const y = h - padB - r.avg * scaleY;
     d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
   });
 
+  const path = document.createElementNS(svgNS, "path");
   path.setAttribute("d", d);
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", "var(--brand)");
-  path.setAttribute("stroke-width", "2.5");
+  path.setAttribute("stroke-width", "3");
   svg.appendChild(path);
 
-// -------------------------
-// Hover (no lens)
-// -------------------------
-const tooltipEl = document.getElementById("tooltip");
-
-const vLine = document.createElementNS(svgNS, "line");
-vLine.setAttribute("x1", padL);
-vLine.setAttribute("x2", padL);
-vLine.setAttribute("y1", padT);
-vLine.setAttribute("y2", h - padB);
-vLine.setAttribute("stroke", "var(--text)");
-vLine.setAttribute("stroke-dasharray", "3 4");
-vLine.setAttribute("stroke-opacity", "0");
-svg.appendChild(vLine);
-
-const dot = document.createElementNS(svgNS, "circle");
-dot.setAttribute("r", "4.5");
-dot.setAttribute("fill", "var(--brand)");
-dot.setAttribute("stroke", "var(--card)");
-dot.setAttribute("stroke-width", "2");
-dot.setAttribute("opacity", "0");
-svg.appendChild(dot);
-
-function clamp(n, a, b) { return Math.max(a, Math.min(b, n)); }
-
-svg.addEventListener("mousemove", (ev) => {
-  const rect = svg.getBoundingClientRect();
-  const x = ((ev.clientX - rect.left) / rect.width) * w;
-
-  const idx = clamp(Math.round((x - padL) / stepX), 0, rows.length - 1);
-  const r = rows[idx];
-
-  const px = padL + idx * stepX;
-  const py = h - padB - r.avg * scaleY;
-
-  vLine.setAttribute("x1", px);
-  vLine.setAttribute("x2", px);
-  vLine.setAttribute("stroke-opacity", "0.65");
-
-  dot.setAttribute("cx", px);
-  dot.setAttribute("cy", py);
-  dot.setAttribute("opacity", "1");
-
-  if (tooltipEl) {
-    tooltipEl.innerHTML =
-      `<div><b>Date:</b> ${formatMonthYear(new Date(r.date))}</div>` +
-      `<div><b>Avg Monthly Earnings To Date:</b> ${formatCurrency(r.avg)}</div>` +
-      `<div><b>Net To Date:</b> ${formatCurrency(r.netToDate ?? 0)}</div>`;
-
-    tooltipEl.style.opacity = "1";
-    tooltipEl.style.left = (ev.clientX + 12) + "px";
-    tooltipEl.style.top  = (ev.clientY + 12) + "px";
-  }
-});
-
-svg.addEventListener("mouseleave", () => {
-  vLine.setAttribute("stroke-opacity", "0");
-  dot.setAttribute("opacity", "0");
-  if (tooltipEl) tooltipEl.style.opacity = "0";
-});
-
-  
+  svg.appendChild(path);
   container.appendChild(svg);
-
-  svg.addEventListener("mouseleave", () => {
-    hideMiniTooltip();
-  });
-
 }
+
 
     
     // --------------------------
