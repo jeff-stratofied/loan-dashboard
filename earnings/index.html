@@ -1143,7 +1143,9 @@ window.__PORTFOLIO_START__ = portfolioStart;
     const currentIdx = Math.max(0, Math.min(diff - 1, lastIdx));
     const atCurrent = sched[currentIdx];
 
-    totalNetToDate += Number(atCurrent.netEarnings || 0);
+    // KPI3 requires TRUE cumulative net-to-date per loan
+totalNetToDate += Number(sched[lastIdx]?.netToDate || sched[lastIdx]?.netEarnings || 0);
+
     totalFeesToDate += Number(atCurrent.cumFees || 0);
 
     // projected = last owned-row in schedule (future owned months exist in sched)
@@ -1161,6 +1163,13 @@ const portfolioMonths =
 const avgMonthlyNet = totalNetToDate / portfolioMonths;
 const monthsCountedKpi3 = portfolioMonths;
 
+console.log(
+  "KPI3 FINAL CHECK",
+  totalNetToDate,
+  portfolioMonths,
+  avgMonthlyNet
+);
+  
 
   return {
   totalNetToDate,
