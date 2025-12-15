@@ -1450,11 +1450,12 @@ if (isAvgKpi) {
   });
 }
 
-  if (maxY < 1) maxY = 1;
+if (maxY < 1) maxY = 1;
 
 const usableH = h - padT - padB;
 const scale = usableH / maxY;
 const yZero = padT + usableH;
+
 
 
   // ---------- Grid + labels ----------
@@ -1472,7 +1473,7 @@ const yZero = padT + usableH;
 
     if (i > 0) {
       const t = document.createElementNS(svgNS, "text");
-      t.textContent = formatCurrency((maxAvg / gridLines) * i);
+      t.textContent = formatCurrency((maxY / gridLines) * i);
       t.setAttribute("x", padL - 10);
       t.setAttribute("y", y + 4);
       t.setAttribute("text-anchor", "end");
