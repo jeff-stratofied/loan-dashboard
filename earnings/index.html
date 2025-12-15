@@ -2275,10 +2275,12 @@ function openKpi3() {
   });
 
   // Draw chart
-  renderKpi3AvgLineChart(
-    document.getElementById("drawerChartArea"),
-    avgRows
-  );
+  renderKpi3FlatAvgChart(
+  document.getElementById("drawerChartArea"),
+  avgRows,
+  kpis.avgMonthlyNet
+);
+
 
   // -----------------------------------
   // Table (loan productivity context)
