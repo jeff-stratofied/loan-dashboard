@@ -3253,15 +3253,24 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     return {
       loanId: l.loanId,
       cells: [
-        l.loanName,
-        formatCurrency(avg)
-      ]
+      l.loanName,
+      l.school || "—",
+      formatCurrency(
+      (getCurrentEarningsRow(l).row.netEarnings || 0) /
+      Math.max(
+        1,
+        monthDiff(window.__PORTFOLIO_START__, new Date()) + 1
+      )
+    ),
+  formatDate(new Date(l.purchaseDate))
+]
+
     };
   });
 
   renderKpiTable(
     containerId,
-    ["Loan", "Avg Monthly Earnings To Date"],
+    ["Loan", "School", "Avg Monthly Earnings To Date", "Purchase Date"]
     rows
   );
 }
