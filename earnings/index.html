@@ -690,7 +690,7 @@ html[data-theme="dark"] .legend .sw {
       </div>
 
       <div class="kpi" data-kpi="fees">
-        <h3>Total Fees to Date</h3>
+        <h3>Projected Avg Monthly Earnings</h3>
         <p id="kpiFees">--</p>
       </div>
     </section>
@@ -1142,8 +1142,6 @@ portfolioStart.setHours(0,0,0,0);
 // expose portfolio start for KPI3 chart math (if used elsewhere)
 window.__PORTFOLIO_START__ = portfolioStart;
 
-
-
   list.forEach(l => {
     totalPrincipal += Number(l.purchasePrice || 0);
 
@@ -1183,6 +1181,28 @@ const portfolioMonths =
 const avgMonthlyNet = totalNetToDate / portfolioMonths;
 const monthsCountedKpi3 = portfolioMonths;
 
+// -----------------------------------
+// KPI4 — Projected Avg Monthly Earnings
+// -----------------------------------
+
+// Portfolio start already computed above
+// (calendar-based, earliest loan start)
+const finalMaturity = list.reduce((latest, l) => {
+  const d = new Date(l.maturityDate);
+  return (!latest || d > latest) ? d : latest;
+}, null);
+
+const projectedMonths = finalMaturity
+  ? Math.max(1, monthDiff(portfolioStart, finalMaturity) + 1)
+  : 1;
+
+// totalNetProjected already computed correctly above
+const projectedAvgMonthlyNet =
+  projectedMonths > 0
+    ? totalNetProjected / projectedMonths
+    : 0;
+
+  
   return {
   totalNetToDate,
   totalNetProjected,
@@ -1190,8 +1210,12 @@ const monthsCountedKpi3 = portfolioMonths;
   totalFeesProjected,
   totalPrincipal,
   avgMonthlyNet,
-  monthsCounted: monthsCountedKpi3
-  };
+  monthsCounted: monthsCountedKpi3,
+
+  // KPI4
+  projectedMonths,
+  projectedAvgMonthlyNet
+};
   }
 
 
@@ -2578,7 +2602,7 @@ document.getElementById("kpiAvgMonth").textContent =
   formatCurrency(kpis.avgMonthlyNet);
 
 document.getElementById("kpiFees").textContent =
-  formatCurrency(kpis.totalFeesToDate);
+  formatCurrency(kpis.projectedAvgMonthlyNet);
 
   renderLoanTiles();
 }
