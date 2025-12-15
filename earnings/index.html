@@ -1691,7 +1691,70 @@ sortedContribs.forEach(c => {
   svg.addEventListener("mouseleave", handleLeave);
 }
 
-function renderKpi3AvgLineChart(container, rows) { ... }
+function renderKpi3AvgLineChart(container, rows) {
+  container.innerHTML = "";
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const w = container.clientWidth || 700;
+  const h = container.clientHeight || 240;
+
+  const padL = 60, padR = 20, padT = 20, padB = 30;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+
+  const maxVal = Math.max(1, ...rows.map(r => r.avg));
+  const usableH = h - padT - padB;
+  const usableW = w - padL - padR;
+
+  const scaleY = usableH / maxVal;
+  const stepX = usableW / Math.max(1, rows.length - 1);
+
+  // Grid + Y labels
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + (usableH * i) / 4;
+    const val = maxVal * (1 - i / 4);
+
+    const grid = document.createElementNS(svgNS, "line");
+    grid.setAttribute("x1", padL);
+    grid.setAttribute("x2", w - padR);
+    grid.setAttribute("y1", y);
+    grid.setAttribute("y2", y);
+    grid.setAttribute("stroke", "var(--grid-light)");
+    svg.appendChild(grid);
+
+    const label = document.createElementNS(svgNS, "text");
+    label.textContent = formatCurrency(val);
+    label.setAttribute("x", padL - 8);
+    label.setAttribute("y", y + 4);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("font-size", "11");
+    label.setAttribute("fill", "var(--text)");
+    svg.appendChild(label);
+  }
+
+  // Line path
+  let d = "";
+  rows.forEach((r, i) => {
+    const x = padL + i * stepX;
+    const y = padT + (maxVal - r.avg) * scaleY;
+    d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+  });
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute("d", d);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "var(--brand)");
+  path.setAttribute("stroke-width", "3");
+  path.setAttribute("stroke-linecap", "round");
+  path.setAttribute("stroke-linejoin", "round");
+
+  svg.appendChild(path);
+  container.appendChild(svg);
+}
+
 
     
     // --------------------------
