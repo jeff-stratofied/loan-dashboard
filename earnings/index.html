@@ -1531,57 +1531,59 @@ const yZero = padT + usableH;
   svg.appendChild(axis);
 
 // ==================================================
-// KPI3: Average Monthly Earnings (AVG bar + markers)
+// KPI3: Average Monthly Earnings
+// Pattern: Average LINE + Loan RIBBONS (opacity-weighted)
 // ==================================================
 if (isKpi3) {
-  const barW = (w - padL - padR) / rows.length;
+  const stepX = (w - padL - padR) / Math.max(1, rows.length - 1);
+
+  // ---------- Average line path ----------
+  let d = "";
 
   rows.forEach((row, i) => {
-    const x = padL + i * barW;
-    const bw = Math.max(2, barW * 0.6);
+    const x = padL + i * stepX;
+    const y = yZero - (row.avgNet * scale);
 
-    // ---- Average bar ----
-    const hAvg = Math.abs(row.avgNet * scale);
-    const yAvg = row.avgNet >= 0 ? yZero - hAvg : yZero;
+    d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+  });
 
+  const avgPath = document.createElementNS(svgNS, "path");
+  avgPath.setAttribute("d", d);
+  avgPath.setAttribute("fill", "none");
+  avgPath.setAttribute("stroke", "#64748b");
+  avgPath.setAttribute("stroke-width", "2.5");
+  avgPath.setAttribute("stroke-linecap", "round");
+  svg.appendChild(avgPath);
 
-    const avgBar = document.createElementNS(svgNS, "rect");
-    avgBar.setAttribute("x", x);
-    avgBar.setAttribute("y", yAvg);
-    avgBar.setAttribute("width", bw);
-    avgBar.setAttribute("height", hAvg);
-    avgBar.setAttribute("fill", "rgba(148,163,184,0.35)");
-    svg.appendChild(avgBar);
+  // ---------- Loan ribbons ----------
+  rows.forEach((row, i) => {
+    const x = padL + i * stepX;
 
-    // ---- Loan contribution markers ----
-    const markerW = Math.max(1.5, bw * 0.12);
-    let mx = x + bw * 0.45;
-
-    Object.entries(row.loanValues).forEach(([loanId, net]) => {
+    Object.entries(row.loanValues || {}).forEach(([loanId, net]) => {
       if (hiddenLoans.has(loanId)) return;
 
-      const color = window.KPI_COLOR_MAP?.[loanId] || "#64748b";
-      const mh = Math.abs((net / row.activeCount) * scale);
-const my = net >= 0 ? yZero - mh : yZero;
+      const yLoan = yZero - (net * scale);
+      const yAvg  = yZero - (row.avgNet * scale);
 
-const m = document.createElementNS(svgNS, "rect");
-m.setAttribute("x", mx);
-m.setAttribute("y", my);
-m.setAttribute("width", markerW);
-m.setAttribute("height", mh);
+      const ribbon = document.createElementNS(svgNS, "line");
+      ribbon.setAttribute("x1", x);
+      ribbon.setAttribute("x2", x);
+      ribbon.setAttribute("y1", yAvg);
+      ribbon.setAttribute("y2", yLoan);
 
-      m.setAttribute("fill", color);
-      m.setAttribute("data-loan-id", loanId);
+      ribbon.setAttribute("stroke", window.KPI_COLOR_MAP?.[loanId] || "#64748b");
+      ribbon.setAttribute("stroke-width", "2");
+      ribbon.setAttribute("stroke-opacity", "0.35");
+      ribbon.setAttribute("data-loan-id", loanId);
 
-      svg.appendChild(m);
-      mx += markerW + 1;
+      svg.appendChild(ribbon);
     });
 
     // X-axis labels (same cadence as KPI2)
     if ((!opts.denseXAxis && i % 24 === 0) || (opts.denseXAxis && i % 4 === 0)) {
       const lbl = document.createElementNS(svgNS, "text");
       lbl.textContent = formatMonthYear(row.date);
-      lbl.setAttribute("x", x + bw / 2);
+      lbl.setAttribute("x", x);
       lbl.setAttribute("y", h - 4);
       lbl.setAttribute("font-size", "11");
       lbl.setAttribute("fill", "var(--text)");
@@ -1590,6 +1592,7 @@ m.setAttribute("height", mh);
     }
   });
 }
+
   
   // ----------------------------
   // Stacked bars
@@ -1739,15 +1742,15 @@ function handleMove(e) {
 
   // --- Visual hover feedback ---
   // Dim all loan markers
-  svg.querySelectorAll("rect[data-loan-id]").forEach(r => {
-    r.style.opacity = "0.15";
-  });
+  svg.querySelectorAll("[data-loan-id]").forEach(r => {
+  r.style.opacity = "0.15";
+});
 
-  // Highlight active loan markers only
-  Object.keys(row.loanValues || {}).forEach(loanId => {
-    svg.querySelectorAll(`rect[data-loan-id="${loanId}"]`)
-      .forEach(r => (r.style.opacity = "1"));
-  });
+Object.keys(row.loanValues || {}).forEach(loanId => {
+  svg.querySelectorAll(`[data-loan-id="${loanId}"]`)
+    .forEach(r => (r.style.opacity = "1"));
+});
+
 
   return;
 }
@@ -1789,9 +1792,9 @@ function handleLeave() {
   hideMiniTooltip();
 
   // Reset marker opacity
-  svg.querySelectorAll("rect[data-loan-id]").forEach(r => {
-    r.style.opacity = "";
-  });
+  svg.querySelectorAll("[data-loan-id]").forEach(r => {
+  r.style.opacity = "";
+});
 }
 
 
