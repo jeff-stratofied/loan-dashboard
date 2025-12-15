@@ -1150,12 +1150,14 @@ portfolioStart.setHours(0, 0, 0, 0);
     monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
   });
 
-  // --- TRUE portfolio average monthly earnings ---
-const portfolioMonths =
-  Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
+// --- KPI3 Avg Monthly Earnings MUST match KPI3 chart ---
+const avgRows = buildAvgMonthlyDrawerRows(list); // only owned months, up to TODAY
+const lastAvgRow = avgRows.length
+  ? avgRows[avgRows.length - 1]
+  : null;
 
-const avgMonthlyNet = totalNetToDate / portfolioMonths;
-
+const avgMonthlyNet = lastAvgRow ? lastAvgRow.avgNet : 0;
+const monthsCountedKpi3 = avgRows.length || monthsCounted;
 
   return {
   totalNetToDate,
@@ -1164,10 +1166,9 @@ const avgMonthlyNet = totalNetToDate / portfolioMonths;
   totalFeesProjected,
   totalPrincipal,
   avgMonthlyNet,
-  monthsCounted: portfolioMonths
-};
-
-}
+  monthsCounted: monthsCountedKpi3
+  };
+  }
 
 
     function getCurrentEarningsRow(loan) {
