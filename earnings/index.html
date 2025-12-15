@@ -1150,9 +1150,9 @@ portfolioStart.setHours(0, 0, 0, 0);
     monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
   });
 
-// --- KPI3 Avg Monthly Earnings (Method A) ---
-// portfolioRows already represent owned months up to TODAY
-const portfolioMonths = portfolioRows.length || 1;
+// --- KPI3 Avg Monthly Earnings (Method A: calendar months) ---
+const portfolioMonths =
+  Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
 
 const avgMonthlyNet = totalNetToDate / portfolioMonths;
 const monthsCountedKpi3 = portfolioMonths;
