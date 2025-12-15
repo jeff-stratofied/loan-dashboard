@@ -1424,11 +1424,11 @@ function createKpiStackedChart(container, rows, opts = {}) {
 
   // ---------- Y scale ----------
   let maxAvg = 0;
-  rows.forEach((r, i) => {
-    const months = i + 1;
-    const avg = r.netToDate / months;
-    maxAvg = Math.max(maxAvg, avg);
-  });
+rows.forEach(r => {
+  const avg = r.avgNet ?? 0;   // KPI3 uses precomputed avg
+  maxAvg = Math.max(maxAvg, avg);
+});
+
   if (maxAvg < 1) maxAvg = 1;
 
   const usableH = h - padT - padB;
@@ -1463,12 +1463,12 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // ---------- Average line ----------
   let d = "";
   rows.forEach((r, i) => {
-    const months = i + 1;
-    const avg = r.netToDate / months;
-    const x = padL + (i / (rows.length - 1)) * (w - padL - padR);
-    const y = yZero - avg * scale;
-    d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
-  });
+  const avg = r.avgNet ?? 0;   // ✅ authoritative KPI3 value
+  const x = padL + (i / (rows.length - 1)) * (w - padL - padR);
+  const y = yZero - avg * scale;
+  d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+});
+
 
   const path = document.createElementNS(svgNS, "path");
   path.setAttribute("d", d);
@@ -1503,9 +1503,10 @@ function handleMove(e) {
   // Lifetime average (MATCHES KPI TILE)
   // ----------------------------------
   const lifetimeAvg =
-    rows.length > 0
-      ? rows[rows.length - 1].netToDate / rows.length
-      : 0;
+  rows.length > 0
+    ? rows[rows.length - 1].avgNet
+    : 0;
+
 
   // ----------------------------------
   // Lens setup
