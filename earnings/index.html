@@ -2340,63 +2340,40 @@ function openKpi3() {
   drawerSecondaryTitle.textContent = "Months Counted";
   drawerSecondary.textContent = kpis.monthsCounted.toString();
 
-  resetDrawerContent();
+resetDrawerContent();
 
-  // ==============================
-  // KPI3 rows — Method A ONLY
-  // ==============================
-  const TODAY = new Date();
-  TODAY.setHours(0, 0, 0, 0);
+// ============================================
+// KPI3 chart rows — Method A (calendar, stable)
+// ============================================
 
-  const portfolioStart = window.__PORTFOLIO_START__ || TODAY;
+// Respect swatch toggles
+const activeLoans = loansWithEarnings.filter(
+  l => !hiddenLoans.has(l.loanId)
+);
 
-  // Build cumulative NET by calendar month (portfolio-level)
-  const monthMap = new Map(); // YYYY-MM → cumulative net-to-date
+// Build portfolio rows (calendar months, owned only)
+const rows = buildPortfolioDrawerRows(activeLoans);
 
-  loansWithEarnings.forEach(loan => {
-    (loan.earningsSchedule || []).forEach(r => {
-      if (!r.isOwned) return;
-
-      const d = new Date(r.ownershipDate || r.loanDate);
-      d.setHours(0, 0, 0, 0);
-      if (d > TODAY) return;
-
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      const prev = monthMap.get(key) || 0;
-
-      // cumulative net per loan — monotonic by definition
-      monthMap.set(key, prev + Number(r.netEarnings || 0));
-    });
-  });
-
-  // Build full calendar timeline
-  const avgRows = [];
-  let cursor = new Date(portfolioStart);
-  let lastNet = 0;
-
-  while (cursor <= TODAY) {
-    const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
-
-    if (monthMap.has(key)) {
-      lastNet = Math.max(lastNet, monthMap.get(key));
-    }
-
-    const monthsElapsed = monthDiff(portfolioStart, cursor) + 1;
-
-    avgRows.push({
-      date: new Date(cursor),
-      avg: lastNet / monthsElapsed,
-      netToDate: lastNet
-    });
-
-    cursor = addMonths(cursor, 1);
-  }
-
-  // Draw chart (line only, no lens)
-  renderKpi3AvgLineChart(
-    document.getElementById("drawerChartArea"),
-    avgRows
+// Build Avg Monthly Earnings To Date series
+const avgRows = rows.map((r, i) => {
+  const totalNetToDate = r.contributions.reduce(
+    (s, c) => s + (Number(c.net) || 0),
+    0
   );
+
+  return {
+    date: r.date,
+    avg: totalNetToDate / (i + 1),
+    netToDate: totalNetToDate
+  };
+});
+
+// Draw chart
+renderKpi3AvgLineChart(
+  document.getElementById("drawerChartArea"),
+  avgRows
+);
+
 
   // Table (loan productivity, not driving chart)
   drawerExtra.innerHTML =
