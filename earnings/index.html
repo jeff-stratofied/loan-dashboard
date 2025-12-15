@@ -3220,36 +3220,45 @@ function renderKPI2Table(data, containerId = "kpi2Table") {
   });
 }
 
-
 function renderKPI3Table(data, containerId = "kpi3Table") {
-  const portfolioStart = window.__PORTFOLIO_START__;
   const TODAY = new Date();
-  TODAY.setHours(0,0,0,0);
-
-  const portfolioMonths =
-    Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
+  TODAY.setHours(0, 0, 0, 0);
 
   const rows = data.map(l => {
     const sched = l.earningsSchedule || [];
-    const netToDate = sched.length
-      ? sched[sched.length - 1].netEarnings
-      : 0;
+    if (!sched.length) {
+      return {
+        loanId: l.loanId,
+        cells: [l.loanName, "$0.00"]
+      };
+    }
+
+    const first = new Date(l.purchaseDate || l.loanStartDate);
+    const months = Math.max(1, monthDiff(first, TODAY));
+
+    const netToDate = sched[Math.min(
+      sched.length - 1,
+      months - 1
+    )]?.netEarnings || 0;
+
+    const avg = netToDate / months;
 
     return {
       loanId: l.loanId,
       cells: [
         l.loanName,
-        formatCurrency(netToDate / portfolioMonths)
+        formatCurrency(avg)
       ]
     };
   });
 
   renderKpiTable(
     containerId,
-    ["Loan", "Avg Monthly Earnings"],
+    ["Loan", "Avg Monthly Earnings To Date"],
     rows
   );
 }
+
 
 
 
