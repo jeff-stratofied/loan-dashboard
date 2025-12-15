@@ -1111,28 +1111,15 @@ function computeEarningsKPIs(list) {
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
-// --- TRUE portfolio start: first month with earnings ---
-let portfolioStart = null;
+// --- TRUE portfolio start: first aggregated earnings month ---
+const portfolioRows = buildPortfolioDrawerRows(list);
 
-list.forEach(loan => {
-  (loan.earningsSchedule || []).forEach(r => {
-    if (!r.ownershipDate) return;
-    const d = new Date(r.ownershipDate);
-    if (!Number.isFinite(d.getTime())) return;
-
-    if (!portfolioStart || d < portfolioStart) {
-      portfolioStart = d;
-    }
-  });
-});
-
-if (!portfolioStart) {
-  portfolioStart = TODAY;
-}
+const portfolioStart =
+  portfolioRows.length
+    ? new Date(portfolioRows[0].date)
+    : TODAY;
 
 portfolioStart.setHours(0, 0, 0, 0);
-
-
 
   list.forEach(l => {
     totalPrincipal += Number(l.purchasePrice || 0);
