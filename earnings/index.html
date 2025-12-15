@@ -2695,8 +2695,14 @@ const currentX = padL + todayIndex * barW;
             `Date: ${formatMonthYear(monthRow.monthDate)}`,
   `Projected Net: $${(monthRow.posTotal + monthRow.negTotal).toFixed(2)}`
           ];
-        } else if(key === "kpi3"){ // Average monthly
-          const avg = month > 0 ? aggregates.net / month : 0;
+        } else if (key === "kpi3") { // Average monthly
+  const portfolioStart = rows[0]?.date;
+  const monthsElapsed = portfolioStart
+    ? Math.max(1, monthDiff(portfolioStart, monthRow.monthDate) + 1)
+    : 1;
+
+  const avg = aggregates.net / monthsElapsed;
+
           tooltipLines = [
              `Date: ${formatMonthYear(monthRow.monthDate)}`,
   `Avg / Month: $${avg.toFixed(2)}`,
