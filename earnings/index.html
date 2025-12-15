@@ -2332,7 +2332,7 @@ function openKpi3() {
   drawerSub.textContent =
     "Total net earnings divided by months since portfolio inception.";
 
-  // PRIMARY = KPI tile value (Method A)
+  // PRIMARY = KPI tile value (same source)
   drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
   drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
 
@@ -2342,17 +2342,16 @@ function openKpi3() {
 
   resetDrawerContent();
 
-  // =====================================================
-  // KPI3 chart rows — Method A ONLY (calendar-based)
-  // Smooth, monotonic, matches KPI tile exactly
-  // =====================================================
+  // ==============================
+  // KPI3 rows — Method A ONLY
+  // ==============================
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
   const portfolioStart = window.__PORTFOLIO_START__ || TODAY;
 
-  // Build map: YYYY-MM -> portfolio net-to-date
-  const monthMap = new Map();
+  // Build cumulative NET by calendar month (portfolio-level)
+  const monthMap = new Map(); // YYYY-MM → cumulative net-to-date
 
   loansWithEarnings.forEach(loan => {
     (loan.earningsSchedule || []).forEach(r => {
@@ -2365,14 +2364,12 @@ function openKpi3() {
       const key = `${d.getFullYear()}-${d.getMonth()}`;
       const prev = monthMap.get(key) || 0;
 
-      monthMap.set(
-        key,
-        Math.max(prev, Number(r.netEarnings) || 0)
-      );
+      // cumulative net per loan — monotonic by definition
+      monthMap.set(key, prev + Number(r.netEarnings || 0));
     });
   });
 
-  // Build avg-to-date series across calendar months
+  // Build full calendar timeline
   const avgRows = [];
   let cursor = new Date(portfolioStart);
   let lastNet = 0;
@@ -2384,30 +2381,31 @@ function openKpi3() {
       lastNet = Math.max(lastNet, monthMap.get(key));
     }
 
-    const monthsElapsed =
-      monthDiff(portfolioStart, cursor) + 1;
+    const monthsElapsed = monthDiff(portfolioStart, cursor) + 1;
 
     avgRows.push({
       date: new Date(cursor),
-      avg: lastNet / monthsElapsed
+      avg: lastNet / monthsElapsed,
+      netToDate: lastNet
     });
 
     cursor = addMonths(cursor, 1);
   }
 
-  // Draw chart
+  // Draw chart (line only, no lens)
   renderKpi3AvgLineChart(
     document.getElementById("drawerChartArea"),
     avgRows
   );
 
-  // Table (per-loan context, Method A aligned)
+  // Table (loan productivity, not driving chart)
   drawerExtra.innerHTML =
     `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI3Table(loansWithEarnings, "drawerKpiTable");
 
   openDrawer();
 }
+
 
 
 
@@ -3222,7 +3220,7 @@ function renderKPI2Table(data, containerId = "kpi2Table") {
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
   const TODAY = new Date();
-  TODAY.setHours(0, 0, 0, 0);
+  TODAY.setHours(0,0,0,0);
 
   const rows = data.map(l => {
     const sched = l.earningsSchedule || [];
@@ -3234,14 +3232,12 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     }
 
     const first = new Date(l.purchaseDate || l.loanStartDate);
-    const months = Math.max(1, monthDiff(first, TODAY));
+    first.setHours(0,0,0,0);
 
-    const netToDate = sched[Math.min(
-      sched.length - 1,
-      months - 1
-    )]?.netEarnings || 0;
+    const months = Math.max(1, monthDiff(first, TODAY) + 1);
+    const lastNet = sched[sched.length - 1].netEarnings || 0;
 
-    const avg = netToDate / months;
+    const avg = lastNet / months;
 
     return {
       loanId: l.loanId,
@@ -3258,6 +3254,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
     rows
   );
 }
+
 
 
 
