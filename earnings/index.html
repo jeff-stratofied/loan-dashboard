@@ -1710,11 +1710,17 @@ function handleMove(e) {
   const lensY = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
 
   if (!lensInstance) {
-    lensInstance = createLens(svg, lensRadius, lensScale);
-    const clones = Array.from(svg.querySelectorAll("rect"));
-    clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-    svg.appendChild(lensInstance.group);
-  }
+  lensInstance = createLens(svg, lensRadius, lensScale);
+
+  // Clone ONLY visible KPI3 elements (lines + avg path)
+  const clones = Array.from(
+    svg.querySelectorAll("line[data-loan-id], path")
+  );
+
+  clones.forEach(el => lensInstance.content.appendChild(el.cloneNode(true)));
+  svg.appendChild(lensInstance.group);
+}
+
 
   updateLens(lensInstance, lensX, lensY);
 
@@ -1728,7 +1734,7 @@ function handleMove(e) {
   if (!row) return;
 
   // ---------- KPI3 ----------
-  if (isKpi3) {
+if (isKpi3) {
   // --- Tooltip ---
   const tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
@@ -1741,20 +1747,25 @@ function handleMove(e) {
   positionMiniTooltip(e.clientX, e.clientY, lensRadius);
 
   // --- Visual hover feedback ---
-  // Dim all loan markers
-  svg.querySelectorAll("[data-loan-id]").forEach(r => {
-  r.style.opacity = "0.15";
-});
 
-Object.keys(row.loanValues || {}).forEach(loanId => {
-  svg.querySelectorAll(`[data-loan-id="${loanId}"]`)
-    .forEach(r => (r.style.opacity = "1"));
-});
+  // Dim average line
+  svg.querySelectorAll("path").forEach(p => {
+    p.style.opacity = "0.25";
+  });
 
+  // Dim all loan ribbons
+  svg.querySelectorAll("[data-loan-id]").forEach(el => {
+    el.style.opacity = "0.15";
+  });
+
+  // Highlight active loan ribbons for this month
+  Object.keys(row.loanValues || {}).forEach(loanId => {
+    svg.querySelectorAll(`[data-loan-id="${loanId}"]`)
+      .forEach(el => (el.style.opacity = "1"));
+  });
 
   return;
 }
-
 
   // ---------- KPI1 / KPI2 ----------
   const principal = row.contributions.reduce(
@@ -1791,11 +1802,12 @@ function handleLeave() {
   lensInstance = null;
   hideMiniTooltip();
 
-  // Reset marker opacity
-  svg.querySelectorAll("[data-loan-id]").forEach(r => {
-  r.style.opacity = "";
-});
+  // Reset opacity for KPI3 (loan ribbons + avg line) and KPI1/KPI2
+  svg.querySelectorAll("[data-loan-id], path").forEach(el => {
+    el.style.opacity = "";
+  });
 }
+
 
 
 svg.addEventListener("mousemove", handleMove);
