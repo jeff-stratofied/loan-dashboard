@@ -1421,6 +1421,25 @@ function createKpiStackedChart(container, rows, opts = {}) {
 // ------------------------------------
 const isKpi3 = rows.length && rows[0].avgNet !== undefined;
 
+  // ========================================
+// KPI3: cumulative average per loan
+// ========================================
+const loanAvgSeries = {}; // loanId -> [{x,y}]
+
+if (isKpi3) {
+  rows.forEach((row, i) => {
+    const monthsElapsed = i + 1;
+
+    Object.entries(row.loanCumNet || {}).forEach(([loanId, cumNet]) => {
+      if (!loanAvgSeries[loanId]) loanAvgSeries[loanId] = [];
+      loanAvgSeries[loanId].push({
+        xIndex: i,
+        yValue: cumNet / monthsElapsed
+      });
+    });
+  });
+}
+
   
   const svgNS = "http://www.w3.org/2000/svg";
   const rect = container.getBoundingClientRect();
@@ -1537,12 +1556,18 @@ const yZero = padT + usableH;
 if (isKpi3) {
   const stepX = (w - padL - padR) / Math.max(1, rows.length - 1);
 
-  // ---------- Average line path ----------
+  // ========================================
+// KPI3: portfolio lifetime average line
+// ========================================
+if (isKpi3) {
   let d = "";
 
   rows.forEach((row, i) => {
-    const x = padL + i * stepX;
-    const y = yZero - (row.avgNet * scale);
+    const monthsElapsed = i + 1;
+    const lifetimeAvg = row.netToDate / monthsElapsed;
+
+    const x = padL + (i / (rows.length - 1)) * (w - padL - padR);
+    const y = yZero - lifetimeAvg * scale;
 
     d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
   });
@@ -1550,10 +1575,39 @@ if (isKpi3) {
   const avgPath = document.createElementNS(svgNS, "path");
   avgPath.setAttribute("d", d);
   avgPath.setAttribute("fill", "none");
-  avgPath.setAttribute("stroke", "#64748b");
-  avgPath.setAttribute("stroke-width", "2.5");
-  avgPath.setAttribute("stroke-linecap", "round");
+  avgPath.setAttribute("stroke", "#111827");
+  avgPath.setAttribute("stroke-width", "3");
+  avgPath.setAttribute("pointer-events", "none");
+
   svg.appendChild(avgPath);
+}
+
+  // ========================================
+// KPI3: faint loan cumulative average lines
+// (hidden by default; hover only)
+// ========================================
+if (isKpi3) {
+  Object.entries(loanAvgSeries).forEach(([loanId, points]) => {
+    let d = "";
+
+    points.forEach((pt, i) => {
+      const x = padL + (pt.xIndex / (rows.length - 1)) * (w - padL - padR);
+      const y = yZero - pt.yValue * scale;
+      d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+    });
+
+    const p = document.createElementNS(svgNS, "path");
+    p.setAttribute("d", d);
+    p.setAttribute("fill", "none");
+    p.setAttribute("stroke", window.KPI_COLOR_MAP[loanId] || "#64748b");
+    p.setAttribute("stroke-width", "1.5");
+    p.setAttribute("stroke-opacity", "0"); // HIDDEN
+    p.setAttribute("data-loan-id", loanId);
+
+    svg.appendChild(p);
+  });
+}
+
 
   // ---------- Loan ribbons ----------
   rows.forEach((row, i) => {
@@ -1746,7 +1800,11 @@ if (isKpi3) {
   setMiniTooltipContent(tooltipLines);
   positionMiniTooltip(e.clientX, e.clientY, lensRadius);
 
-  
+  // Reveal all loan avg lines faintly on chart hover
+svg.querySelectorAll("path[data-loan-id]").forEach(p => {
+  p.style.strokeOpacity = "0.15";
+});
+
 
   return;
 }
@@ -3022,6 +3080,35 @@ function renderKpiTable(containerId, headers, rows) {
 
   html += `</tbody></table>`;
   container.innerHTML = html;
+
+  // ========================================
+// KPI3 TABLE → CHART HOVER LINK
+// ========================================
+const svg = document.querySelector("#drawerChartArea svg");
+if (!svg) return;
+
+container.querySelectorAll("tr[data-loan-id]").forEach(tr => {
+  const loanId = tr.dataset.loanId;
+
+  tr.addEventListener("mouseenter", () => {
+    // Dim all loan avg lines
+    svg.querySelectorAll("path[data-loan-id]").forEach(p => {
+      p.style.strokeOpacity = "0.05";
+    });
+
+    // Highlight hovered loan line
+    svg.querySelectorAll(`path[data-loan-id="${loanId}"]`)
+      .forEach(p => (p.style.strokeOpacity = "0.9"));
+  });
+
+  tr.addEventListener("mouseleave", () => {
+    // Hide all loan lines again
+    svg.querySelectorAll("path[data-loan-id]").forEach(p => {
+      p.style.strokeOpacity = "0";
+    });
+  });
+});
+
 }
 
     
