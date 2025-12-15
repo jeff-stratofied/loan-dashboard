@@ -1121,6 +1121,10 @@ const portfolioStart =
 
 portfolioStart.setHours(0, 0, 0, 0);
 
+  // expose portfolio start for KPI3 chart math
+window.__PORTFOLIO_START__ = portfolioStart;
+
+
   list.forEach(l => {
     totalPrincipal += Number(l.purchasePrice || 0);
 
@@ -2695,8 +2699,9 @@ const currentX = padL + todayIndex * barW;
             `Date: ${formatMonthYear(monthRow.monthDate)}`,
   `Projected Net: $${(monthRow.posTotal + monthRow.negTotal).toFixed(2)}`
           ];
-       } else if (key === "kpi3") { // Average monthly
-  const portfolioStart = rows[0]?.date;
+} else if (key === "kpi3") { // Average monthly
+  // Use TRUE portfolio lifetime (calendar months)
+  const portfolioStart = window.__PORTFOLIO_START__;
 
   const monthsElapsed = portfolioStart
     ? Math.max(1, monthDiff(portfolioStart, monthRow.monthDate) + 1)
@@ -2704,21 +2709,13 @@ const currentX = padL + todayIndex * barW;
 
   const avg = aggregates.net / monthsElapsed;
 
-  // 🔎 TEMP DEBUG — remove after confirming
-  console.log(
-    "KPI3 check:",
-    formatMonthYear(portfolioStart),
-    formatMonthYear(monthRow.monthDate),
-    monthsElapsed,
-    avg
-  );
-
   tooltipLines = [
     `Date: ${formatMonthYear(monthRow.monthDate)}`,
     `Avg / Month: $${avg.toFixed(2)}`,
     `Net to Date: $${aggregates.net.toFixed(2)}`
   ];
 }
+
 
         } else if(key === "kpi4"){ // Fees
           tooltipLines = [
