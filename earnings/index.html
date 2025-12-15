@@ -1453,11 +1453,12 @@ if (isAvgKpi) {
 if (maxY < 1) maxY = 1;
 
 
-  if (maxAvg < 1) maxAvg = 1;
+  if (maxY < 1) maxY = 1;
 
-  const usableH = h - padT - padB;
-  const scale = usableH / maxAvg;
-  const yZero = padT + usableH;
+const usableH = h - padT - padB;
+const scale = usableH / maxY;
+const yZero = padT + usableH;
+
 
   // ---------- Grid + labels ----------
   const gridLines = 4;
@@ -1557,10 +1558,11 @@ if (isAvgKpi) {
 
   // Lock lens to lifetime average line
   updateLens(
-    lens,
-    mouseX,
-    yZero - lifetimeAvg * scale
-  );
+  lens,
+  mouseX,
+  yZero - displayValue * scale
+);
+
 
   // ----------------------------------
   // Tooltip (single, correct meaning)
