@@ -2373,10 +2373,23 @@ function openKpi3() {
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
+// -----------------------------------
+// Trim leading zero months for chart
+// -----------------------------------
+const firstNonZeroIdx = fullMonths.findIndex(
+  m => (m.contributions || []).some(c => c.hasData)
+);
+
+const chartMonths =
+  firstNonZeroIdx >= 0
+    ? fullMonths.slice(firstNonZeroIdx)
+    : fullMonths;
+
+  
   // Compute avg rows using CALENDAR months elapsed (NOT i+1)
   let cumulativeNet = 0;
 
-const avgRows = fullMonths.map(m => {
+const avgRows = chartMonths.map(m => {
   const monthNet = (m.contributions || []).reduce(
     (sum, c) => sum + (c.hasData ? (Number(c.net) || 0) : 0),
     0
