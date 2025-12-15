@@ -1835,7 +1835,9 @@ document.addEventListener("click", e => {
   }
 
   // Re-render KPI3 chart only (do NOT reopen drawer)
-  const rows = buildAvgMonthlyDrawerRows(loansWithEarnings);
+  const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
+const rows = buildAvgMonthlyDrawerRows(activeLoans);
+
   createKpiStackedChart(
     drawerChartArea,
     rows,
@@ -2046,8 +2048,19 @@ function buildAvgMonthlyDrawerRows(loans) {
 
       const d = new Date(rawDate);
       d.setHours(0, 0, 0, 0);
-      const ts = d.getTime();
+     
+      const TODAY = new Date();
+      TODAY.setHours(0,0,0,0);
 
+      // ✅ do not include future months in KPI3 "actual to date" average
+      if (d > TODAY) {
+      // keep prevCum in sync so deltas remain correct up to TODAY
+      prevCum = cum;
+      return;
+    }
+
+       const ts = d.getTime();
+      
       // Monthly delta from cumulative series
       const delta = cum - prevCum;
       prevCum = cum;
