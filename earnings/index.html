@@ -3154,83 +3154,42 @@ function renderKPI2Table(data, containerId = "kpi2Table") {
 }
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
-  const TODAY = new Date();
-  TODAY.setHours(0, 0, 0, 0);
-
-  const portfolioStart = (window.__PORTFOLIO_START__ ? new Date(window.__PORTFOLIO_START__) : new Date(TODAY));
-  portfolioStart.setHours(0, 0, 0, 0);
-
-  const portfolioMonths = Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
-
   const rows = data.map(l => {
-    // loan net-to-date as of TODAY (owned rows only)
-    let loanNetToDate = 0;
-    (l.earningsSchedule || []).forEach(r => {
-      if (!r.isOwned) return;
+    // Total net earnings to date for this loan
+    const sched = l.earningsSchedule || [];
+    const netToDate = sched.length
+      ? Number(sched[sched.length - 1].netEarnings || 0)
+      : 0;
 
-      const raw = r.ownershipDate || r.loanDate;
-      if (!raw) return;
-
-      const d = new Date(raw);
-      d.setHours(0, 0, 0, 0);
-      if (d > TODAY) return;
-
-      loanNetToDate = Math.max(loanNetToDate, Number(r.netEarnings ?? r.net ?? 0) || 0);
-    });
-
-    const avgToDate = loanNetToDate / portfolioMonths;
-    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
-    const isHidden = hiddenLoans.has(l.loanId);
+    // KPI3-aligned average:
+    // loan contribution spread across portfolio months
+    const avg = kpis.monthsCounted
+      ? netToDate / kpis.monthsCounted
+      : 0;
 
     return {
       loanId: l.loanId,
       cells: [
-        // swatch toggle
-        `<div
-          class="loan-swatch"
-          data-loan-id="${l.loanId}"
-          title="Toggle loan"
-          style="
-            width:10px;
-            height:10px;
-            border-radius:2px;
-            background:${color};
-            margin:4px auto;
-            cursor:pointer;
-            opacity:${isHidden ? "0.25" : "1"};
-          "
-        ></div>`,
-        `${l.loanName}`,
-        formatCurrency(avgToDate)
-      ]
+      l.loanName,
+      l.school || "—",
+      formatCurrency(
+      (getCurrentEarningsRow(l).row.netEarnings || 0) /
+      Math.max(
+        1,
+        monthDiff(window.__PORTFOLIO_START__, new Date()) + 1
+      )
+    ),
+  formatDate(new Date(l.purchaseDate))
+]
+
     };
   });
 
   renderKpiTable(
     containerId,
-    ["On/Off", "Loan", "Avg Monthly Earnings To Date"],
+    ["Loan", "School", "Avg Monthly Earnings To Date", "Purchase Date"],
     rows
   );
-
-  // Swatch click -> toggle + re-render KPI3 drawer (chart + table)
-  const table = document.getElementById(containerId);
-  if (!table) return;
-
-  table.querySelectorAll(".loan-swatch").forEach(sw => {
-    const loanId = sw.dataset.loanId;
-    sw.addEventListener("click", e => {
-      e.stopPropagation();
-
-      if (hiddenLoans.has(loanId)) {
-        hiddenLoans.delete(loanId);
-      } else {
-        hiddenLoans.add(loanId);
-      }
-
-      // re-open KPI3 to rebuild chart + hover using activeLoans
-      openKpi3();
-    });
-  });
 }
 
 
