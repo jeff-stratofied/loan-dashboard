@@ -1111,16 +1111,27 @@ function computeEarningsKPIs(list) {
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
-  // --- Portfolio lifetime start (earliest purchase date) ---
-const purchaseDates = list
-  .map(l => new Date(l.purchaseDate))
-  .filter(d => !isNaN(d));
+// --- TRUE portfolio start: first month with earnings ---
+let portfolioStart = null;
 
-const portfolioStart = purchaseDates.length
-  ? new Date(Math.min(...purchaseDates))
-  : TODAY;
+list.forEach(loan => {
+  (loan.earningsSchedule || []).forEach(r => {
+    if (!r.ownershipDate) return;
+    const d = new Date(r.ownershipDate);
+    if (!Number.isFinite(d.getTime())) return;
+
+    if (!portfolioStart || d < portfolioStart) {
+      portfolioStart = d;
+    }
+  });
+});
+
+if (!portfolioStart) {
+  portfolioStart = TODAY;
+}
 
 portfolioStart.setHours(0, 0, 0, 0);
+
 
 
   list.forEach(l => {
