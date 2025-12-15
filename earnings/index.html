@@ -2941,10 +2941,6 @@ const currentX = padL + todayIndex * barW;
   // Use TRUE portfolio lifetime (calendar months)
   const portfolioStart = window.__PORTFOLIO_START__;
 
-  const monthsElapsed = portfolioStart
-    ? Math.max(1, monthDiff(portfolioStart, monthRow.monthDate) + 1)
-    : 1;
-
   const avg = aggregates.net / monthsElapsed;
 
   tooltipLines = [
