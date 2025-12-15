@@ -1138,19 +1138,27 @@ function computeEarningsKPIs(list) {
     totalFeesProjected += Number(atEnd.cumFees || 0);
 
     monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
-  });
+});
 
-  const avgMonthlyNet = monthsCounted ? totalNetToDate / monthsCounted : 0;
+// ✅ KPI3 must match the KPI3 chart logic (buildAvgMonthlyDrawerRows)
+const avgRows = buildAvgMonthlyDrawerRows(list); // only owned months, only up to TODAY
+const lastAvgRow = avgRows.length ? avgRows[avgRows.length - 1] : null;
 
-  return {
+const avgMonthlyNet = lastAvgRow ? lastAvgRow.avgNet : 0;
+const monthsCountedKpi3 = avgRows.length ? avgRows.length : monthsCounted;
+
+return {
   totalNetToDate,
   totalNetProjected,
   totalFeesToDate,
   totalFeesProjected,
   totalPrincipal,
+
+  // ✅ now KPI3 tile + drawer primary match the chart hover
   avgMonthlyNet,
-  monthsCounted
+  monthsCounted: monthsCountedKpi3
 };
+
 
 }
 
