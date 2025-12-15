@@ -1693,6 +1693,7 @@ sortedContribs.forEach(c => {
 
 function renderKpi3AvgLineChart(container, rows) {
   container.innerHTML = "";
+  if (!rows || !rows.length) return;
 
   const svgNS = "http://www.w3.org/2000/svg";
   const w = container.clientWidth || 700;
@@ -1705,7 +1706,9 @@ function renderKpi3AvgLineChart(container, rows) {
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
 
-  const maxVal = Math.max(1, ...rows.map(r => r.avg));
+  const maxValRaw = Math.max(1, ...rows.map(r => Number(r.avg) || 0));
+  const maxVal = maxValRaw * 1.15; // a little headroom like other charts
+
   const usableH = h - padT - padB;
   const usableW = w - padL - padR;
 
@@ -1714,32 +1717,32 @@ function renderKpi3AvgLineChart(container, rows) {
 
   // Grid + Y labels
   for (let i = 0; i <= 4; i++) {
-    const y = padT + (usableH * i) / 4;
+    const y = padT + i * (usableH / 4);
     const val = maxVal * (1 - i / 4);
 
-    const grid = document.createElementNS(svgNS, "line");
-    grid.setAttribute("x1", padL);
-    grid.setAttribute("x2", w - padR);
-    grid.setAttribute("y1", y);
-    grid.setAttribute("y2", y);
-    grid.setAttribute("stroke", "var(--grid-light)");
-    svg.appendChild(grid);
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", padL);
+    line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "var(--grid-light)");
+    svg.appendChild(line);
 
-    const label = document.createElementNS(svgNS, "text");
-    label.textContent = formatCurrency(val);
-    label.setAttribute("x", padL - 8);
-    label.setAttribute("y", y + 4);
-    label.setAttribute("text-anchor", "end");
-    label.setAttribute("font-size", "11");
-    label.setAttribute("fill", "var(--text)");
-    svg.appendChild(label);
+    const txt = document.createElementNS(svgNS, "text");
+    txt.textContent = formatCurrency(val);
+    txt.setAttribute("x", padL - 8);
+    txt.setAttribute("y", y + 4);
+    txt.setAttribute("font-size", "11");
+    txt.setAttribute("text-anchor", "end");
+    txt.setAttribute("fill", "var(--text)");
+    svg.appendChild(txt);
   }
 
   // Line path
   let d = "";
   rows.forEach((r, i) => {
     const x = padL + i * stepX;
-    const y = padT + (maxVal - r.avg) * scaleY;
+    const y = h - padB - (Number(r.avg) || 0) * scaleY;
     d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
   });
 
@@ -1748,12 +1751,70 @@ function renderKpi3AvgLineChart(container, rows) {
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", "var(--brand)");
   path.setAttribute("stroke-width", "3");
-  path.setAttribute("stroke-linecap", "round");
-  path.setAttribute("stroke-linejoin", "round");
-
   svg.appendChild(path);
+
+  // Hover: vertical line + dot
+  const vLine = document.createElementNS(svgNS, "line");
+  vLine.setAttribute("y1", padT);
+  vLine.setAttribute("y2", h - padB);
+  vLine.setAttribute("stroke", "var(--text)");
+  vLine.setAttribute("stroke-dasharray", "3 4");
+  vLine.setAttribute("stroke-opacity", "0");
+  svg.appendChild(vLine);
+
+  const dot = document.createElementNS(svgNS, "circle");
+  dot.setAttribute("r", "5");
+  dot.setAttribute("fill", "var(--brand)");
+  dot.setAttribute("stroke", "white");
+  dot.setAttribute("stroke-width", "2");
+  dot.setAttribute("opacity", "0");
+  svg.appendChild(dot);
+
   container.appendChild(svg);
+
+  function idxFromClientX(clientX) {
+    const rect = svg.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * w;
+    const t = (x - padL) / stepX;
+    return Math.max(0, Math.min(rows.length - 1, Math.round(t)));
+  }
+
+  function handleMove(e) {
+    const idx = idxFromClientX(e.clientX);
+    const r = rows[idx];
+
+    const x = padL + idx * stepX;
+    const y = h - padB - (Number(r.avg) || 0) * scaleY;
+
+    vLine.setAttribute("x1", x);
+    vLine.setAttribute("x2", x);
+    vLine.setAttribute("stroke-opacity", "0.8");
+
+    dot.setAttribute("cx", x);
+    dot.setAttribute("cy", y);
+    dot.setAttribute("opacity", "1");
+
+    const tooltipLines = [
+      `Date: ${formatMonthYear(r.date)}`,
+      `Avg / Month: ${formatCurrency(r.avg)}`,
+      `Net to Date: ${formatCurrency(r.netToDate)}`
+    ];
+
+    // uses your existing mini tooltip system (already in the file)
+    setMiniTooltipContent(tooltipLines);
+    positionMiniTooltip(e.clientX, e.clientY, 40);
+  }
+
+  function handleLeave() {
+    vLine.setAttribute("stroke-opacity", "0");
+    dot.setAttribute("opacity", "0");
+    hideMiniTooltip();
+  }
+
+  svg.addEventListener("mousemove", handleMove);
+  svg.addEventListener("mouseleave", handleLeave);
 }
+
 
 
     
@@ -2241,53 +2302,81 @@ function openKpi3() {
 
   resetDrawerContent();
 
-  // -----------------------------------
-  // KPI3 chart data (CORRECT)
-  // -----------------------------------
-  const activeLoans = loansWithEarnings.filter(
-    l => !hiddenLoans.has(l.loanId)
-  );
+  // Active loans only
+  const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
 
+  // rows from your existing portfolio aggregator (may skip empty months)
   const rows = buildPortfolioDrawerRows(activeLoans);
 
+  // Use the SAME portfolio start KPI3 uses
+  const portfolioStart = window.__PORTFOLIO_START__
+    ? new Date(window.__PORTFOLIO_START__)
+    : (rows.length ? new Date(rows[0].date) : new Date());
+
+  portfolioStart.setHours(0, 0, 0, 0);
+
+  const TODAY = new Date();
+  TODAY.setHours(0, 0, 0, 0);
+
+  // Map existing rows by YYYY-MM
+  const rowByMonth = new Map();
+  rows.forEach(r => {
+    const d = new Date(r.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    rowByMonth.set(key, r);
+  });
+
+  // Build FULL calendar months from portfolioStart → TODAY
+  const fullMonths = [];
+  const cursor = new Date(portfolioStart.getFullYear(), portfolioStart.getMonth(), 1);
+  const end = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+
+  while (cursor <= end) {
+    const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+    const existing = rowByMonth.get(key);
+
+    fullMonths.push({
+      date: new Date(cursor),
+      contributions: existing?.contributions || []
+    });
+
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  // Compute avg rows using CALENDAR months elapsed (NOT i+1)
   let cumulativeNet = 0;
 
-  const avgRows = rows.map((r, i) => {
-    // MONTHLY net only (not cumulative)
-    const monthNet = r.contributions.reduce(
-  (sum, c) => sum + (c.hasData ? (Number(c.net) || 0) : 0),
-  0
-);
-
+  const avgRows = fullMonths.map(m => {
+    const monthNet = (m.contributions || []).reduce(
+      (sum, c) => sum + (Number(c.net) || 0),
+      0
+    );
 
     cumulativeNet += monthNet;
 
+    const monthsElapsed = Math.max(1, monthDiff(portfolioStart, m.date) + 1);
+    const avg = cumulativeNet / monthsElapsed;
+
     return {
-      date: r.date,
-      avg: cumulativeNet / (i + 1), // Avg Monthly Earnings To Date
-      netToDate: cumulativeNet
+      date: m.date,
+      avg,
+      netToDate: cumulativeNet,
+      monthsElapsed
     };
   });
 
-  // -----------------------------------
-  // Draw chart (SLOPED LINE — correct)
-  // -----------------------------------
+  // Draw chart
   renderKpi3AvgLineChart(
     document.getElementById("drawerChartArea"),
     avgRows
   );
 
-  // -----------------------------------
-  // Table (loan productivity context)
-  // -----------------------------------
-  drawerExtra.innerHTML =
-    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  // Table
+  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI3Table(activeLoans, "drawerKpiTable");
 
   openDrawer();
 }
-
-
 
 
 
