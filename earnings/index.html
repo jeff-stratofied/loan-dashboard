@@ -1419,7 +1419,8 @@ function createKpiStackedChart(container, rows, opts = {}) {
 // Detect KPI3 (Average Monthly Earnings)
 // KPI3 rows have avgNet instead of contributions
 // ------------------------------------
-const isKpi3 = rows.length && rows[0].avgNet !== undefined;
+const isKpi3 = mode === "kpi3";
+
 
   // ========================================
 // KPI3: cumulative average per loan
