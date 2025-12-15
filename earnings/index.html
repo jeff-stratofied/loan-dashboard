@@ -1722,16 +1722,41 @@ svg.appendChild(vline);
 
         const idx = Math.max(0, Math.min(data.length - 1, Math.floor((x - padL) / barW)));
         const row = data[idx];
-        const tooltipLines = [
-          `${currentLoan ? currentLoan.loanName : "Loan"} • ${formatDate(row.ownershipDate || row.loanDate)}`,
-          `Principal: $${row.cumPrincipal.toFixed(2)}`,
-          `Interest: $${row.cumInterest.toFixed(2)}`,
-          `Fees: -$${row.cumFees.toFixed(2)}`,
-          `Net: $${row.netEarnings.toFixed(2)}`
-        ];
+        let tooltipLines;
 
-        updateTooltipContent(tooltipInstance, tooltipLines, true);
-        updateTooltipPosition(tooltipInstance, x, y, lensRadius);
+// ----------------------------------
+// KPI3 detection (portfolio rows)
+// ----------------------------------
+if (row.netToDate !== undefined && row.avgNet !== undefined) {
+  // Lifetime average up to this month
+  const monthsElapsed = idx + 1;
+  const lifetimeAvg =
+    monthsElapsed > 0
+      ? row.netToDate / monthsElapsed
+      : 0;
+
+  tooltipLines = [
+    `Date: ${formatMonthYear(row.date)}`,
+    `Avg / Month: ${formatCurrency(lifetimeAvg)}`,
+    `Net to Date: ${formatCurrency(row.netToDate)}`
+  ];
+
+} else {
+  // ----------------------------------
+  // KPI1 / KPI2 (cumulative loan math)
+  // ----------------------------------
+  tooltipLines = [
+    `${currentLoan ? currentLoan.loanName : "Loan"} • ${formatDate(row.ownershipDate || row.loanDate)}`,
+    `Principal: $${row.cumPrincipal.toFixed(2)}`,
+    `Interest: $${row.cumInterest.toFixed(2)}`,
+    `Fees: -$${row.cumFees.toFixed(2)}`,
+    `Net: $${row.netEarnings.toFixed(2)}`
+  ];
+}
+
+updateTooltipContent(tooltipInstance, tooltipLines, true);
+updateTooltipPosition(tooltipInstance, x, y, lensRadius);
+
       }
 
       function handleLeave(){
