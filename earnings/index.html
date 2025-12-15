@@ -2397,10 +2397,10 @@ const avgRows = chartMonths.map(m => {
 
   cumulativeNet += monthNet;
 
-  const monthsElapsed =
+  const portfolioMonths =
   Math.max(1, monthDiff(window.__PORTFOLIO_START__, new Date()) + 1);
 
-  const avg = cumulativeNet / monthsElapsed;
+const avg = cumulativeNet / portfolioMonths;
 
   return {
     date: m.date,
