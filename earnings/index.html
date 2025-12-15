@@ -1691,62 +1691,7 @@ sortedContribs.forEach(c => {
   svg.addEventListener("mouseleave", handleLeave);
 }
 
-function renderKpi3FlatAvgChart(container, rows, avgMonthlyNet) {
-  container.innerHTML = "";
-
-  const svgNS = "http://www.w3.org/2000/svg";
-  const w = container.clientWidth || 700;
-  const h = container.clientHeight || 240;
-
-  const padL = 60, padR = 20, padT = 20, padB = 30;
-
-  const svg = document.createElementNS(svgNS, "svg");
-  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.setAttribute("width", "100%");
-  svg.setAttribute("height", "100%");
-
-  // Y scale
-  const maxVal = Math.max(avgMonthlyNet * 1.25, 1);
-  const scaleY = (h - padT - padB) / maxVal;
-
-  // Grid
-  for (let i = 0; i <= 4; i++) {
-    const y = padT + i * ((h - padT - padB) / 4);
-    const val = maxVal * (1 - i / 4);
-
-    const line = document.createElementNS(svgNS, "line");
-    line.setAttribute("x1", padL);
-    line.setAttribute("x2", w - padR);
-    line.setAttribute("y1", y);
-    line.setAttribute("y2", y);
-    line.setAttribute("stroke", "var(--grid-light)");
-    svg.appendChild(line);
-
-    const txt = document.createElementNS(svgNS, "text");
-    txt.textContent = formatCurrency(val);
-    txt.setAttribute("x", padL - 8);
-    txt.setAttribute("y", y + 4);
-    txt.setAttribute("font-size", "11");
-    txt.setAttribute("text-anchor", "end");
-    txt.setAttribute("fill", "var(--text)");
-    svg.appendChild(txt);
-  }
-
-  // Flat line
-  const y = h - padB - avgMonthlyNet * scaleY;
-
-  const line = document.createElementNS(svgNS, "line");
-  line.setAttribute("x1", padL);
-  line.setAttribute("x2", w - padR);
-  line.setAttribute("y1", y);
-  line.setAttribute("y2", y);
-  line.setAttribute("stroke", "var(--brand)");
-  line.setAttribute("stroke-width", "3");
-  svg.appendChild(line);
-
-  container.appendChild(svg);
-}
-
+function renderKpi3AvgLineChart(container, rows) { ... }
 
     
     // --------------------------
@@ -2248,7 +2193,7 @@ function openKpi3() {
   resetDrawerContent();
 
   // -----------------------------------
-  // KPI3 chart data (Method A, correct)
+  // KPI3 chart data (CORRECT)
   // -----------------------------------
   const activeLoans = loansWithEarnings.filter(
     l => !hiddenLoans.has(l.loanId)
@@ -2269,18 +2214,18 @@ function openKpi3() {
 
     return {
       date: r.date,
-      avg: cumulativeNet / (i + 1),   // Avg Monthly Earnings To Date
+      avg: cumulativeNet / (i + 1), // Avg Monthly Earnings To Date
       netToDate: cumulativeNet
     };
   });
 
-  // Draw chart
-  renderKpi3FlatAvgChart(
-  document.getElementById("drawerChartArea"),
-  avgRows,
-  kpis.avgMonthlyNet
-);
-
+  // -----------------------------------
+  // Draw chart (SLOPED LINE — correct)
+  // -----------------------------------
+  renderKpi3AvgLineChart(
+    document.getElementById("drawerChartArea"),
+    avgRows
+  );
 
   // -----------------------------------
   // Table (loan productivity context)
@@ -2291,6 +2236,7 @@ function openKpi3() {
 
   openDrawer();
 }
+
 
 
 
