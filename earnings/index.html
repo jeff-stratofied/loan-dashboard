@@ -2342,48 +2342,58 @@ function openKpi3() {
 
 resetDrawerContent();
 
-// Build calendar-month portfolio rows
-const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
-const rows = buildPortfolioDrawerRows(activeLoans);
+// ==============================
+// KPI3 chart rows — Method A ONLY
+// (calendar-based, monotonic)
+// ==============================
+const TODAY = new Date();
+TODAY.setHours(0, 0, 0, 0);
 
-// Convert cumulative-per-loan net → MONTHLY net → AVG-TO-DATE series
-let cumulativeNet = 0;
+// Must match KPI tile logic
+const portfolioStart = window.__PORTFOLIO_START__ || TODAY;
 
-const avgRows = rows.map((r, i) => {
-  let monthNet = 0;
+// Map YYYY-MM -> portfolio net-to-date at that month
+const monthMap = new Map();
 
-  if (i === 0) {
-    // First month: monthly net = cumulative net in first month
-    monthNet = r.contributions.reduce(
-      (s, c) => s + (Number(c.net) || 0),
-      0
-    );
-  } else {
-    // Later months: monthly net = delta vs prior month (per loan)
-    const prev = rows[i - 1];
-    const prevByLoan = new Map(
-      prev.contributions.map(c => [
-        c.loanId,
-        Number(c.net) || 0
-      ])
-    );
+loansWithEarnings.forEach(loan => {
+  (loan.earningsSchedule || []).forEach(r => {
+    if (!r.isOwned) return;
 
-    monthNet = r.contributions.reduce((s, c) => {
-      const cur = Number(c.net) || 0;
-      const prevVal = prevByLoan.get(c.loanId) || 0;
-      return s + (cur - prevVal);
-    }, 0);
+    const d = new Date(r.ownershipDate || r.loanDate);
+    d.setHours(0, 0, 0, 0);
+    if (d > TODAY) return;
+
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const prev = monthMap.get(key) || 0;
+
+    // Use cumulative net, not monthly delta
+    monthMap.set(key, Math.max(prev, Number(r.netEarnings) || 0));
+  });
+});
+
+// Build calendar months from portfolio start to today
+const avgRows = [];
+let cursor = new Date(portfolioStart);
+let lastNet = 0;
+
+while (cursor <= TODAY) {
+  const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+
+  if (monthMap.has(key)) {
+    lastNet = Math.max(lastNet, monthMap.get(key));
   }
 
-  cumulativeNet += monthNet;
+  const monthsElapsed =
+    monthDiff(portfolioStart, cursor) + 1;
 
-  return {
-    date: r.date,
-    avg: cumulativeNet / (i + 1),   // Avg Monthly Earnings To Date
-    monthNet,
-    netToDate: cumulativeNet
-  };
-});
+  avgRows.push({
+    date: new Date(cursor),
+    avg: lastNet / monthsElapsed
+  });
+
+  cursor = addMonths(cursor, 1);
+}
+
 
   // Draw chart
   renderKpi3AvgLineChart(
@@ -3211,79 +3221,35 @@ function renderKPI2Table(data, containerId = "kpi2Table") {
 
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
+  const portfolioStart = window.__PORTFOLIO_START__;
+  const TODAY = new Date();
+  TODAY.setHours(0,0,0,0);
+
+  const portfolioMonths =
+    Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
+
   const rows = data.map(l => {
     const sched = l.earningsSchedule || [];
-
-    const avg = sched.length
-      ? (sched[sched.length - 1].netEarnings || 0) / sched.length
+    const netToDate = sched.length
+      ? sched[sched.length - 1].netEarnings
       : 0;
-
-    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
-    const isHidden = window.hiddenLoans?.has(l.loanId);
 
     return {
       loanId: l.loanId,
       cells: [
-        // Swatch toggle
-        `<div
-          class="loan-swatch"
-          data-loan-id="${l.loanId}"
-          title="Toggle loan"
-          style="
-            width:10px;
-            height:10px;
-            border-radius:2px;
-            background:${color};
-            margin:4px auto;
-            cursor:pointer;
-            opacity:${isHidden ? "0.25" : "1"};
-          "
-        ></div>`,
-
-        // Loan name
-        `${l.loanName}`,
-
-        // Avg monthly earnings (per-loan, Method B)
-        formatCurrency(avg)
+        l.loanName,
+        formatCurrency(netToDate / portfolioMonths)
       ]
     };
   });
 
   renderKpiTable(
     containerId,
-    ["On/Off", "Loan", "Avg Monthly Earnings"],
+    ["Loan", "Avg Monthly Earnings"],
     rows
   );
-
-  // --------------------------
-  // Swatch toggle behavior
-  // --------------------------
-  const table = document.getElementById(containerId);
-  if (!table) return;
-
-  table.querySelectorAll(".loan-swatch").forEach(sw => {
-    const loanId = sw.dataset.loanId;
-
-    sw.addEventListener("click", e => {
-      e.stopPropagation();
-
-      if (!window.hiddenLoans) {
-        window.hiddenLoans = new Set();
-      }
-
-      if (window.hiddenLoans.has(loanId)) {
-        window.hiddenLoans.delete(loanId);
-        sw.style.opacity = "1";
-      } else {
-        window.hiddenLoans.add(loanId);
-        sw.style.opacity = "0.25";
-      }
-
-      // Re-render KPI3 drawer (chart + table)
-      openKpi3();
-    });
-  });
 }
+
 
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
