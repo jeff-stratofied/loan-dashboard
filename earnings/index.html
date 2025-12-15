@@ -1754,11 +1754,11 @@ function renderKpi3AvgLineChart(container, rows) {
   svg.appendChild(path);
 
     // ----------------------------
-  // X axis labels (every 4th month)
+  // X axis labels (every 6th month)
   // ----------------------------
   const xAxisY = h - padB + 18;
 
-  for (let i = 0; i < rows.length; i += 4) {
+  for (let i = 0; i < rows.length; i += 6) {
     const x = padL + i * stepX;
 
     // small tick
