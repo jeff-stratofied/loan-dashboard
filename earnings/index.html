@@ -1749,6 +1749,36 @@ function renderKpi3AvgLineChart(container, rows) {
   svg.appendChild(path);
 
   container.appendChild(svg);
+
+    // --------------------------
+  // Hover tooltip (no lens)
+  // --------------------------
+  svg.addEventListener("mousemove", (e) => {
+    const rect = svg.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+
+    const idx = Math.max(
+      0,
+      Math.min(
+        rows.length - 1,
+        Math.round((mouseX - padL) / stepX)
+      )
+    );
+
+    const r = rows[idx];
+
+    setMiniTooltipContent([
+      `Date: ${formatMonthYear(r.date)}`,
+      `Avg Monthly Earnings To Date: ${formatCurrency(r.avg)}`
+    ]);
+
+    positionMiniTooltip(e.clientX, e.clientY, 12);
+  });
+
+  svg.addEventListener("mouseleave", () => {
+    hideMiniTooltip();
+  });
+
 }
 
 
@@ -2257,27 +2287,20 @@ function openKpi3() {
   let cumulativeNet = 0;
 
 const avgRows = rows.map((r, i) => {
+  // IMPORTANT: use *monthly* net, not cumulative
   const monthNet = r.contributions.reduce(
-    (s, c) => s + (c.net || 0),
+    (s, c) => s + (c.monthNet || c.netEarnings || 0),
     0
   );
 
   cumulativeNet += monthNet;
 
-console.log(
-  formatMonthYear(r.date),
-  cumulativeNet,
-  i + 1,
-  cumulativeNet / (i + 1)
-);
-
-
-  
   return {
     date: r.date,
     avg: cumulativeNet / (i + 1)
   };
 });
+
 
 
   // Draw chart
