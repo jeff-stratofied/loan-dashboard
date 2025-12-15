@@ -631,12 +631,11 @@ html[data-theme="dark"] .legend .sw {
       white-space: nowrap;
     }
 
- /* ================================
-   KPI3 table: neutral text color
-   ================================ */
-  #kpi3Table td {
-  color: var(--text);
-  }
+/* KPI3 table: neutral text (override loan colors) */
+#drawerKpiTable td {
+  color: var(--text) !important;
+}
+
     
   </style>
 </head>
@@ -2425,10 +2424,10 @@ const avgRows = chartMonths.map(m => {
 const avg = cumulativeNet / portfolioMonths;
 
   return {
-    date: m.date,
-    avg,
-    netToDate: cumulativeNet,
-  };
+  date: r.date,
+  avg: cumulativeNet / kpis.monthsCounted,
+  netToDate: cumulativeNet,
+};
 });
 
 
