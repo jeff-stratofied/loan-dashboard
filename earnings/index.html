@@ -2332,68 +2332,68 @@ function openKpi3() {
   drawerSub.textContent =
     "Total net earnings divided by months since portfolio inception.";
 
-  // PRIMARY = KPI tile value (same source)
+  // PRIMARY = KPI tile value (Method A)
   drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
   drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
 
-  // SECONDARY = months counted (useful context)
+  // SECONDARY = months counted
   drawerSecondaryTitle.textContent = "Months Counted";
   drawerSecondary.textContent = kpis.monthsCounted.toString();
 
-resetDrawerContent();
+  resetDrawerContent();
 
-// ==============================
-// KPI3 chart rows — Method A ONLY
-// (calendar-based, monotonic)
-// ==============================
-const TODAY = new Date();
-TODAY.setHours(0, 0, 0, 0);
+  // =====================================================
+  // KPI3 chart rows — Method A ONLY (calendar-based)
+  // Smooth, monotonic, matches KPI tile exactly
+  // =====================================================
+  const TODAY = new Date();
+  TODAY.setHours(0, 0, 0, 0);
 
-// Must match KPI tile logic
-const portfolioStart = window.__PORTFOLIO_START__ || TODAY;
+  const portfolioStart = window.__PORTFOLIO_START__ || TODAY;
 
-// Map YYYY-MM -> portfolio net-to-date at that month
-const monthMap = new Map();
+  // Build map: YYYY-MM -> portfolio net-to-date
+  const monthMap = new Map();
 
-loansWithEarnings.forEach(loan => {
-  (loan.earningsSchedule || []).forEach(r => {
-    if (!r.isOwned) return;
+  loansWithEarnings.forEach(loan => {
+    (loan.earningsSchedule || []).forEach(r => {
+      if (!r.isOwned) return;
 
-    const d = new Date(r.ownershipDate || r.loanDate);
-    d.setHours(0, 0, 0, 0);
-    if (d > TODAY) return;
+      const d = new Date(r.ownershipDate || r.loanDate);
+      d.setHours(0, 0, 0, 0);
+      if (d > TODAY) return;
 
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-    const prev = monthMap.get(key) || 0;
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const prev = monthMap.get(key) || 0;
 
-    // Use cumulative net, not monthly delta
-    monthMap.set(key, Math.max(prev, Number(r.netEarnings) || 0));
+      monthMap.set(
+        key,
+        Math.max(prev, Number(r.netEarnings) || 0)
+      );
+    });
   });
-});
 
-// Build calendar months from portfolio start to today
-const avgRows = [];
-let cursor = new Date(portfolioStart);
-let lastNet = 0;
+  // Build avg-to-date series across calendar months
+  const avgRows = [];
+  let cursor = new Date(portfolioStart);
+  let lastNet = 0;
 
-while (cursor <= TODAY) {
-  const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+  while (cursor <= TODAY) {
+    const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
 
-  if (monthMap.has(key)) {
-    lastNet = Math.max(lastNet, monthMap.get(key));
+    if (monthMap.has(key)) {
+      lastNet = Math.max(lastNet, monthMap.get(key));
+    }
+
+    const monthsElapsed =
+      monthDiff(portfolioStart, cursor) + 1;
+
+    avgRows.push({
+      date: new Date(cursor),
+      avg: lastNet / monthsElapsed
+    });
+
+    cursor = addMonths(cursor, 1);
   }
-
-  const monthsElapsed =
-    monthDiff(portfolioStart, cursor) + 1;
-
-  avgRows.push({
-    date: new Date(cursor),
-    avg: lastNet / monthsElapsed
-  });
-
-  cursor = addMonths(cursor, 1);
-}
-
 
   // Draw chart
   renderKpi3AvgLineChart(
@@ -2401,13 +2401,14 @@ while (cursor <= TODAY) {
     avgRows
   );
 
-  // Keep table (unchanged)
+  // Table (per-loan context, Method A aligned)
   drawerExtra.innerHTML =
     `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-  renderKPI3Table(activeLoans, "drawerKpiTable");
+  renderKPI3Table(loansWithEarnings, "drawerKpiTable");
 
   openDrawer();
 }
+
 
 
 
