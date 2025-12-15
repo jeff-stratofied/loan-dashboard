@@ -1431,11 +1431,27 @@ function createKpiStackedChart(container, rows, opts = {}) {
   if (!rows.length) return;
 
   // ---------- Y scale ----------
-  let maxAvg = 0;
-rows.forEach(r => {
-  const avg = r.avgNet ?? 0;   // KPI3 uses precomputed avg
-  maxAvg = Math.max(maxAvg, avg);
-});
+  // ---------- Detect KPI type ----------
+const isAvgKpi = rows[0] && "avgNet" in rows[0];
+
+// ---------- Y scale ----------
+let maxY = 0;
+
+if (isAvgKpi) {
+  // KPI3: average monthly earnings
+  rows.forEach(r => {
+    maxY = Math.max(maxY, r.avgNet || 0);
+  });
+} else {
+  // KPI1 / KPI2: cumulative net
+  rows.forEach(r => {
+    const total = r.contributions?.reduce((s, c) => s + c.net, 0) || 0;
+    maxY = Math.max(maxY, total);
+  });
+}
+
+if (maxY < 1) maxY = 1;
+
 
   if (maxAvg < 1) maxAvg = 1;
 
@@ -1471,9 +1487,18 @@ rows.forEach(r => {
   // ---------- Average line ----------
   let d = "";
   rows.forEach((r, i) => {
-  const avg = r.avgNet ?? 0;   // ✅ authoritative KPI3 value
+  
   const x = padL + (i / (rows.length - 1)) * (w - padL - padR);
-  const y = yZero - avg * scale;
+  let value;
+
+  if (isAvgKpi) {
+    value = r.avgNet;
+  } else {
+    value = r.contributions.reduce((s, c) => s + c.net, 0);
+  }
+
+const y = yZero - value * scale;
+
   d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
 });
 
@@ -1510,10 +1535,16 @@ function handleMove(e) {
   // ----------------------------------
   // Lifetime average (MATCHES KPI TILE)
   // ----------------------------------
-  const lifetimeAvg =
-  rows.length > 0
-    ? rows[rows.length - 1].avgNet
-    : 0;
+  let displayValue;
+
+if (isAvgKpi) {
+  displayValue = rows[rows.length - 1].avgNet;
+} else {
+  displayValue =
+    rows[rows.length - 1].contributions
+      .reduce((s, c) => s + c.net, 0);
+}
+
 
 
   // ----------------------------------
@@ -1534,11 +1565,19 @@ function handleMove(e) {
   // ----------------------------------
   // Tooltip (single, correct meaning)
   // ----------------------------------
-  setMiniTooltipContent([
-    `Date: ${formatMonthYear(row.date)}`,
-    `Avg / Month: ${formatCurrency(lifetimeAvg)}`,
-    `Net to Date: ${formatCurrency(row.netToDate)}`
-  ]);
+setMiniTooltipContent(
+  isAvgKpi
+    ? [
+        `Date: ${formatMonthYear(row.date)}`,
+        `Avg / Month: ${formatCurrency(displayValue)}`,
+        `Net to Date: ${formatCurrency(row.netToDate)}`
+      ]
+    : [
+        `Date: ${formatMonthYear(row.date)}`,
+        `Net to Date: ${formatCurrency(displayValue)}`
+      ]
+);
+
 
   positionMiniTooltip(e.clientX, e.clientY, lensRadius);
 }
