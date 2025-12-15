@@ -1505,15 +1505,22 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // ----------------------------
   let maxVal = 0;
   rows.forEach(r => {
-    const totalPos = r.contributions
-      .filter(c => c.net >= 0)
-      .reduce((s, c) => s + c.net, 0);
-    const totalNeg = r.contributions
-      .filter(c => c.net < 0)
-      .reduce((s, c) => s + Math.abs(c.net), 0);
+  let totalPos = 0;
+  let totalNeg = 0;
 
-    maxVal = Math.max(maxVal, totalPos, totalNeg);
+  r.contributions.forEach(c => {
+    const net =
+      (c.principal ?? 0) +
+      (c.interest ?? 0) -
+      (c.fees ?? 0);
+
+    if (net >= 0) totalPos += net;
+    else totalNeg += Math.abs(net);
   });
+
+  maxVal = Math.max(maxVal, totalPos, totalNeg);
+});
+
   if (maxVal < 1) maxVal = 1;
 
   const usableH = h - padT - padB;
@@ -1593,7 +1600,11 @@ if (opts.thinBars) {
   .filter(Boolean);
 
 sortedContribs.forEach(c => {
-  const net = c.net || 0;
+  const net =
+    (c.principal ?? 0) +
+    (c.interest ?? 0) -
+    (c.fees ?? 0);
+
   const hVal = Math.max(0, net * scale);
   if (!Number.isFinite(hVal) || hVal <= 0) return;
 
@@ -1609,6 +1620,7 @@ sortedContribs.forEach(c => {
 
   svg.appendChild(bar);
 });
+
 
 
 
