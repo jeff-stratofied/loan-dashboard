@@ -1407,456 +1407,125 @@ const currentX = padL + ratio * (w - padL - padR);
       svg.addEventListener("mouseleave", handleLeave);
     }
 
-// =======================================================
-// NEW: Portfolio KPI Stacked Chart (aggregated rows)
-// =======================================================
 function createKpiStackedChart(container, rows, opts = {}) {
-  const denseXAxis = opts.denseXAxis || false;
-
   container.innerHTML = "";
 
-// ------------------------------------
-// Detect KPI3 (Average Monthly Earnings)
-// KPI3 rows have avgNet instead of contributions
-// ------------------------------------
-const isKpi3 = mode === "kpi3";
-
-
-  // ========================================
-// KPI3: cumulative average per loan
-// ========================================
-const loanAvgSeries = {}; // loanId -> [{x,y}]
-
-if (isKpi3) {
-  rows.forEach((row, i) => {
-    const monthsElapsed = i + 1;
-
-    Object.entries(row.loanCumNet || {}).forEach(([loanId, cumNet]) => {
-      if (!loanAvgSeries[loanId]) loanAvgSeries[loanId] = [];
-      loanAvgSeries[loanId].push({
-        xIndex: i,
-        yValue: cumNet / monthsElapsed
-      });
-    });
-  });
-}
-
-  
+  // ---------- SVG setup ----------
   const svgNS = "http://www.w3.org/2000/svg";
   const rect = container.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
-  const h = container.offsetHeight || 360;
+  const h = container.offsetHeight || 260;
 
-  const padL = 64, padR = 10, padT = 20, padB = 20;
-
+  const padL = 64, padR = 16, padT = 20, padB = 28;
 
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
+  container.appendChild(svg);
 
- // Collect all loanIds for color mapping (KPI1 / KPI2 only)
-const loanIds = new Set();
+  if (!rows.length) return;
 
-if (!isKpi3) {
-  rows.forEach(r => {
-    if (!r.contributions) return;
-    r.contributions.forEach(c => loanIds.add(c.loanId));
+  // ---------- Y scale ----------
+  let maxAvg = 0;
+  rows.forEach((r, i) => {
+    const months = i + 1;
+    const avg = r.netToDate / months;
+    maxAvg = Math.max(maxAvg, avg);
   });
-}
-
-const loanIdList = [...loanIds];
-
-  // Use global color map (already built in rebuildLoansWithEarnings)
-  const colors = window.KPI_COLOR_MAP || {};
-
-// ----------------------------
-// Y scale + gridlines
-// ----------------------------
-let maxVal = 0;
-
-if (isKpi3) {
-  // KPI3: scale based on average values
-  rows.forEach(r => {
-    maxVal = Math.max(maxVal, Math.abs(r.avgNet || 0));
-  });
-} else {
-  // KPI1 / KPI2: scale based on stacked contributions
-  rows.forEach(r => {
-    if (!r.contributions) return;
-
-    const totalPos = r.contributions
-      .filter(c => c.net >= 0)
-      .reduce((s, c) => s + c.net, 0);
-
-    const totalNeg = r.contributions
-      .filter(c => c.net < 0)
-      .reduce((s, c) => s + Math.abs(c.net), 0);
-
-    maxVal = Math.max(maxVal, totalPos, totalNeg);
-  });
-}
-
-if (maxVal < 1) maxVal = 1;
-
-  if (maxVal < 1) maxVal = 1;
+  if (maxAvg < 1) maxAvg = 1;
 
   const usableH = h - padT - padB;
-  // Full vertical range for positive earnings (zero at bottom)
-const scale = usableH / maxVal;
-const yZero = padT + usableH;
+  const scale = usableH / maxAvg;
+  const yZero = padT + usableH;
 
+  // ---------- Grid + labels ----------
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = yZero - (i / gridLines) * usableH;
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", padL);
+    line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "var(--grid-light)");
+    line.setAttribute("stroke-width", "1");
+    svg.appendChild(line);
 
-  // Horizontal grid lines + Y-axis labels (like KPI2 / drawer chart)
-  const gridBelowZero = 2;
-  const gridAboveZero = 4;
-
-  for (let gy = -gridBelowZero; gy <= gridAboveZero; gy++) {
-    const y = yZero - gy * ((yZero - padT) / gridAboveZero);
-
-    const gridLine = document.createElementNS(svgNS, "line");
-    gridLine.setAttribute("x1", padL);
-    gridLine.setAttribute("x2", w - padR);
-    gridLine.setAttribute("y1", y);
-    gridLine.setAttribute("y2", y);
-    gridLine.setAttribute(
-      "stroke",
-      gy >= 0 ? "var(--grid-strong)" : "var(--grid-light)"
-    );
-    gridLine.setAttribute("stroke-width", "0.7");
-    svg.appendChild(gridLine);
-
-    // Positive ticks get labels
-    if (gy > 0) {
-      const lbl = document.createElementNS(svgNS, "text");
-      const value = (maxVal / gridAboveZero) * gy;
-      lbl.textContent = "$" + Math.round(value).toLocaleString();
-      lbl.setAttribute("x", padL - 12);
-      lbl.setAttribute("y", y + 4);
-      lbl.setAttribute("font-size", "11");
-      lbl.setAttribute("fill", "var(--text)");
-      lbl.setAttribute("text-anchor", "end");
-      svg.appendChild(lbl);
+    if (i > 0) {
+      const t = document.createElementNS(svgNS, "text");
+      t.textContent = formatCurrency((maxAvg / gridLines) * i);
+      t.setAttribute("x", padL - 10);
+      t.setAttribute("y", y + 4);
+      t.setAttribute("text-anchor", "end");
+      t.setAttribute("font-size", "11");
+      t.setAttribute("fill", "var(--text)");
+      svg.appendChild(t);
     }
   }
 
-  // Zero axis
-  const axis = document.createElementNS(svgNS, "line");
-  axis.setAttribute("x1", padL);
-  axis.setAttribute("x2", w - padR);
-  axis.setAttribute("y1", yZero);
-  axis.setAttribute("y2", yZero);
-  axis.setAttribute("stroke", "var(--grid-strong)");
-  axis.setAttribute("stroke-width", "1");
-  svg.appendChild(axis);
-
-// ==================================================
-// KPI3: Average Monthly Earnings
-// Pattern: Average LINE + Loan RIBBONS (opacity-weighted)
-// ==================================================
-if (isKpi3) {
-  const stepX = (w - padL - padR) / Math.max(1, rows.length - 1);
-
-  // ========================================
-// KPI3: portfolio lifetime average line
-// ========================================
-if (isKpi3) {
+  // ---------- Average line ----------
   let d = "";
-
-  rows.forEach((row, i) => {
-    const monthsElapsed = i + 1;
-    const lifetimeAvg = row.netToDate / monthsElapsed;
-
+  rows.forEach((r, i) => {
+    const months = i + 1;
+    const avg = r.netToDate / months;
     const x = padL + (i / (rows.length - 1)) * (w - padL - padR);
-    const y = yZero - lifetimeAvg * scale;
-
+    const y = yZero - avg * scale;
     d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
   });
 
-  const avgPath = document.createElementNS(svgNS, "path");
-  avgPath.setAttribute("d", d);
-  avgPath.setAttribute("fill", "none");
-  avgPath.setAttribute("stroke", "#111827");
-  avgPath.setAttribute("stroke-width", "3");
-  avgPath.setAttribute("pointer-events", "none");
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute("d", d);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "#111827");
+  path.setAttribute("stroke-width", "3");
+  svg.appendChild(path);
 
-  svg.appendChild(avgPath);
-}
+  // ---------- Hover ----------
+  let lens = null;
+  const lensRadius = 36;
 
-  // ========================================
-// KPI3: faint loan cumulative average lines
-// (hidden by default; hover only)
-// ========================================
-if (isKpi3) {
-  Object.entries(loanAvgSeries).forEach(([loanId, points]) => {
-    let d = "";
+  function handleMove(e) {
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+    const idx = Math.max(
+      0,
+      Math.min(rows.length - 1,
+        Math.round((mouseX - padL) / ((w - padL - padR) / (rows.length - 1)))
+      )
+    );
 
-    points.forEach((pt, i) => {
-      const x = padL + (pt.xIndex / (rows.length - 1)) * (w - padL - padR);
-      const y = yZero - pt.yValue * scale;
-      d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
-    });
+    const row = rows[idx];
+    if (!row) return;
 
-    const p = document.createElementNS(svgNS, "path");
-    p.setAttribute("d", d);
-    p.setAttribute("fill", "none");
-    p.setAttribute("stroke", window.KPI_COLOR_MAP[loanId] || "#64748b");
-    p.setAttribute("stroke-width", "1.5");
-    p.setAttribute("stroke-opacity", "0"); // HIDDEN
-    p.setAttribute("data-loan-id", loanId);
-
-    svg.appendChild(p);
-  });
-}
-
-
-  // ---------- Loan ribbons ----------
-  rows.forEach((row, i) => {
-    const x = padL + i * stepX;
-
-    Object.entries(row.loanValues || {}).forEach(([loanId, net]) => {
-      if (hiddenLoans.has(loanId)) return;
-
-      const yLoan = yZero - (net * scale);
-      const yAvg  = yZero - (row.avgNet * scale);
-
-      const ribbon = document.createElementNS(svgNS, "line");
-      ribbon.setAttribute("x1", x);
-      ribbon.setAttribute("x2", x);
-      ribbon.setAttribute("y1", yAvg);
-      ribbon.setAttribute("y2", yLoan);
-
-      ribbon.setAttribute("stroke", window.KPI_COLOR_MAP?.[loanId] || "#64748b");
-      ribbon.setAttribute("stroke-width", "2");
-      ribbon.setAttribute("stroke-opacity", "0.35");
-      ribbon.setAttribute("data-loan-id", loanId);
-
-      svg.appendChild(ribbon);
-    });
-
-    // X-axis labels (same cadence as KPI2)
-    if ((!opts.denseXAxis && i % 24 === 0) || (opts.denseXAxis && i % 4 === 0)) {
-      const lbl = document.createElementNS(svgNS, "text");
-      lbl.textContent = formatMonthYear(row.date);
-      lbl.setAttribute("x", x);
-      lbl.setAttribute("y", h - 4);
-      lbl.setAttribute("font-size", "11");
-      lbl.setAttribute("fill", "var(--text)");
-      lbl.setAttribute("text-anchor", "middle");
-      svg.appendChild(lbl);
+    if (!lens) {
+      lens = createLens(svg, lensRadius, 1.5);
+      svg.appendChild(lens.group);
     }
-  });
-}
 
-  
-  // ----------------------------
-  // Stacked bars
-  // ----------------------------
-// Make KPI1 bars thinner (fixed width instead of auto-fill)
-// Correct bar spacing across the full chart width
-const barW = (w - padL - padR) / rows.length;
+    updateLens(lens, mouseX, yZero - (row.netToDate / (idx + 1)) * scale);
 
-if (!isKpi3) {
-  rows.forEach((r, i) => {
-    const x = padL + i * barW;
-   // Make bars thinner but keep correct spacing
-    // Allow overriding bar thickness (default: thick, fills width)
-let bw;
-if (opts.thinBars) {
-  bw = Math.max(1, barW * 0.35);    // thin mode
-} else {
-  bw = Math.max(2, barW * 0.85);    // thick, fills horizontal space
-}
+    setMiniTooltipContent([
+      `Date: ${formatMonthYear(row.date)}`,
+      `Avg / Month: ${formatCurrency(row.netToDate / (idx + 1))}`,
+      `Net to Date: ${formatCurrency(row.netToDate)}`
+    ]);
 
-    let yUp = yZero;
-
-    // SORT to ensure stacking order is consistent every month
-    const sortedContribs = loansWithEarnings
-  .filter(l => !hiddenLoans.has(l.loanId))
-  .map(l => r.contributions.find(c => c.loanId === l.loanId))
-  .filter(Boolean);
-
-sortedContribs.forEach(c => {
-  const net = c.net || 0;
-  const hVal = Math.max(0, net * scale);
-  if (!Number.isFinite(hVal) || hVal <= 0) return;
-
-  const bar = document.createElementNS(svgNS, "rect");
-  bar.dataset.loanId = c.loanId;
-  bar.setAttribute("x", x);
-  bar.setAttribute("width", bw);
-  bar.setAttribute("height", hVal);
-  bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
-
-  bar.setAttribute("y", yUp - hVal);
-  yUp -= hVal;
-
-  svg.appendChild(bar);
-});
-
-    // X-axis labels (denser for KPI1, sparse for others)
-    if ((denseXAxis && i % 4 === 0) || (!denseXAxis && i % 24 === 0)) {
-      const lbl = document.createElementNS(svgNS, "text");
-      lbl.textContent = r.date.toLocaleString("en-US", {
-        month: "short",
-        year: "numeric"
-      });
-      lbl.setAttribute("x", x + bw / 2);
-      lbl.setAttribute("y", h - 4);
-      lbl.setAttribute("font-size", "11");
-      lbl.setAttribute("fill", "var(--text)");
-      lbl.setAttribute("text-anchor", "middle");
-      svg.appendChild(lbl);
-    }
-  });
-}
-  
-  // ==========================
-  // TODAY vertical dotted line
-  // ==========================
-  const TODAY = new Date();
-  TODAY.setHours(0, 0, 0, 0);
-
-  // rows[].date is already ownership-based and capped to TODAY
-  const firstDate = rows[0]?.date;
-  const lastDate  = rows[rows.length - 1]?.date;
-
-  if (firstDate && lastDate) {
-    const totalMonths = monthDiff(firstDate, lastDate);
-    let monthsToToday = monthDiff(firstDate, TODAY);
-
-    if (!Number.isFinite(monthsToToday)) monthsToToday = 0;
-
-    monthsToToday = Math.max(0, Math.min(monthsToToday, totalMonths));
-
-    const ratio = totalMonths > 0 ? monthsToToday / totalMonths : 0;
-
-    const todayX = padL + ratio * (w - padL - padR);
-
-    const todayLine = document.createElementNS(svgNS, "line");
-    todayLine.setAttribute("x1", todayX);
-    todayLine.setAttribute("x2", todayX);
-    todayLine.setAttribute("y1", padT);
-    todayLine.setAttribute("y2", h - padB);
-    todayLine.setAttribute("stroke", "#64748b");
-    todayLine.setAttribute("stroke-dasharray", "4,3");
-    todayLine.setAttribute("stroke-width", "1");
-    todayLine.setAttribute("pointer-events", "none");
-
-    svg.appendChild(todayLine);
+    positionMiniTooltip(e.clientX, e.clientY, lensRadius);
   }
 
-  
-  container.appendChild(svg);
-// =======================
-// KPI Chart Hover System
-// =======================
-let lensInstance = null;
-const lensRadius = 40;
-const lensScale = 1.5;
+  function handleLeave() {
+    if (lens) {
+      removeLens(svg, lens);
+      lens = null;
+    }
+    hideMiniTooltip();
+  }
 
-function handleMove(e) {
-  const rect = svg.getBoundingClientRect();
-  const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-  const mouseY = ((e.clientY - rect.top) / rect.height) * h;
-
-  // Allow lens to reach chart edges
-  const lensX = Math.max(0, Math.min(w, mouseX));
-  const lensY = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
-
-  if (!lensInstance) {
-  lensInstance = createLens(svg, lensRadius, lensScale);
-
-  // Clone ONLY visible KPI3 elements (lines + avg path)
-  const clones = Array.from(
-    svg.querySelectorAll("line[data-loan-id], path")
-  );
-
-  clones.forEach(el => lensInstance.content.appendChild(el.cloneNode(true)));
-  svg.appendChild(lensInstance.group);
+  svg.addEventListener("mousemove", handleMove);
+  svg.addEventListener("mouseleave", handleLeave);
 }
 
-
-  updateLens(lensInstance, lensX, lensY);
-
-  // Map mouse X → row index
-  const idx = Math.max(
-    0,
-    Math.min(rows.length - 1, Math.floor((mouseX - padL) / barW))
-  );
-
-  const row = rows[idx];
-  if (!row) return;
-
-  // ---------- KPI3 ----------
-if (isKpi3) {
-  // --- Tooltip ---
-  const tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Avg / Month: ${formatCurrency(row.avgNet)}`,
-    `Active Loans: ${row.activeCount}`,
-    `Net to Date: ${formatCurrency(row.netToDate)}`
-  ];
-
-  setMiniTooltipContent(tooltipLines);
-  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-
-  // Reveal all loan avg lines faintly on chart hover
-svg.querySelectorAll("path[data-loan-id]").forEach(p => {
-  p.style.strokeOpacity = "0.15";
-});
-
-
-  return;
-}
-
-  // ---------- KPI1 / KPI2 ----------
-  const principal = row.contributions.reduce(
-    (s, c) => s + (c.principal ?? 0),
-    0
-  );
-
-  const interest = row.contributions.reduce(
-    (s, c) => s + (c.interest ?? 0),
-    0
-  );
-
-  const fees = row.contributions.reduce(
-    (s, c) => s + (c.fees ?? 0),
-    0
-  );
-
-  const net = principal + interest - fees;
-
-  const tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Principal: ${formatCurrency(principal)}`,
-    `Interest: ${formatCurrency(interest)}`,
-    `Fees: -${formatCurrency(fees)}`,
-    `Net: ${formatCurrency(net)}`
-  ];
-
-  setMiniTooltipContent(tooltipLines);
-  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-}
-
-function handleLeave() {
-  removeLens(svg, lensInstance);
-  lensInstance = null;
-  hideMiniTooltip();
-
-  // Reset opacity for KPI3 (loan ribbons + avg line) and KPI1/KPI2
-  svg.querySelectorAll("[data-loan-id], path").forEach(el => {
-    el.style.opacity = "";
-  });
-}
-
-
-
-svg.addEventListener("mousemove", handleMove);
-svg.addEventListener("mouseleave", handleLeave);
-
-}
     
     // --------------------------
     // Drawer stacked chart (larger)
