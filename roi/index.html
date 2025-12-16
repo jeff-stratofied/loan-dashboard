@@ -704,48 +704,53 @@ html[data-theme="dark"] .drawer-chart{
        KPI computations
        ------------------------- */
 
-     // -------------------------------------
-      // KPI COLOR MAP — shared across ROI (UNIQUE, high-contrast first)
+      // -------------------------------------
+      // KPI COLOR MAP — HIGH-CONTRAST FIRST
       // -------------------------------------
       window.KPI_COLOR_MAP = {};
       
-      // Create N colors. Starts with high-contrast spacing.
-      // If N gets large, it *will* eventually place some closer hues, but only when needed.
-      function buildDistinctPalette(n) {
-        if (n <= 0) return [];
+      // 1) Hand-picked, visually maximized contrast palette
+      // Carefully ordered to avoid adjacent hue confusion
+      const BASE_DISTINCT_COLORS = [
+        '#2563eb', // blue
+        '#dc2626', // red
+        '#16a34a', // green
+        '#7c3aed', // purple
+        '#ea580c', // orange
+        '#0891b2', // cyan
+        '#ca8a04', // amber
+        '#be185d', // rose
+        '#15803d', // dark green
+        '#1d4ed8', // deep blue
+        '#9333ea', // violet
+        '#b91c1c'  // dark red
+      ];
       
-        // 1) Generate evenly-spaced-ish hues using golden angle
-        const hues = Array.from({ length: n }, (_, i) => (i * 137.508) % 360);
-      
-        // 2) Reorder hues to maximize contrast early: pick alternating ends after sorting
-        hues.sort((a, b) => a - b);
-        const reordered = [];
-        let left = 0, right = hues.length - 1;
-        while (left <= right) {
-          if (left === right) {
-            reordered.push(hues[left]);
-            break;
-          }
-          reordered.push(hues[left++]);   // low hue
-          reordered.push(hues[right--]);  // high hue (far away)
+      // 2) Fallback generator ONLY if loans exceed base palette
+      function generateExtraColors(n) {
+        const colors = [];
+        for (let i = 0; i < n; i++) {
+          const hue = (i * 137.508) % 360;
+          colors.push(`hsl(${hue.toFixed(0)} 80% 55%)`);
         }
-      
-        // 3) Convert to HSL strings (good contrast on both light/dark)
-        // Keep saturation high; keep lightness mid so it reads on dark & light.
-        return reordered.map(h => `hsl(${h.toFixed(0)} 85% 55%)`);
+        return colors;
       }
       
-      // Assign colors deterministically by a stable order (loan id ascending)
+      // 3) Stable ordering (important!)
       const sortedLoansForColors = loansWithAmort
         .slice()
         .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
       
-      const palette = buildDistinctPalette(sortedLoansForColors.length);
+      // 4) Build final palette
+      const extraNeeded = Math.max(0, sortedLoansForColors.length - BASE_DISTINCT_COLORS.length);
+      const palette = BASE_DISTINCT_COLORS.concat(generateExtraColors(extraNeeded));
       
+      // 5) Assign colors deterministically
       sortedLoansForColors.forEach((loan, i) => {
         const id = loan.id ?? loan.loanId;
         window.KPI_COLOR_MAP[id] = palette[i];
       });
+
 
 
       
@@ -1422,7 +1427,9 @@ function populateROILoanTable(){
       matStr = '';
     }
     const roiPct = (roiEntry.roi || 0) * 100;
-    const color = palette[(l.id-1) % palette.length];
+    const id = l.id ?? l.loanId;
+    const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
+
     return `<tr>
       <td style="text-align:left;"><span style="display:inline-block;width:10px;height:10px;background:${color};border-radius:2px;margin-right:8px;vertical-align:middle;"></span>${formatLoanLabel(l)}</td>
       <td style="text-align:left;">${l.purchaseDate}</td>
