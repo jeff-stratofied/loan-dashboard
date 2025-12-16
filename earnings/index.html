@@ -1146,6 +1146,7 @@ window.__PORTFOLIO_START__ = portfolioStart;
     if (!sched.length) return;
 
     const lastIdx = sched.length - 1;
+     const atEnd = sched[lastIdx];
 
     // KPI4 — projected avg monthly earnings (lifetime)
     projectedNetTotal += Number(atEnd.netEarnings || 0);
@@ -1169,7 +1170,7 @@ window.__PORTFOLIO_START__ = portfolioStart;
     totalFeesToDate += Number(atCurrent.cumFees || 0);
 
     // projected = last owned-row in schedule (future owned months exist in sched)
-    const atEnd = sched[lastIdx];
+   
     totalNetProjected += Number(atEnd.netEarnings || 0);
     totalFeesProjected += Number(atEnd.cumFees || 0);
 
