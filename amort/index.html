@@ -1392,6 +1392,26 @@ drawerBody.scrollTop = 0;
       poly.setAttribute('stroke-width', '2');
       svg.appendChild(poly);
 
+      // ---------------------------------
+// Hover visuals (vertical line + dot)
+// ---------------------------------
+const hoverLine = document.createElementNS(svgNS, 'line');
+hoverLine.setAttribute('stroke', '#111827');
+hoverLine.setAttribute('stroke-width', '1');
+hoverLine.setAttribute('stroke-dasharray', '3 4');
+hoverLine.setAttribute('opacity', '0.6');
+hoverLine.setAttribute('y1', pad);
+hoverLine.setAttribute('y2', h - pad);
+svg.appendChild(hoverLine);
+
+const hoverDot = document.createElementNS(svgNS, 'circle');
+hoverDot.setAttribute('r', '4');
+hoverDot.setAttribute('fill', '#0ea5e9');
+hoverDot.setAttribute('stroke', '#ffffff');
+hoverDot.setAttribute('stroke-width', '1.2');
+svg.appendChild(hoverDot);
+
+
       // ---------- Sparse X-axis calendar labels ----------
       const earliest = new Date(
       Math.min(...allLoans.map(l => new Date(l.purchaseDate + "T00:00:00").getTime()))
@@ -1454,13 +1474,35 @@ drawerBody.scrollTop = 0;
     year: "numeric"
   });
 
+  const x = pad + i * stepX;
+  const y =
+    pad +
+    (h - pad * 2) -
+    ((d.value - minV) / range) * (h - pad * 2);
+
+  // Move hover line
+  hoverLine.setAttribute('x1', x);
+  hoverLine.setAttribute('x2', x);
+
+  // Move hover dot
+  hoverDot.setAttribute('cx', x);
+  hoverDot.setAttribute('cy', y);
+
+  // Tooltip
   tooltip.style.display = 'block';
   tooltip.style.left = ev.clientX + 'px';
   tooltip.style.top = (ev.clientY - 12) + 'px';
   tooltip.innerHTML = `${label} • TPV $${Math.round(d.value).toLocaleString()}`;
 });
 
-        hit.addEventListener('mouseleave', () => tooltip.style.display = 'none');
+
+        hit.addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+  hoverLine.setAttribute('x1', -1);
+  hoverLine.setAttribute('x2', -1);
+  hoverDot.setAttribute('cx', -1);
+});
+
         svg.appendChild(hit);
       });
 
