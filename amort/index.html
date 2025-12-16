@@ -1639,135 +1639,164 @@ function renderTPVDrawer() {
 }
 
 
-    function renderRatesDrawer() {
-      currentMode = 'kpi';
-      currentLoan = null;
+function renderRatesDrawer() {
+  currentMode = 'kpi';
+  currentLoan = null;
 
-      drawerTitle.textContent = 'Rates Distribution';
-      drawerSub.textContent = 'Histogram of loan nominal rates';
-      const rates = allLoans.map(l => l.nominalRate * 100);
-      const minRate = Math.min(...rates);
-      const maxRate = Math.max(...rates);
+  drawerTitle.textContent = 'Rates Distribution';
+  drawerSub.textContent = 'Histogram of loan nominal rates';
 
-      drawerPrimaryTitle.textContent = 'Avg Rate';
-      drawerPrimary.textContent = `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
+  const rates = allLoans.map(l => l.nominalRate * 100);
+  const minRate = Math.min(...rates);
+  const maxRate = Math.max(...rates);
 
-      drawerSecondaryTitle.textContent = 'Rate Range';
-      drawerSecondary.textContent = `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%`;
+  drawerPrimaryTitle.textContent = 'Avg Rate';
+  drawerPrimary.textContent = `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
 
-      drawerAmortContainer.style.display = 'none';
-      drawerExtra.innerHTML = '';
-      drawerChartArea.innerHTML = '';
-      drawerLegend.style.display = 'none';
+  drawerSecondaryTitle.textContent = 'Rate Range';
+  drawerSecondary.textContent = `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%`;
 
-      // histogram
-      const min = minRate;
-      const max = maxRate;
-      const bins = 5;
-      const width = (max - min) / bins || 1;
-      const counts = new Array(bins).fill(0);
-      rates.forEach(r => {
-        let idx = Math.floor((r - min) / Math.max(0.0001, width));
-        if (idx >= bins) idx = bins - 1;
-        counts[idx]++;
+  drawerAmortContainer.style.display = 'none';
+  drawerExtra.innerHTML = '';
+  drawerChartArea.innerHTML = '';
+  drawerLegend.style.display = 'none';
+
+  // ---------------------------------
+  // KPI2 — STACKED RATE HISTOGRAM
+  // ---------------------------------
+  const min = minRate;
+  const max = maxRate;
+  const bins = 5;
+  const width = (max - min) / bins || 1;
+
+  // bucket loans by rate bin
+  const binLoans = Array.from({ length: bins }, () => []);
+
+  allLoans.forEach(l => {
+    const r = l.nominalRate * 100;
+    let idx = Math.floor((r - min) / Math.max(0.0001, width));
+    if (idx >= bins) idx = bins - 1;
+    if (idx < 0) idx = 0;
+    binLoans[idx].push(l);
+  });
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const w = 480, h = 220, pad = 30;
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+
+  const maxCount = Math.max(...binLoans.map(b => b.length), 1);
+
+  for (let i = 0; i < bins; i++) {
+    const loansInBin = binLoans[i];
+    if (!loansInBin.length) continue;
+
+    const barW = (w - pad * 2) / bins * 0.7;
+    const gap = ((w - pad * 2) / bins - barW) / 2;
+    const x = pad + i * ((w - pad * 2) / bins) + gap;
+
+    let yCursor = h - pad;
+    const unitH = (h - pad * 2) / maxCount;
+
+    loansInBin.forEach(l => {
+      const segH = unitH;
+      yCursor -= segH;
+
+      const rect = document.createElementNS(svgNS, 'rect');
+      rect.setAttribute('x', x);
+      rect.setAttribute('y', yCursor);
+      rect.setAttribute('width', barW);
+      rect.setAttribute('height', segH);
+      rect.setAttribute(
+        'fill',
+        window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'
+      );
+
+      // tooltip per loan segment
+      rect.addEventListener('mousemove', (ev) => {
+        tooltip.style.display = 'block';
+        tooltip.style.left = ev.clientX + 'px';
+        tooltip.style.top = (ev.clientY - 12) + 'px';
+        tooltip.innerHTML =
+          `${l.loanName}<br>${(l.nominalRate * 100).toFixed(2)}%`;
+      });
+      rect.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
       });
 
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const w = 480, h = 220, pad = 30;
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', '100%');
+      svg.appendChild(rect);
+    });
 
-      const maxC = Math.max(...counts, 1);
-      for (let i = 0; i < bins; i++) {
-        const barW = (w - pad * 2) / bins * 0.7;
-        const gap = ((w - pad * 2) / bins - barW) / 2;
-        const x = pad + i * ((w - pad * 2) / bins) + gap;
-        const barH = (counts[i] / maxC) * (h - pad * 2);
-        const y = h - pad - barH;
+    // X-axis label
+    const label = `${(min + i * width).toFixed(2)}–${(min + (i + 1) * width).toFixed(2)}`;
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', x + barW / 2);
+    text.setAttribute('y', h - pad + 14);
+    text.setAttribute('font-size', '11');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#475569');
+    text.textContent = label;
+    svg.appendChild(text);
+  }
 
-        const rect = document.createElementNS(svgNS, 'rect');
-        rect.setAttribute('x', x);
-        rect.setAttribute('y', y);
-        rect.setAttribute('width', barW);
-        rect.setAttribute('height', barH);
-        rect.setAttribute('fill', '#7c3aed');
-        svg.appendChild(rect);
+  drawerChartArea.appendChild(svg);
 
-        const label = `${(min + i * width).toFixed(2)}-${(min + (i + 1) * width).toFixed(2)}`;
-        const text = document.createElementNS(svgNS, 'text');
-        text.setAttribute('x', x + barW / 2);
-        text.setAttribute('y', h - pad + 14);
-        text.setAttribute('font-size', '11');
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('fill', '#475569');
-        text.textContent = label;
-        svg.appendChild(text);
+  // ---------------------------------
+  // KPI2 TABLE — SORTED BY RATE
+  // ---------------------------------
+  const sorted = allLoans.slice().sort((a, b) => b.nominalRate - a.nominalRate);
 
-        rect.addEventListener('mousemove', (ev) => {
-          tooltip.style.display = 'block';
-          tooltip.style.left = ev.clientX + 'px';
-          tooltip.style.top = (ev.clientY - 12) + 'px';
-          tooltip.innerHTML = `${counts[i]} loans (${label}%)`;
-        });
-        rect.addEventListener('mouseleave', () => tooltip.style.display = 'none');
-      }
-
-      drawerChartArea.appendChild(svg);
-
-    // table sorted by rate
-const sorted = allLoans.slice().sort((a, b) => b.nominalRate - a.nominalRate);
-
-drawerExtra.innerHTML = `
-  <div style="margin-top:10px">
-    <strong class="small">Loans sorted by rate</strong>
-    <div style="max-height:45vh;overflow:auto;margin-top:6px;
-         border-radius:6px;padding:6px;
-         border:1px solid var(--border);background:var(--card)">
-      <table class="kpi2-table" style="width:100%;font-size:13px">
-        <thead>
-          <tr>
-            <th>Loan</th>
-            <th>Rate</th>
-            <th>Purchase</th>
-            <th style="text-align:right">Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sorted.map(l => `
-            <tr
-              data-loan-id="${l.loanId}"
-              style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
-            >
-              <td>
-                <span style="
-                  display:inline-block;
-                  width:10px;
-                  height:10px;
-                  border-radius:2px;
-                  background:var(--loan-color);
-                  margin-right:6px;
-                  vertical-align:middle;
-                "></span>
-                ${l.loanName}
-              </td>
-              <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
-              <td style="text-align:left">${l.purchaseDate}</td>
-              <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
+  drawerExtra.innerHTML = `
+    <div style="margin-top:10px">
+      <strong class="small">Loans sorted by rate</strong>
+      <div style="max-height:45vh;overflow:auto;margin-top:6px;
+           border-radius:6px;padding:6px;
+           border:1px solid var(--border);background:var(--card)">
+        <table class="kpi2-table" style="width:100%;font-size:13px">
+          <thead>
+            <tr>
+              <th>Loan</th>
+              <th>Rate</th>
+              <th>Purchase</th>
+              <th style="text-align:right">Balance</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${sorted.map(l => `
+              <tr
+                data-loan-id="${l.loanId}"
+                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
+              >
+                <td>
+                  <span style="
+                    display:inline-block;
+                    width:10px;
+                    height:10px;
+                    border-radius:2px;
+                    background:var(--loan-color);
+                    margin-right:6px;
+                    vertical-align:middle;
+                  "></span>
+                  ${l.loanName}
+                </td>
+                <td>${(l.nominalRate * 100).toFixed(2)}%</td>
+                <td>${l.purchaseDate}</td>
+                <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-`;
+  `;
 
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  drawerBody.scrollTop = 0;
+}
 
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-      drawerBody.scrollTop = 0;
-    }
 
     function renderPaymentsDrawer() {
       currentMode = 'kpi';
