@@ -634,21 +634,6 @@ allLoans.sort((a, b) => {
   return da - db;
 });
 
-  // ----------------------------------------
-// Build loan → color map (match Earnings)
-// ----------------------------------------
-const KPI_PALETTE = [
-  '#2563eb', '#dc2626', '#16a34a', '#7c3aed',
-  '#0ea5e9', '#f97316', '#14b8a6', '#ef4444',
-  '#84cc16', '#eab308'
-];
-
-window.KPI_COLOR_MAP = {};
-allLoans.forEach((loan, idx) => {
-  window.KPI_COLOR_MAP[loan.loanId] =
-    KPI_PALETTE[idx % KPI_PALETTE.length];
-});
-
   
   const curIdx = getCurrentMonthIndex(allLoans) - 1;
   const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
@@ -1650,82 +1635,56 @@ function renderTPVDrawer() {
       drawerChartArea.innerHTML = '';
       drawerLegend.style.display = 'none';
 
-// histogram
-const min = minRate;
-const max = maxRate;
-const bins = 5;
-const width = (max - min) / bins || 1;
+      // histogram
+      const min = minRate;
+      const max = maxRate;
+      const bins = 5;
+      const width = (max - min) / bins || 1;
+      const counts = new Array(bins).fill(0);
+      rates.forEach(r => {
+        let idx = Math.floor((r - min) / Math.max(0.0001, width));
+        if (idx >= bins) idx = bins - 1;
+        counts[idx]++;
+      });
 
-// bucket loans by rate bin
-const binLoans = Array.from({ length: bins }, () => []);
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const w = 480, h = 220, pad = 30;
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+      svg.setAttribute('width', '100%');
+      svg.setAttribute('height', '100%');
 
-allLoans.forEach(l => {
-  const r = l.nominalRate * 100;
-  let idx = Math.floor((r - min) / Math.max(0.0001, width));
-  if (idx >= bins) idx = bins - 1;
-  if (idx < 0) idx = 0;
-  binLoans[idx].push(l);
-});
+      const maxC = Math.max(...counts, 1);
+      for (let i = 0; i < bins; i++) {
+        const barW = (w - pad * 2) / bins * 0.7;
+        const gap = ((w - pad * 2) / bins - barW) / 2;
+        const x = pad + i * ((w - pad * 2) / bins) + gap;
+        const barH = (counts[i] / maxC) * (h - pad * 2);
+        const y = h - pad - barH;
 
-const svgNS = 'http://www.w3.org/2000/svg';
-const w = 480, h = 220, pad = 30;
-const svg = document.createElementNS(svgNS, 'svg');
-svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-svg.setAttribute('width', '100%');
-svg.setAttribute('height', '100%');
+        const rect = document.createElementNS(svgNS, 'rect');
+        rect.setAttribute('x', x);
+        rect.setAttribute('y', y);
+        rect.setAttribute('width', barW);
+        rect.setAttribute('height', barH);
+        rect.setAttribute('fill', '#7c3aed');
+        svg.appendChild(rect);
 
-// draw stacked bars
-for (let i = 0; i < bins; i++) {
-  const binWidthPx = (w - pad * 2) / bins;
-  const barW = binWidthPx * 0.7;
-  const gap = (binWidthPx - barW) / 2;
-  const x = pad + i * binWidthPx + gap;
-
-  const loansInBin = binLoans[i];
-  if (!loansInBin.length) continue;
-
-  const totalHeight = h - pad * 2;
-  const segH = totalHeight / loansInBin.length;
-  let yOffset = h - pad;
-
-  // stack loan segments
-  loansInBin.forEach(loan => {
-    const rect = document.createElementNS(svgNS, 'rect');
-    rect.setAttribute('x', x);
-    rect.setAttribute('y', yOffset - segH);
-    rect.setAttribute('width', barW);
-    rect.setAttribute('height', segH);
-    rect.setAttribute(
-      'fill',
-      window.KPI_COLOR_MAP?.[loan.loanId] || '#94a3b8'
-    );
-
-    svg.appendChild(rect);
-    yOffset -= segH;
-  });
-
-  // x-axis label (keep as-is)
-  const label = `${(min + i * width).toFixed(2)}-${(min + (i + 1) * width).toFixed(2)}`;
-  const text = document.createElementNS(svgNS, 'text');
-  text.setAttribute('x', x + barW / 2);
-  text.setAttribute('y', h - pad + 14);
-  text.setAttribute('font-size', '11');
-  text.setAttribute('text-anchor', 'middle');
-  text.setAttribute('fill', '#475569');
-  text.textContent = label;
-  svg.appendChild(text);
-}
-
+        const label = `${(min + i * width).toFixed(2)}-${(min + (i + 1) * width).toFixed(2)}`;
+        const text = document.createElementNS(svgNS, 'text');
+        text.setAttribute('x', x + barW / 2);
+        text.setAttribute('y', h - pad + 14);
+        text.setAttribute('font-size', '11');
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#475569');
+        text.textContent = label;
+        svg.appendChild(text);
 
         rect.addEventListener('mousemove', (ev) => {
           tooltip.style.display = 'block';
           tooltip.style.left = ev.clientX + 'px';
           tooltip.style.top = (ev.clientY - 12) + 'px';
-          tooltip.innerHTML = `
-          ${binLoans[i].length} loans<br>
-          ${label}%
-        `;
-
+          tooltip.innerHTML = `${counts[i]} loans (${label}%)`;
         });
         rect.addEventListener('mouseleave', () => tooltip.style.display = 'none');
       }
@@ -2071,6 +2030,7 @@ for (let i = 0; i < months.length; i += skip) {
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
 
+}
   // Set Current Date in header
 const currentDateEl = document.getElementById('currentDateLabel');
 if (currentDateEl) {
