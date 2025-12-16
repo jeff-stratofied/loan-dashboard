@@ -1303,7 +1303,11 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
     const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
 
-    loansWithAmort.forEach((loan, idx) => {
+    loansWithAmort
+      .slice()
+      .sort((a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate))
+      .forEach((loan, idx) => {
+
       const currentRoiEntry = getCurrentOwnedRoiEntry(loan);
       const tile = document.createElement('div'); tile.className='tile'; tile.setAttribute('tabindex','0');
       tile.innerHTML = `
