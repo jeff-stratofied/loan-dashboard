@@ -638,6 +638,32 @@ html[data-theme="dark"] .legend .sw {
   color: var(--text) !important;
 }
 
+    /* KPI4 table */
+#drawerExtra table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#drawerExtra th {
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+  padding: 8px;
+}
+
+#drawerExtra td {
+  color: var(--text);
+  padding: 8px;
+}
+
+#drawerExtra tbody tr {
+  transition: background 0.15s ease;
+}
+
+#drawerExtra tbody tr:hover {
+  background: rgba(100, 116, 139, 0.15);
+}
+
 
     
   </style>
@@ -2534,6 +2560,17 @@ function openKpi4(){
 const tableEl = renderKpi4Table(loansWithEarnings, kpis);
 drawerExtra.appendChild(tableEl);
 
+  drawerExtra.querySelectorAll(".loan-swatch").forEach(el => {
+  el.addEventListener("mouseenter", () => {
+    const loanId = el.dataset.loanId;
+    highlightLoanInChart(loanId);
+  });
+
+  el.addEventListener("mouseleave", () => {
+    clearChartHighlight();
+  });
+});
+
 
   
 }
@@ -3380,31 +3417,50 @@ function renderKPI4Table(loans, containerId = "drawerKpiTable") {
     if (!sched.length) return null;
 
     const last = sched[sched.length - 1];
+    const months = sched.length;
+    const avg = months > 0 ? last.netEarnings / months : 0;
+
+    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
 
     return {
       loanId: l.loanId,
       cells: [
+        // Color swatch
+        `
+        <div
+          class="loan-swatch"
+          data-loan-id="${l.loanId}"
+          style="
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color};
+            margin:4px auto;
+          ">
+        </div>
+        `,
         l.loanName,
+        formatCurrency(avg),
         formatCurrency(last.netEarnings),
-        `${sched.length} months`,
-        formatCurrency(last.netEarnings / sched.length)
+        `${months} mo`
       ]
     };
   }).filter(Boolean);
 
   container.innerHTML = `
-    <table>
+    <table class="kpi4-table">
       <thead>
         <tr>
+          <th></th>
           <th>Loan</th>
+          <th>Avg / Month (Projected)</th>
           <th>Projected Net</th>
-          <th>Lifetime Months</th>
-          <th>Avg / Month</th>
+          <th>Months</th>
         </tr>
       </thead>
       <tbody>
         ${rows.map(r => `
-          <tr>
+          <tr data-loan-id="${r.loanId}">
             ${r.cells.map(c => `<td>${c}</td>`).join("")}
           </tr>
         `).join("")}
@@ -3412,6 +3468,7 @@ function renderKPI4Table(loans, containerId = "drawerKpiTable") {
     </table>
   `;
 }
+
 
 
 
