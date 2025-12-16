@@ -1707,7 +1707,11 @@ function renderTPVDrawer() {
                 </tr>
               </thead>
               <tbody>
-                ${sorted.map(l => `<tr data-loan-id="${l.loanId}">
+                ${sorted.map(l => `
+                <tr
+                data-loan-id="${l.loanId}"
+                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
+                  >
                   <td>
                     <span style="
                      display:inline-block;
