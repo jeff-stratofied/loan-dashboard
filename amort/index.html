@@ -1506,6 +1506,21 @@ svg.appendChild(hoverDot);
         svg.appendChild(hit);
       });
 
+// --------------------------------------------------
+// HARD STOP: hide hover line + dot when leaving chart
+// --------------------------------------------------
+svg.addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+
+  // move off-canvas so nothing renders
+  hoverLine.setAttribute('x1', -1);
+  hoverLine.setAttribute('x2', -1);
+
+  hoverDot.setAttribute('cx', -1);
+  hoverDot.setAttribute('cy', -1);
+});
+
+      
       drawerChartArea.appendChild(svg);
 
       drawerExtra.innerHTML = `
