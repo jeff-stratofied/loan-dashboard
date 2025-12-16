@@ -1699,11 +1699,13 @@ function renderTPVDrawer() {
           <div style="max-height:45vh;overflow:auto;margin-top:6px;border-radius:6px;padding:6px;border:1px solid var(--border);background:var(--card)">
             <table style="width:100%;font-size:13px">
               <thead>
-              <tr
-                data-loan-id="${l.loanId}"
-                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
-                  >
-              <th>Loan</th><th>Rate</th><th>Purchase</th><th style="text-align:right">Balance</th></tr></thead>
+                <tr>
+                  <th>Loan</th>
+                  <th>Rate</th>
+                  <th>Purchase</th>
+                  <th style="text-align:right">Balance</th>
+                </tr>
+              </thead>
               <tbody>
                 ${sorted.map(l => `<tr data-loan-id="${l.loanId}">
                   <td>
