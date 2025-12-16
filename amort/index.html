@@ -559,27 +559,6 @@ apiLoans = attachSchedules(apiLoans);
 
 
   allLoans = apiLoans.map(l => {
-// -------------------------------------------
-// KPI color map (match earnings page colors)
-// -------------------------------------------
-window.KPI_COLOR_MAP = {};
-
-const KPI_COLORS = [
-  '#06b6d4', // cyan
-  '#a78bfa', // purple
-  '#14b8a6', // teal
-  '#f97316', // orange
-  '#ef4444', // red
-  '#22c55e', // green
-  '#eab308', // yellow
-  '#0ea5e9', // blue
-];
-
-// deterministic: same loan always gets same color
-allLoans.forEach((loan, i) => {
-  const id = loan.loanId ?? loan.id;
-  window.KPI_COLOR_MAP[id] = KPI_COLORS[i % KPI_COLORS.length];
-});
 
     
     // ADD cumulative values directly into amort.schedule
@@ -614,6 +593,29 @@ allLoans.forEach((loan, i) => {
       miniPts
     };
   });
+
+// -------------------------------------------
+// KPI color map (match earnings page colors)
+// -------------------------------------------
+window.KPI_COLOR_MAP = {};
+
+const KPI_COLORS = [
+  '#06b6d4', // cyan
+  '#a78bfa', // purple
+  '#14b8a6', // teal
+  '#f97316', // orange
+  '#ef4444', // red
+  '#22c55e', // green
+  '#eab308', // yellow
+  '#0ea5e9', // blue
+];
+
+// deterministic: same loan always gets same color
+allLoans.forEach((loan, i) => {
+  const id = loan.loanId ?? loan.id;
+  window.KPI_COLOR_MAP[id] = KPI_COLORS[i % KPI_COLORS.length];
+});
+
 }
 
    else {
