@@ -1405,20 +1405,19 @@ for (let i = 0; i <= maxCount; i++) {
     });
 
 // --------------------------------------------------
-// X-AXIS LABELS — EVERY 6 CALENDAR MONTHS (Jan / Jul)
+// X-AXIS LABELS — EVERY 6 BARS (TRUE 6-MONTH SPACING)
 // --------------------------------------------------
-const [labelMonth] = m.split(' ');
-
-if (labelMonth === 'Jan' || labelMonth === 'Jul') {
+if (i % 6 === 0) {
   const text = document.createElementNS(svgNS, 'text');
   text.setAttribute('x', x + barW / 2);
   text.setAttribute('y', h - pad + 16);
   text.setAttribute('font-size', '11');
   text.setAttribute('text-anchor', 'middle');
   text.setAttribute('fill', '#475569');
-  text.textContent = m; // e.g. "Jan 2025"
+  text.textContent = m; // e.g. "Jun 2023"
   svg.appendChild(text);
 }
+
 
 
 
