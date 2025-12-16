@@ -1404,19 +1404,22 @@ for (let i = 0; i <= maxCount; i++) {
       svg.appendChild(rect);
     });
 
-    // --------------------------------------------------
-    // X-AXIS LABELS — EVERY 6 MONTHS (index-based)
-    // --------------------------------------------------
-    if (i % 6 === 0) {
-      const text = document.createElementNS(svgNS, 'text');
-      text.setAttribute('x', x + barW / 2);
-      text.setAttribute('y', h - pad + 16);
-      text.setAttribute('font-size', '11');
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('fill', '#475569');
-      text.textContent = m; // already "Jun 2023"
-      svg.appendChild(text);
-    }
+// --------------------------------------------------
+// X-AXIS LABELS — EVERY 6 CALENDAR MONTHS (Jan / Jul)
+// --------------------------------------------------
+const [labelMonth] = m.split(' ');
+
+if (labelMonth === 'Jan' || labelMonth === 'Jul') {
+  const text = document.createElementNS(svgNS, 'text');
+  text.setAttribute('x', x + barW / 2);
+  text.setAttribute('y', h - pad + 16);
+  text.setAttribute('font-size', '11');
+  text.setAttribute('text-anchor', 'middle');
+  text.setAttribute('fill', '#475569');
+  text.textContent = m; // e.g. "Jan 2025"
+  svg.appendChild(text);
+}
+
 
 
   });
