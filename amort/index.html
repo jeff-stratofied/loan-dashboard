@@ -1521,7 +1521,81 @@ function renderTPVDrawer() {
   /* ============================
      Snapshot table (unchanged)
   ============================ */
-  drawerExtra.innerHTML = `…`; // keep your existing snapshot HTML here
+  drawerExtra.innerHTML = `
+  <strong class="small">TPV Snapshot</strong>
+  <div style="max-height:280px;overflow:auto;margin-top:6px;
+        border-radius:6px;padding:6px;
+        border:1px solid var(--border);background:var(--card)">
+    <table style="width:100%;font-size:13px">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th style="text-align:right">TPV</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${(() => {
+          // Portfolio started
+          const earliestTs = Math.min(
+            ...allLoans.map(l =>
+              new Date(l.purchaseDate + "T00:00:00").getTime()
+            )
+          );
+          const startDate = new Date(earliestTs);
+          const startTPV = Math.round(tpvSeriesData[0].value);
+
+          // Current TPV
+          const today = new Date();
+          const monthsSinceStart =
+            (today.getFullYear() - startDate.getFullYear()) * 12 +
+            (today.getMonth() - startDate.getMonth());
+          const curIdx = Math.max(
+            0,
+            Math.min(monthsSinceStart, tpvSeriesData.length - 1)
+          );
+          const currentTPV = Math.round(tpvSeriesData[curIdx].value);
+
+          // Projected end
+          const projectedEndTPV = Math.round(
+            tpvSeriesData[tpvSeriesData.length - 1].value
+          );
+          const projectedEndDate = (() => {
+            const maxTs = Math.max(...allLoans.map(l => {
+              const d = new Date(l.purchaseDate + "T00:00:00");
+              const lastIdx = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
+              d.setMonth(d.getMonth() + (lastIdx - 1));
+              return d.getTime();
+            }));
+            return new Date(maxTs);
+          })();
+
+          return `
+            <tr>
+              <td>Portfolio Started<br>
+                <span style="color:var(--muted)">${startDate.toLocaleDateString()}</span>
+              </td>
+              <td style="text-align:right">$${startTPV.toLocaleString()}</td>
+            </tr>
+
+            <tr>
+              <td>Current TPV<br>
+                <span style="color:var(--muted)">${today.toLocaleDateString()}</span>
+              </td>
+              <td style="text-align:right">$${currentTPV.toLocaleString()}</td>
+            </tr>
+
+            <tr>
+              <td>Projected End Date<br>
+                <span style="color:var(--muted)">${projectedEndDate.toLocaleDateString()}</span>
+              </td>
+              <td style="text-align:right">$${projectedEndTPV.toLocaleString()}</td>
+            </tr>
+          `;
+        })()}
+      </tbody>
+    </table>
+  </div>
+`;
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
