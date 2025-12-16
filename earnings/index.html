@@ -1116,6 +1116,9 @@ function computeEarningsKPIs(list) {
   let totalFeesProjected = 0;
   let totalPrincipal = 0;
   let monthsCounted = 1;
+  let projectedNetTotal = 0;
+let projectedMonthsTotal = 0;
+
 
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
@@ -1144,6 +1147,11 @@ window.__PORTFOLIO_START__ = portfolioStart;
 
     const lastIdx = sched.length - 1;
 
+    // KPI4 — projected avg monthly earnings (lifetime)
+    projectedNetTotal += Number(atEnd.netEarnings || 0);
+    projectedMonthsTotal += sched.length;
+
+
     // Use PURCHASE date (ownership timeline)
     const purchase = new Date(l.purchaseDate || l.loanStartDate);
     purchase.setHours(0, 0, 0, 0);
@@ -1168,6 +1176,12 @@ window.__PORTFOLIO_START__ = portfolioStart;
     monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
   });
 
+  const projectedAvgMonthlyNet =
+  projectedMonthsTotal > 0
+    ? projectedNetTotal / projectedMonthsTotal
+    : 0;
+
+
 // --- KPI3 Avg Monthly Earnings (Method A: calendar months) ---
 const portfolioMonths =
   Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
@@ -1182,7 +1196,8 @@ const monthsCountedKpi3 = portfolioMonths;
   totalFeesProjected,
   totalPrincipal,
   avgMonthlyNet,
-  monthsCounted: monthsCountedKpi3
+  monthsCounted: monthsCountedKpi3,
+  projectedAvgMonthlyNet
   };
   }
 
