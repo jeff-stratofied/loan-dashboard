@@ -1797,215 +1797,161 @@ function renderRatesDrawer() {
   drawerBody.scrollTop = 0;
 }
 
+function renderPaymentsDrawer() {
+  currentMode = 'kpi';
+  currentLoan = null;
 
-    function renderPaymentsDrawer() {
-      currentMode = 'kpi';
-      currentLoan = null;
+  drawerTitle.textContent = 'Total Expected Payments (monthly)';
+  drawerSub.textContent = 'Sum of scheduled payments across loans';
 
-      drawerTitle.textContent = 'Total Expected Payments (monthly)';
-      drawerSub.textContent = 'Sum of scheduled payments across loans';
-      drawerPrimaryTitle.textContent = 'Monthly Income';
-      drawerPrimary.textContent = `$${Math.round(cachedKPIs.monthlyIncome).toLocaleString()}`;
-      drawerSecondaryTitle.textContent = 'Total Invested';
-      drawerSecondary.textContent =
-      `$${allLoans.reduce((s,l) => s + l.purchasePrice, 0).toLocaleString()}`;
+  drawerSecondaryTitle.textContent = 'Total Invested';
+  drawerSecondary.textContent =
+    `$${allLoans.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
 
-      drawerAmortContainer.style.display = 'none';
-      drawerExtra.innerHTML = '';
+  drawerAmortContainer.style.display = 'none';
+  drawerExtra.innerHTML = '';
+  drawerChartArea.innerHTML = '';
+  drawerLegend.style.display = 'none';
 
-      // Build months from earliest purchase to last schedule end
-      const monthIndex = d => new Date(d + 'T00:00:00').getTime();
-      const minDate = Math.min(...allLoans.map(l => monthIndex(l.purchaseDate)));
-      const maxDate = Math.max(...allLoans.map(l => {
-        const lastMonth = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
-        const pd = new Date(l.purchaseDate + 'T00:00:00');
-        pd.setMonth(pd.getMonth() + lastMonth);
-        return pd.getTime();
-      }));
+  // --------------------------------------------------
+  // BUILD MONTH SERIES (calendar-aligned)
+  // --------------------------------------------------
+  const monthIndex = d => new Date(d + 'T00:00:00').getTime();
 
-      const months = [];
+  const minDate = Math.min(...allLoans.map(l => monthIndex(l.purchaseDate)));
 
-      const cursor = new Date(minDate);
-      cursor.setDate(1);
-      while (cursor.getTime() <= maxDate) {
-        months.push(new Date(cursor.getTime()).toISOString().slice(0, 7));
-        cursor.setMonth(cursor.getMonth() + 1);
-      }
+  const maxDate = Math.max(...allLoans.map(l => {
+    const lastMonth = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
+    const pd = new Date(l.purchaseDate + 'T00:00:00');
+    pd.setMonth(pd.getMonth() + lastMonth);
+    return pd.getTime();
+  }));
 
-      // ---- Compute today's month index *after* months[] is built ----
-      const today = new Date();
-      today.setDate(1); // align to month start
-      const todayStr = today.toISOString().slice(0, 7);
+  const months = [];
+  const cursor = new Date(minDate);
+  cursor.setDate(1);
 
-      let todayIndex = months.indexOf(todayStr);
-      if (todayIndex === -1) {
-        // clamp to range if today is outside series
-        const first = new Date(months[0] + '-01T00:00:00');
-        const last = new Date(months[months.length - 1] + '-01T00:00:00');
-        todayIndex = today < first ? 0 : months.length - 1;
-      }
+  while (cursor.getTime() <= maxDate) {
+    months.push(cursor.toISOString().slice(0, 7));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
 
+  // --------------------------------------------------
+  // CALENDAR "CURRENT" MONTH INDEX (SINGLE SOURCE)
+  // --------------------------------------------------
+  const today = new Date();
+  today.setDate(1);
+  const todayStr = today.toISOString().slice(0, 7);
 
-      // compute total payments by month
-      const paymentsByMonth = months.map(m => {
-        return allLoans.reduce((s, l) => {
-          const pd = new Date(l.purchaseDate + 'T00:00:00');
-          const ym = m.split('-');
-          const md = new Date(parseInt(ym[0]), parseInt(ym[1]) - 1, 1);
-          const monthsSince = (md.getFullYear() - pd.getFullYear()) * 12 + (md.getMonth() - pd.getMonth());
-          // compute index of this month relative to purchase date
-          const idx = monthsSince;
+  let todayIndex = months.indexOf(todayStr);
+  if (todayIndex === -1) {
+    todayIndex = today < new Date(months[0] + '-01') ? 0 : months.length - 1;
+  }
 
-          // If the loan has not started → no payment
-          if (idx < 0) return s;
+  // --------------------------------------------------
+  // COMPUTE MONTHLY PAYMENTS (CANONICAL SERIES)
+  // --------------------------------------------------
+  const paymentsByMonth = months.map((m, idx) => {
+    return allLoans.reduce((sum, loan) => {
+      const sched = loan.amort.schedule[idx];
+      return sum + (sched?.payment || 0);
+    }, 0);
+  });
 
-          // If the loan is already finished → no payment
-          if (idx >= l.amort.schedule.length) return s;
+  // --------------------------------------------------
+  // KPI TILE — USE SAME SERIES AS CHART
+  // --------------------------------------------------
+  const currentMonthlyIncome = paymentsByMonth[todayIndex] || 0;
 
-          // Otherwise use the correct amortization row
-          const entry = l.amort.schedule[idx];
-           s += entry.payment;
-          return s;
+  drawerPrimaryTitle.textContent = 'Monthly Income';
+  drawerPrimary.textContent =
+    `$${Math.round(currentMonthlyIncome).toLocaleString()}`;
 
-        }, 0);
-      });
+  // --------------------------------------------------
+  // DRAW CHART
+  // --------------------------------------------------
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const w = 480, h = 220, pad = 30;
+  const svg = document.createElementNS(svgNS, 'svg');
 
-      // timeseries chart
-      drawerChartArea.innerHTML = '';
-      drawerLegend.style.display = 'none';
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const w = 480, h = 220, pad = 30;
-      const svg = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-      svg.setAttribute('width', '100%');
-      svg.setAttribute('height', '100%');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
 
-      const maxPay = Math.max(...paymentsByMonth);
-      const minPay = Math.min(...paymentsByMonth);
-      const range = Math.max(1, maxPay - minPay);
-      const stepX = (w - pad * 2) / Math.max(1, months.length - 1);
+  const maxV = Math.max(...paymentsByMonth, 1);
+  const stepX = (w - pad * 2) / Math.max(1, months.length - 1);
 
-      let pts = '';
-      paymentsByMonth.forEach((p, i) => {
-        const x = pad + i * stepX;
-        const y = pad + (h - pad * 2) - ((p - minPay) / range) * (h - pad * 2);
-        pts += `${x},${y} `;
-      });
+  let points = '';
+  paymentsByMonth.forEach((v, i) => {
+    const x = pad + i * stepX;
+    const y = pad + (h - pad * 2) * (1 - v / maxV);
+    points += `${x},${y} `;
+  });
 
-      const poly = document.createElementNS(svgNS, 'polyline');
-      poly.setAttribute('points', pts);
-      poly.setAttribute('fill', 'none');
-      poly.setAttribute('stroke', '#fb7185');
-      poly.setAttribute('stroke-width', '2');
-      svg.appendChild(poly);
+  const poly = document.createElementNS(svgNS, 'polyline');
+  poly.setAttribute('points', points);
+  poly.setAttribute('fill', 'none');
+  poly.setAttribute('stroke', '#fb7185');
+  poly.setAttribute('stroke-width', '2');
+  svg.appendChild(poly);
 
-      // ---- Today Vertical Line ----
-const todayX = pad + todayIndex * stepX;
-
-const vLine = document.createElementNS(svgNS, 'line');
-vLine.setAttribute('x1', todayX);
-vLine.setAttribute('x2', todayX);
-vLine.setAttribute('y1', pad);
-vLine.setAttribute('y2', h - pad);
-vLine.setAttribute('stroke', '#111827');
-vLine.setAttribute('stroke-dasharray', '3 3');
-vLine.setAttribute('stroke-opacity', '0.6');
-
-svg.appendChild(vLine);
-
-
-// ----- Hover Interaction (correct) -----
-const hoverLine = document.createElementNS(svgNS, 'line');
-hoverLine.setAttribute('stroke', '#64748b');
-hoverLine.setAttribute('stroke-dasharray', '3 3');
-hoverLine.setAttribute('stroke-width', '1');
-hoverLine.style.opacity = 0;
-svg.appendChild(hoverLine);
-
-const hoverDot = document.createElementNS(svgNS, 'circle');
-hoverDot.setAttribute('r', 4);
-hoverDot.setAttribute('fill', '#fb7185');
-hoverDot.setAttribute('stroke', '#fff');
-hoverDot.setAttribute('stroke-width', '1.2');
-hoverDot.style.opacity = 0;
-svg.appendChild(hoverDot);
-
-svg.addEventListener('mousemove', (ev) => {
-  const rect = svg.getBoundingClientRect();
-  const mouseX = ev.clientX - rect.left;
-  let idx = Math.round((mouseX - pad) / stepX);
-
-  idx = Math.max(0, Math.min(months.length - 1, idx));
-
-  const x = pad + idx * stepX;
-  const y = pad + (h - pad * 2) - ((paymentsByMonth[idx] - minPay) / range) * (h - pad * 2);
-
-  // Show line + dot
-  hoverLine.setAttribute('x1', x);
-  hoverLine.setAttribute('x2', x);
+  // --------------------------------------------------
+  // HOVER LINE + DOT (ALIGNED TO SAME MONTH INDEX)
+  // --------------------------------------------------
+  const hoverLine = document.createElementNS(svgNS, 'line');
+  hoverLine.setAttribute('stroke', '#111827');
+  hoverLine.setAttribute('stroke-dasharray', '3 4');
   hoverLine.setAttribute('y1', pad);
   hoverLine.setAttribute('y2', h - pad);
-  hoverLine.style.opacity = 1;
+  hoverLine.style.opacity = '0';
+  svg.appendChild(hoverLine);
 
-  hoverDot.setAttribute('cx', x);
-  hoverDot.setAttribute('cy', y);
-  hoverDot.style.opacity = 1;
+  const hoverDot = document.createElementNS(svgNS, 'circle');
+  hoverDot.setAttribute('r', '4');
+  hoverDot.setAttribute('fill', '#fb7185');
+  hoverDot.style.opacity = '0';
+  svg.appendChild(hoverDot);
 
-  // Tooltip: YYYY-MM • $N
-  tooltip.style.display = 'block';
-  tooltip.style.left = ev.clientX + 'px';
-  tooltip.style.top = (ev.clientY - 12) + 'px';
-  tooltip.innerHTML =
-    `${months[idx]} • $${Math.round(paymentsByMonth[idx]).toLocaleString()}`;
-});
+  svg.addEventListener('mousemove', ev => {
+    const rect = svg.getBoundingClientRect();
+    const x = Math.max(pad, Math.min(w - pad,
+      ((ev.clientX - rect.left) / rect.width) * w
+    ));
 
-svg.addEventListener('mouseleave', () => {
-  hoverLine.style.opacity = 0;
-  hoverDot.style.opacity = 0;
-  tooltip.style.display = 'none';
-});
+    const idx = Math.round((x - pad) / stepX);
+    const clampedIdx = Math.max(0, Math.min(idx, months.length - 1));
 
-      
-      // ---- Sparse X-Axis Labels (cleaned) ----
-const labelCount = 6;
-const skip = Math.max(1, Math.floor(months.length / labelCount));
+    const val = paymentsByMonth[clampedIdx];
+    const y = pad + (h - pad * 2) * (1 - val / maxV);
 
-for (let i = 0; i < months.length; i += skip) {
-  const x = pad + i * stepX;
+    hoverLine.setAttribute('x1', pad + clampedIdx * stepX);
+    hoverLine.setAttribute('x2', pad + clampedIdx * stepX);
+    hoverLine.style.opacity = '0.6';
 
-  const text = document.createElementNS(svgNS, 'text');
-  text.setAttribute('x', x);
-  text.setAttribute('y', h - pad + 14);
-  text.setAttribute('font-size', '11');
-  text.setAttribute('text-anchor', 'middle');
-  text.setAttribute('fill', '#475569');
+    hoverDot.setAttribute('cx', pad + clampedIdx * stepX);
+    hoverDot.setAttribute('cy', y);
+    hoverDot.style.opacity = '1';
 
-  // show YYYY-MM
-  text.textContent = months[i];
+    tooltip.style.display = 'block';
+    tooltip.style.left = ev.clientX + 'px';
+    tooltip.style.top = (ev.clientY - 12) + 'px';
+    tooltip.innerHTML =
+      `${months[clampedIdx]} • Monthly Income $${Math.round(val).toLocaleString()}`;
+  });
 
-  svg.appendChild(text);
+  svg.addEventListener('mouseleave', () => {
+    hoverLine.style.opacity = '0';
+    hoverDot.style.opacity = '0';
+    tooltip.style.display = 'none';
+  });
+
+  drawerChartArea.appendChild(svg);
+
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  drawerBody.scrollTop = 0;
 }
 
-      drawerChartArea.appendChild(svg);
-
-      drawerExtra.innerHTML = `
-        <div style="margin-top:10px">
-          <strong class="small">Monthly expected payments</strong>
-          <div style="max-height:45vh;overflow:auto;margin-top:6px;border-radius:6px;padding:6px;border:1px solid var(--border);background:var(--card)">
-            <table style="width:100%;font-size:13px">
-              <thead><tr><th>Month</th><th style="text-align:right">Payments</th></tr></thead>
-              <tbody>
-                ${months.map((m, i) => `<tr><td style="text-align:left">${m}</td><td style="text-align:right">$${Math.round(paymentsByMonth[i]).toLocaleString()}</td></tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-      drawerBody.scrollTop = 0;
-    }
 
     /* ============================
        CSV / copy / download / print
