@@ -559,6 +559,29 @@ apiLoans = attachSchedules(apiLoans);
 
 
   allLoans = apiLoans.map(l => {
+// -------------------------------------------
+// KPI color map (match earnings page colors)
+// -------------------------------------------
+window.KPI_COLOR_MAP = {};
+
+const KPI_COLORS = [
+  '#06b6d4', // cyan
+  '#a78bfa', // purple
+  '#14b8a6', // teal
+  '#f97316', // orange
+  '#ef4444', // red
+  '#22c55e', // green
+  '#eab308', // yellow
+  '#0ea5e9', // blue
+];
+
+// deterministic: same loan always gets same color
+allLoans.forEach((loan, i) => {
+  const id = loan.loanId ?? loan.id;
+  window.KPI_COLOR_MAP[id] = KPI_COLORS[i % KPI_COLORS.length];
+});
+
+    
     // ADD cumulative values directly into amort.schedule
     let cumP = 0, cumI = 0, cumT = 0;
 
@@ -1699,7 +1722,10 @@ function renderTPVDrawer() {
           <div style="max-height:45vh;overflow:auto;margin-top:6px;border-radius:6px;padding:6px;border:1px solid var(--border);background:var(--card)">
             <table class="kpi2-table" style="width:100%;font-size:13px">
               <thead>
-                <tr>
+                <tr
+                data-loan-id="${r.loanId}"
+                style="--loan-color:${window.KPI_COLOR_MAP?.[r.loanId] || 'var(--text)'}"
+                >
                   <th>Loan</th>
                   <th>Rate</th>
                   <th>Purchase</th>
