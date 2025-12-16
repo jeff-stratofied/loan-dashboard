@@ -682,7 +682,7 @@ html[data-theme="dark"] .legend .sw {
       </div>
 
       <div class="kpi" data-kpi="fees">
-        <h3>Total Fees to Date</h3>
+        <h3>Projected Avg Monthly Earnings</h3>
         <p id="kpiFees">--</p>
       </div>
     </section>
@@ -1146,6 +1146,7 @@ window.__PORTFOLIO_START__ = portfolioStart;
     if (!sched.length) return;
 
     const lastIdx = sched.length - 1;
+    const atEnd = sched[lastIdx];
 
     // KPI4 — projected avg monthly earnings (lifetime)
     projectedNetTotal += Number(atEnd.netEarnings || 0);
