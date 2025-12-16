@@ -1317,7 +1317,47 @@ function renderDistributionDrawer() {
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
 
+// ------------------------------
+// AXES (X + Y)
+// ------------------------------
+
+    // Y axis
+    const yAxis = document.createElementNS(svgNS, 'line');
+    yAxis.setAttribute('x1', pad);
+    yAxis.setAttribute('x2', pad);
+    yAxis.setAttribute('y1', pad);
+    yAxis.setAttribute('y2', h - pad);
+    yAxis.setAttribute('stroke', '#cbd5e1');
+    svg.appendChild(yAxis);
+    
+    // X axis
+    const xAxis = document.createElementNS(svgNS, 'line');
+    xAxis.setAttribute('x1', pad);
+    xAxis.setAttribute('x2', w - pad);
+    xAxis.setAttribute('y1', h - pad);
+    xAxis.setAttribute('y2', h - pad);
+    xAxis.setAttribute('stroke', '#cbd5e1');
+    svg.appendChild(xAxis);
+
+  
   const maxCount = Math.max(...months.map(m => loansByMonth[m].length), 1);
+
+  // Y-axis ticks (loan counts)
+for (let i = 0; i <= maxCount; i++) {
+  const y =
+    h - pad - (i / maxCount) * (h - pad * 2);
+
+  const label = document.createElementNS(svgNS, 'text');
+  label.setAttribute('x', pad - 8);
+  label.setAttribute('y', y + 4);
+  label.setAttribute('font-size', '11');
+  label.setAttribute('text-anchor', 'end');
+  label.setAttribute('fill', '#64748b');
+  label.textContent = i;
+
+  svg.appendChild(label);
+}
+
 
   // --------------------------------------------------
   // STACKED BARS (ONE SEGMENT PER LOAN)
