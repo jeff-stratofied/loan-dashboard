@@ -1609,10 +1609,15 @@ function renderTPVDrawer() {
 
       drawerTitle.textContent = 'Rates Distribution';
       drawerSub.textContent = 'Histogram of loan nominal rates';
-      drawerPrimaryTitle.textContent = 'Avg Rate';
-      drawerPrimary.textContent = `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
-      drawerSecondaryTitle.textContent = '';
-      drawerSecondary.textContent = '';
+      const rates = allLoans.map(l => l.nominalRate * 100);
+const minRate = Math.min(...rates);
+const maxRate = Math.max(...rates);
+
+drawerPrimaryTitle.textContent = 'Avg Rate';
+drawerPrimary.textContent = `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
+
+drawerSecondaryTitle.textContent = 'Rate Range';
+drawerSecondary.textContent = `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%`;
 
       drawerAmortContainer.style.display = 'none';
       drawerExtra.innerHTML = '';
