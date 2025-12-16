@@ -2556,6 +2556,10 @@ const avg = cumulativeNet / portfolioMonths;
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI3Table(activeLoans, "drawerKpiTable");
 
+  document
+  .getElementById("drawerKpiTable")
+  ?.classList.add("kpi3-table");
+
   openDrawer();
 }
 
