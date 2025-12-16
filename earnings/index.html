@@ -1666,13 +1666,14 @@ sortedContribs.forEach(c => {
       svg.appendChild(lbl);
     }
   });
-  // ==========================
-  // TODAY vertical dotted line
-  // ==========================
+// ==========================
+// TODAY vertical dotted line
+// (NOT for KPI4)
+// ==========================
+if (!isKpi4) {
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
-  // rows[].date is already ownership-based and capped to TODAY
   const firstDate = rows[0]?.date;
   const lastDate  = rows[rows.length - 1]?.date;
 
@@ -1700,6 +1701,8 @@ sortedContribs.forEach(c => {
 
     svg.appendChild(todayLine);
   }
+}
+
 
   
   container.appendChild(svg);
