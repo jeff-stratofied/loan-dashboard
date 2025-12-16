@@ -1833,11 +1833,11 @@ function renderKpi3AvgLineChart(container, rows) {
     dot.setAttribute("cy", y);
     dot.setAttribute("opacity", "1");
 
-   const tooltipLines = [
-  `Date: ${formatMonthYear(r.date)}`,
-  `Avg / Month: ${formatCurrency(r.avg)}`,
-  `Net to Date: ${formatCurrency(r.netToDate)}`
-];
+    const tooltipLines = [
+      `Date: ${formatMonthYear(r.date)}`,
+      `Avg / Month: ${formatCurrency(r.avg)}`,
+      `Net to Date: ${formatCurrency(r.netToDate)}`
+    ];
 
     // uses your existing mini tooltip system (already in the file)
     setMiniTooltipContent(tooltipLines);
