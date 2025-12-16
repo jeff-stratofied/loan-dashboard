@@ -1459,6 +1459,8 @@ const currentX = padL + ratio * (w - padL - padR);
 // NEW: Portfolio KPI Stacked Chart (aggregated rows)
 // =======================================================
 function createKpiStackedChart(container, rows, opts = {}) {
+  const isKpi4 = opts.isKpi4 === true;
+
   const denseXAxis = opts.denseXAxis || false;
 
   container.innerHTML = "";
@@ -1692,18 +1694,31 @@ sortedContribs.forEach(c => {
 
     const net = principal + interest - fees;
 
-    const tooltipLines = [
+let tooltipLines;
+
+if (isKpi4) {
+  // KPI4 — Projected Avg Monthly Earnings
+  const net = row.contributions
+    .reduce((s, c) => s + (c.net ?? 0), 0);
+
+  tooltipLines = [
+    `Date: ${formatMonthYear(row.date)}`,
+    `Projected Net: ${formatCurrency(net)}`
+  ];
+} else {
+  // Other KPIs (unchanged behavior)
+  tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
     `Principal: ${formatCurrency(principal)}`,
     `Interest: ${formatCurrency(interest)}`,
     `Fees: -${formatCurrency(fees)}`,
     `Net: ${formatCurrency(net)}`
-    ];
+  ];
+}
 
+setMiniTooltipContent(tooltipLines);
+positionMiniTooltip(e.clientX, e.clientY, lensRadius);
 
-
-    setMiniTooltipContent(tooltipLines);
-    positionMiniTooltip(e.clientX, e.clientY, lensRadius);
   }
 
   function handleLeave() {
@@ -2482,6 +2497,43 @@ function openKpi4(){
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI4Table(loansWithEarnings, "drawerKpiTable");
   openDrawer();
+
+  const rows = [];
+
+  loansWithEarnings.forEach(loan => {
+    (loan.earningsSchedule || []).forEach((r, idx) => {
+      const d = r.ownershipDate || r.loanDate;
+      if (!d) return;
+
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+
+      let row = rows.find(x => x.key === key);
+      if (!row) {
+      row = {
+        key,
+        date: new Date(d),
+        contributions: []
+      };
+        rows.push(row);
+      }
+
+      row.contributions.push({
+        loanId: loan.loanId,
+        net: r.netEarnings
+      });
+    });
+  });
+
+  rows.sort((a, b) => a.date - b.date);
+
+   createKpiStackedChart(
+  drawerChartArea,
+  rows,
+  { denseXAxis: false, isKpi4: true }
+);
+
+
+  
 }
 
 
