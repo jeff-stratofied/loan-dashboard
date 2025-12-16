@@ -2531,6 +2531,8 @@ function openKpi4(){
   rows,
   { denseXAxis: false, isKpi4: true }
 );
+const tableEl = renderKpi4Table(loansWithEarnings, kpis);
+drawerExtra.appendChild(tableEl);
 
 
   
@@ -3369,29 +3371,56 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
   );
 }
 
+function renderKpi4Table(loans, kpis) {
+  const rows = loans.map(l => {
+    const sched = l.earningsSchedule || [];
+    if (!sched.length) return null;
 
+    const last = sched[sched.length - 1];
 
-
-
-
-function renderKPI4Table(data, containerId = "kpi4Table") {
-  const rows = data.map(l => {
-    const last = l.earningsSchedule[l.earningsSchedule.length - 1];
+    const projectedAvg =
+      sched.length > 0
+        ? last.netEarnings / sched.length
+        : 0;
 
     return {
       loanId: l.loanId,
       cells: [
-        `${l.loanName}`,
-        `-$${last.cumFees.toFixed(2)}`
+        l.loanName,
+        formatCurrency(projectedAvg),
+        formatCurrency(last.netEarnings),
+        `${sched.length} mo`
       ]
     };
-  });
+  }).filter(Boolean);
 
-  renderKpiTable(containerId,
-    ["Loan","Total Fees"],
-    rows
-  );
+  const table = document.createElement("table");
+
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>Loan</th>
+        <th>Avg / Month (Projected)</th>
+        <th>Projected Net</th>
+        <th>Months</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map(r => `
+        <tr data-loan-id="${r.loanId}">
+          ${r.cells.map(c => `<td>${c}</td>`).join("")}
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+
+  const wrap = document.createElement("div");
+  wrap.className = "amort-wrap";
+  wrap.appendChild(table);
+
+  return wrap;
 }
+
 
     function createLens(svg, radius = 40, scale = 1.5, borderColor = "#94a3b8", borderWidth = 1.5, bgFill = "rgba(255,255,255,0.7)"){
       const svgNS = "http://www.w3.org/2000/svg";
