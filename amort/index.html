@@ -1281,8 +1281,8 @@ function renderDistributionDrawer() {
 
   drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
   drawerSub.textContent = 'Number of loans purchased by month';
-  drawerPrimaryTitle.textContent = '';
-  drawerPrimary.textContent = '';
+  drawerPrimaryTitle.textContent = 'Total Loans';
+  drawerPrimary.textContent = allLoans.length.toLocaleString();
   drawerSecondaryTitle.textContent = 'Total Invested';
 
   const totalInvested = allLoans.reduce((s, l) => s + l.purchasePrice, 0);
