@@ -2413,25 +2413,21 @@ const chartMonths =
   // Compute avg rows using CALENDAR months elapsed (NOT i+1)
   let cumulativeNet = 0;
 
-const avgRows = chartMonths.map(m => {
-  const monthNet = (m.contributions || []).reduce(
-    (sum, c) => sum + (c.hasData ? (Number(c.net) || 0) : 0),
+const avgRows = rows.map((r, i) => {
+  const monthNet = r.contributions.reduce(
+    (s, c) => s + (Number(c.net) || 0),
     0
   );
 
   cumulativeNet += monthNet;
 
-  const portfolioMonths =
-  Math.max(1, monthDiff(window.__PORTFOLIO_START__, new Date()) + 1);
-
-const avg = cumulativeNet / portfolioMonths;
-
   return {
-  date: r.date,
-  avg: cumulativeNet / kpis.monthsCounted,
-  netToDate: cumulativeNet
-};
+    date: r.date,
+    avg: cumulativeNet / (i + 1),
+    netToDate: cumulativeNet
+  };
 });
+
 
 
   // Draw chart
