@@ -614,6 +614,16 @@ apiLoans = attachSchedules(apiLoans);
   
   // Now it is safe: allLoans exists
     tpvSeriesData = tpvSeries(allLoans);   // assign to global
+// --------------------------------------------------
+// Sort loans by purchase date (match Earnings page)
+// --------------------------------------------------
+allLoans.sort((a, b) => {
+  const da = new Date(a.purchaseDate || a.loanStartDate).getTime() || 0;
+  const db = new Date(b.purchaseDate || b.loanStartDate).getTime() || 0;
+  return da - db;
+});
+
+  
   const curIdx = getCurrentMonthIndex(allLoans) - 1;
   const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
   document.getElementById('tpvTile').textContent =
