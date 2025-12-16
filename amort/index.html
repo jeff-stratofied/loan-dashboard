@@ -1837,7 +1837,7 @@ function renderPaymentsDrawer() {
   }
 
   // --------------------------------------------------
-  // CALENDAR "CURRENT" MONTH INDEX (SINGLE SOURCE)
+  // CALENDAR "CURRENT" MONTH INDEX
   // --------------------------------------------------
   const today = new Date();
   today.setDate(1);
@@ -1859,7 +1859,7 @@ function renderPaymentsDrawer() {
   });
 
   // --------------------------------------------------
-  // KPI TILE — USE SAME SERIES AS CHART
+  // KPI TILE — SAME SOURCE AS CHART
   // --------------------------------------------------
   const currentMonthlyIncome = paymentsByMonth[todayIndex] || 0;
 
@@ -1896,7 +1896,30 @@ function renderPaymentsDrawer() {
   svg.appendChild(poly);
 
   // --------------------------------------------------
-  // HOVER LINE + DOT (ALIGNED TO SAME MONTH INDEX)
+  // X-AXIS LABELS (sparse, like KPI1/2)
+  // --------------------------------------------------
+  const labelCount = 6;
+  const skip = Math.max(1, Math.floor(months.length / labelCount));
+
+  for (let i = 0; i < months.length; i += skip) {
+    const x = pad + i * stepX;
+    const d = new Date(months[i] + '-01T00:00:00');
+
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', x);
+    text.setAttribute('y', h - pad + 14);
+    text.setAttribute('font-size', '11');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#475569');
+    text.textContent = d.toLocaleDateString(undefined, {
+      month: 'short',
+      year: 'numeric'
+    });
+    svg.appendChild(text);
+  }
+
+  // --------------------------------------------------
+  // HOVER LINE + DOT
   // --------------------------------------------------
   const hoverLine = document.createElementNS(svgNS, 'line');
   hoverLine.setAttribute('stroke', '#111827');
@@ -1947,10 +1970,38 @@ function renderPaymentsDrawer() {
 
   drawerChartArea.appendChild(svg);
 
+  // --------------------------------------------------
+  // KPI3 TABLE — MONTHLY EXPECTED PAYMENTS
+  // --------------------------------------------------
+  drawerExtra.innerHTML = `
+    <strong class="small">Monthly expected payments</strong>
+    <div style="max-height:45vh;overflow:auto;margin-top:6px;
+         border-radius:6px;padding:6px;
+         border:1px solid var(--border);background:var(--card)">
+      <table style="width:100%;font-size:13px">
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th style="text-align:right">Payments</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${months.map((m, i) => `
+            <tr>
+              <td>${m}</td>
+              <td style="text-align:right">$${Math.round(paymentsByMonth[i]).toLocaleString()}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
     /* ============================
