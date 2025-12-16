@@ -1817,9 +1817,7 @@ function renderPaymentsDrawer() {
   // BUILD MONTH SERIES (calendar-aligned)
   // --------------------------------------------------
   const monthIndex = d => new Date(d + 'T00:00:00').getTime();
-
   const minDate = Math.min(...allLoans.map(l => monthIndex(l.purchaseDate)));
-
   const maxDate = Math.max(...allLoans.map(l => {
     const lastMonth = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
     const pd = new Date(l.purchaseDate + 'T00:00:00');
@@ -1830,14 +1828,13 @@ function renderPaymentsDrawer() {
   const months = [];
   const cursor = new Date(minDate);
   cursor.setDate(1);
-
   while (cursor.getTime() <= maxDate) {
     months.push(cursor.toISOString().slice(0, 7));
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
   // --------------------------------------------------
-  // CALENDAR "CURRENT" MONTH INDEX
+  // CURRENT MONTH INDEX (single source of truth)
   // --------------------------------------------------
   const today = new Date();
   today.setDate(1);
@@ -1849,18 +1846,15 @@ function renderPaymentsDrawer() {
   }
 
   // --------------------------------------------------
-  // COMPUTE MONTHLY PAYMENTS (CANONICAL SERIES)
+  // MONTHLY PAYMENTS SERIES
   // --------------------------------------------------
-  const paymentsByMonth = months.map((m, idx) => {
-    return allLoans.reduce((sum, loan) => {
+  const paymentsByMonth = months.map((m, idx) =>
+    allLoans.reduce((sum, loan) => {
       const sched = loan.amort.schedule[idx];
       return sum + (sched?.payment || 0);
-    }, 0);
-  });
+    }, 0)
+  );
 
-  // --------------------------------------------------
-  // KPI TILE — SAME SOURCE AS CHART
-  // --------------------------------------------------
   const currentMonthlyIncome = paymentsByMonth[todayIndex] || 0;
 
   drawerPrimaryTitle.textContent = 'Monthly Income';
@@ -1871,7 +1865,7 @@ function renderPaymentsDrawer() {
   // DRAW CHART
   // --------------------------------------------------
   const svgNS = 'http://www.w3.org/2000/svg';
-  const w = 480, h = 220, pad = 30;
+  const w = 480, h = 220, pad = 36;
   const svg = document.createElementNS(svgNS, 'svg');
 
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
@@ -1881,6 +1875,36 @@ function renderPaymentsDrawer() {
   const maxV = Math.max(...paymentsByMonth, 1);
   const stepX = (w - pad * 2) / Math.max(1, months.length - 1);
 
+  // --------------------------------------------------
+  // Y AXIS
+  // --------------------------------------------------
+  const ticks = 5;
+  for (let i = 0; i <= ticks; i++) {
+    const v = (maxV / ticks) * i;
+    const y = pad + (h - pad * 2) * (1 - v / maxV);
+
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', pad);
+    line.setAttribute('x2', w - pad);
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+    line.setAttribute('stroke', 'var(--grid-light)');
+    line.setAttribute('stroke-width', '1');
+    svg.appendChild(line);
+
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('x', pad - 6);
+    label.setAttribute('y', y + 4);
+    label.setAttribute('font-size', '11');
+    label.setAttribute('text-anchor', 'end');
+    label.setAttribute('fill', '#475569');
+    label.textContent = `$${Math.round(v).toLocaleString()}`;
+    svg.appendChild(label);
+  }
+
+  // --------------------------------------------------
+  // LINE
+  // --------------------------------------------------
   let points = '';
   paymentsByMonth.forEach((v, i) => {
     const x = pad + i * stepX;
@@ -1896,14 +1920,14 @@ function renderPaymentsDrawer() {
   svg.appendChild(poly);
 
   // --------------------------------------------------
-  // X-AXIS LABELS (sparse, like KPI1/2)
+  // X AXIS LABELS
   // --------------------------------------------------
   const labelCount = 6;
   const skip = Math.max(1, Math.floor(months.length / labelCount));
 
   for (let i = 0; i < months.length; i += skip) {
     const x = pad + i * stepX;
-    const d = new Date(months[i] + '-01T00:00:00');
+    const d = new Date(months[i] + '-01');
 
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', x);
@@ -1919,7 +1943,7 @@ function renderPaymentsDrawer() {
   }
 
   // --------------------------------------------------
-  // HOVER LINE + DOT
+  // HOVER
   // --------------------------------------------------
   const hoverLine = document.createElementNS(svgNS, 'line');
   hoverLine.setAttribute('stroke', '#111827');
@@ -1942,16 +1966,16 @@ function renderPaymentsDrawer() {
     ));
 
     const idx = Math.round((x - pad) / stepX);
-    const clampedIdx = Math.max(0, Math.min(idx, months.length - 1));
+    const i = Math.max(0, Math.min(idx, months.length - 1));
 
-    const val = paymentsByMonth[clampedIdx];
+    const val = paymentsByMonth[i];
     const y = pad + (h - pad * 2) * (1 - val / maxV);
 
-    hoverLine.setAttribute('x1', pad + clampedIdx * stepX);
-    hoverLine.setAttribute('x2', pad + clampedIdx * stepX);
+    hoverLine.setAttribute('x1', pad + i * stepX);
+    hoverLine.setAttribute('x2', pad + i * stepX);
     hoverLine.style.opacity = '0.6';
 
-    hoverDot.setAttribute('cx', pad + clampedIdx * stepX);
+    hoverDot.setAttribute('cx', pad + i * stepX);
     hoverDot.setAttribute('cy', y);
     hoverDot.style.opacity = '1';
 
@@ -1959,7 +1983,7 @@ function renderPaymentsDrawer() {
     tooltip.style.left = ev.clientX + 'px';
     tooltip.style.top = (ev.clientY - 12) + 'px';
     tooltip.innerHTML =
-      `${months[clampedIdx]} • Monthly Income $${Math.round(val).toLocaleString()}`;
+      `${months[i]} • Monthly Income $${Math.round(val).toLocaleString()}`;
   });
 
   svg.addEventListener('mouseleave', () => {
@@ -1971,7 +1995,7 @@ function renderPaymentsDrawer() {
   drawerChartArea.appendChild(svg);
 
   // --------------------------------------------------
-  // KPI3 TABLE — MONTHLY EXPECTED PAYMENTS
+  // TABLE
   // --------------------------------------------------
   drawerExtra.innerHTML = `
     <strong class="small">Monthly expected payments</strong>
@@ -2001,6 +2025,7 @@ function renderPaymentsDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
 
