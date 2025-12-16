@@ -2465,11 +2465,16 @@ const avg = cumulativeNet / portfolioMonths;
 
 
 function openKpi4(){
+  console.assert(
+  Number.isFinite(kpis.projectedAvgMonthlyNet),
+  "❌ KPI4 projectedAvgMonthlyNet missing or invalid"
+);  
   currentLoan = null;
-  drawerTitle.textContent = "Total Net Earnings to Date";
+  drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
-  drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
+  drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
+  drawerPrimary.textContent =
+  formatCurrency(kpis.projectedAvgMonthlyNet);
   drawerSecondaryTitle.textContent = "Total Fees to Date";
   drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
   resetDrawerContent();
@@ -2595,7 +2600,8 @@ document.getElementById("kpiAvgMonth").textContent =
   formatCurrency(kpis.avgMonthlyNet);
 
 document.getElementById("kpiFees").textContent =
-  formatCurrency(kpis.totalFeesToDate);
+  formatCurrency(kpis.projectedAvgMonthlyNet);
+
 
   renderLoanTiles();
 }
