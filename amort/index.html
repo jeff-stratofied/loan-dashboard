@@ -1364,19 +1364,23 @@ function renderDistributionDrawer() {
       svg.appendChild(rect);
     });
 
-    // --------------------------------------------------
-    // X-AXIS LABELS — EVERY 6 MONTHS
-    // --------------------------------------------------
-    if (i % 6 === 0) {
-      const text = document.createElementNS(svgNS, 'text');
-      text.setAttribute('x', x + barW / 2);
-      text.setAttribute('y', h - pad + 14);
-      text.setAttribute('font-size', '11');
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('fill', '#475569');
-      text.textContent = m;
-      svg.appendChild(text);
-    }
+   // --------------------------------------------------
+// X-AXIS LABELS — EVERY 6 CALENDAR MONTHS
+// --------------------------------------------------
+const date = new Date(m + '-01T00:00:00');
+const month = date.getMonth(); // 0–11
+
+if (month % 6 === 0) {
+  const text = document.createElementNS(svgNS, 'text');
+  text.setAttribute('x', x + barW / 2);
+  text.setAttribute('y', h - pad + 14);
+  text.setAttribute('font-size', '11');
+  text.setAttribute('text-anchor', 'middle');
+  text.setAttribute('fill', '#475569');
+  text.textContent = m; // e.g. "Jan 2025"
+  svg.appendChild(text);
+}
+
   });
 
   // --------------------------------------------------
