@@ -1685,7 +1685,7 @@ function renderTPVDrawer() {
               <thead><tr><th>Loan</th><th>Rate</th><th>Purchase</th><th style="text-align:right">Balance</th></tr></thead>
               <tbody>
                 ${sorted.map(l => `<tr>
-                  <td style="text-align:left">Loan ${l.loanId}</td>
+                  <td style="text-align:left">${l.loanName}</td>
                   <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
                   <td style="text-align:left">${l.purchaseDate}</td>
                   <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
