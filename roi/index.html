@@ -1063,8 +1063,12 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", opts.weightedColor || "#000");
     path.setAttribute("stroke-width", opts.weightedWidth || "2.6");
+    
+    // 👇 mark as weighted so table hover ignores it
+    path.dataset.type = "weighted";
+    
     svg.appendChild(path);
-  }
+    }
 
   // -----------------------------------
   // X-axis
@@ -1465,29 +1469,42 @@ function populateROILoanTable(){
 const table = document.getElementById("roiLoansTable");
 if (!table) return;
 
-const chartPaths = drawerChartArea.querySelectorAll("path[data-loan-name]");
+const loanPaths = drawerChartArea.querySelectorAll("path[data-loan-name]");
+const weightedPath = drawerChartArea.querySelector('path[data-type="weighted"]');
+
 
 table.querySelectorAll("tbody tr").forEach(row => {
   const loanName = row.querySelector("strong")?.textContent;
   if (!loanName) return;
 
       row.addEventListener("mouseenter", () => {
-        chartPaths.forEach(p => {
-          if (p.dataset.loanName === loanName) {
-            p.setAttribute("stroke-opacity", "1");
-            p.setAttribute("stroke-width", "2.6");
-          } else {
-            p.setAttribute("stroke-opacity", "0.15");
-            p.setAttribute("stroke-width", "1");
-          }
-        });
+        loanPaths.forEach(p => {
+        if (p.dataset.loanName === loanName) {
+          p.setAttribute("stroke-opacity", "1");
+          p.setAttribute("stroke-width", "2.6");
+        } else {
+          p.setAttribute("stroke-opacity", "0.15");
+          p.setAttribute("stroke-width", "1");
+        }
+      });
+
+      // keep weighted line visible but subdued
+      if (weightedPath) {
+        weightedPath.setAttribute("stroke-opacity", "0.35");
+      }
+
       });
     
       row.addEventListener("mouseleave", () => {
-        chartPaths.forEach(p => {
+        loanPaths.forEach(p => {
           p.setAttribute("stroke-opacity", "0.9");
           p.setAttribute("stroke-width", "1.2");
         });
+        
+        if (weightedPath) {
+          weightedPath.setAttribute("stroke-opacity", "1");
+        }
+
       });
     });
  
