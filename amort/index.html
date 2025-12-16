@@ -1697,7 +1697,7 @@ function renderTPVDrawer() {
         <div style="margin-top:10px">
           <strong class="small">Loans sorted by rate</strong>
           <div style="max-height:45vh;overflow:auto;margin-top:6px;border-radius:6px;padding:6px;border:1px solid var(--border);background:var(--card)">
-            <table style="width:100%;font-size:13px">
+            <table class="kpi2-table" style="width:100%;font-size:13px">
               <thead>
                 <tr>
                   <th>Loan</th>
@@ -1711,24 +1711,25 @@ function renderTPVDrawer() {
                 <tr
                 data-loan-id="${l.loanId}"
                 style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
-                  >
-                  <td>
-                    <span style="
-                     display:inline-block;
-                    width:10px;
-                    height:10px;
-                    border-radius:2px;
-                    background:var(--loan-color);
-                    margin-right:6px;
-                   vertical-align:middle;
+                >
+                <td>
+                  <span style="
+                  display:inline-block;
+                  width:10px;
+                  height:10px;
+                  border-radius:2px;
+                  background:var(--loan-color);
+                  margin-right:6px;
+                  vertical-align:middle;
                   "></span>
                   ${l.loanName}
-                  </td>
-                  <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
-                  <td style="text-align:left">${l.purchaseDate}</td>
-                  <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
-                </tr>`).join('')}
-              </tbody>
+                </td>
+              <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
+              <td style="text-align:left">${l.purchaseDate}</td>
+              <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
+            </tr>
+                `).join('')}
+            </tbody>
             </table>
           </div>
         </div>
