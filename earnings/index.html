@@ -631,10 +631,10 @@ html[data-theme="dark"] .legend .sw {
       white-space: nowrap;
     }
 
-/* KPI3 table: force neutral text (override loan colors) */
-#drawerKpiTable td,
-#drawerKpiTable td *,
-#drawerKpiTable a {
+/* KPI3 ONLY: force neutral text */
+.kpi3-table td,
+.kpi3-table td *,
+.kpi3-table a {
   color: var(--text) !important;
 }
 
@@ -3249,18 +3249,27 @@ function renderKpiTable(containerId, headers, rows) {
   html += `</tr></thead><tbody>`;
 
   rows.forEach(r => {
-    const color = colors[r.loanId] || "inherit";
+    const color = colors[r.loanId] || "var(--text)";
 
-    html += `<tr data-loan-id="${r.loanId}">`;
+    // ✅ Set color ON THE ROW (not the cells)
+    html += `
+      <tr
+        data-loan-id="${r.loanId}"
+        style="--loan-color:${color}; color:var(--loan-color)"
+      >
+    `;
+
     r.cells.forEach(c => {
-      html += `<td style="color:${color}">${c}</td>`;
+      html += `<td>${c}</td>`;
     });
+
     html += `</tr>`;
   });
 
   html += `</tbody></table>`;
   container.innerHTML = html;
 }
+
 
     
 function renderKPI1Table(data, containerId = "kpi1Table") {
