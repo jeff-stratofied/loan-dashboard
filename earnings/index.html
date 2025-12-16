@@ -654,6 +654,11 @@ html[data-theme="dark"] .legend .sw {
   --loan-color: var(--text);
 }
 
+    .kpi4-table tbody tr[data-loan-id] {
+  cursor: pointer;
+}
+
+
 .kpi4-table tbody tr[data-loan-id] td {
   color: var(--loan-color) !important;
 }
@@ -1778,6 +1783,31 @@ positionMiniTooltip(e.clientX, e.clientY, lensRadius);
   svg.addEventListener("mouseleave", handleLeave);
 }
 
+// =======================================================
+// KPI4 table → chart hover helpers
+// =======================================================
+function highlightLoanInKpiChart(container, loanId) {
+  if (!container) return;
+
+  container.querySelectorAll("rect[data-loan-id]").forEach(el => {
+    if (el.dataset.loanId === loanId) {
+      el.style.opacity = "1";
+    } else {
+      el.style.opacity = "0.15";
+    }
+  });
+}
+
+function clearKpiChartHighlight(container) {
+  if (!container) return;
+
+  container.querySelectorAll("rect[data-loan-id]").forEach(el => {
+    el.style.opacity = "";
+  });
+}
+
+
+    
 function renderKpi3AvgLineChart(container, rows) {
   container.innerHTML = "";
   if (!rows || !rows.length) return;
@@ -2544,6 +2574,20 @@ function openKpi4(){
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI4Table(loansWithEarnings, "drawerKpiTable");
 
+  // KPI4 table row hover → highlight chart bars
+drawerExtra.querySelectorAll("tr[data-loan-id]").forEach(row => {
+  const loanId = row.dataset.loanId;
+
+  row.addEventListener("mouseenter", () => {
+    highlightLoanInKpiChart(drawerChartArea, loanId);
+  });
+
+  row.addEventListener("mouseleave", () => {
+    clearKpiChartHighlight(drawerChartArea);
+  });
+});
+
+
 // KPI4 table: swatch click toggles loan visibility
 drawerExtra.querySelectorAll(".loan-swatch").forEach(el => {
   const loanId = el.dataset.loanId;
@@ -2611,9 +2655,7 @@ drawerExtra.appendChild(tableEl);
     clearChartHighlight();
   });
 });
-
-
-  
+ 
 }
 
 
