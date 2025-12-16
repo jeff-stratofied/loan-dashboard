@@ -638,6 +638,27 @@ html[data-theme="dark"] .legend .sw {
   color: var(--text) !important;
 }
 
+/* KPI4 table: color text to match loan swatch */
+.kpi4-table tbody tr td:nth-child(2),
+.kpi4-table tbody tr td:nth-child(3),
+.kpi4-table tbody tr td:nth-child(4),
+.kpi4-table tbody tr td:nth-child(5) {
+  color: inherit !important;
+}
+
+.kpi4-table tbody tr {
+  color: var(--text);
+}
+
+.kpi4-table tbody tr[data-loan-id] {
+  --loan-color: var(--text);
+}
+
+.kpi4-table tbody tr[data-loan-id] td {
+  color: var(--loan-color) !important;
+}
+
+    
     /* KPI4 table */
 #drawerExtra table {
   width: 100%;
@@ -2522,6 +2543,26 @@ function openKpi4(){
   renderKPI4Chart(loansWithEarnings, "drawerChartArea");
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI4Table(loansWithEarnings, "drawerKpiTable");
+
+// KPI4 table: swatch click toggles loan visibility
+drawerExtra.querySelectorAll(".loan-swatch").forEach(el => {
+  const loanId = el.dataset.loanId;
+
+  el.style.cursor = "pointer";
+  el.title = hiddenLoans.has(loanId) ? "Click to show loan" : "Click to hide loan";
+
+  // Visual off-state
+  if (hiddenLoans.has(loanId)) {
+    el.style.opacity = "0.25";
+  }
+
+  el.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleLoanVisibility(loanId);
+  });
+});
+
+  
   openDrawer();
 
   const rows = [];
@@ -3281,6 +3322,16 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
   });
 }
 
+function toggleLoanVisibility(loanId) {
+  if (hiddenLoans.has(loanId)) {
+    hiddenLoans.delete(loanId);
+  } else {
+    hiddenLoans.add(loanId);
+  }
+
+  // Re-open KPI4 to fully re-render chart + table
+  openKpi4();
+}
 
 
 
@@ -3451,7 +3502,7 @@ function renderKPI4Table(loans, containerId = "drawerKpiTable") {
     <table class="kpi4-table">
       <thead>
         <tr>
-          <th></th>
+          <th style="width:42px">Loan On / Off</th>
           <th>Loan</th>
           <th>Avg / Month (Projected)</th>
           <th>Projected Net</th>
@@ -3460,7 +3511,7 @@ function renderKPI4Table(loans, containerId = "drawerKpiTable") {
       </thead>
       <tbody>
         ${rows.map(r => `
-          <tr data-loan-id="${r.loanId}">
+          <tr data-loan-id="${r.loanId}" style="--loan-color:${window.KPI_COLOR_MAP?.[r.loanId] || 'var(--text)'}">
             ${r.cells.map(c => `<td>${c}</td>`).join("")}
           </tr>
         `).join("")}
