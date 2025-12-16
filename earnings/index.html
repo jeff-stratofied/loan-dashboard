@@ -631,10 +631,13 @@ html[data-theme="dark"] .legend .sw {
       white-space: nowrap;
     }
 
-/* KPI3 table: neutral text (override loan colors) */
-#drawerKpiTable td {
+/* KPI3 table: force neutral text (override loan colors) */
+#drawerKpiTable td,
+#drawerKpiTable td *,
+#drawerKpiTable a {
   color: var(--text) !important;
 }
+
 
     
   </style>
@@ -1830,9 +1833,9 @@ function renderKpi3AvgLineChart(container, rows) {
     dot.setAttribute("cy", y);
     dot.setAttribute("opacity", "1");
 
-    const tooltipLines = [
+   const tooltipLines = [
   `Date: ${formatMonthYear(r.date)}`,
-  `Avg / Month: ${formatCurrency(kpis.avgMonthlyNet)}`,
+  `Avg / Month: ${formatCurrency(r.avg)}`,
   `Net to Date: ${formatCurrency(r.netToDate)}`
 ];
 
