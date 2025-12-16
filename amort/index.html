@@ -239,6 +239,17 @@
       transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
 
+    /* KPI2 table — color rows by loan color */
+    .kpi2-table tbody tr[data-loan-id] {
+    color: var(--loan-color);
+    }
+
+.kpi2-table tbody tr[data-loan-id] td {
+  color: inherit;
+}
+
+
+    
     .legend { display:flex; gap:10px; font-size:12px; align-items:center; margin-top:6px; }
     .legend .item { display:flex; gap:6px; align-items:center; }
     .legend .sw { width:12px; height:8px; border-radius:2px; display:inline-block; }
@@ -1687,10 +1698,26 @@ function renderTPVDrawer() {
           <strong class="small">Loans sorted by rate</strong>
           <div style="max-height:45vh;overflow:auto;margin-top:6px;border-radius:6px;padding:6px;border:1px solid var(--border);background:var(--card)">
             <table style="width:100%;font-size:13px">
-              <thead><tr><th>Loan</th><th>Rate</th><th>Purchase</th><th style="text-align:right">Balance</th></tr></thead>
+              <thead>
+              <tr
+                data-loan-id="${l.loanId}"
+                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
+                  >
+              <th>Loan</th><th>Rate</th><th>Purchase</th><th style="text-align:right">Balance</th></tr></thead>
               <tbody>
-                ${sorted.map(l => `<tr>
-                  <td style="text-align:left">${l.loanName}</td>
+                ${sorted.map(l => `<tr data-loan-id="${l.loanId}">
+                  <td>
+                    <span style="
+                     display:inline-block;
+                    width:10px;
+                    height:10px;
+                    border-radius:2px;
+                    background:var(--loan-color);
+                    margin-right:6px;
+                   vertical-align:middle;
+                  "></span>
+                  ${l.loanName}
+                  </td>
                   <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
                   <td style="text-align:left">${l.purchaseDate}</td>
                   <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
