@@ -1610,14 +1610,14 @@ function renderTPVDrawer() {
       drawerTitle.textContent = 'Rates Distribution';
       drawerSub.textContent = 'Histogram of loan nominal rates';
       const rates = allLoans.map(l => l.nominalRate * 100);
-const minRate = Math.min(...rates);
-const maxRate = Math.max(...rates);
+      const minRate = Math.min(...rates);
+      const maxRate = Math.max(...rates);
 
-drawerPrimaryTitle.textContent = 'Avg Rate';
-drawerPrimary.textContent = `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
+      drawerPrimaryTitle.textContent = 'Avg Rate';
+      drawerPrimary.textContent = `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
 
-drawerSecondaryTitle.textContent = 'Rate Range';
-drawerSecondary.textContent = `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%`;
+      drawerSecondaryTitle.textContent = 'Rate Range';
+      drawerSecondary.textContent = `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%`;
 
       drawerAmortContainer.style.display = 'none';
       drawerExtra.innerHTML = '';
@@ -1625,8 +1625,8 @@ drawerSecondary.textContent = `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%
       drawerLegend.style.display = 'none';
 
       // histogram
-      const rates = allLoans.map(l => l.nominalRate * 100);
-      const min = Math.min(...rates), max = Math.max(...rates);
+      const min = minRate;
+      const max = maxRate;
       const bins = 5;
       const width = (max - min) / bins || 1;
       const counts = new Array(bins).fill(0);
