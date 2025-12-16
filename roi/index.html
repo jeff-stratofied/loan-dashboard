@@ -704,21 +704,49 @@ html[data-theme="dark"] .drawer-chart{
        KPI computations
        ------------------------- */
 
-      // -------------------------------------
-      // KPI COLOR MAP — shared across ROI
+     // -------------------------------------
+      // KPI COLOR MAP — shared across ROI (UNIQUE, high-contrast first)
       // -------------------------------------
       window.KPI_COLOR_MAP = {};
       
-      const KPI_COLORS = [
-        '#06b6d4', // cyan
-        '#a78bfa', // purple
-        '#14b8a6', // teal
-        '#f97316', // orange
-        '#ef4444', // red
-        '#22c55e', // green
-        '#eab308', // yellow
-        '#0ea5e9', // blue
-      ];
+      // Create N colors. Starts with high-contrast spacing.
+      // If N gets large, it *will* eventually place some closer hues, but only when needed.
+      function buildDistinctPalette(n) {
+        if (n <= 0) return [];
+      
+        // 1) Generate evenly-spaced-ish hues using golden angle
+        const hues = Array.from({ length: n }, (_, i) => (i * 137.508) % 360);
+      
+        // 2) Reorder hues to maximize contrast early: pick alternating ends after sorting
+        hues.sort((a, b) => a - b);
+        const reordered = [];
+        let left = 0, right = hues.length - 1;
+        while (left <= right) {
+          if (left === right) {
+            reordered.push(hues[left]);
+            break;
+          }
+          reordered.push(hues[left++]);   // low hue
+          reordered.push(hues[right--]);  // high hue (far away)
+        }
+      
+        // 3) Convert to HSL strings (good contrast on both light/dark)
+        // Keep saturation high; keep lightness mid so it reads on dark & light.
+        return reordered.map(h => `hsl(${h.toFixed(0)} 85% 55%)`);
+      }
+      
+      // Assign colors deterministically by a stable order (loan id ascending)
+      const sortedLoansForColors = loansWithAmort
+        .slice()
+        .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
+      
+      const palette = buildDistinctPalette(sortedLoansForColors.length);
+      
+      sortedLoansForColors.forEach((loan, i) => {
+        const id = loan.id ?? loan.loanId;
+        window.KPI_COLOR_MAP[id] = palette[i];
+      });
+
 
       
     function getCurrentOwnedRoiEntry(loan){
@@ -744,11 +772,7 @@ html[data-theme="dark"] .drawer-chart{
       return { total, weightedROI, projectedWeightedROI, avgRate };
     }
     const kpis = computeKPIs(loansWithAmort);
-      // assign deterministic colors per loan
-    loansWithAmort.forEach((loan, i) => {
-      const id = loan.id ?? loan.loanId;
-      window.KPI_COLOR_MAP[id] = KPI_COLORS[i % KPI_COLORS.length];
-    });
+
 
 
     /* -------------------------
@@ -1385,7 +1409,7 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
 function populateROILoanTable(){
   const tbody = document.querySelector("#roiLoansTable tbody");
   if(!tbody) return;
-  const palette = ['#e11d48','#f97316','#f59e0b','#eab308','#84cc16','#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'];
+
   tbody.innerHTML = loansWithAmort.map(l => {
     const roiEntry = getCurrentOwnedRoiEntry(l);
     let matStr = '';
@@ -1470,7 +1494,9 @@ function buildHistoricalRoiTimeline(loans) {
   // ---- 2. Align each loan ROI onto the global date timeline ----
   const perLoanSeries = loans.map((loan, idx) => {
     const purchase = new Date(loan.purchaseDate);
-    const color = loanColors[idx % loanColors.length];
+    const id = loan.id ?? loan.loanId;
+    const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
+
 
     // Map ownershipDate -> ROI for quick lookup
     const roiMap = {};
@@ -2134,12 +2160,6 @@ function renderAvgRateDrawer() {
   svg.style.display = 'block';
   drawerChartArea.appendChild(svg);
 
-  // same palette as the other KPI drawers
-  const palette = [
-    '#e11d48','#f97316','#f59e0b','#eab308','#84cc16',
-    '#10b981','#06b6d4','#3b82f6','#6366f1','#8b5cf6'
-  ];
-
   // loans per month key (YYYY-MM)
   const monthLoans = keys.map(key => {
     return loansWithAmort.filter(l => {
@@ -2192,7 +2212,9 @@ function renderAvgRateDrawer() {
     const segH = (loan.purchasePrice / maxValue) * chartH;
     currentY -= segH;
 
-const color = palette[(loan.id - 1) % palette.length];
+    const id = loan.id ?? loan.loanId;
+    const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
+
 
       const seg = document.createElementNS(svgNS, 'rect');
       seg.setAttribute('x', x + 6);
