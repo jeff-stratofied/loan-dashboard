@@ -1060,6 +1060,65 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     axis.appendChild(t);
   });
 
+  // -----------------------------------
+  // HOVER (restore KPI chart hover)
+  // -----------------------------------
+  const vLine = document.createElementNS(svgNS, 'line');
+  vLine.setAttribute('stroke', '#111827');
+  vLine.setAttribute('stroke-dasharray', '3 4');
+  vLine.setAttribute('stroke-opacity', '0.6');
+  svg.appendChild(vLine);
+
+  const hoverG = document.createElementNS(svgNS, 'g');
+  hoverG.setAttribute('class', 'hover');
+  svg.appendChild(hoverG);
+
+  svg.addEventListener('mousemove', (ev) => {
+    const rectSvg = svg.getBoundingClientRect();
+    const mouseX = ev.clientX - rectSvg.left;
+
+    let t = (mouseX - pad) / (w - pad * 2);
+    t = Math.max(0, Math.min(1, t));
+    let idx = Math.round(t * (globalDates.length - 1));
+    idx = Math.max(0, Math.min(globalDates.length - 1, idx));
+
+    const d = globalDates[idx];
+    const wp = weightedSeries[idx];
+    if (!wp) return;
+
+    const cx = dateToX(d);
+    const cy = yScale(wp.y);
+
+    vLine.setAttribute('x1', cx);
+    vLine.setAttribute('x2', cx);
+    vLine.setAttribute('y1', pad);
+    vLine.setAttribute('y2', h - pad);
+
+    hoverG.innerHTML = '';
+    const c = document.createElementNS(svgNS, 'circle');
+    c.setAttribute('cx', cx);
+    c.setAttribute('cy', cy);
+    c.setAttribute('r', 4);
+    c.setAttribute('fill', opts.weightedColor || '#111827');
+    c.setAttribute('stroke', 'var(--card)');
+    c.setAttribute('stroke-width', '1');
+    hoverG.appendChild(c);
+
+    tooltip.style.display = 'block';
+    tooltip.style.left = ev.clientX + 'px';
+    tooltip.style.top = (ev.clientY - 14) + 'px';
+    tooltip.innerHTML =
+      `${formatMonthYear(d)} • ${(wp.y * 100).toFixed(2)}%`;
+  });
+
+  svg.addEventListener('mouseleave', () => {
+    hoverG.innerHTML = '';
+    tooltip.style.display = 'none';
+    vLine.setAttribute('x1', -9999);
+    vLine.setAttribute('x2', -9999);
+  });
+
+  
   svg.appendChild(axis);
   containerEl.appendChild(svg);
 }
