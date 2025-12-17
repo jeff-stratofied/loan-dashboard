@@ -142,8 +142,8 @@
     },
     {
       "loanName": "WCC 2014 5.00",
-      "user": "jeff",
-      "visible": true,
+      "user": "nick",
+      "visible": false,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2014-06-01",
       "purchaseDate": "2023-06-01",
