@@ -1258,7 +1258,26 @@ compactToggle.addEventListener("change", () => {
   loanGrid.classList.toggle("compact", compactToggle.checked);
 });
 
-   
+       /* -------------------------
+   Compact tile toggle (persisted)
+   ------------------------- */
+    const compactToggle = document.getElementById("toggleCompact");
+    const loanGrid = document.getElementById("loanGrid");
+    
+    // Restore saved preference
+    const savedCompact = localStorage.getItem("loanGridCompact");
+    if (savedCompact !== null) {
+      compactToggle.checked = savedCompact === "true";
+    }
+    
+    // Apply initial state
+    loanGrid.classList.toggle("compact", compactToggle.checked);
+    
+    // Persist on change
+    compactToggle.addEventListener("change", () => {
+      loanGrid.classList.toggle("compact", compactToggle.checked);
+      localStorage.setItem("loanGridCompact", compactToggle.checked);
+    });
 
     /* ============================
        Drawer helpers
