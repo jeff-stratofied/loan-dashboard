@@ -1243,7 +1243,7 @@ function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
 
     // wide invisible hit target so hover is easy
     const hit = document.createElementNS(svgNS, "path");
-    hit.setAttribute("d", smoothPathFromPointsCubic(pts));
+    hit.setAttribute("d", smoothPathFromPoints(pts));
     hit.setAttribute("fill", "none");
     hit.setAttribute("stroke", "transparent");
     hit.setAttribute("stroke-width", "12");
