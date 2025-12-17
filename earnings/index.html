@@ -3282,9 +3282,9 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
     return {
       loanId: l.loanId,
       cells: [
-        // ----------------------------------
-        // Loan On / Off (KEEP swatch here)
-        // ----------------------------------
+        // ---------------------------------
+        // Loan On/Off swatch (ONLY place swatch appears)
+        // ---------------------------------
         `<div
           class="loan-swatch"
           data-loan-id="${l.loanId}"
@@ -3299,27 +3299,34 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
           "
         ></div>`,
 
-        // ----------------------------------
-        // Loan (NO swatch here)
-        // ----------------------------------
-        `
-        <div style="line-height:1.15">
-          <div style="font-weight:600;color:${color}">
+        // ---------------------------------
+        // Loan name + school (colored)
+        // ---------------------------------
+        `<div>
+          <div style="
+            font-weight:600;
+            color:${color};
+          ">
             ${l.loanName}
           </div>
-          <div style="font-size:12px;color:${color};opacity:0.85">
+          <div style="
+            font-size:12px;
+            line-height:1.2;
+            margin-top:2px;
+            color:${color};
+            opacity:0.85;
+          ">
             ${l.school || ""}
           </div>
-        </div>
-        `,
+        </div>`,
 
-        // ----------------------------------
-        // Numeric columns (black text)
-        // ----------------------------------
-        formatCurrency(atCur.netEarnings),
-        formatCurrency(atCur.cumPrincipal),
-        formatCurrency(atCur.cumInterest),
-        "-" + formatCurrency(atCur.cumFees)
+        // ---------------------------------
+        // Numeric columns (FORCED BLACK)
+        // ---------------------------------
+        `<span style="color:var(--text)">${formatCurrency(atCur.netEarnings)}</span>`,
+        `<span style="color:var(--text)">${formatCurrency(atCur.cumPrincipal)}</span>`,
+        `<span style="color:var(--text)">${formatCurrency(atCur.cumInterest)}</span>`,
+        `<span style="color:var(--text)">-${formatCurrency(atCur.cumFees)}</span>`
       ]
     };
   });
@@ -3342,9 +3349,9 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
   const table = document.getElementById(containerId);
   if (!table) return;
 
-  // -------------------------
+  // ---------------------------------
   // Row hover → highlight chart
-  // -------------------------
+  // ---------------------------------
   table.querySelectorAll("tr[data-loan-id]").forEach(tr => {
     const loanId = tr.dataset.loanId;
 
@@ -3366,9 +3373,9 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
     });
   });
 
-  // -------------------------
+  // ---------------------------------
   // Swatch click → toggle loan
-  // -------------------------
+  // ---------------------------------
   table.querySelectorAll(".loan-swatch").forEach(sw => {
     const loanId = sw.dataset.loanId;
 
