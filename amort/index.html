@@ -445,7 +445,8 @@ html[data-theme="dark"] .close-btn {
           <p class="lead">Click on the loan below to see & export the amortization schedule.</p>
         </div>
         <div class="header-controls">
-          <div style="font-size:13px;color:var(--muted)">Name: <strong style="color:var(--brand)">Jeff Customer</strong></div>
+          <div style="font-size:13px;color:var(--muted)">Name: <strong id="currentUserLabel" style="color:var(--brand)"></strong>
+</div>
           <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
         </div>
       </div>
@@ -566,6 +567,16 @@ html[data-theme="dark"] .close-btn {
   <script type="module">
     import { loadLoans, attachSchedules } from "../js/loanEngine.js";
     const PAGE_USER = "jeff";
+
+    const USER_LABELS = {
+      jeff: "Jeff Customer",
+      nick: "Nick Lender",
+      john: "John Investor"
+    };
+    
+    document.getElementById("currentUserLabel").textContent =
+      USER_LABELS[PAGE_USER];
+
     let tpvSeriesData = [];   // <-- GLOBAL so all drawers can use it
     
     let USE_DYNAMIC_DATA = true;   // stays false until Step 7
