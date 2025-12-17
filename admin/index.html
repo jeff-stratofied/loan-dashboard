@@ -291,6 +291,12 @@ input:focus, select:focus {
 <script type="module">
   import { loadLoans } from "/loan-dashboard/js/loadLoans.js";
 
+  const USER_OPTIONS = [
+  { value: "jeff", label: "Jeff Customer" },
+  { value: "nick", label: "Nick Lender" },
+  { value: "john", label: "John Investor" }
+];
+
   let currentLoans = [];
   let currentSha = null;
 
@@ -323,32 +329,23 @@ const schoolOptions = [
     newId = l.loanId; // keep existing random ID
   }
 
-  return {
-    loanId: newId,
-
-    // loanName stays independent
-    loanName: l.loanName ?? "",
-
-    school: l.school ?? "Penn State",
-    loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "",
-    purchaseDate: l.purchaseDate ?? "",
-    principal:
-      l.principal === undefined
-        ? 0
-        : l.principal === ""
-          ? currentLoans[idx]?.principal ?? 0
-          : Number(l.principal),
-
-    purchasePrice: Number(l.purchasePrice ?? 0),
-    rate: Number(l.rate ?? 0),
-    termYears: Number(l.termYears ?? 10),
-    graceYears: Number(l.graceYears ?? 0),
-    user: l.user ?? "jeff",
-    visible: l.visible !== false
-  };
-}
-
-
+    return {
+      loanId: l.loanId ?? generateLoanId(),
+      loanName: l.loanName ?? "",
+      school: l.school ?? "",
+      loanStartDate: l.loanStartDate ?? "",
+      purchaseDate: l.purchaseDate ?? "",
+      principal: Number(l.principal ?? 0),
+      purchasePrice: Number(l.purchasePrice ?? 0),
+      rate: Number(l.rate ?? 0),
+      termYears: Number(l.termYears ?? 10),
+      graceYears: Number(l.graceYears ?? 0),
+    
+      // ✅ REQUIRED FIELDS
+      user: l.user ?? "jeff",
+      visible: l.visible !== false
+    };
+    }
 
   /* Render table */
   function renderTable() {
@@ -409,37 +406,38 @@ const schoolOptions = [
   }
 
   /* Collect from table */
-    function collectLoans() {
-      const rows = document.querySelectorAll("#loan-table-body tr");
-      const list = [];
-    
-      rows.forEach(row => {
-        const obj = {};
-        const inputs = row.querySelectorAll("[data-field]");
-    
-        inputs.forEach(inp => {
-          const k = inp.dataset.field;
-          let v;
-    
-          if (inp.type === "checkbox") {
-            v = inp.checked;
-          } else {
-            v = inp.value;
-          }
-    
-          if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
-            v = Number(v);
-          }
-    
-          obj[k] = v;
-        });
-    
-        obj.loanId = row.dataset.loanId || generateLoanId();
-        list.push(obj);
-      });
-    
-      return list;
-    }
+function collectLoans() {
+  const rows = document.querySelectorAll("#loan-table-body tr");
+  const list = [];
+
+  rows.forEach(row => {
+    const obj = {};
+    const inputs = row.querySelectorAll("[data-field]");
+
+    inputs.forEach(inp => {
+      const k = inp.dataset.field;
+      let v;
+
+      if (inp.type === "checkbox") {
+        v = inp.checked;
+      } else {
+        v = inp.value;
+      }
+
+      if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
+        v = Number(v);
+      }
+
+      obj[k] = v;
+    });
+
+    obj.loanId = row.dataset.loanId;
+    list.push(obj);
+  });
+
+  return list;
+}
+
 
   
     /* Load from Worker */
