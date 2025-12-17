@@ -1027,6 +1027,8 @@ const filterName = document.getElementById("filterName");
 const filterSchool = document.getElementById("filterSchool");
 const filterRate = document.getElementById("filterRate");
 const sortLoans = document.getElementById("sortLoans");
+const resetBtn = document.getElementById("resetFilters");
+
 
 const names = [...new Set(allLoans.map(l => l.loanName).filter(Boolean))];
 const schools = [...new Set(allLoans.map(l => l.school).filter(Boolean))];
