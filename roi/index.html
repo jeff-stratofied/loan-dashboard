@@ -1430,51 +1430,7 @@ function populateROILoanTable(){
       }
     });
     
-    
       });
-  // ===============================
-  // KPI4 TABLE → CHART HOVER LINK
-  // ===============================
-  const chartSvg = drawerChartArea.querySelector("svg");
-  if (!chartSvg) return;
-
-  const loanPaths = Array.from(
-    chartSvg.querySelectorAll('path[data-type="loan"]')
-  );
-  const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
-
-  const table = document.getElementById("roiLoansTable");
-  if (!table) return;
-
-  table.querySelectorAll("tbody tr").forEach(row => {
-    const rowLoanId = row.dataset.loanId;
-    if (!rowLoanId) return;
-
-    row.addEventListener("mouseenter", () => {
-      loanPaths.forEach(p => {
-        const isTarget = p.dataset.loanId === rowLoanId;
-        p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
-        p.setAttribute("stroke-width", "1.2"); // KEEP UNIFORM
-      });
-
-      if (weightedPath) {
-        weightedPath.setAttribute("stroke-opacity", "1");
-      }
-    });
-
-    row.addEventListener("mouseleave", () => {
-      loanPaths.forEach(p => {
-        p.setAttribute("stroke-opacity", "0.9");
-        p.setAttribute("stroke-width", "1.2");
-      });
-
-      if (weightedPath) {
-        weightedPath.setAttribute("stroke-opacity", "1");
-      }
-    });
-  });
-
-  
     }
 
 function populateProjectedROILoanTable(){
