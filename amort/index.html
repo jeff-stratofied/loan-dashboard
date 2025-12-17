@@ -1335,7 +1335,7 @@ const totalInvested = allLoans.reduce(
   // SVG SETUP
   // --------------------------------------------------
   const svgNS = 'http://www.w3.org/2000/svg';
-  const w = 480, h = 220, pad = 36;
+  const w = 480, h = 220, pad = 56;
   const svg = document.createElementNS(svgNS, 'svg');
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   svg.setAttribute('width', '100%');
@@ -1379,7 +1379,7 @@ const totalInvested = allLoans.reduce(
       const y = h - pad - ratio * (h - pad * 2);
     
       const label = document.createElementNS(svgNS, 'text');
-      label.setAttribute('x', pad - 8);
+      label.setAttribute('x', pad - 12);
       label.setAttribute('y', y + 4);
       label.setAttribute('font-size', '11');
       label.setAttribute('text-anchor', 'end');
