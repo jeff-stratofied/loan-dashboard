@@ -724,6 +724,15 @@ apiLoans = attachSchedules(apiLoans);
   allLoans = allLoans.filter(l =>
     l.user === PAGE_USER && l.visible !== false
   );
+console.log(
+  "Amort loans check:",
+  {
+    pageUser: PAGE_USER,
+    count: allLoans.length,
+    users: allLoans.map(l => l.user),
+    visibleFlags: allLoans.map(l => l.visible)
+  }
+);
 
   
     // -------------------------------------------
