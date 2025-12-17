@@ -1389,69 +1389,50 @@ function populateROILoanTable(){
       </td>
     </tr>`;
   }).join('');
-
-  const chartSvg = drawerChartArea.querySelector("svg");
-  if (!chartSvg) return;
-
-  const table = document.getElementById("roiLoansTable");
-  if (!table) return;
-
-  const loanPaths = Array.from(
-    chartSvg.querySelectorAll('path[data-type="loan"]')
-  );
-  const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
-
-  table.querySelectorAll("tbody tr").forEach(row => {
-    const rowLoanId = row.dataset.loanId;
-    if (!rowLoanId) return;
-
+    
+      const chartSvg = drawerChartArea.querySelector("svg");
+      if (!chartSvg) return;
+    
+      const table = document.getElementById("roiLoansTable");
+      if (!table) return;
+    
+      const loanPaths = Array.from(
+        chartSvg.querySelectorAll('path[data-type="loan"]')
+      );
+      const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
+    
+      table.querySelectorAll("tbody tr").forEach(row => {
+        const rowLoanId = row.dataset.loanId;
+        if (!rowLoanId) return;
+    
     row.addEventListener("mouseenter", () => {
       loanPaths.forEach(p => {
         const isTarget = p.dataset.loanId === rowLoanId;
-        const isBestOrWorst = p.dataset.rank === "best" || p.dataset.rank === "worst";
     
-        if (isTarget) {
-          // hovered loan — strongest emphasis
-          p.setAttribute("stroke-opacity", "1");
-          p.setAttribute("stroke-width", "3.6");
-        } else if (isBestOrWorst) {
-          // keep best & worst visible but subdued
-          p.setAttribute("stroke-opacity", "0.6");
-          p.setAttribute("stroke-width", "3.2");
-        } else {
-          // dim everything else
-          p.setAttribute("stroke-opacity", "0.12");
-          p.setAttribute("stroke-width", "1");
-        }
+        p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
+        p.setAttribute("stroke-width", "1.2"); // KEEP ALL LINES SAME WIDTH
       });
     
-      // weighted line stays neutral
       if (weightedPath) {
         weightedPath.setAttribute("stroke-opacity", "1");
       }
     });
     
+        
     row.addEventListener("mouseleave", () => {
       loanPaths.forEach(p => {
-        const isBestOrWorst = p.dataset.rank === "best" || p.dataset.rank === "worst";
-    
-        p.setAttribute(
-          "stroke-opacity",
-          isBestOrWorst ? "1" : "0.9"
-        );
-        p.setAttribute(
-          "stroke-width",
-          isBestOrWorst ? "3.2" : "1.2"
-        );
+        p.setAttribute("stroke-opacity", "0.9");
+        p.setAttribute("stroke-width", "1.2");
       });
     
       if (weightedPath) {
         weightedPath.setAttribute("stroke-opacity", "1");
       }
     });
-
-  });
-}
+    
+    
+      });
+    }
 
 function populateProjectedROILoanTable(){
   const tbody = document.querySelector("#roiProjectedLoansTable tbody");
