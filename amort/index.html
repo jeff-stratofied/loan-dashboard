@@ -809,8 +809,14 @@ allLoans.sort((a, b) => {
   
   const curIdx = getCurrentMonthIndex(allLoans) - 1;
   const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
-  document.getElementById('tpvTile').textContent =
-    `$${Math.round(tpvSeriesData[tpvIdx].value).toLocaleString()}`;
+  const tpvVal =
+  tpvSeriesData.length > 0 && tpvSeriesData[tpvIdx]
+    ? tpvSeriesData[tpvIdx].value
+    : 0;
+
+document.getElementById('tpvTile').textContent =
+  `$${Math.round(tpvVal).toLocaleString()}`;
+
 
    /* ============================
        Render loan tiles with mini-charts (cumulative principal & interest)
