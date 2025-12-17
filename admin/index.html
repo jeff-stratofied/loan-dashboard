@@ -342,7 +342,7 @@ const schoolOptions = [
     purchasePrice: Number(l.purchasePrice ?? 0),
     rate: Number(l.rate ?? 0),
     termYears: Number(l.termYears ?? 10),
-    graceYears: Number(l.graceYears ?? 0)
+    graceYears: Number(l.graceYears ?? 0),
     user: l.user ?? "jeff",
     visible: l.visible !== false
   };
@@ -418,23 +418,21 @@ const schoolOptions = [
       const inputs = row.querySelectorAll("[data-field]");
 
       inputs.forEach(inp => {
-        const k = inp.dataset.field;
-        inputs.forEach(inp => {
-        const k = inp.dataset.field;
-        let v;
-      
-        if (inp.type === "checkbox") {
-          v = inp.checked;
-        } else {
-          v = inp.value;
-        }
-      
-        if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
-          v = Number(v);
-        }
-      
-        obj[k] = v;
-      });
+      const k = inp.dataset.field;
+      let v;
+    
+      if (inp.type === "checkbox") {
+        v = inp.checked;
+      } else {
+        v = inp.value;
+      }
+    
+      if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
+        v = Number(v);
+      }
+    
+      obj[k] = v;
+    });
 
         if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
           v = Number(v);
