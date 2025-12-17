@@ -445,8 +445,9 @@ html[data-theme="dark"] .close-btn {
           <p class="lead">Click on the loan below to see & export the amortization schedule.</p>
         </div>
         <div class="header-controls">
-          <div style="font-size:13px;color:var(--muted)">Name: <strong style="color:var(--brand)">Jeff Customer</strong></div>
-          <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
+          <div style="font-size:13px;color:var(--muted)">
+          User:
+          <strong style="color:var(--brand)" id="currentUserLabel"></strong>
         </div>
       </div>
 
@@ -566,6 +567,14 @@ html[data-theme="dark"] .close-btn {
   <script type="module">
     import { loadLoans, attachSchedules } from "../js/loanEngine.js";
 
+    const PAGE_USER = "jeff"; // ← change per page later
+    
+    const USER_LABELS = {
+      jeff: "Jeff Customer",
+      nick: "Nick Lender",
+      john: "John Investor"
+    };
+
     let tpvSeriesData = [];   // <-- GLOBAL so all drawers can use it
     
     let USE_DYNAMIC_DATA = true;   // stays false until Step 7
@@ -668,7 +677,10 @@ function buildStaticLoans() {
 }
 
 async function init() {
-if (USE_DYNAMIC_DATA) {
+document.getElementById("currentUserLabel").textContent =
+  USER_LABELS[PAGE_USER];
+  
+  if (USE_DYNAMIC_DATA) {
   let apiLoaded = await loadLoans();  // { loans, sha }
   apiLoans = apiLoaded.map(l => ({
   ...l,
@@ -678,12 +690,9 @@ loanId: String(l.loanId ?? l.id),  // ensures no undefined
   loanName: l.loanName || ""
 }));
 
-
 apiLoans = attachSchedules(apiLoans);
 
-
   allLoans = apiLoans.map(l => {
-
     
     // ADD cumulative values directly into amort.schedule
     let cumP = 0, cumI = 0, cumT = 0;
@@ -718,6 +727,12 @@ apiLoans = attachSchedules(apiLoans);
     };
   });
 
+    // 2. Filter by user + visibility
+    allLoans = allLoans.filter(l =>
+      l.visible !== false &&
+      l.user === PAGE_USER
+    );
+  
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
     // -------------------------------------------
