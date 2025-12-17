@@ -948,7 +948,6 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     return;
   }
 
-  // x scale based on real dates
   const ms0 = globalDates[0].getTime();
   const ms1 = globalDates[count - 1].getTime();
   const msRange = ms1 - ms0 || 1;
@@ -959,7 +958,6 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     return pad + ratio * (w - pad * 2);
   };
 
-  // Determine Y range
   let ys = [];
   weightedSeries.forEach((p) => ys.push(p.y));
   loanSeriesList.forEach((ls) => ls.data.forEach((p) => ys.push(p.y)));
@@ -974,14 +972,13 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   };
 
   // -----------------------------------
-  // Draw grid + Y-axis percentage labels
+  // Grid + Y labels
   // -----------------------------------
-  const steps = 4; // 5 lines / labels
+  const steps = 4;
   for (let gy = 0; gy <= steps; gy++) {
     const ratio = gy / steps;
     const y = pad + ratio * (h - pad * 2);
 
-    // grid line
     const line = document.createElementNS(svgNS, "line");
     line.setAttribute("x1", pad);
     line.setAttribute("x2", w - pad);
@@ -991,7 +988,6 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     line.setAttribute("stroke-opacity", "0.16");
     svg.appendChild(line);
 
-    // label value: top = maxY, bottom = minY
     const value = maxY - ratio * rangeY;
     const label = document.createElementNS(svgNS, "text");
     label.setAttribute("x", pad - 1);
@@ -1000,19 +996,12 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     label.setAttribute("dominant-baseline", "middle");
     label.setAttribute("font-size", "10");
     label.setAttribute("fill", "var(--muted)");
-    label.style.pointerEvents = "none";
     label.textContent = (value * 100).toFixed(1) + "%";
     svg.appendChild(label);
   }
 
-
-  
-  // -----------------------------------
-  // Smoothing path helper
-  // -----------------------------------
   function smoothPathFromPointsCubic(points) {
     if (points.length < 2) return "";
-
     let d = `M ${points[0][0]} ${points[0][1]}`;
     for (let i = 1; i < points.length; i++) {
       const p0 = points[i - 1];
@@ -1026,7 +1015,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   }
 
   // -----------------------------------
-  // Draw loan lines
+  // Draw loan lines (FIXED)
   // -----------------------------------
   loanSeriesList.forEach((ls) => {
     const pts = ls.data
@@ -1041,12 +1030,12 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     path.setAttribute("stroke", ls.color || "#888");
     path.setAttribute("stroke-width", "1.2");
     path.setAttribute("stroke-opacity", "0.9");
-    
-    path.dataset.loanName = ls.name;
-    path.dataset.type = "loan";        
-    
-    svg.appendChild(path);
 
+    // ✅ CRITICAL FIX
+    path.dataset.type = "loan";
+    path.dataset.loanId = String(ls.id);
+
+    svg.appendChild(path);
   });
 
   // -----------------------------------
@@ -1063,18 +1052,17 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", opts.weightedColor || "#000");
     path.setAttribute("stroke-width", opts.weightedWidth || "2.6");
-    
-    // 👇 mark as weighted so table hover ignores it
+
     path.dataset.type = "weighted";
-    
+
     svg.appendChild(path);
-    }
+  }
 
   // -----------------------------------
   // X-axis
   // -----------------------------------
   const axisGroup = document.createElementNS(svgNS, "g");
-  const tickSpacing = (opts.tickSpacingX || 24);
+  const tickSpacing = opts.tickSpacingX || 24;
 
   globalDates.forEach((dateObj, idx) => {
     if (idx % tickSpacing !== 0) return;
@@ -1092,75 +1080,9 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
 
   svg.appendChild(axisGroup);
 
-  // =======================================================
-  // >>> INSERTED HOVER SYSTEM (Weighted ROI hover only) <<<
-  // =======================================================
-
-  const hoverLine = document.createElementNS(svgNS, 'line');
-  hoverLine.setAttribute('stroke', '#111827');
-  hoverLine.setAttribute('stroke-dasharray', '3 3');
-  hoverLine.setAttribute('stroke-opacity', '0.6');
-  hoverLine.style.display = 'none';
-  svg.appendChild(hoverLine);
-
-  const hoverCircle = document.createElementNS(svgNS, 'circle');
-  hoverCircle.setAttribute('r', 4);
-  hoverCircle.setAttribute('fill', '#000');
-  hoverCircle.setAttribute('stroke', 'var(--card)');
-  hoverCircle.setAttribute('stroke-width', '1');
-  hoverCircle.style.display = 'none';
-  svg.appendChild(hoverCircle);
-
-  svg.addEventListener('mousemove', (ev) => {
-    const rectSvg = svg.getBoundingClientRect();
-    const mouseX = ev.clientX - rectSvg.left;
-
-    let bestIdx = 0;
-    let bestDist = Infinity;
-
-    globalDates.forEach((d, i) => {
-      const x = dateToX(d);
-      const dist = Math.abs(mouseX - x);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestIdx = i;
-      }
-    });
-
-    const date = globalDates[bestIdx];
-    const wPt = weightedSeries[bestIdx];
-    const cx = dateToX(date);
-    const cy = yScale(wPt.y);
-
-    hoverLine.style.display = 'block';
-    hoverLine.setAttribute('x1', cx);
-    hoverLine.setAttribute('x2', cx);
-    hoverLine.setAttribute('y1', pad);
-    hoverLine.setAttribute('y2', h - pad);
-
-    hoverCircle.style.display = 'block';
-    hoverCircle.setAttribute('cx', cx);
-    hoverCircle.setAttribute('cy', cy);
-
-    tooltip.style.display = 'block';
-    tooltip.style.left = (rectSvg.left + cx) + 'px';
-    tooltip.style.top = (rectSvg.top + cy - 30) + 'px';
-    tooltip.innerHTML =
-      `${formatDate(date)}<br>` +
-      `Weighted ROI: ${(wPt.y * 100).toFixed(2)}%`;
-  });
-
-  svg.addEventListener('mouseleave', () => {
-    hoverLine.style.display = 'none';
-    hoverCircle.style.display = 'none';
-    tooltip.style.display = 'none';
-  });
-
-  // END HOVER INSERT
-  // =======================================================
-
   containerEl.appendChild(svg);
 }
+
    
 
 
@@ -1619,8 +1541,12 @@ function buildHistoricalRoiTimeline(loans) {
     });
 
 
+    rconst id = loan.id ?? loan.loanId;
+    const displayName = loan.name || loan.loanName || `Loan ${id}`;
+    
     return {
-      name: `Loan ${loan.id}`,
+      id,
+      name: displayName,
       color,
       data
     };
