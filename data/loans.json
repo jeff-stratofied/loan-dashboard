@@ -2,8 +2,8 @@
   "loans": [
     {
       "loanName": "PSU 2024 8.83",
-      "user": "nick",
-      "visible": false,
+      "user": "jeff",
+      "visible": true,
       "school": "Penn State",
       "loanStartDate": "2024-01-31",
       "purchaseDate": "2024-01-31",
@@ -142,8 +142,8 @@
     },
     {
       "loanName": "WCC 2014 5.00",
-      "user": "nick",
-      "visible": false,
+      "user": "jeff",
+      "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2014-06-01",
       "purchaseDate": "2023-06-01",
