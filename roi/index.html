@@ -1881,11 +1881,15 @@ const data = dates.map(date => {
 });
 
 
+    const loanId = loan.id ?? loan.loanId ?? idx;
+
     return {
-      name: `Loan ${loan.id}`,
-      color: loanColors[idx % loanColors.length],
+      id: loanId,
+      name: loan.name || `Loan ${loanId}`,
+      color: window.KPI_COLOR_MAP?.[loanId] || loanColors[idx % loanColors.length],
       data
     };
+
   });
 
   // ---- 5. Weighted ROI series ----
