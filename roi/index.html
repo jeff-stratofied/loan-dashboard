@@ -207,7 +207,13 @@ html[data-theme="dark"] body {
        ========================= */
     .actions { display:flex; gap:8px; align-items:center }
     .btn{ padding:8px 12px; border-radius:8px; border:1px solid var(--border); background:transparent; cursor:pointer; font-weight:600; color:var(--text); transition:background .2s ease, color .2s ease, border-color .2s ease }
-    .btn.primary{ background:linear-gradient(90deg,var(--brand),var(--accent)); color:white; border:none; box-shadow: var(--shadow) }
+    .btn.primary{
+    background:var(--brand);
+    color:white;
+    border:none;
+    box-shadow:var(--shadow);
+  }
+
     .btn.secondary{ background:var(--surface); color:var(--text); }
     .close-btn{ background:var(--surface); border:1px solid var(--border); padding:8px; border-radius:8px; cursor:pointer; }
     .btn:hover, .close-btn:hover{ border-color:rgba(15,23,42,0.14); }
