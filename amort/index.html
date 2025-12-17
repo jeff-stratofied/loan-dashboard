@@ -565,7 +565,7 @@ html[data-theme="dark"] .close-btn {
 
   <script type="module">
     import { loadLoans, attachSchedules } from "../js/loanEngine.js";
-
+    const PAGE_USER = "jeff";
     let tpvSeriesData = [];   // <-- GLOBAL so all drawers can use it
     
     let USE_DYNAMIC_DATA = true;   // stays false until Step 7
@@ -718,6 +718,14 @@ apiLoans = attachSchedules(apiLoans);
     };
   });
 
+  // --------------------------------------------------
+  // USER + VISIBILITY FILTER (STEP 2B)
+  // --------------------------------------------------
+  allLoans = allLoans.filter(l =>
+    l.user === PAGE_USER && l.visible !== false
+  );
+
+  
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
     // -------------------------------------------
