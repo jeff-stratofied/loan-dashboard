@@ -1825,7 +1825,16 @@ function openDrawerForLoan(loan){
       drawerExtra.innerHTML=''; drawerLegend.style.display='flex'; drawerLegend.innerHTML = '<div class=\"item\"><span class=\"sw\" style=\"background:#0f172a\"></span>Balance</div><div class=\"item\"><span class=\"sw\" style=\"background:#0ea5e9\"></span>ROI</div>';
 
       const series = loan.roiSeries.map(s=>({x: formatMonthYear(s.ownershipDate), y:s.roi, ownershipDate: s.ownershipDate}));
-      createLineChart(drawerChartArea, series, { color:'#0ea5e9', loanStartDate: loan.loanStartDate, labelFn:(pt)=>`Date: ${formatDate(pt.ownershipDate)} • ROI ${(pt.y*100).toFixed(2)}%` });
+      createLineChart(drawerChartArea, series, {
+      color: '#0ea5e9',
+      loanStartDate: loan.loanStartDate,
+    
+      // X-axis label spacing (every 6 months)
+      tickEvery: 6,
+    
+      labelFn: (pt) =>
+        `Date: ${formatDate(pt.ownershipDate)} • ROI ${(pt.y * 100).toFixed(2)}%`
+    });
 
       // ROI-by-month table (replaces amort table)
       drawerAmortContainer.innerHTML = '<h3 style="margin-top:8px">ROI by Month</h3><div class="amort-wrap"><table><thead><tr><th>Month</th><th style="text-align:right">Balance</th><th style="text-align:right">Cum Interest</th><th style="text-align:right">Cum Payments</th><th style="text-align:right">Cum Fees</th><th style="text-align:right">Loan Value</th><th style="text-align:right">ROI</th></tr></thead><tbody id="roiBody"></tbody></table></div>';
