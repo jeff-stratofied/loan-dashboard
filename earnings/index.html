@@ -238,6 +238,47 @@
       .kpis{ grid-template-columns:repeat(2,1fr); }
     }
 
+.loan-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 14px;
+  flex-wrap: wrap;
+}
+
+.loan-filters select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* Compact toggle */
+.compact-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* Compact earnings tiles */
+.grid.compact .tile {
+  min-height: 64px;
+  padding: 8px 10px;
+}
+
+.grid.compact .loan-sub,
+.grid.compact .loan-meta,
+.grid.compact .chart-wrap svg {
+  display: none;
+}
+
+
+    
 /* --- Unified Loan Tile Style (matches Amort exactly) --- */
 
 .tile {
@@ -739,6 +780,44 @@ html[data-theme="dark"] .legend .sw {
         <p id="kpiFees">--</p>
       </div>
     </section>
+
+<!-- Loan Filters / Sort -->
+<section class="loan-filters" id="loanFilters">
+  <select id="filterName">
+    <option value="">All loan names</option>
+  </select>
+
+  <select id="filterSchool">
+    <option value="">All schools</option>
+  </select>
+
+  <select id="filterRate">
+    <option value="">All interest rates</option>
+    <option value="low">Below 5%</option>
+    <option value="mid">5% – 8%</option>
+    <option value="high">Above 8%</option>
+  </select>
+
+  <select id="sortLoans">
+    <option value="purchase_asc">Purchase date ↑</option>
+    <option value="purchase_desc">Purchase date ↓</option>
+    <option value="start_asc">Loan start date ↑</option>
+    <option value="start_desc">Loan start date ↓</option>
+    <option value="amount_asc">Orig amount ↑</option>
+    <option value="amount_desc">Orig amount ↓</option>
+    <option value="rate_asc">Interest rate ↑</option>
+    <option value="rate_desc">Interest rate ↓</option>
+  </select>
+
+  <label class="compact-toggle">
+    <input type="checkbox" id="toggleCompact" checked />
+    <span>Compact</span>
+  </label>
+
+  <button class="btn secondary" id="resetFilters">Reset</button>
+</section>
+
+    
     <section class="grid" id="loanGrid" aria-live="polite"></section>
   </div>
 
@@ -1280,6 +1359,43 @@ const monthsCountedKpi3 = portfolioMonths;
 
 
     let kpis = computeEarningsKPIs(loansWithEarnings);
+
+    /* ==================================================
+   UI wiring: filters, sort, compact toggle (EARNINGS)
+   ================================================== */
+
+const filterName   = document.getElementById("filterName");
+const filterSchool = document.getElementById("filterSchool");
+const filterRate   = document.getElementById("filterRate");
+const sortLoans    = document.getElementById("sortLoans");
+const resetBtn     = document.getElementById("resetFilters");
+const compactToggle = document.getElementById("toggleCompact");
+const loanGrid     = document.getElementById("loanGrid");
+
+// ---- Filter events
+filterName.addEventListener("change", applyLoanFilters);
+filterSchool.addEventListener("change", applyLoanFilters);
+filterRate.addEventListener("change", applyLoanFilters);
+
+// ---- Sort event
+sortLoans.addEventListener("change", applyLoanSort);
+
+// ---- Reset filters
+resetBtn.addEventListener("click", () => {
+  filterName.value = "";
+  filterSchool.value = "";
+  filterRate.value = "";
+  applyLoanFilters();
+});
+
+// ---- Compact tile toggle
+loanGrid.classList.toggle("compact", compactToggle.checked);
+
+compactToggle.addEventListener("change", () => {
+  loanGrid.classList.toggle("compact", compactToggle.checked);
+});
+
+    
     let totalPrincipal = 0;
 
     let miniHtmlTooltip = null;
@@ -2710,6 +2826,13 @@ drawerExtra.appendChild(tableEl);
 
         const tile = document.createElement("div");
         tile.className = "tile";
+        tile.dataset.loanName = (loan.loanName || "").toLowerCase();
+        tile.dataset.school = (loan.school || "").toLowerCase();
+        tile.dataset.rate = loan.nominalRate;
+        tile.dataset.purchaseDate = new Date(loan.purchaseDate).getTime();
+        tile.dataset.startDate = new Date(loan.loanStartDate).getTime();
+        tile.dataset.amount = Number(loan.purchasePrice || 0);
+
         tile.setAttribute("data-loan", loan.loanName);
         tile.innerHTML = `
   <div class="tile-left">
@@ -2786,6 +2909,58 @@ document.getElementById("kpiFees").textContent =
 
 
   renderLoanTiles();
+}
+
+    function applyLoanFilters() {
+  const nameVal = filterName.value;
+  const schoolVal = filterSchool.value;
+  const rateVal = filterRate.value;
+
+  document.querySelectorAll("#loanGrid .tile").forEach(tile => {
+    let show = true;
+
+    if (nameVal && !tile.dataset.loanName.includes(nameVal)) show = false;
+    if (schoolVal && !tile.dataset.school.includes(schoolVal)) show = false;
+
+    if (rateVal) {
+      const r = Number(tile.dataset.rate) * 100;
+      if (
+        (rateVal === "low" && r >= 5) ||
+        (rateVal === "mid" && (r < 5 || r > 8)) ||
+        (rateVal === "high" && r <= 8)
+      ) show = false;
+    }
+
+    tile.style.display = show ? "" : "none";
+  });
+
+  applyLoanSort();
+}
+
+function applyLoanSort() {
+  const grid = document.getElementById("loanGrid");
+  const mode = sortLoans.value;
+
+  const tiles = Array.from(grid.children)
+    .filter(t => t.style.display !== "none");
+
+  const get = (el, k) => Number(el.dataset[k] || 0);
+
+  tiles.sort((a, b) => {
+    switch (mode) {
+      case "purchase_asc": return get(a,"purchaseDate") - get(b,"purchaseDate");
+      case "purchase_desc": return get(b,"purchaseDate") - get(a,"purchaseDate");
+      case "start_asc": return get(a,"startDate") - get(b,"startDate");
+      case "start_desc": return get(b,"startDate") - get(a,"startDate");
+      case "amount_asc": return get(a,"amount") - get(b,"amount");
+      case "amount_desc": return get(b,"amount") - get(a,"amount");
+      case "rate_asc": return get(a,"rate") - get(b,"rate");
+      case "rate_desc": return get(b,"rate") - get(a,"rate");
+      default: return 0;
+    }
+  });
+
+  tiles.forEach(t => grid.appendChild(t));
 }
 
 
