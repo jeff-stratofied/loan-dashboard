@@ -967,6 +967,9 @@ svg.innerHTML = `
 
       const valsP = pPoints.map(pp => pp.y);
       const valsI = iPoints.map(pp => pp.y);
+
+      if (!valsP.length || !valsI.length || !p) return;
+
       const minP = Math.min(...valsP), maxP = Math.max(...valsP), rangeP = Math.max(1, maxP - minP);
       const minI = Math.min(...valsI), maxI = Math.max(...valsI), rangeI = Math.max(1, maxI - minI);
 
@@ -1802,8 +1805,15 @@ function renderTPVDrawer() {
 
   drawerPrimaryTitle.textContent = 'Current TPV';
   const curMonthIdx = getCurrentMonthIndex(allLoans);
-  const curVal = tpvSeriesData[Math.min(curMonthIdx - 1, tpvSeriesData.length - 1)].value;
-  drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
+
+const curVal =
+  tpvSeriesData.length > 0 &&
+  tpvSeriesData[Math.min(curMonthIdx - 1, tpvSeriesData.length - 1)]
+    ? tpvSeriesData[Math.min(curMonthIdx - 1, tpvSeriesData.length - 1)].value
+    : 0;
+
+drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
+
 
   drawerSecondaryTitle.textContent = 'Total Invested';
   drawerSecondary.textContent =
