@@ -3284,7 +3284,9 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
     return {
       loanId: l.loanId,
       cells: [
-        // Color swatch
+        // -------------------------
+        // Loan On / Off swatch
+        // -------------------------
         `<div
           class="loan-swatch"
           data-loan-id="${l.loanId}"
@@ -3299,30 +3301,56 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
           "
         ></div>`,
 
-        l.loanName,
-        formatCurrency(atCur.netEarnings),
-        formatCurrency(atCur.cumPrincipal),
-        formatCurrency(atCur.cumInterest),
-        "-" + formatCurrency(atCur.cumFees)
+        // -------------------------
+        // Loan (2-line, color-coded)
+        // -------------------------
+        `
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          <span style="
+            width:10px;
+            height:10px;
+            margin-top:4px;
+            border-radius:2px;
+            background:${color};
+            flex-shrink:0;
+          "></span>
+
+          <div style="line-height:1.2;">
+            <div style="font-weight:600;color:${color};">
+              ${l.loanName}
+            </div>
+            <div style="font-size:11px;color:${color};opacity:0.9;">
+              ${l.school || ""}
+            </div>
+          </div>
+        </div>
+        `,
+
+        // -------------------------
+        // Metrics (BLACK text)
+        // -------------------------
+        `<span style="color:var(--text);">${formatCurrency(atCur.netEarnings)}</span>`,
+        `<span style="color:var(--text);">${formatCurrency(atCur.cumPrincipal)}</span>`,
+        `<span style="color:var(--text);">${formatCurrency(atCur.cumInterest)}</span>`,
+        `<span style="color:var(--text);">-${formatCurrency(atCur.cumFees)}</span>`
       ]
     };
   });
 
   renderKpiTable(
-  containerId,
-  [
-    `<span title="Hover to highlight loan • Click to toggle loan on/off">
-      Loan On/Off
-     </span>`,
-    "Loan",
-    "Net Earnings",
-    "Principal",
-    "Interest",
-    "Fees"
-  ],
-  rows
-);
-
+    containerId,
+    [
+      `<span title="Hover to highlight loan • Click to toggle loan on/off">
+        Loan On/Off
+      </span>`,
+      "Loan",
+      "Net Earnings",
+      "Principal",
+      "Interest",
+      "Fees"
+    ],
+    rows
+  );
 
   const table = document.getElementById(containerId);
   if (!table) return;
@@ -3377,6 +3405,7 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
     });
   });
 }
+
 
 function toggleLoanVisibility(loanId) {
   if (hiddenLoans.has(loanId)) {
