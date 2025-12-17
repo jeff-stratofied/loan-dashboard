@@ -1806,37 +1806,15 @@ function populateProjectedROILoanTable(){
 
 function openDrawerForLoan(loan){
       currentMode='loan'; currentLoan=loan;
-      drawerTitle.innerHTML = `
-        <div style="
-          font-weight:800;
-          font-size:20px;
-          line-height:1.15;
-        ">
-          ${loan.name || ("Loan " + loan.id)}
-        </div>
-      
-        <div style="
-          margin-top:2px;
-          font-size:13px;
-          color:var(--muted);
-          line-height:1.15;
-        ">
-          ${loan.school || "No school"}
-        </div>
-      `;
-      
+      drawerTitle.textContent = loan.name || ("Loan " + loan.id);
       drawerSub.innerHTML = `
-        <div style="
-          margin-top:4px;
-          font-size:12px;
-          color:var(--muted);
-          line-height:1.2;
-        ">
-          Purchased ${loan.purchaseDate}
-          &nbsp;•&nbsp;
-          Orig Loan Amt $${(loan.purchasePrice || 0).toLocaleString()}
-        </div>
-      `;
+      <div>${loan.school || "No school"}</div>
+      <div style="margin-top:4px;">
+        Purchased ${loan.purchaseDate}
+        &nbsp;•&nbsp;
+        Orig Loan Amt $${(loan.purchasePrice || 0).toLocaleString()}
+      </div>
+    `;
 
       drawerPrimaryTitle.textContent = 'Orig Loan Amount'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
