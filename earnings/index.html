@@ -2828,11 +2828,19 @@ document.getElementById("kpiFees").textContent =
         : fallbackRow;
       const atEnd = hasSchedule ? loan.earningsSchedule[lastIdx] : fallbackRow;
 
-      drawerTitle.textContent = `${loan.loanName} — Earnings (${loan.school || "No school"})`;
+      // -----------------------------
+      // ROI-style drawer header
+      // -----------------------------
+      drawerTitle.textContent = loan.loanName;
+      
       drawerSub.innerHTML = `
-        <div>${loan.school || "No school"} • Purchased ${loan.purchaseDate} • $${loan.purchasePrice.toLocaleString()}</div>
-        <div class="drawer-detail">Balance at Purchase: $${(loan.balanceAtPurchase || 0).toLocaleString()}</div>
+        <div>${loan.school}</div>
+        <div>
+          Purchased ${loan.purchaseDate}
+          • Orig Loan Amt ${formatCurrency(loan.purchasePrice)}
+        </div>
       `;
+
       drawerPrimaryTitle.textContent = "Net Earnings to Date";
       drawerPrimary.textContent = `$${atCurrent.netEarnings.toFixed(2)}`;
       drawerSecondaryTitle.textContent = "Fees to Date";
