@@ -409,41 +409,38 @@ const schoolOptions = [
   }
 
   /* Collect from table */
-function collectLoans() {
-  const rows = document.querySelectorAll("#loan-table-body tr");
-  const list = [];
+    function collectLoans() {
+      const rows = document.querySelectorAll("#loan-table-body tr");
+      const list = [];
+    
+      rows.forEach(row => {
+        const obj = {};
+        const inputs = row.querySelectorAll("[data-field]");
+    
+        inputs.forEach(inp => {
+          const k = inp.dataset.field;
+          let v;
+    
+          if (inp.type === "checkbox") {
+            v = inp.checked;
+          } else {
+            v = inp.value;
+          }
+    
+          if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
+            v = Number(v);
+          }
+    
+          obj[k] = v;
+        });
+    
+        obj.loanId = row.dataset.loanId || generateLoanId();
+        list.push(obj);
+      });
+    
+      return list;
+    }
 
-  rows.forEach(row => {
-    const obj = {};
-    const inputs = row.querySelectorAll("[data-field]");
-
-    inputs.forEach(inp => {
-      const k = inp.dataset.field;
-      let v;
-
-      if (inp.type === "checkbox") {
-        v = inp.checked;
-      } else {
-        v = inp.value;
-      }
-
-      if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
-        v = Number(v);
-      }
-
-      obj[k] = v;
-    });
-
-    obj.loanId = row.dataset.loanId || generateLoanId();
-    list.push(obj);
-  });
-
-  return list;
-}
-
-
-    return list;
-  }
   
     /* Load from Worker */
   const status = document.getElementById("status");
