@@ -726,21 +726,14 @@ allLoans = allLoans.map(l => ({
   visible: l.visible !== false
 }));
 
-  
-  // --------------------------------------------------
-  // USER + VISIBILITY FILTER (STEP 2B)
-  // --------------------------------------------------
-  allLoans = allLoans.filter(l =>
-    l.user === PAGE_USER && l.visible !== false
-  );
-console.log(
-  "Amort loans check:",
-  {
-    pageUser: PAGE_USER,
-    count: allLoans.length,
-    users: allLoans.map(l => l.user),
-    visibleFlags: allLoans.map(l => l.visible)
-  }
+// --------------------------------------------------
+// USER + VISIBILITY FILTER (STEP 2B)
+// --------------------------------------------------
+allLoans = allLoans.filter(l =>
+  l.user === PAGE_USER && l.visible === true
+);
+
+
 );
 
   
