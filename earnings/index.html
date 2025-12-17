@@ -187,6 +187,19 @@
       transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
 
+/* Match ROI Reset Filters button exactly */
+.reset-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.reset-btn:hover {
+  background: var(--tile-hover-bg);
+}
+
+    
     /* Fix KPI vertical alignment to match amort */
 .kpis {
   display:grid;
@@ -814,7 +827,8 @@ html[data-theme="dark"] .legend .sw {
     <span>Compact</span>
   </label>
 
-  <button class="btn secondary" id="resetFilters">Reset</button>
+  <button class="btn reset-btn" id="resetFilters">Reset filters</button>
+
 </section>
 
     
@@ -1359,6 +1373,39 @@ const monthsCountedKpi3 = portfolioMonths;
 
 
     let kpis = computeEarningsKPIs(loansWithEarnings);
+
+    /* -------------------------
+   Populate earnings filter dropdowns
+   ------------------------- */
+const nameSelect = document.getElementById("filterName");
+const schoolSelect = document.getElementById("filterSchool");
+
+// Clear any existing options except the first
+nameSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+schoolSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+
+const uniqueNames = [...new Set(
+  loansWithEarnings.map(l => l.loanName).filter(Boolean)
+)];
+
+const uniqueSchools = [...new Set(
+  loansWithEarnings.map(l => l.school).filter(Boolean)
+)];
+
+uniqueNames.forEach(name => {
+  const opt = document.createElement("option");
+  opt.value = name.toLowerCase();
+  opt.textContent = name;
+  nameSelect.appendChild(opt);
+});
+
+uniqueSchools.forEach(school => {
+  const opt = document.createElement("option");
+  opt.value = school.toLowerCase();
+  opt.textContent = school;
+  schoolSelect.appendChild(opt);
+});
+
 
     /* ==================================================
    UI wiring: filters, sort, compact toggle (EARNINGS)
