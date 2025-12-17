@@ -342,31 +342,30 @@
   to   { transform: translateX(0);   opacity: 1; }
 }
 
-/* Drawer Header */
-.drawer-header {
-  padding: 20px;
-  flex-shrink: 0;
-  background: var(--card);
-  transition: background-color .25s ease, color .25s ease;
-}
 
-.drawer-head {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 8px;
+.drawer-head{
+  padding:20px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  background:var(--card);
+  border-bottom:1px solid var(--border);
 }
 
 .drawer h2 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   font-size: 20px;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
-
+    
 .muted {
   color: var(--muted);
   font-size: 13px;
-  margin-bottom: 10px;
+  line-height: 1.25;
+  margin-top: 2px;
+  margin-bottom: 6px;
 }
 
 /* Close Button */
@@ -532,13 +531,14 @@ html[data-theme="dark"] .drawer td {
 thead th {
   position: sticky;
   top: 0;
-  background: var(--card);
+  background: var(--table-header);
   padding: 8px;
   text-align: left;
   color: var(--muted);
   font-weight: 700;
   border-bottom: 1px solid var(--border);
 }
+
 
 td {
   padding: 8px;
@@ -556,8 +556,8 @@ th:first-child {
 .drawer-footer {
   padding: 20px;
   flex-shrink: 0;
-  background: var(--card);
-  transition: background-color .25s ease;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
 }
 
 .actions {
@@ -744,19 +744,18 @@ html[data-theme="dark"] .legend .sw {
 
   <!-- Drawer -->
   <aside id="drawer" class="drawer" aria-hidden="true">
-    <div class="drawer-header">
-      <div class="drawer-head">
-        <div>
-          <h2 id="drawerTitle">Drawer</h2>
-          <div class="muted" id="drawerSub">details</div>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn" id="downloadCsvBtn">Download CSV</button>
-          <button class="close-btn" id="closeBtn" aria-label="Close drawer">✕</button>
-        </div>
+        <div class="drawer-head">
+      <div>
+        <h2 id="drawerTitle"></h2>
+        <div class="muted" id="drawerSub"></div>
+      </div>
+    
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn" id="downloadCsvBtn">Download CSV</button>
+        <button class="close-btn" id="closeBtn">✕</button>
       </div>
     </div>
+
 
     <div id="drawerBody" class="drawer-body">
       <div class="drawer-chart" id="drawerChartArea"></div>
