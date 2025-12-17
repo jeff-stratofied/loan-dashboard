@@ -153,6 +153,22 @@ html,body{
   font-size: 13px;
 }
 
+  /* Compact view toggle */
+.compact-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.compact-toggle input {
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+
     
 /* Force layout to match Amort: body does NOT scroll */
 html, body {
@@ -282,6 +298,41 @@ html[data-theme="dark"] body {
   padding-right: 6px;
 }
 
+    /* =========================
+   Compact loan tiles
+   ========================= */
+.grid.compact .tile {
+  min-height: 64px;           /* ~½ current height */
+  padding: 8px 10px;
+}
+
+.grid.compact .tile-left {
+  padding-right: 0;
+}
+
+.grid.compact .loan-sub,
+.grid.compact .loan-meta {
+  display: none;              /* hide details */
+}
+
+.grid.compact .chart-wrap svg {
+  display: none;              /* hide sparkline */
+}
+
+.grid.compact .chart-wrap {
+  width: auto;
+}
+
+.grid.compact .mini-label {
+  margin: 0;
+  font-weight: 700;
+  font-size: 13px;
+}
+.grid.compact .loan-name {
+  font-size: 13px;
+}
+
+    
   
     @media(max-width:900px){ .grid{ grid-template-columns:1fr; height:auto } .kpis{ grid-template-columns:repeat(2,1fr) } }
 
@@ -516,7 +567,6 @@ html[data-theme="dark"] .drawer-chart{
    <section class="kpis" id="kpis"></section>
   
   <!-- Loan Filters -->
-  <!-- Loan Filters -->
 <section class="loan-filters" id="loanFilters">
   <select id="filterName">
     <option value="">All loan names</option>
@@ -545,12 +595,18 @@ html[data-theme="dark"] .drawer-chart{
     <option value="rate_desc">Interest rate ↓</option>
   </select>
 
+<label class="compact-toggle">
+  <input type="checkbox" id="toggleCompact" />
+  <span>Compact</span>
+</label>
+
+  
   <button class="btn secondary" id="resetFilters">Reset filters</button>
 </section>
 
   
   <!-- Loan grid -->
-  <section class="grid" id="loanGrid" aria-live="polite"></section>
+  <section class="grid compact" id="loanGrid" aria-live="polite"></section>
   
     <!-- Drawer -->
    <aside id="drawer" class="drawer" aria-hidden="true">
@@ -1806,21 +1862,37 @@ function applyLoanSort() {
   tiles.forEach(t => grid.appendChild(t)); // reorder DOM
 }
 
-      
-      document.getElementById("filterName").addEventListener("change", applyLoanFilters);
-document.getElementById("filterSchool").addEventListener("change", applyLoanFilters);
-document.getElementById("filterRate").addEventListener("change", applyLoanFilters);
-
-document.getElementById("resetFilters").addEventListener("click", () => {
-  document.getElementById("filterName").value = "";
-  document.getElementById("filterSchool").value = "";
-  document.getElementById("filterRate").value = "";
-document.getElementById("sortLoans")
-  .addEventListener("change", applyLoanSort);
-
-  
-  applyLoanFilters();
-});
+    document.getElementById("filterName").addEventListener("change", applyLoanFilters);
+    document.getElementById("filterSchool").addEventListener("change", applyLoanFilters);
+    document.getElementById("filterRate").addEventListener("change", applyLoanFilters);
+    
+    document.getElementById("resetFilters").addEventListener("click", () => {
+      document.getElementById("filterName").value = "";
+      document.getElementById("filterSchool").value = "";
+      document.getElementById("filterRate").value = "";
+      applyLoanFilters();
+    });
+    
+    /* -------------------------
+   Compact tile toggle (persisted)
+   ------------------------- */
+    const compactToggle = document.getElementById("toggleCompact");
+    const loanGrid = document.getElementById("loanGrid");
+    
+    // Restore saved preference
+    const savedCompact = localStorage.getItem("loanGridCompact");
+    if (savedCompact !== null) {
+      compactToggle.checked = savedCompact === "true";
+    }
+    
+    // Apply initial state
+    loanGrid.classList.toggle("compact", compactToggle.checked);
+    
+    // Persist on change
+    compactToggle.addEventListener("change", () => {
+      loanGrid.classList.toggle("compact", compactToggle.checked);
+      localStorage.setItem("loanGridCompact", compactToggle.checked);
+    });
 
       
     /* -------------------------
