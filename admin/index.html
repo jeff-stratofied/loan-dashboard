@@ -269,6 +269,8 @@ input:focus, select:focus {
     <tr>
       <th>ID</th>
       <th>Loan Name</th>
+      <th>User</th>
+      <th>Show</th>
       <th>School</th>
       <th>Loan Start Date</th>
       <th>Purchase Date</th>
@@ -330,7 +332,6 @@ const schoolOptions = [
     school: l.school ?? "Penn State",
     loanStartDate: l.loanStartDate ?? l.purchaseDate ?? "",
     purchaseDate: l.purchaseDate ?? "",
-
     principal:
       l.principal === undefined
         ? 0
@@ -342,6 +343,8 @@ const schoolOptions = [
     rate: Number(l.rate ?? 0),
     termYears: Number(l.termYears ?? 10),
     graceYears: Number(l.graceYears ?? 0)
+    user: l.user ?? "jeff",
+    visible: l.visible !== false
   };
 }
 
@@ -358,6 +361,23 @@ const schoolOptions = [
         <td>${loan.loanId}</td>
 
         <td><input type="text" value="${loan.loanName}" data-field="loanName"></td>
+
+        <td>
+          <select data-field="user">
+            <option value="jeff" ${loan.user === "jeff" ? "selected" : ""}>Jeff Customer</option>
+            <option value="nick" ${loan.user === "nick" ? "selected" : ""}>Nick Lender</option>
+            <option value="john" ${loan.user === "john" ? "selected" : ""}>John Investor</option>
+          </select>
+        </td>
+        
+        <td style="text-align:center">
+          <input
+            type="checkbox"
+            data-field="visible"
+            ${loan.visible !== false ? "checked" : ""}
+          />
+        </td>
+
 
         <td>
           <select data-field="school">
@@ -399,7 +419,22 @@ const schoolOptions = [
 
       inputs.forEach(inp => {
         const k = inp.dataset.field;
-        let v = inp.value;
+        inputs.forEach(inp => {
+        const k = inp.dataset.field;
+        let v;
+      
+        if (inp.type === "checkbox") {
+          v = inp.checked;
+        } else {
+          v = inp.value;
+        }
+      
+        if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
+          v = Number(v);
+        }
+      
+        obj[k] = v;
+      });
 
         if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
           v = Number(v);
