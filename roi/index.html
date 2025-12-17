@@ -1463,13 +1463,11 @@ function populateROILoanTable(){
     </tr>`;
   }).join('');
 
-    // -------------------------------------
-    // Table hover → loan line highlight ONLY
-    // -------------------------------------
-    const table = document.getElementById("roiLoansTable");
-    if (!table) return;
+    const chartSvg = drawerChartArea.querySelector("svg");
+    if (!chartSvg) return;
     
-    const loanPaths = drawerChartArea.querySelectorAll("path[data-loan-name]");
+    const loanPaths = chartSvg.querySelectorAll('path[data-type="loan"]');
+    const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
     
     table.querySelectorAll("tbody tr").forEach(row => {
       const loanName = row.querySelector("strong")?.textContent;
@@ -1485,6 +1483,11 @@ function populateROILoanTable(){
             p.setAttribute("stroke-width", "1");
           }
         });
+    
+        // Keep weighted line visible but muted
+        if (weightedPath) {
+          weightedPath.setAttribute("stroke-opacity", "0.35");
+        }
       });
     
       row.addEventListener("mouseleave", () => {
@@ -1492,8 +1495,13 @@ function populateROILoanTable(){
           p.setAttribute("stroke-opacity", "0.9");
           p.setAttribute("stroke-width", "1.2");
         });
+    
+        if (weightedPath) {
+          weightedPath.setAttribute("stroke-opacity", "1");
+        }
       });
     });
+
 
 
 }
