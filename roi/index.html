@@ -1142,8 +1142,26 @@ function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
   }
 
   // -------------------------
-  // Draw loan lines ONLY
+  // Draw loan lines ONLY  (+ line hover tooltip)
   // -------------------------
+  const loanById = new Map(loansWithAmort.map(l => [String(l.id ?? l.loanId), l]));
+  const loanPaths = [];
+
+  function setActiveLoan(activeId){
+    loanPaths.forEach(p => {
+      const isActive = (p.dataset.loanId === String(activeId));
+      p.setAttribute("stroke-opacity", isActive ? "1" : "0.15");
+      p.setAttribute("stroke-width", isActive ? "2.6" : "1.2");
+    });
+  }
+  function clearActiveLoan(){
+    loanPaths.forEach(p => {
+      p.setAttribute("stroke-opacity", "0.9");
+      p.setAttribute("stroke-width", "1.2");
+    });
+    tooltip.style.display = "none";
+  }
+
   loanSeriesList.forEach(ls => {
     const pts = ls.data
       .filter(p => p.y != null)
@@ -1151,18 +1169,73 @@ function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
 
     if (!pts.length) return;
 
+    // visible line
     const path = document.createElementNS(svgNS, "path");
-    path.setAttribute("d", smoothPathFromPoints(pts));
+    path.setAttribute("d", smoothPathFromPointsCubic(pts));
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", ls.color || "#888");
     path.setAttribute("stroke-width", "1.2");
     path.setAttribute("stroke-opacity", "0.9");
-
     path.dataset.type = "loan";
     path.dataset.loanId = String(ls.id);
 
     svg.appendChild(path);
+    loanPaths.push(path);
+
+    // wide invisible hit target so hover is easy
+    const hit = document.createElementNS(svgNS, "path");
+    hit.setAttribute("d", smoothPathFromPointsCubic(pts));
+    hit.setAttribute("fill", "none");
+    hit.setAttribute("stroke", "transparent");
+    hit.setAttribute("stroke-width", "12");
+    hit.setAttribute("stroke-linecap", "round");
+    hit.style.pointerEvents = "stroke";
+    hit.dataset.loanId = String(ls.id);
+
+    hit.addEventListener("mouseenter", () => setActiveLoan(ls.id));
+
+    hit.addEventListener("mousemove", (ev) => {
+      const rect2 = svg.getBoundingClientRect();
+      const mouseX = ev.clientX - rect2.left;
+
+      // convert mouseX -> nearest globalDates index
+      let t = (mouseX - pad) / (w - pad * 2);
+      t = Math.max(0, Math.min(1, t));
+      let idx = Math.round(t * (globalDates.length - 1));
+      idx = Math.max(0, Math.min(globalDates.length - 1, idx));
+
+      const d = globalDates[idx];
+      // series is aligned to globalDates in buildHistoricalRoiTimeline()
+      let point = ls.data[idx];
+
+      // fallback if alignment ever breaks
+      if (!point || point.y == null) {
+        point = ls.data
+          .filter(p => p.y != null)
+          .reduce((best, p) => {
+            if (!best) return p;
+            return Math.abs(p.date - d) < Math.abs(best.date - d) ? p : best;
+          }, null);
+      }
+
+      const loan = loanById.get(String(ls.id));
+      const roiPct = point?.y != null ? (point.y * 100) : null;
+
+      tooltip.style.display = "block";
+      tooltip.style.left = ev.clientX + "px";
+      tooltip.style.top  = (ev.clientY - 12) + "px";
+      tooltip.innerHTML =
+        `<div style="font-weight:800;margin-bottom:2px;">${loan?.name ?? ("Loan " + ls.id)}</div>` +
+        `<div style="opacity:.9;margin-bottom:4px;">${loan?.school ?? ""}</div>` +
+        `<div style="opacity:.95;">${formatMonthYear(d)}${roiPct == null ? "" : ` • ${roiPct.toFixed(2)}%`}</div>` +
+        `<div style="opacity:.85;margin-top:4px;">Purchased: ${loan?.purchaseDate ?? ""}</div>`;
+    });
+
+    hit.addEventListener("mouseleave", clearActiveLoan);
+
+    svg.appendChild(hit);
   });
+
 
   // -------------------------
   // X-axis labels
