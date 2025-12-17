@@ -1370,78 +1370,6 @@ const monthsCountedKpi3 = portfolioMonths;
   const idx = Math.max(0, Math.min(diff - 1, lastIdx));
   return { row: sched[idx], idx };
 }
-
-
-    let kpis = computeEarningsKPIs(loansWithEarnings);
-
-    /* -------------------------
-   Populate earnings filter dropdowns
-   ------------------------- */
-const nameSelect = document.getElementById("filterName");
-const schoolSelect = document.getElementById("filterSchool");
-
-// Clear any existing options except the first
-nameSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
-schoolSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
-
-const uniqueNames = [...new Set(
-  loansWithEarnings.map(l => l.loanName).filter(Boolean)
-)];
-
-const uniqueSchools = [...new Set(
-  loansWithEarnings.map(l => l.school).filter(Boolean)
-)];
-
-uniqueNames.forEach(name => {
-  const opt = document.createElement("option");
-  opt.value = name.toLowerCase();
-  opt.textContent = name;
-  nameSelect.appendChild(opt);
-});
-
-uniqueSchools.forEach(school => {
-  const opt = document.createElement("option");
-  opt.value = school.toLowerCase();
-  opt.textContent = school;
-  schoolSelect.appendChild(opt);
-});
-
-
-    /* ==================================================
-   UI wiring: filters, sort, compact toggle (EARNINGS)
-   ================================================== */
-
-const filterName   = document.getElementById("filterName");
-const filterSchool = document.getElementById("filterSchool");
-const filterRate   = document.getElementById("filterRate");
-const sortLoans    = document.getElementById("sortLoans");
-const resetBtn     = document.getElementById("resetFilters");
-const compactToggle = document.getElementById("toggleCompact");
-const loanGrid     = document.getElementById("loanGrid");
-
-// ---- Filter events
-filterName.addEventListener("change", applyLoanFilters);
-filterSchool.addEventListener("change", applyLoanFilters);
-filterRate.addEventListener("change", applyLoanFilters);
-
-// ---- Sort event
-sortLoans.addEventListener("change", applyLoanSort);
-
-// ---- Reset filters
-resetBtn.addEventListener("click", () => {
-  filterName.value = "";
-  filterSchool.value = "";
-  filterRate.value = "";
-  applyLoanFilters();
-});
-
-// ---- Compact tile toggle
-loanGrid.classList.toggle("compact", compactToggle.checked);
-
-compactToggle.addEventListener("change", () => {
-  loanGrid.classList.toggle("compact", compactToggle.checked);
-});
-
     
     let totalPrincipal = 0;
 
@@ -2933,6 +2861,75 @@ drawerExtra.appendChild(tableEl);
     async function initPage() {
   await loadLoansFromBackend();
   rebuildLoansWithEarnings();
+
+  let kpis = computeEarningsKPIs(loansWithEarnings);
+
+/* -------------------------
+   Populate earnings filter dropdowns
+   ------------------------- */
+const nameSelect = document.getElementById("filterName");
+const schoolSelect = document.getElementById("filterSchool");
+
+nameSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+schoolSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+
+const uniqueNames = [...new Set(
+  loansWithEarnings.map(l => l.loanName).filter(Boolean)
+)];
+
+const uniqueSchools = [...new Set(
+  loansWithEarnings.map(l => l.school).filter(Boolean)
+)];
+
+uniqueNames.forEach(name => {
+  const opt = document.createElement("option");
+  opt.value = name.toLowerCase();
+  opt.textContent = name;
+  nameSelect.appendChild(opt);
+});
+
+uniqueSchools.forEach(school => {
+  const opt = document.createElement("option");
+  opt.value = school.toLowerCase();
+  opt.textContent = school;
+  schoolSelect.appendChild(opt);
+});
+
+        /* ==================================================
+   UI wiring: filters, sort, compact toggle (EARNINGS)
+   ================================================== */
+
+const filterName   = document.getElementById("filterName");
+const filterSchool = document.getElementById("filterSchool");
+const filterRate   = document.getElementById("filterRate");
+const sortLoans    = document.getElementById("sortLoans");
+const resetBtn     = document.getElementById("resetFilters");
+const compactToggle = document.getElementById("toggleCompact");
+const loanGrid     = document.getElementById("loanGrid");
+
+// ---- Filter events
+filterName.addEventListener("change", applyLoanFilters);
+filterSchool.addEventListener("change", applyLoanFilters);
+filterRate.addEventListener("change", applyLoanFilters);
+
+// ---- Sort event
+sortLoans.addEventListener("change", applyLoanSort);
+
+// ---- Reset filters
+resetBtn.addEventListener("click", () => {
+  filterName.value = "";
+  filterSchool.value = "";
+  filterRate.value = "";
+  applyLoanFilters();
+});
+
+// ---- Compact tile toggle
+loanGrid.classList.toggle("compact", compactToggle.checked);
+
+compactToggle.addEventListener("change", () => {
+  loanGrid.classList.toggle("compact", compactToggle.checked);
+});
+
 
   // build portfolio-wide earnings series for charts (mini + drawer + KPI)
   portfolioViews = buildPortfolioViews(loansWithEarnings);
