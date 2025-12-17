@@ -1232,9 +1232,6 @@ function computeKPIs(list) {
       return series;
     }
 
-   const resetBtn = document.getElementById("resetFilters");
-const compactToggle = document.getElementById("toggleCompact");
-const loanGrid = document.getElementById("loanGrid");
 
 // filters
 filterName.addEventListener("change", applyLoanFilters);
@@ -1252,11 +1249,6 @@ resetBtn.addEventListener("click", () => {
   applyLoanFilters();
 });
 
-// compact
-loanGrid.classList.toggle("compact", compactToggle.checked);
-compactToggle.addEventListener("change", () => {
-  loanGrid.classList.toggle("compact", compactToggle.checked);
-});
 
        /* -------------------------
    Compact tile toggle (persisted)
