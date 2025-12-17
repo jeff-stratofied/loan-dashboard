@@ -1824,44 +1824,26 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
 }
 
 function applyLoanSort() {
-  const sortVal = document.getElementById("sortLoans").value;
   const grid = document.getElementById("loanGrid");
-
+  const mode = sortLoans.value;
   const tiles = Array.from(grid.children)
-    .filter(t => t.style.display !== "none"); // respect filters
-
-  const getNum = (el, key) => Number(el.dataset[key] || 0);
-
+    .filter(t => t.style.display !== "none");
+  const get = (el, k) => Number(el.dataset[k] || 0);
   tiles.sort((a, b) => {
-    switch (sortVal) {
-      case "purchase_asc":
-        return getNum(a, "purchaseDate") - getNum(b, "purchaseDate");
-      case "purchase_desc":
-        return getNum(b, "purchaseDate") - getNum(a, "purchaseDate");
-
-      case "start_asc":
-        return getNum(a, "startDate") - getNum(b, "startDate");
-      case "start_desc":
-        return getNum(b, "startDate") - getNum(a, "startDate");
-
-      case "amount_asc":
-        return getNum(a, "amount") - getNum(b, "amount");
-      case "amount_desc":
-        return getNum(b, "amount") - getNum(a, "amount");
-
-      case "rate_asc":
-        return getNum(a, "rate") - getNum(b, "rate");
-      case "rate_desc":
-        return getNum(b, "rate") - getNum(a, "rate");
-
-      default:
-        return 0;
+    switch (mode) {
+      case "purchase_asc": return get(a,"purchaseDate") - get(b,"purchaseDate");
+      case "purchase_desc": return get(b,"purchaseDate") - get(a,"purchaseDate");
+      case "start_asc": return get(a,"startDate") - get(b,"startDate");
+      case "start_desc": return get(b,"startDate") - get(a,"startDate");
+      case "amount_asc": return get(a,"amount") - get(b,"amount");
+      case "amount_desc": return get(b,"amount") - get(a,"amount");
+      case "rate_asc": return get(a,"rate") - get(b,"rate");
+      case "rate_desc": return get(b,"rate") - get(a,"rate");
+      default: return 0;
     }
   });
 
-  tiles.forEach(t => grid.appendChild(t)); // reorder DOM
-
-  renderLoanTiles(filteredLoans);
+  tiles.forEach(t => grid.appendChild(t));
 }
 
     document.getElementById("filterName").addEventListener("change", applyLoanFilters);
