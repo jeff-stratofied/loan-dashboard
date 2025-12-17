@@ -682,9 +682,6 @@ async function init() {
 if (USE_DYNAMIC_DATA) {
  const apiResult = await loadLoans();
 
-console.log("Amort rawLoans users:", rawLoans.map(l => l.user));
-
-  
 // Support BOTH return shapes:
 // 1) array (amort page)
 // 2) { loans, sha } (admin / other pages)
@@ -692,6 +689,12 @@ const rawLoans = Array.isArray(apiResult)
   ? apiResult
   : apiResult.loans;
 
+// 🔍 DEBUG — verify Admin data is arriving
+console.log(
+  "Amort rawLoans users:",
+  rawLoans.map(l => l.user)
+);
+  
 apiLoans = rawLoans.map(l => ({
   ...l,
   id: String(l.loanId ?? l.id),
