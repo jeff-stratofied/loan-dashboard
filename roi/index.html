@@ -1830,7 +1830,7 @@ function openDrawerForLoan(loan){
       loanStartDate: loan.loanStartDate,
     
       // X-axis label spacing (every 6 months)
-      tickEvery: 6,
+      tickEvery: 12,
     
       labelFn: (pt) =>
         `Date: ${formatDate(pt.ownershipDate)} • ROI ${(pt.y * 100).toFixed(2)}%`
