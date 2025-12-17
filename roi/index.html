@@ -1860,6 +1860,8 @@ function applyLoanSort() {
   });
 
   tiles.forEach(t => grid.appendChild(t)); // reorder DOM
+
+  renderLoanTiles(filteredLoans);
 }
 
     document.getElementById("filterName").addEventListener("change", applyLoanFilters);
