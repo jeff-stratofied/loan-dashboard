@@ -1042,8 +1042,8 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     path.setAttribute("stroke-width", "1.2");
     path.setAttribute("stroke-opacity", "0.9");
     
-    // 👇 IMPORTANT: tag line with loan name
     path.dataset.loanName = ls.name;
+    path.dataset.type = "loan";          // ✅ ADD THIS
     
     svg.appendChild(path);
 
@@ -1463,44 +1463,49 @@ function populateROILoanTable(){
     </tr>`;
   }).join('');
 
-    const chartSvg = drawerChartArea.querySelector("svg");
-    if (!chartSvg) return;
-    
-    const loanPaths = chartSvg.querySelectorAll('path[data-type="loan"]');
-    const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
-    
-    table.querySelectorAll("tbody tr").forEach(row => {
-      const loanName = row.querySelector("strong")?.textContent;
-      if (!loanName) return;
-    
-      row.addEventListener("mouseenter", () => {
-        loanPaths.forEach(p => {
-          if (p.dataset.loanName === loanName) {
-            p.setAttribute("stroke-opacity", "1");
-            p.setAttribute("stroke-width", "2.6");
-          } else {
-            p.setAttribute("stroke-opacity", "0.15");
-            p.setAttribute("stroke-width", "1");
-          }
-        });
-    
-        // Keep weighted line visible but muted
-        if (weightedPath) {
-          weightedPath.setAttribute("stroke-opacity", "0.35");
-        }
-      });
-    
-      row.addEventListener("mouseleave", () => {
-        loanPaths.forEach(p => {
-          p.setAttribute("stroke-opacity", "0.9");
-          p.setAttribute("stroke-width", "1.2");
-        });
-    
-        if (weightedPath) {
-          weightedPath.setAttribute("stroke-opacity", "1");
-        }
-      });
+const chartSvg = drawerChartArea.querySelector("svg");
+if (!chartSvg) return;
+
+// FIX: define table correctly
+const table = document.getElementById("roiLoansTable");
+if (!table) return;
+
+const loanPaths = chartSvg.querySelectorAll('path[data-type="loan"]');
+const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
+
+table.querySelectorAll("tbody tr").forEach(row => {
+  const loanName = row.querySelector("strong")?.textContent;
+  if (!loanName) return;
+
+  row.addEventListener("mouseenter", () => {
+    loanPaths.forEach(p => {
+      if (p.dataset.loanName === loanName) {
+        p.setAttribute("stroke-opacity", "1");
+        p.setAttribute("stroke-width", "2.8");
+      } else {
+        p.setAttribute("stroke-opacity", "0.12");
+        p.setAttribute("stroke-width", "1");
+      }
     });
+
+    // Weighted line stays visible but muted
+    if (weightedPath) {
+      weightedPath.setAttribute("stroke-opacity", "0.25");
+    }
+  });
+
+  row.addEventListener("mouseleave", () => {
+    loanPaths.forEach(p => {
+      p.setAttribute("stroke-opacity", "0.9");
+      p.setAttribute("stroke-width", "1.2");
+    });
+
+    if (weightedPath) {
+      weightedPath.setAttribute("stroke-opacity", "1");
+    }
+  });
+});
+
 
 
 
