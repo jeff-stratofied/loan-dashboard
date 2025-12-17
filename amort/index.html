@@ -684,7 +684,6 @@ apiLoans = attachSchedules(apiLoans);
 
   allLoans = apiLoans.map(l => {
 
-    
     // ADD cumulative values directly into amort.schedule
     let cumP = 0, cumI = 0, cumT = 0;
 
@@ -718,6 +717,16 @@ apiLoans = attachSchedules(apiLoans);
     };
   });
 
+// --------------------------------------------------
+// NORMALIZE user + visible (match Admin defaults)
+// --------------------------------------------------
+allLoans = allLoans.map(l => ({
+  ...l,
+  user: l.user ?? "jeff",
+  visible: l.visible !== false
+}));
+
+  
   // --------------------------------------------------
   // USER + VISIBILITY FILTER (STEP 2B)
   // --------------------------------------------------
