@@ -201,7 +201,12 @@
     }
     .drawer.open{ transform:translateX(0) }
 
-    .drawer-header{ padding:20px; flex-shrink:0; }
+       .drawer-header {
+      padding:20px;
+      flex-shrink:0;
+      border-bottom:1px solid var(--border); /* ✅ match ROI */
+    }
+
     .drawer-head{ display:flex; align-items:start; justify-content:space-between; gap:8px }
     .close-btn{
       background:#f1f5f9;
@@ -211,8 +216,20 @@
       cursor:pointer;
       transition:background-color .25s ease, color .25s ease;
     }
-    .drawer h2{ margin:0 0 6px; font-size:20px }
-    .muted{ color:var(--muted); font-size:13px; margin-bottom:10px }
+    .drawer h2{
+      margin:0 0 4px;
+      font-size:20px;
+      font-weight:600;
+      letter-spacing:-0.01em; /* ✅ ROI match */
+    }
+
+    .muted{
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.25;
+    margin-bottom:6px;
+  }
+
 
     .drawer-body,
     #drawerBody{ flex:1 1 auto; overflow-y:auto; overflow-x:hidden; padding:0 20px 20px; }
@@ -221,7 +238,13 @@
     .drawer-body,
     #drawerBody{ overflow-x:hidden; }
 
-    .drawer-footer{ flex-shrink:0; padding:20px; }
+    .drawer-footer{
+      flex-shrink:0;
+      padding:20px;
+      background:var(--surface);          /* ✅ same gray as ROI */
+      border-top:1px solid var(--border); /* ✅ visual anchor */
+    }
+
     .drawer-footer .actions{ justify-content:flex-start; }
 
     .drawer-chart{
@@ -266,7 +289,7 @@
 
     table{ width:100%; border-collapse:collapse; font-size:13px; transition:color .25s ease; }
     thead th{
-      position:sticky; top:0; background:var(--card);
+      position:sticky; top:0; background:var(--table-header);
       padding:8px; text-align:left; color:var(--muted); font-weight:700; border-bottom:1px solid var(--border);
       transition:background-color .25s ease, color .25s ease, border-color .25s ease;
     }
