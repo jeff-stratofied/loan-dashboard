@@ -1057,6 +1057,15 @@ function computeKPIs(list) {
       currentMode = null;
     }
 
+    function formatCurrency(val) {
+      const n = Number(val) || 0;
+      return `$${n.toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      })}`;
+    }
+
+  
     /* ---------- Open drawer for loan ---------- */
     function openDrawerForLoan(loan) {
       drawerExtra.innerHTML = '';
