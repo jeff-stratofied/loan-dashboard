@@ -1849,7 +1849,7 @@ function applyLoanSort() {
     document.getElementById("filterName").addEventListener("change", applyLoanFilters);
     document.getElementById("filterSchool").addEventListener("change", applyLoanFilters);
     document.getElementById("filterRate").addEventListener("change", applyLoanFilters);
-    
+    document.getElementById("sortLoans").addEventListener("change", applyLoanSort);
     document.getElementById("resetFilters").addEventListener("click", () => {
       document.getElementById("filterName").value = "";
       document.getElementById("filterSchool").value = "";
