@@ -1541,7 +1541,8 @@ function buildHistoricalRoiTimeline(loans) {
     });
 
 
-    rconst id = loan.id ?? loan.loanId;
+    const id = loan.id ?? loan.loanId;
+
     const displayName = loan.name || loan.loanName || `Loan ${id}`;
     
     return {
