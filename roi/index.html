@@ -2373,7 +2373,6 @@ createROISpreadChart(
   }
 );
 
-
   // -------------------------------
   // Table
   // -------------------------------
@@ -2388,7 +2387,7 @@ createROISpreadChart(
         padding:6px;
         background:var(--card);
       ">
-        <table class="roi-table" style="width:100%;font-size:13px;">
+        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
           <thead>
             <tr>
               <th>Loan</th>
@@ -2399,7 +2398,7 @@ createROISpreadChart(
           </thead>
           <tbody>
             ${rows.map(r => `
-              <tr>
+              <tr data-loan-id="${r.id}">
                 <td>
                   <span style="
                     display:inline-block;
@@ -2426,11 +2425,13 @@ createROISpreadChart(
     </div>
   `;
 
+  populateROILoanTable();
+
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden','false');
   drawer.scrollTop = 0;
-}
 
+}
 
     /* -------------------------
        KPI wiring & interactions
