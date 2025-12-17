@@ -778,21 +778,6 @@ html[data-theme="dark"] .drawer-chart{
     }
     const kpis = computeKPIs(loansWithAmort);
 
-    // -------------------------------
-    // KPI4 — ROI Spread computation
-    // -------------------------------
-    const roiValues = loansWithAmort.map(l => {
-      const e = getCurrentOwnedRoiEntry(l);
-      return e?.roi ?? 0;
-    });
-    
-    const minROI = Math.min(...roiValues);
-    const maxROI = Math.max(...roiValues);
-    const roiSpread = maxROI - minROI;
-    
-    document.getElementById("roiSpread").textContent =
-      (roiSpread * 100).toFixed(2) + "%";
-
 
     /* -------------------------
        Small chart utilities (line & bar with hover)
@@ -1242,6 +1227,24 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
         <div class="kpi" data-kpi="spread"><h3>ROI Spread</h3><p id="roiSpread"></p></div>
     `;
 
+      // -------------------------------
+      // KPI4 — ROI Spread value (SAFE)
+      // -------------------------------
+      const roiValues = loansWithAmort.map(l => {
+        const e = getCurrentOwnedRoiEntry(l);
+        return e?.roi ?? 0;
+      });
+      
+      const minROI = Math.min(...roiValues);
+      const maxROI = Math.max(...roiValues);
+      const roiSpread = maxROI - minROI;
+      
+      document.getElementById("roiSpread").textContent =
+        (roiSpread * 100).toFixed(2) + "%";
+      
+      
+
+      
     /* -------------------------
        Render loan tiles + mini charts
        ------------------------- */
