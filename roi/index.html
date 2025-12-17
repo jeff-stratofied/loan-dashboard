@@ -200,6 +200,20 @@ html[data-theme="dark"] body {
     p.lead{ margin:0; color:var(--muted); font-size:13px }
     .current-date{ font-size:13px; color:var(--muted); margin-top:4px }
 
+    /* Loan drawer: make title match page heading feel */
+    .drawer.loan-mode h2{
+      font-size: 26px;
+      font-weight: 800;
+      margin: 0 0 6px;
+    }
+    
+    .drawer.loan-mode .muted{
+      font-size: 13px;
+      margin-bottom: 0;
+    }
+    
+
+    
     /* =========================
        Buttons (unified with Amort Page)
        ========================= */
@@ -307,11 +321,17 @@ html[data-theme="dark"] body {
   border-bottom:1px solid var(--border);
 }
 
-.drawer-body{
-  flex:1;
-  overflow-y:auto;
-  padding:20px;
+.drawer-body,
+#drawerBody{
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  padding: 0 20px 20px;   /* KEY: no top padding */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
+
 
 .drawer-footer{
   padding:20px;
@@ -1806,15 +1826,23 @@ function populateProjectedROILoanTable(){
 
 function openDrawerForLoan(loan){
       currentMode='loan'; currentLoan=loan;
+      drawer.classList.add('loan-mode');
+
+      // --- loan drawer heading (match earnings structure) ---
       drawerTitle.textContent = loan.name || ("Loan " + loan.id);
+      
+      const school = loan.school || "No school";
+      const purchased = loan.purchaseDate || "";
+      const origAmt = (loan.purchasePrice || 0);
+      
       drawerSub.innerHTML = `
-      <div>${loan.school || "No school"}</div>
-      <div style="margin-top:4px;">
-        Purchased ${loan.purchaseDate}
-        &nbsp;•&nbsp;
-        Orig Loan Amt $${(loan.purchasePrice || 0).toLocaleString()}
-      </div>
-    `;
+        <div style="line-height:1.2;">
+          ${school}
+        </div>
+        <div style="margin-top:2px; line-height:1.2;">
+          Purchased ${purchased} &nbsp;•&nbsp; Orig Loan Amt $${origAmt.toLocaleString()}
+        </div>
+      `;
 
       drawerPrimaryTitle.textContent = 'Orig Loan Amount'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
@@ -2008,6 +2036,9 @@ function smoothPath(points) {
 function renderTPVDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
+
+  drawer.classList.remove('loan-mode');
+
 
   // Reset drawer
   drawerAmortContainer.innerHTML = '';
@@ -2208,6 +2239,8 @@ const data = dates.map(date => {
   currentMode = 'kpi';
 currentLoan = null;
 
+    drawer.classList.remove('loan-mode');
+
 drawerAmortContainer.innerHTML = '';
 drawerLegend.style.display = 'none';
 drawerChartArea.innerHTML = '';
@@ -2307,6 +2340,9 @@ function renderAvgRateDrawer() {
 
   currentMode = 'kpi';
   currentLoan = null;
+
+  drawer.classList.remove('loan-mode');
+
 
   // --------------------------------
   // Header
@@ -2526,6 +2562,7 @@ drawerExtraEl.innerHTML = `
 function renderROISpreadDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
+  drawer.classList.remove('loan-mode');
 
   drawerAmortContainer.innerHTML = '';
   drawerLegend.style.display = 'none';
