@@ -2257,50 +2257,78 @@ function renderAvgRateDrawer() {
   // ==================================
   // TABLE — matches Weighted ROI To Date
   // ==================================
-  drawerExtraEl.innerHTML = `
-    <div style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">Loans by Interest Rate</h3>
-      <div style="
-        max-height:300px;
-        overflow:auto;
-        border:1px solid var(--border);
-        border-radius:8px;
-        padding:6px;
-        background:var(--card);
-      ">
-        <table class="roi-table" style="width:100%;font-size:13px;">
-          <thead>
-            <tr>
-              <th style="text-align:left">Loan</th>
-              <th style="text-align:right">Interest Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${loansWithAmort.map(l => {
-              const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
-              return `
-                <tr>
-                  <td>
-                    <div style="font-weight:600;">${l.name}</div>
-                    <div style="font-size:11px;color:var(--muted)">
-                      ${l.school || ''}
-                    </div>
-                  </td>
-                  <td style="
-                    text-align:right;
-                    font-weight:600;
-                    color:${color};
-                  ">
-                    ${(l.nominalRate * 100).toFixed(2)}%
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
+drawerExtraEl.innerHTML = `
+  <div style="margin-top:12px">
+    <h3 style="margin:0 0 8px 0">Loans by Interest Rate</h3>
+    <div style="
+      max-height:300px;
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:6px;
+      background:var(--card);
+    ">
+      <table class="roi-table" style="width:100%;font-size:13px;">
+        <thead>
+          <tr>
+            <th style="text-align:left">Loan</th>
+            <th style="text-align:left">Purchased</th>
+            <th style="text-align:left">Matures</th>
+            <th style="text-align:right">Interest Rate</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${loansWithAmort.map(l => {
+            const id = l.id ?? l.loanId;
+            const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
+
+            let maturity = '';
+            try {
+              const d = new Date(l.purchaseDate);
+              const months = Math.round((l.termYears + l.graceYears) * 12);
+              d.setMonth(d.getMonth() + months);
+              maturity = formatMonthYear(d);
+            } catch {}
+
+            return `
+              <tr>
+                <td style="text-align:left;">
+                  <span style="
+                    display:inline-block;
+                    width:10px;
+                    height:10px;
+                    background:${color};
+                    border-radius:2px;
+                    margin-right:8px;
+                    vertical-align:middle;
+                  "></span>
+                  <strong>${l.name}</strong>
+                  <div style="font-size:12px;color:var(--muted)">
+                    ${l.school || ""}
+                  </div>
+                </td>
+                <td style="text-align:left;">
+                  ${l.purchaseDate || ""}
+                </td>
+                <td style="text-align:left;">
+                  ${maturity}
+                </td>
+                <td style="
+                  text-align:right;
+                  font-weight:700;
+                  color:${color};
+                ">
+                  ${(l.nominalRate * 100).toFixed(2)}%
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
     </div>
-  `;
+  </div>
+`;
+
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
