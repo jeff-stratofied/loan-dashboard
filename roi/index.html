@@ -1064,6 +1064,127 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   containerEl.appendChild(svg);
 }
 
+// ============================================================
+// ROI SPREAD CHART (loan lines ONLY — no weighted line)
+// ============================================================
+function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
+  containerEl.innerHTML = "";
+  const svgNS = "http://www.w3.org/2000/svg";
+
+  const rect = containerEl.getBoundingClientRect();
+  const w = Math.max(360, rect.width || 700);
+  const h = opts.h || 260;
+  const pad = opts.pad || 48;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+  svg.style.display = "block";
+
+  // -------------------------
+  // Unified date axis
+  // -------------------------
+  const globalDates = opts.dates || [];
+  if (!globalDates.length) {
+    containerEl.appendChild(svg);
+    return;
+  }
+
+  const ms0 = globalDates[0].getTime();
+  const ms1 = globalDates[globalDates.length - 1].getTime();
+  const msRange = ms1 - ms0 || 1;
+
+  const dateToX = (d) =>
+    pad + ((d.getTime() - ms0) / msRange) * (w - pad * 2);
+
+  // -------------------------
+  // Y scale (loan data only)
+  // -------------------------
+  let ys = [];
+  loanSeriesList.forEach(ls => ls.data.forEach(p => {
+    if (p.y != null) ys.push(p.y);
+  }));
+
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const rangeY = maxY - minY || 1;
+
+  const yScale = (yVal) =>
+    pad + (h - pad * 2) - ((yVal - minY) / rangeY) * (h - pad * 2);
+
+  // -------------------------
+  // Grid + Y labels
+  // -------------------------
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const y = pad + (i / steps) * (h - pad * 2);
+
+    const grid = document.createElementNS(svgNS, "line");
+    grid.setAttribute("x1", pad);
+    grid.setAttribute("x2", w - pad);
+    grid.setAttribute("y1", y);
+    grid.setAttribute("y2", y);
+    grid.setAttribute("stroke", "var(--border)");
+    grid.setAttribute("stroke-opacity", "0.16");
+    svg.appendChild(grid);
+
+    const val = maxY - (i / steps) * rangeY;
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", pad - 4);
+    label.setAttribute("y", y);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("dominant-baseline", "middle");
+    label.setAttribute("font-size", "10");
+    label.setAttribute("fill", "var(--muted)");
+    label.textContent = (val * 100).toFixed(1) + "%";
+    svg.appendChild(label);
+  }
+
+  // -------------------------
+  // Draw loan lines ONLY
+  // -------------------------
+  loanSeriesList.forEach(ls => {
+    const pts = ls.data
+      .filter(p => p.y != null)
+      .map(p => [dateToX(p.date), yScale(p.y)]);
+
+    if (!pts.length) return;
+
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("d", smoothPathFromPointsCubic(pts));
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", ls.color || "#888");
+    path.setAttribute("stroke-width", "1.2");
+    path.setAttribute("stroke-opacity", "0.9");
+
+    path.dataset.type = "loan";
+    path.dataset.loanId = String(ls.id);
+
+    svg.appendChild(path);
+  });
+
+  // -------------------------
+  // X-axis labels
+  // -------------------------
+  const axis = document.createElementNS(svgNS, "g");
+  const tickSpacing = opts.tickSpacingX || 24;
+
+  globalDates.forEach((d, i) => {
+    if (i % tickSpacing !== 0) return;
+    const t = document.createElementNS(svgNS, "text");
+    t.setAttribute("x", dateToX(d));
+    t.setAttribute("y", h - 4);
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("font-size", "10");
+    t.setAttribute("fill", "var(--muted)");
+    t.textContent = formatMonthYear(d);
+    axis.appendChild(t);
+  });
+
+  svg.appendChild(axis);
+  containerEl.appendChild(svg);
+}
 
    
 
@@ -1399,8 +1520,7 @@ function populateROILoanTable(){
       const loanPaths = Array.from(
         chartSvg.querySelectorAll('path[data-type="loan"]')
       );
-      const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
-    
+
       table.querySelectorAll("tbody tr").forEach(row => {
         const rowLoanId = row.dataset.loanId;
         if (!rowLoanId) return;
@@ -1412,26 +1532,16 @@ function populateROILoanTable(){
         p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
         p.setAttribute("stroke-width", "1.2"); // KEEP ALL LINES SAME WIDTH
       });
-    
-      if (weightedPath) {
-        weightedPath.setAttribute("stroke-opacity", "1");
-      }
     });
     
-        
     row.addEventListener("mouseleave", () => {
       loanPaths.forEach(p => {
         p.setAttribute("stroke-opacity", "0.9");
         p.setAttribute("stroke-width", "1.2");
       });
-    
-      if (weightedPath) {
-        weightedPath.setAttribute("stroke-opacity", "1");
-      }
     });
-    
-      });
-    }
+   });
+ }
 
 function populateProjectedROILoanTable(){
   const tbody = document.querySelector("#roiProjectedLoansTable tbody");
@@ -2250,20 +2360,19 @@ function renderROISpreadDrawer() {
   drawerSecondary.textContent = rows.length;
 
   // -------------------------------
-  // Chart (reuse multi-series)
+  // Chart for Spread Drawer (multi-series)
   // -------------------------------
-  const timeline = buildHistoricalRoiTimeline(loansWithAmort);
+ const timeline = buildHistoricalRoiTimeline(loansWithAmort);
 
-  createMultiSeriesChart(
-    drawerChartArea,
-    timeline.perLoanSeries,
-    timeline.weightedSeries,
-    {
-      weightedColor: "#000",
-      weightedWidth: 2.2,
-      dates: timeline.dates
-    }
-  );
+createROISpreadChart(
+  drawerChartArea,
+  timeline.perLoanSeries,
+  {
+    dates: timeline.dates,
+    tickSpacingX: 24
+  }
+);
+
 
   // -------------------------------
   // Table
