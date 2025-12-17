@@ -575,6 +575,15 @@ html[data-theme="dark"] .close-btn {
       john: "John Investor"
     };
 
+    // -----------------------------
+    // Loan filter DOM elements
+    // (MUST exist before init())
+    // -----------------------------
+    const filterName   = document.getElementById("filterName");
+    const filterSchool = document.getElementById("filterSchool");
+    const filterRate   = document.getElementById("filterRate");
+    const sortLoans    = document.getElementById("sortLoans");
+    
     let tpvSeriesData = [];   // <-- GLOBAL so all drawers can use it
     
     let USE_DYNAMIC_DATA = true;   // stays false until Step 7
@@ -1001,11 +1010,6 @@ svg.innerHTML = `
       });
     });
 
-/* Populate amort filter dropdowns */
-const filterName = document.getElementById("filterName");
-const filterSchool = document.getElementById("filterSchool");
-const filterRate = document.getElementById("filterRate");
-const sortLoans = document.getElementById("sortLoans");
 
 const names = [...new Set(allLoans.map(l => l.loanName).filter(Boolean))];
 const schools = [...new Set(allLoans.map(l => l.school).filter(Boolean))];
