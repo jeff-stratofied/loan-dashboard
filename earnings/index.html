@@ -3416,39 +3416,55 @@ function toggleLoanVisibility(loanId) {
 
 
 function renderKPI2Table(data, containerId = "kpi2Table") {
-  const rows = data.map(l => {
-    const sched = l.earningsSchedule || [];
-    if (!sched.length) return null;
+const rows = data.map(l => {
+  const { row: atCur } = getCurrentEarningsRow(l);
+  const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
 
-    const last = sched[sched.length - 1];
-    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
+  return {
+    loanId: l.loanId,
+    cells: [
+      // Loan on/off swatch (UNCHANGED)
+      `<div
+        class="loan-swatch"
+        data-loan-id="${l.loanId}"
+        title="Toggle loan"
+        style="
+          width:10px;
+          height:10px;
+          border-radius:2px;
+          background:${color};
+          margin:4px auto;
+          cursor:pointer;
+        "
+      ></div>`,
+      // Loan name + school (COLORED — two lines)
+      `<div style="line-height:1.15">
+        <div style="font-weight:600;color:${color}">
+          ${l.loanName}
+        </div>
+        <div style="font-size:12px;color:${color}">
+          ${l.school || ""}
+        </div>
+      </div>`,
+      // Numeric columns (FORCED BLACK)
+      `<span style="color:var(--text)">
+        ${formatCurrency(atCur.netEarnings)}
+      </span>`,
+      `<span style="color:var(--text)">
+        ${formatCurrency(atCur.cumPrincipal)}
+      </span>`,
+      `<span style="color:var(--text)">
+        ${formatCurrency(atCur.cumInterest)}
+      </span>`,
+      `<span style="color:var(--text)">
+        -${formatCurrency(atCur.cumFees)}
+      </span>`
+    ]
+  };
+});
 
-    return {
-      loanId: l.loanId,
-      cells: [
-        // Color swatch (toggle + hover)
-        `<div
-          class="loan-swatch"
-          data-loan-id="${l.loanId}"
-          title="Toggle loan"
-          style="
-            width:10px;
-            height:10px;
-            border-radius:2px;
-            background:${color};
-            margin:4px auto;
-            cursor:pointer;
-          "
-        ></div>`,
-
-        l.loanName,
-        formatCurrency(last.netEarnings),
-        formatCurrency(last.cumPrincipal),
-        formatCurrency(last.cumInterest),
-        "-" + formatCurrency(last.cumFees)
-      ]
-    };
-  }).filter(Boolean);
+    
+    .filter(Boolean);
 
   renderKpiTable(
     containerId,
