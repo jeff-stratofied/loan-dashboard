@@ -644,7 +644,11 @@ allLoans.forEach((loan, i) => {
       <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$${kpis.totalPrincipal.toLocaleString()}</p></div>
       <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${(kpis.weightedRate * 100).toFixed(2)}%</p></div>
       <div class="kpi" data-kpi="payments"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
-      <div class="kpi" data-kpi="distribution"><h3>Total Loans</h3><p>${allLoans.length}</p></div>
+      <div class="kpi" data-kpi="distribution">
+        <h3>Total Invested</h3>
+        <p>$${kpis.totalPrincipal.toLocaleString()}</p>
+      </div>
+
     `;
        /* ============================
        Wire KPI clicks
@@ -1293,12 +1297,20 @@ function renderDistributionDrawer() {
 
   drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
   drawerSub.textContent = 'Number of loans purchased by month';
-  drawerPrimaryTitle.textContent = 'Total Loans';
-  drawerPrimary.textContent = allLoans.length.toLocaleString();
-  drawerSecondaryTitle.textContent = 'Total Invested';
+  // compute once, before setting labels
+const totalInvested = allLoans.reduce(
+  (s, l) => s + (l.purchasePrice || 0),
+  0
+    );
+    
+    // PRIMARY
+    drawerPrimaryTitle.textContent = 'Total Invested';
+    drawerPrimary.textContent = `$${totalInvested.toLocaleString()}`;
+    
+    // SECONDARY
+    drawerSecondaryTitle.textContent = 'Loan Count';
+    drawerSecondary.textContent = allLoans.length.toLocaleString();
 
-  const totalInvested = allLoans.reduce((s, l) => s + l.purchasePrice, 0);
-  drawerSecondary.textContent = `$${totalInvested.toLocaleString()}`;
 
   drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
@@ -1352,23 +1364,32 @@ function renderDistributionDrawer() {
     svg.appendChild(xAxis);
 
   
-  const maxCount = Math.max(...months.map(m => loansByMonth[m].length), 1);
+    const maxValue = Math.max(
+    ...months.map(m =>
+      loansByMonth[m].reduce((s, l) => s + l.purchasePrice, 0)
+      ),
+      1
+    );
+
 
   // Y-axis ticks (loan counts)
-for (let i = 0; i <= maxCount; i++) {
-  const y =
-    h - pad - (i / maxCount) * (h - pad * 2);
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+      const ratio = i / steps;
+      const y = h - pad - ratio * (h - pad * 2);
+    
+      const label = document.createElementNS(svgNS, 'text');
+      label.setAttribute('x', pad - 8);
+      label.setAttribute('y', y + 4);
+      label.setAttribute('font-size', '11');
+      label.setAttribute('text-anchor', 'end');
+      label.setAttribute('fill', '#64748b');
+      label.textContent =
+        '$' + Math.round(ratio * maxValue).toLocaleString();
+    
+      svg.appendChild(label);
+    }
 
-  const label = document.createElementNS(svgNS, 'text');
-  label.setAttribute('x', pad - 8);
-  label.setAttribute('y', y + 4);
-  label.setAttribute('font-size', '11');
-  label.setAttribute('text-anchor', 'end');
-  label.setAttribute('fill', '#64748b');
-  label.textContent = i;
-
-  svg.appendChild(label);
-}
 
 
   // --------------------------------------------------
@@ -1381,10 +1402,11 @@ for (let i = 0; i <= maxCount; i++) {
     const x = pad + i * ((w - pad * 2) / months.length) + gap;
 
     let yCursor = h - pad;
-    const unitH = (h - pad * 2) / maxCount;
-
+    const scale = (h - pad * 2) / maxValue;
+    
     loans.forEach(l => {
-      const segH = unitH;
+      const segH = l.purchasePrice * scale;
+
       yCursor -= segH;
 
       const rect = document.createElementNS(svgNS, 'rect');
@@ -1454,48 +1476,50 @@ if (i % 6 === 0) {
   // KPI4 TABLE — COLORED, LOAN NAME (NOT ID)
   // --------------------------------------------------
   drawerExtra.innerHTML = `
-    <div style="margin-top:10px">
-      <strong class="small">Loans</strong>
-      <div style="max-height:45vh; overflow:auto; margin-top:6px;
-           border-radius:6px; padding:6px;
-           border:1px solid var(--border); background:var(--card)">
-        <table style="width:100%; font-size:13px">
-          <thead>
-            <tr>
-              <th>Loan</th>
-              <th>Purchase</th>
-              <th>Rate</th>
-              <th style="text-align:right">Balance</th>
+  <div style="margin-top:10px">
+    <strong class="small">Loans — Invested Capital</strong>
+    <div style="max-height:45vh; overflow:auto; margin-top:6px;
+         border-radius:6px; padding:6px;
+         border:1px solid var(--border); background:var(--card)">
+      <table style="width:100%; font-size:13px">
+        <thead>
+          <tr>
+            <th>Loan</th>
+            <th>Purchase Date</th>
+            <th style="text-align:right">Invested</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${allLoans.map(l => `
+            <tr data-loan-id="${l.loanId}"
+                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId]}">
+              <td>
+                <span style="
+                  display:inline-block;
+                  width:10px;
+                  height:10px;
+                  border-radius:2px;
+                  background:var(--loan-color);
+                  margin-right:6px;
+                  vertical-align:middle;
+                "></span>
+                ${l.loanName}
+                <div style="font-size:12px;color:var(--muted)">
+                  ${l.school || ""}
+                </div>
+              </td>
+              <td>${l.purchaseDate}</td>
+              <td style="text-align:right">
+                $${l.purchasePrice.toLocaleString()}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            ${allLoans.map(l => `
-              <tr
-                data-loan-id="${l.loanId}"
-                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
-              >
-                <td>
-                  <span style="
-                    display:inline-block;
-                    width:10px;
-                    height:10px;
-                    border-radius:2px;
-                    background:var(--loan-color);
-                    margin-right:6px;
-                    vertical-align:middle;
-                  "></span>
-                  ${l.loanName}
-                </td>
-                <td>${l.purchaseDate}</td>
-                <td>${(l.nominalRate * 100).toFixed(2)}%</td>
-                <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
+          `).join('')}
+        </tbody>
+      </table>
     </div>
-  `;
+  </div>
+`;
+
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
