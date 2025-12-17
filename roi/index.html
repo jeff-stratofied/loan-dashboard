@@ -2117,6 +2117,9 @@ drawer.scrollTop = 0;
 }
 
 function renderAvgRateDrawer() {
+    const drawerExtraEl = document.getElementById('drawerExtra');
+  if (!drawerExtraEl) return;
+
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -2125,7 +2128,7 @@ function renderAvgRateDrawer() {
 
   drawerLegend.style.display = 'none';
   drawerAmortContainer.innerHTML = '';
-  drawerExtra.innerHTML = '';
+  drawerExtraEl.innerHTML = '';
   drawerChartArea.innerHTML = '';
 
   if (!loansWithAmort.length) return;
@@ -2251,7 +2254,7 @@ function renderAvgRateDrawer() {
   // ==================================
   // Loan table (color-matched)
   // ==================================
-document.getElementById('drawerExtra').innerHTML = `
+drawerExtraEl.innerHTML = `
   <div style="margin-top:12px">
     <h3 style="margin:0 0 8px 0">Loans by Interest Rate</h3>
     <div style="
