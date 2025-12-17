@@ -1029,32 +1029,6 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   });
 
   // -----------------------------------
-  // Emphasize BEST & WORST ROI loans
-  // -----------------------------------
-  const lastValues = loanSeriesList
-    .map(ls => {
-      const valid = ls.data.filter(d => d.y != null);
-      return valid.length
-        ? { id: ls.id, y: valid.at(-1).y }
-        : null;
-    })
-    .filter(Boolean);
-
-  if (lastValues.length) {
-    const best = lastValues.reduce((a,b)=> b.y > a.y ? b : a);
-    const worst = lastValues.reduce((a,b)=> b.y < a.y ? b : a);
-
-    svg.querySelectorAll('path[data-type="loan"]').forEach(p => {
-      const id = p.dataset.loanId;
-      if (id === String(best.id) || id === String(worst.id)) {
-        p.dataset.rank = id === String(best.id) ? "best" : "worst";
-        p.setAttribute("stroke-width", "3.2");
-        p.setAttribute("stroke-opacity", "1");
-      }
-    });
-  }
-
-  // -----------------------------------
   // Weighted line
   // -----------------------------------
   if (weightedSeries.length) {
