@@ -2,8 +2,8 @@
   "loans": [
     {
       "loanName": "PSU 2024 8.83",
-      "user": "jeff",
-      "visible": true,
+      "user": "nick",
+      "visible": false,
       "school": "Penn State",
       "loanStartDate": "2024-01-31",
       "purchaseDate": "2024-01-31",
