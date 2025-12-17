@@ -445,9 +445,8 @@ html[data-theme="dark"] .close-btn {
           <p class="lead">Click on the loan below to see & export the amortization schedule.</p>
         </div>
         <div class="header-controls">
-          <div style="font-size:13px;color:var(--muted)">
-          User:
-          <strong style="color:var(--brand)" id="currentUserLabel"></strong>
+          <div style="font-size:13px;color:var(--muted)">Name: <strong style="color:var(--brand)">Jeff Customer</strong></div>
+          <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
         </div>
       </div>
 
@@ -567,14 +566,6 @@ html[data-theme="dark"] .close-btn {
   <script type="module">
     import { loadLoans, attachSchedules } from "../js/loanEngine.js";
 
-    const PAGE_USER = "jeff"; // ← change per page later
-    
-    const USER_LABELS = {
-      jeff: "Jeff Customer",
-      nick: "Nick Lender",
-      john: "John Investor"
-    };
-    
     let tpvSeriesData = [];   // <-- GLOBAL so all drawers can use it
     
     let USE_DYNAMIC_DATA = true;   // stays false until Step 7
@@ -677,22 +668,7 @@ function buildStaticLoans() {
 }
 
 async function init() {
-document.getElementById("currentUserLabel").textContent =
-  USER_LABELS[PAGE_USER];
-
-  // -----------------------------
-  // Loan filter DOM elements
-  // -----------------------------
-  const filterName   = document.getElementById("filterName");
-  const filterSchool = document.getElementById("filterSchool");
-  const filterRate   = document.getElementById("filterRate");
-  const sortLoans    = document.getElementById("sortLoans");
-  const resetBtn     = document.getElementById("resetFilters");
-  const compactToggle = document.getElementById("toggleCompact");
-  const loanGrid     = document.getElementById("loanGrid");
-
-  
-  if (USE_DYNAMIC_DATA) {
+if (USE_DYNAMIC_DATA) {
   let apiLoaded = await loadLoans();  // { loans, sha }
   apiLoans = apiLoaded.map(l => ({
   ...l,
@@ -702,9 +678,12 @@ loanId: String(l.loanId ?? l.id),  // ensures no undefined
   loanName: l.loanName || ""
 }));
 
+
 apiLoans = attachSchedules(apiLoans);
 
+
   allLoans = apiLoans.map(l => {
+
     
     // ADD cumulative values directly into amort.schedule
     let cumP = 0, cumI = 0, cumT = 0;
@@ -739,12 +718,6 @@ apiLoans = attachSchedules(apiLoans);
     };
   });
 
-    // 2. Filter by user + visibility
-    allLoans = allLoans.filter(l =>
-      l.visible !== false &&
-      l.user === PAGE_USER
-    );
-  
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
     // -------------------------------------------
@@ -1013,6 +986,11 @@ svg.innerHTML = `
       });
     });
 
+/* Populate amort filter dropdowns */
+const filterName = document.getElementById("filterName");
+const filterSchool = document.getElementById("filterSchool");
+const filterRate = document.getElementById("filterRate");
+const sortLoans = document.getElementById("sortLoans");
 
 const names = [...new Set(allLoans.map(l => l.loanName).filter(Boolean))];
 const schools = [...new Set(allLoans.map(l => l.school).filter(Boolean))];
@@ -1221,6 +1199,29 @@ function computeKPIs(list) {
    const resetBtn = document.getElementById("resetFilters");
 const compactToggle = document.getElementById("toggleCompact");
 const loanGrid = document.getElementById("loanGrid");
+
+// filters
+filterName.addEventListener("change", applyLoanFilters);
+filterSchool.addEventListener("change", applyLoanFilters);
+filterRate.addEventListener("change", applyLoanFilters);
+
+// sort
+sortLoans.addEventListener("change", applyLoanSort);
+
+// reset
+resetBtn.addEventListener("click", () => {
+  filterName.value = "";
+  filterSchool.value = "";
+  filterRate.value = "";
+  applyLoanFilters();
+});
+
+// compact
+loanGrid.classList.toggle("compact", compactToggle.checked);
+compactToggle.addEventListener("change", () => {
+  loanGrid.classList.toggle("compact", compactToggle.checked);
+});
+
    
 
     /* ============================
@@ -2510,29 +2511,6 @@ function renderPaymentsDrawer() {
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
 
-// filters
-filterName.addEventListener("change", applyLoanFilters);
-filterSchool.addEventListener("change", applyLoanFilters);
-filterRate.addEventListener("change", applyLoanFilters);
-
-// sort
-sortLoans.addEventListener("change", applyLoanSort);
-
-// reset
-resetBtn.addEventListener("click", () => {
-  filterName.value = "";
-  filterSchool.value = "";
-  filterRate.value = "";
-  applyLoanFilters();
-});
-
-// compact
-loanGrid.classList.toggle("compact", compactToggle.checked);
-compactToggle.addEventListener("change", () => {
-  loanGrid.classList.toggle("compact", compactToggle.checked);
-});
-
-  
 }
   // Set Current Date in header
 const currentDateEl = document.getElementById('currentDateLabel');
