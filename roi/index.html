@@ -1433,33 +1433,49 @@ function populateROILoanTable(){
 
     row.addEventListener("mouseenter", () => {
       loanPaths.forEach(p => {
-        if (p.dataset.loanId === rowLoanId) {
-          // highlight ONLY hovered loan
+        const isTarget = p.dataset.loanId === rowLoanId;
+        const isBestOrWorst = p.dataset.rank === "best" || p.dataset.rank === "worst";
+    
+        if (isTarget) {
+          // hovered loan — strongest emphasis
           p.setAttribute("stroke-opacity", "1");
-          p.setAttribute("stroke-width", "3");
+          p.setAttribute("stroke-width", "3.6");
+        } else if (isBestOrWorst) {
+          // keep best & worst visible but subdued
+          p.setAttribute("stroke-opacity", "0.6");
+          p.setAttribute("stroke-width", "3.2");
         } else {
-          // dim other loans
-          p.setAttribute("stroke-opacity", "0.15");
+          // dim everything else
+          p.setAttribute("stroke-opacity", "0.12");
           p.setAttribute("stroke-width", "1");
         }
       });
-
-      // weighted line is NOT part of hover
+    
+      // weighted line stays neutral
       if (weightedPath) {
         weightedPath.setAttribute("stroke-opacity", "1");
       }
     });
-
+    
     row.addEventListener("mouseleave", () => {
       loanPaths.forEach(p => {
-        p.setAttribute("stroke-opacity", "0.9");
-        p.setAttribute("stroke-width", "1.2");
+        const isBestOrWorst = p.dataset.rank === "best" || p.dataset.rank === "worst";
+    
+        p.setAttribute(
+          "stroke-opacity",
+          isBestOrWorst ? "1" : "0.9"
+        );
+        p.setAttribute(
+          "stroke-width",
+          isBestOrWorst ? "3.2" : "1.2"
+        );
       });
-
+    
       if (weightedPath) {
         weightedPath.setAttribute("stroke-opacity", "1");
       }
     });
+
   });
 }
 
