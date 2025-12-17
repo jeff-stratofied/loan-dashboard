@@ -136,6 +136,24 @@ html,body{
   -webkit-font-smoothing: antialiased;
 }
 
+.loan-filters {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 0 0 14px;
+  flex-wrap: wrap;
+}
+
+.loan-filters select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+}
+
+    
 /* Force layout to match Amort: body does NOT scroll */
 html, body {
   height: 100%;
@@ -486,14 +504,33 @@ html[data-theme="dark"] .drawer-chart{
 
 
     <!-- KPI Row -->
-    <section class="kpis" id="kpis"></section>
-
-    <!-- Loan grid -->
-    <section class="grid" id="loanGrid" aria-live="polite"></section>
-  </div>
-
-  <!-- Drawer -->
- <aside id="drawer" class="drawer" aria-hidden="true">
+   <section class="kpis" id="kpis"></section>
+  
+  <!-- Loan Filters -->
+  <section class="loan-filters" id="loanFilters">
+    <select id="filterName">
+      <option value="">All loan names</option>
+    </select>
+  
+    <select id="filterSchool">
+      <option value="">All schools</option>
+    </select>
+  
+    <select id="filterRate">
+      <option value="">All interest rates</option>
+      <option value="low">Below 5%</option>
+      <option value="mid">5% – 8%</option>
+      <option value="high">Above 8%</option>
+    </select>
+  
+    <button class="btn secondary" id="resetFilters">Reset filters</button>
+  </section>
+  
+  <!-- Loan grid -->
+  <section class="grid" id="loanGrid" aria-live="polite"></section>
+  
+    <!-- Drawer -->
+   <aside id="drawer" class="drawer" aria-hidden="true">
 
   
    <div class="drawer-head">
@@ -1562,6 +1599,10 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
 
       const currentRoiEntry = getCurrentOwnedRoiEntry(loan);
       const tile = document.createElement('div'); tile.className='tile'; tile.setAttribute('tabindex','0');
+        tile.dataset.loanName = (loan.name || "").toLowerCase();
+        tile.dataset.school = (loan.school || "").toLowerCase();
+        tile.dataset.rate = loan.nominalRate;
+
       tile.innerHTML = `
         <div class="tile-left">
 
@@ -1644,6 +1685,72 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       svg.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; const hoverG = svg.querySelector('g.mini-hover'); if(hoverG) hoverG.innerHTML=''; });
     });
 
+    // -------------------------
+    // Populate filter dropdowns
+    // -------------------------
+    const nameSelect = document.getElementById("filterName");
+    const schoolSelect = document.getElementById("filterSchool");
+    
+    const uniqueNames = [...new Set(loansWithAmort.map(l => l.name).filter(Boolean))];
+    const uniqueSchools = [...new Set(loansWithAmort.map(l => l.school).filter(Boolean))];
+    
+    uniqueNames.forEach(n => {
+      const opt = document.createElement("option");
+      opt.value = n.toLowerCase();
+      opt.textContent = n;
+      nameSelect.appendChild(opt);
+    });
+    
+    uniqueSchools.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s.toLowerCase();
+      opt.textContent = s;
+      schoolSelect.appendChild(opt);
+    });
+
+      function applyLoanFilters() {
+  const nameVal = document.getElementById("filterName").value;
+  const schoolVal = document.getElementById("filterSchool").value;
+  const rateVal = document.getElementById("filterRate").value;
+
+  document.querySelectorAll("#loanGrid .tile").forEach(tile => {
+    let show = true;
+
+    if (nameVal && !tile.dataset.loanName.includes(nameVal)) {
+      show = false;
+    }
+
+    if (schoolVal && !tile.dataset.school.includes(schoolVal)) {
+      show = false;
+    }
+
+    if (rateVal) {
+      const rate = Number(tile.dataset.rate) * 100;
+      if (
+        (rateVal === "low" && rate >= 5) ||
+        (rateVal === "mid" && (rate < 5 || rate > 8)) ||
+        (rateVal === "high" && rate <= 8)
+      ) {
+        show = false;
+      }
+    }
+
+    tile.style.display = show ? "" : "none";
+  });
+}
+
+      document.getElementById("filterName").addEventListener("change", applyLoanFilters);
+document.getElementById("filterSchool").addEventListener("change", applyLoanFilters);
+document.getElementById("filterRate").addEventListener("change", applyLoanFilters);
+
+document.getElementById("resetFilters").addEventListener("click", () => {
+  document.getElementById("filterName").value = "";
+  document.getElementById("filterSchool").value = "";
+  document.getElementById("filterRate").value = "";
+  applyLoanFilters();
+});
+
+      
     /* -------------------------
        Drawer helpers & openers
        ------------------------- */
