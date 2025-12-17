@@ -1352,6 +1352,7 @@ function populateROILoanTable(){
 
   tbody.innerHTML = loansWithAmort.map(l => {
     const roiEntry = getCurrentOwnedRoiEntry(l);
+
     let matStr = '';
     try {
       const pd = new Date(l.purchaseDate);
@@ -1361,82 +1362,81 @@ function populateROILoanTable(){
     } catch(e) {
       matStr = '';
     }
+
     const roiPct = (roiEntry.roi || 0) * 100;
     const id = l.id ?? l.loanId;
     const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
 
-    return `<tr>
+    // ✅ ADD data-loan-id HERE
+    return `<tr data-loan-id="${id}">
       <td style="text-align:left;">
-      <span style="
-        display:inline-block;
-        width:10px;
-        height:10px;
-        background:${color};
-        border-radius:2px;
-        margin-right:8px;
-        vertical-align:middle;
-      "></span>
-      <strong>${l.name}</strong>
-      <div style="font-size:12px;color:var(--muted)">${l.school || ""}</div>
-    </td>
+        <span style="
+          display:inline-block;
+          width:10px;
+          height:10px;
+          background:${color};
+          border-radius:2px;
+          margin-right:8px;
+          vertical-align:middle;
+        "></span>
+        <strong>${l.name}</strong>
+        <div style="font-size:12px;color:var(--muted)">${l.school || ""}</div>
+      </td>
       <td style="text-align:left;">${l.purchaseDate}</td>
       <td style="text-align:left;">${matStr}</td>
-      <td style="text-align:right;color:${color};font-weight:700">${roiPct.toFixed(2)}%</td>
+      <td style="text-align:right;color:${color};font-weight:700">
+        ${roiPct.toFixed(2)}%
+      </td>
     </tr>`;
   }).join('');
 
-const chartSvg = drawerChartArea.querySelector("svg");
-if (!chartSvg) return;
+  const chartSvg = drawerChartArea.querySelector("svg");
+  if (!chartSvg) return;
 
-// FIX: define table correctly
-const table = document.getElementById("roiLoansTable");
-if (!table) return;
+  const table = document.getElementById("roiLoansTable");
+  if (!table) return;
 
-const loanPaths = Array.from(
-  chartSvg.querySelectorAll('path[data-type="loan"]')
-);
-const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
+  const loanPaths = Array.from(
+    chartSvg.querySelectorAll('path[data-type="loan"]')
+  );
+  const weightedPath = chartSvg.querySelector('path[data-type="weighted"]');
 
-table.querySelectorAll("tbody tr").forEach(row => {
-  const loanName = row.querySelector("strong")?.textContent?.trim();
-  if (!loanName) return;
+  table.querySelectorAll("tbody tr").forEach(row => {
+    const rowLoanId = row.dataset.loanId;
+    if (!rowLoanId) return;
 
-  row.addEventListener("mouseenter", () => {
-    loanPaths.forEach(p => {
-      if (p.dataset.loanName === loanName) {
-        // highlight ONLY the hovered loan
-        p.setAttribute("stroke-opacity", "1");
-        p.setAttribute("stroke-width", "3");
-      } else {
-        // dim other loans
-        p.setAttribute("stroke-opacity", "0.15");
-        p.setAttribute("stroke-width", "1");
+    row.addEventListener("mouseenter", () => {
+      loanPaths.forEach(p => {
+        if (p.dataset.loanId === rowLoanId) {
+          // highlight ONLY hovered loan
+          p.setAttribute("stroke-opacity", "1");
+          p.setAttribute("stroke-width", "3");
+        } else {
+          // dim other loans
+          p.setAttribute("stroke-opacity", "0.15");
+          p.setAttribute("stroke-width", "1");
+        }
+      });
+
+      // weighted line is NOT part of hover
+      if (weightedPath) {
+        weightedPath.setAttribute("stroke-opacity", "1");
       }
     });
 
-    // weighted line stays visible but muted
-    if (weightedPath) {
-      weightedPath.setAttribute("stroke-opacity", "0.35");
-    }
-  });
+    row.addEventListener("mouseleave", () => {
+      loanPaths.forEach(p => {
+        p.setAttribute("stroke-opacity", "0.9");
+        p.setAttribute("stroke-width", "1.2");
+      });
 
-  row.addEventListener("mouseleave", () => {
-    loanPaths.forEach(p => {
-      p.setAttribute("stroke-opacity", "0.9");
-      p.setAttribute("stroke-width", "1.2");
+      if (weightedPath) {
+        weightedPath.setAttribute("stroke-opacity", "1");
+      }
     });
-
-    if (weightedPath) {
-      weightedPath.setAttribute("stroke-opacity", "1");
-    }
   });
-});
-
-
-
-
-
 }
+
 
 
 function openDrawerForLoan(loan){
