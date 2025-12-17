@@ -1230,7 +1230,7 @@ function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
 
     // visible line
     const path = document.createElementNS(svgNS, "path");
-    path.setAttribute("d", smoothPathFromPointsCubic(pts));
+    path.setAttribute("d", smoothPathFromPoints(pts));
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", ls.color || "#888");
     path.setAttribute("stroke-width", "1.2");
