@@ -2117,25 +2117,29 @@ drawer.scrollTop = 0;
 }
 
 function renderAvgRateDrawer() {
-    const drawerExtraEl = document.getElementById('drawerExtra');
+  const drawerExtraEl = document.getElementById('drawerExtra');
   if (!drawerExtraEl) return;
+  if (!drawerChartArea) return;
 
   currentMode = 'kpi';
   currentLoan = null;
 
+  // --------------------------------
+  // Header
+  // --------------------------------
   drawerTitle.textContent = 'Average Interest Rate';
   drawerSub.textContent = 'Distribution of loan nominal rates';
 
   drawerLegend.style.display = 'none';
   drawerAmortContainer.innerHTML = '';
-  drawerExtraEl.innerHTML = '';
   drawerChartArea.innerHTML = '';
+  drawerExtraEl.innerHTML = '';
 
   if (!loansWithAmort.length) return;
 
-  // -------------------------------
+  // --------------------------------
   // Primary / Secondary KPI numbers
-  // -------------------------------
+  // --------------------------------
   drawerPrimaryTitle.textContent = 'Average Rate';
   drawerPrimary.textContent = (kpis.avgRate * 100).toFixed(2) + '%';
 
@@ -2143,7 +2147,7 @@ function renderAvgRateDrawer() {
   drawerSecondary.textContent = loansWithAmort.length;
 
   // ==================================================
-  // STACKED BAR CHART — Avg Interest Rate (Amort-style)
+  // STACKED BAR CHART — Avg Interest Rate
   // ==================================================
   const svgNS = 'http://www.w3.org/2000/svg';
   const rect = drawerChartArea.getBoundingClientRect();
@@ -2229,7 +2233,7 @@ function renderAvgRateDrawer() {
         tooltip.style.left = ev.clientX + 'px';
         tooltip.style.top = (ev.clientY - 12) + 'px';
         tooltip.innerHTML =
-          `${loan.name} (${loan.school})<br>` +
+          `${loan.name}${loan.school ? ' (' + loan.school + ')' : ''}<br>` +
           `${(loan.nominalRate * 100).toFixed(2)}%`;
       });
 
@@ -2240,7 +2244,6 @@ function renderAvgRateDrawer() {
       svg.appendChild(seg);
     });
 
-    // X-axis label
     const lbl = document.createElementNS(svgNS, 'text');
     lbl.setAttribute('x', x + barW / 2);
     lbl.setAttribute('y', h - padB + 20);
@@ -2252,94 +2255,58 @@ function renderAvgRateDrawer() {
   });
 
   // ==================================
-  // Loan table (color-matched)
+  // TABLE — matches Weighted ROI To Date
   // ==================================
-drawerExtraEl.innerHTML = `
-  <div style="margin-top:12px">
-    <h3 style="margin:0 0 8px 0">Loans by Interest Rate</h3>
-    <div style="
-      max-height:300px;
-      overflow:auto;
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:6px;
-      background:var(--card);
-    ">
-      <table class="roi-table" style="width:100%;font-size:13px;">
-        <thead>
-          <tr>
-            <th style="text-align:left">Loan</th>
-            <th style="text-align:right">Interest Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${loansWithAmort.map(l => {
-            const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
-            return `
-              <tr>
-                <td>
-                  <div style="font-weight:600;">${l.name}</div>
-                  <div style="font-size:11px;color:var(--muted)">
-                    ${l.school || ''}
-                  </div>
-                </td>
-                <td style="
-                  text-align:right;
-                  font-weight:600;
-                  color:${color};
-                ">
-                  ${(l.nominalRate * 100).toFixed(2)}%
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
+  drawerExtraEl.innerHTML = `
+    <div style="margin-top:12px">
+      <h3 style="margin:0 0 8px 0">Loans by Interest Rate</h3>
+      <div style="
+        max-height:300px;
+        overflow:auto;
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:6px;
+        background:var(--card);
+      ">
+        <table class="roi-table" style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="text-align:left">Loan</th>
+              <th style="text-align:right">Interest Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${loansWithAmort.map(l => {
+              const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
+              return `
+                <tr>
+                  <td>
+                    <div style="font-weight:600;">${l.name}</div>
+                    <div style="font-size:11px;color:var(--muted)">
+                      ${l.school || ''}
+                    </div>
+                  </td>
+                  <td style="
+                    text-align:right;
+                    font-weight:600;
+                    color:${color};
+                  ">
+                    ${(l.nominalRate * 100).toFixed(2)}%
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-`;
-
-
-  const tbody = document.getElementById('avgRateTableBody');
-  tbody.innerHTML = '';
-
-  loansWithAmort.forEach(l => {
-    const maturity = addMonths(
-      new Date(l.loanStartDate),
-      Math.round((l.termYears + l.graceYears) * 12)
-    );
-
-    const row = `
-      <tr>
-        <td>
-          <span style="
-            display:inline-block;
-            width:10px;
-            height:10px;
-            border-radius:2px;
-            background:${window.KPI_COLOR_MAP[l.id]};
-            margin-right:6px;
-            vertical-align:middle;
-          "></span>
-          ${l.name} (${l.school})
-        </td>
-        <td>${l.purchaseDate}</td>
-        <td>${formatMonthYear(maturity)}</td>
-        <td style="
-          text-align:right;
-          font-weight:700;
-          color:${window.KPI_COLOR_MAP[l.id]};
-        ">
-          ${(l.nominalRate * 100).toFixed(2)}%
-        </td>
-      </tr>
-    `;
-    tbody.insertAdjacentHTML('beforeend', row);
-  });
+  `;
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
+  drawer.scrollTop = 0;
 }
+
 
 // ============================================================
 // KPI4 — ROI SPREAD DRAWER
