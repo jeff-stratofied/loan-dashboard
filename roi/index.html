@@ -1481,8 +1481,11 @@ function populateProjectedROILoanTable(){
   }).join('');
 
   // ---------- hover logic ----------
-  const chartSvg = drawerChartArea.querySelector("svg");
-  if (!chartSvg) return;
+  // Ensure we bind to the MOST RECENT chart SVG
+  const svgs = drawerChartArea.querySelectorAll("svg");
+  if (!svgs.length) return;
+  const chartSvg = svgs[svgs.length - 1];
+
 
   const table = document.getElementById("roiProjectedLoansTable");
   if (!table) return;
