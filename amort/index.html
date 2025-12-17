@@ -1063,8 +1063,19 @@ function computeKPIs(list) {
       currentMode = 'loan';
       currentLoan = loan;
 
-     drawerTitle.textContent = `${loan.loanName} — ${loan.school}`;
-      drawerSub.textContent = `Purchased: ${loan.purchaseDate}`;
+     // ------------------------------------
+    // ROI / Earnings–style amort header
+    // ------------------------------------
+    drawerTitle.textContent = loan.name || loan.loanName;
+    
+    drawerSub.innerHTML = `
+      <div>${loan.school || ""}</div>
+      <div>
+        Purchased ${loan.purchaseDate}
+        • Orig Loan Amt ${formatCurrency(loan.purchasePrice || loan.origLoanAmt || 0)}
+      </div>
+    `;
+
       drawerPrimaryTitle.textContent = 'Purchase Price';
       drawerSecondaryTitle.textContent = 'Rate';
       drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
