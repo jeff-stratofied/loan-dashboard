@@ -2598,6 +2598,39 @@ drawerExtra.innerHTML = `
   </div>
 `;
 
+  // -----------------------------------------
+  // ROI Spread table row → chart hover binding
+  // -----------------------------------------
+  const chartSvg = drawerChartArea.querySelector("svg");
+  if (chartSvg) {
+    const loanPaths = Array.from(
+      chartSvg.querySelectorAll('path[data-type="loan"]')
+    );
+  
+    const table = document.getElementById("roiLoansTable");
+    if (table) {
+      table.querySelectorAll("tbody tr").forEach(row => {
+        const rowLoanId = row.dataset.loanId;
+        if (!rowLoanId) return;
+  
+        row.addEventListener("mouseenter", () => {
+          loanPaths.forEach(p => {
+            const isTarget = p.dataset.loanId === rowLoanId;
+            p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
+            p.setAttribute("stroke-width", isTarget ? "2.6" : "1.2");
+          });
+        });
+  
+        row.addEventListener("mouseleave", () => {
+          loanPaths.forEach(p => {
+            p.setAttribute("stroke-opacity", "0.9");
+            p.setAttribute("stroke-width", "1.2");
+          });
+        });
+      });
+    }
+  }
+
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden','false');
