@@ -1842,7 +1842,9 @@ function openDrawerForLoan(loan){
 
       drawerPrimaryTitle.textContent = 'Orig Loan Amount'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
-      drawerExtra.innerHTML=''; drawerLegend.style.display='flex'; drawerLegend.innerHTML = '<div class=\"item\"><span class=\"sw\" style=\"background:#0f172a\"></span>Balance</div><div class=\"item\"><span class=\"sw\" style=\"background:#0ea5e9\"></span>ROI</div>';
+      drawerExtra.innerHTML=''; 
+      drawerLegend.style.display = 'none';
+      drawerLegend.innerHTML = '';
 
       const series = loan.roiSeries.map(s=>({x: formatMonthYear(s.ownershipDate), y:s.roi, ownershipDate: s.ownershipDate}));
       createLineChart(drawerChartArea, series, {
