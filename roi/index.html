@@ -940,62 +940,56 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   // Build a unified date axis
   // -------------------------
   const globalDates = opts.dates || [];
-  const count = globalDates.length;
-
-  if (!count) {
+  if (!globalDates.length) {
     containerEl.appendChild(svg);
     return;
   }
 
   const ms0 = globalDates[0].getTime();
-  const ms1 = globalDates[count - 1].getTime();
+  const ms1 = globalDates[globalDates.length - 1].getTime();
   const msRange = ms1 - ms0 || 1;
 
   const dateToX = (d) => {
-    const t = d.getTime();
-    const ratio = (t - ms0) / msRange;
+    const ratio = (d.getTime() - ms0) / msRange;
     return pad + ratio * (w - pad * 2);
   };
 
   let ys = [];
-  weightedSeries.forEach((p) => ys.push(p.y));
-  loanSeriesList.forEach((ls) => ls.data.forEach((p) => ys.push(p.y)));
+  weightedSeries.forEach(p => ys.push(p.y));
+  loanSeriesList.forEach(ls => ls.data.forEach(p => ys.push(p.y)));
 
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
   const rangeY = maxY - minY || 1;
 
-  const yScale = (yVal) => {
-    const pct = (yVal - minY) / rangeY;
-    return pad + (h - pad * 2) - pct * (h - pad * 2);
-  };
+  const yScale = (yVal) =>
+    pad + (h - pad * 2) - ((yVal - minY) / rangeY) * (h - pad * 2);
 
   // -----------------------------------
   // Grid + Y labels
   // -----------------------------------
   const steps = 4;
-  for (let gy = 0; gy <= steps; gy++) {
-    const ratio = gy / steps;
-    const y = pad + ratio * (h - pad * 2);
+  for (let i = 0; i <= steps; i++) {
+    const y = pad + (i / steps) * (h - pad * 2);
 
-    const line = document.createElementNS(svgNS, "line");
-    line.setAttribute("x1", pad);
-    line.setAttribute("x2", w - pad);
-    line.setAttribute("y1", y);
-    line.setAttribute("y2", y);
-    line.setAttribute("stroke", "var(--border)");
-    line.setAttribute("stroke-opacity", "0.16");
-    svg.appendChild(line);
+    const grid = document.createElementNS(svgNS, "line");
+    grid.setAttribute("x1", pad);
+    grid.setAttribute("x2", w - pad);
+    grid.setAttribute("y1", y);
+    grid.setAttribute("y2", y);
+    grid.setAttribute("stroke", "var(--border)");
+    grid.setAttribute("stroke-opacity", "0.16");
+    svg.appendChild(grid);
 
-    const value = maxY - ratio * rangeY;
+    const val = maxY - (i / steps) * rangeY;
     const label = document.createElementNS(svgNS, "text");
-    label.setAttribute("x", pad - 1);
+    label.setAttribute("x", pad - 4);
     label.setAttribute("y", y);
     label.setAttribute("text-anchor", "end");
     label.setAttribute("dominant-baseline", "middle");
     label.setAttribute("font-size", "10");
     label.setAttribute("fill", "var(--muted)");
-    label.textContent = (value * 100).toFixed(1) + "%";
+    label.textContent = (val * 100).toFixed(1) + "%";
     svg.appendChild(label);
   }
 
@@ -1003,23 +997,21 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     if (points.length < 2) return "";
     let d = `M ${points[0][0]} ${points[0][1]}`;
     for (let i = 1; i < points.length; i++) {
-      const p0 = points[i - 1];
-      const p1 = points[i];
-      const cx = (p0[0] + p1[0]) / 2;
-      const cy = (p0[1] + p1[1]) / 2;
-      d += ` Q ${p0[0]} ${p0[1]}, ${cx} ${cy}`;
+      const [x0, y0] = points[i - 1];
+      const [x1, y1] = points[i];
+      d += ` Q ${x0} ${y0}, ${(x0 + x1) / 2} ${(y0 + y1) / 2}`;
     }
-    d += ` T ${points[points.length - 1][0]} ${points[points.length - 1][1]}`;
+    d += ` T ${points.at(-1)[0]} ${points.at(-1)[1]}`;
     return d;
   }
 
   // -----------------------------------
-  // Draw loan lines (FIXED)
+  // Draw loan lines
   // -----------------------------------
-  loanSeriesList.forEach((ls) => {
+  loanSeriesList.forEach(ls => {
     const pts = ls.data
-      .filter((pt) => pt.y != null)
-      .map((pt) => [dateToX(pt.date), yScale(pt.y)]);
+      .filter(p => p.y != null)
+      .map(p => [dateToX(p.date), yScale(p.y)]);
 
     if (!pts.length) return;
 
@@ -1030,7 +1022,6 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     path.setAttribute("stroke-width", "1.2");
     path.setAttribute("stroke-opacity", "0.9");
 
-    // ✅ CRITICAL FIX
     path.dataset.type = "loan";
     path.dataset.loanId = String(ls.id);
 
@@ -1038,49 +1029,67 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   });
 
   // -----------------------------------
-  // Weighted line (black)
+  // Emphasize BEST & WORST ROI loans
+  // -----------------------------------
+  const lastValues = loanSeriesList
+    .map(ls => {
+      const valid = ls.data.filter(d => d.y != null);
+      return valid.length
+        ? { id: ls.id, y: valid.at(-1).y }
+        : null;
+    })
+    .filter(Boolean);
+
+  if (lastValues.length) {
+    const best = lastValues.reduce((a,b)=> b.y > a.y ? b : a);
+    const worst = lastValues.reduce((a,b)=> b.y < a.y ? b : a);
+
+    svg.querySelectorAll('path[data-type="loan"]').forEach(p => {
+      const id = p.dataset.loanId;
+      if (id === String(best.id) || id === String(worst.id)) {
+        p.dataset.rank = id === String(best.id) ? "best" : "worst";
+        p.setAttribute("stroke-width", "3.2");
+        p.setAttribute("stroke-opacity", "1");
+      }
+    });
+  }
+
+  // -----------------------------------
+  // Weighted line
   // -----------------------------------
   if (weightedSeries.length) {
-    const pts = weightedSeries.map((pt) => [
-      dateToX(pt.date),
-      yScale(pt.y),
-    ]);
-
+    const pts = weightedSeries.map(p => [dateToX(p.date), yScale(p.y)]);
     const path = document.createElementNS(svgNS, "path");
     path.setAttribute("d", smoothPathFromPointsCubic(pts));
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", opts.weightedColor || "#000");
     path.setAttribute("stroke-width", opts.weightedWidth || "2.6");
-
     path.dataset.type = "weighted";
-
     svg.appendChild(path);
   }
 
   // -----------------------------------
   // X-axis
   // -----------------------------------
-  const axisGroup = document.createElementNS(svgNS, "g");
+  const axis = document.createElementNS(svgNS, "g");
   const tickSpacing = opts.tickSpacingX || 24;
 
-  globalDates.forEach((dateObj, idx) => {
-    if (idx % tickSpacing !== 0) return;
-    const x = dateToX(dateObj);
-
-    const lbl = document.createElementNS(svgNS, "text");
-    lbl.setAttribute("x", x);
-    lbl.setAttribute("y", h - 4);
-    lbl.setAttribute("text-anchor", "middle");
-    lbl.setAttribute("font-size", "10");
-    lbl.setAttribute("fill", "var(--muted)");
-    lbl.textContent = formatMonthYear(dateObj);
-    axisGroup.appendChild(lbl);
+  globalDates.forEach((d,i) => {
+    if (i % tickSpacing !== 0) return;
+    const t = document.createElementNS(svgNS, "text");
+    t.setAttribute("x", dateToX(d));
+    t.setAttribute("y", h - 4);
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("font-size", "10");
+    t.setAttribute("fill", "var(--muted)");
+    t.textContent = formatMonthYear(d);
+    axis.appendChild(t);
   });
 
-  svg.appendChild(axisGroup);
-
+  svg.appendChild(axis);
   containerEl.appendChild(svg);
 }
+
 
    
 
