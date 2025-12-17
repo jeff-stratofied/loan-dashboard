@@ -890,9 +890,46 @@ html[data-theme="dark"] .drawer-chart{
     vLine.setAttribute('x1', -9999); 
     vLine.setAttribute('x2', -9999);
 });
+    // -----------------------------------
+    // X AXIS (Month / Year)
+    // -----------------------------------
+    const xAxis = document.createElementNS(svgNS, 'g');
+    const tickEvery = opts.tickEvery || 6;
+  
+    data.forEach((p, i) => {
+      if (i % tickEvery !== 0) return;
+  
+      const x = pad + i * stepX;
+      const lbl = document.createElementNS(svgNS, 'text');
+      lbl.setAttribute('x', x);
+      lbl.setAttribute('y', h - 8);
+      lbl.setAttribute('text-anchor', 'middle');
+      lbl.setAttribute('font-size', '10');
+      lbl.setAttribute('fill', 'var(--muted)');
+      lbl.textContent = p.ownershipDate
+        ? formatMonthYear(p.ownershipDate)
+        : `M${i + 1}`;
+  
+      xAxis.appendChild(lbl);
+    });
+  
+    svg.appendChild(xAxis);
+  
+    // -----------------------------------
+    // Y AXIS LABEL (% ROI)
+    // -----------------------------------
+    const yLabel = document.createElementNS(svgNS, 'text');
+    yLabel.setAttribute('x', 14);
+    yLabel.setAttribute('y', pad - 10);
+    yLabel.setAttribute('font-size', '10');
+    yLabel.setAttribute('fill', 'var(--muted)');
+    yLabel.setAttribute('text-anchor', 'start');
+    yLabel.textContent = 'ROI %';
+    svg.appendChild(yLabel);
 
       containerEl.appendChild(svg); return svg;
     }
+      
     function smoothPathFromPoints(points) {
       if (points.length < 3) {
       return points.map((p,i) => 
@@ -1778,9 +1815,8 @@ function openDrawerForLoan(loan){
           ${loan.school || "No school"}
         </div>
       `;
-      
       drawerSub.innerHTML = `
-        <div style="margin-top:6px; font-size:12px; color:var(--muted);">
+        <div style="margin-top:4px; font-size:12px; color:var(--muted);">
           Purchased ${loan.purchaseDate} &nbsp;•&nbsp; Orig Loan Amt $${(loan.purchasePrice || 0).toLocaleString()}
         </div>
       `;
