@@ -201,14 +201,28 @@
       "user": "jeff",
       "visible": true,
       "school": "NYU",
-      "loanStartDate": "2024-11-05",
-      "purchaseDate": "2025-02-11",
-      "principal": 7000,
-      "purchasePrice": 6500,
-      "rate": 0.092,
+      "loanStartDate": "2025-04-05",
+      "purchaseDate": "2025-09-05",
+      "principal": 8200,
+      "purchasePrice": 8200,
+      "rate": 0.087,
       "termYears": 10,
-      "graceYears": 2,
+      "graceYears": 1,
       "loanId": "S4I46M5NFY"
+    },
+    {
+      "loanName": "CMU 2024 9.50 (Copy)",
+      "user": "john",
+      "visible": true,
+      "school": "Carnegie Mellon",
+      "loanStartDate": "2025-06-02",
+      "purchaseDate": "2025-06-03",
+      "principal": 6000,
+      "purchasePrice": 6000,
+      "rate": 0.09,
+      "termYears": 10,
+      "graceYears": 1,
+      "loanId": "L5UUOEUJAU"
     }
   ]
 }
