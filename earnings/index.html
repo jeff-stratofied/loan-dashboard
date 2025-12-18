@@ -1874,26 +1874,22 @@ if (!isKpi4) {
     const fees = row.contributions
       .reduce((s, c) => s + (c.fees ?? 0), 0);
     
-    // ------------------------------------
-    // KPI2 FIX: cumulative baseline offset
-    // ------------------------------------
-    let net;
-    
+// ------------------------------------
+// KPI2 / KPI3 / KPI1 tooltip net
+// ------------------------------------
 const net = principal + interest - fees;
 
 let tooltipLines;
 
 if (isKpi4) {
-  // KPI4 — Projected Avg Monthly Earnings
-  const net = row.contributions
+  const kpi4Net = row.contributions
     .reduce((s, c) => s + (c.net ?? 0), 0);
 
   tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
-    `Projected Net: ${formatCurrency(net)}`
+    `Projected Net: ${formatCurrency(kpi4Net)}`
   ];
 } else {
-  // Other KPIs (unchanged behavior)
   tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
     `Principal: ${formatCurrency(principal)}`,
@@ -1902,6 +1898,7 @@ if (isKpi4) {
     `Net: ${formatCurrency(net)}`
   ];
 }
+
 
 setMiniTooltipContent(tooltipLines);
 positionMiniTooltip(e.clientX, e.clientY, lensRadius);
