@@ -550,7 +550,7 @@ html[data-theme="dark"] .drawer-chart{
   
       <div class="header-controls">
         <div style="font-size:13px;color:var(--muted)">
-          User: <strong style="color:var(--brand)">Jeff Customer</strong>
+          User: <strong id="currentUserLabel" style="color:var(--brand)"></strong>
         </div>
         <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
       </div>
@@ -704,6 +704,16 @@ html[data-theme="dark"] .drawer-chart{
        ==================================== -->
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js";
+
+  const PAGE_USER =
+  new URLSearchParams(window.location.search).get("user") || "jeff";
+
+    const USER_LABELS = {
+  jeff: "Jeff Customer",
+  nick: "Nick Lender",
+  john: "John Investor"
+};
+
     
     function addMonths(date, months) {
       const d = new Date(date);
@@ -731,6 +741,12 @@ html[data-theme="dark"] .drawer-chart{
              (d2.getMonth() - d1.getMonth());
     }
 
+    // ----------------------------
+    // Bind current user label
+    // ----------------------------
+    document.getElementById("currentUserLabel").textContent =
+      USER_LABELS[PAGE_USER] || "Unknown User";
+        
     /* -------------------------
        Settings & data
        ------------------------- */
@@ -847,6 +863,23 @@ html[data-theme="dark"] .drawer-chart{
 
       });
 
+    // --------------------------------------------------
+    // NORMALIZE user + visible (match Amort page)
+    // --------------------------------------------------
+    const normalizedLoans = loansWithAmort.map(l => ({
+      ...l,
+      user: l.user ?? "jeff",
+      visible: l.visible !== false
+    }));
+
+      // --------------------------------------------------
+      // USER + VISIBILITY FILTER
+      // --------------------------------------------------
+      const currentLoans = normalizedLoans.filter(l =>
+        l.user === PAGE_USER && l.visible === true
+      );
+
+      
     /* -------------------------
        KPI computations
        ------------------------- */
@@ -884,9 +917,10 @@ html[data-theme="dark"] .drawer-chart{
       }
       
       // 3) Stable ordering (important!)
-      const sortedLoansForColors = loansWithAmort
-        .slice()
-        .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
+      const sortedLoansForColors = currentLoans
+      .slice()
+      .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
+
       
       // 4) Build final palette
       const extraNeeded = Math.max(0, sortedLoansForColors.length - BASE_DISTINCT_COLORS.length);
@@ -897,9 +931,6 @@ html[data-theme="dark"] .drawer-chart{
         const id = loan.id ?? loan.loanId;
         window.KPI_COLOR_MAP[id] = palette[i];
       });
-
-
-
       
     function getCurrentOwnedRoiEntry(loan){
       const today = new Date();
@@ -923,7 +954,7 @@ html[data-theme="dark"] .drawer-chart{
       const avgRate = list.reduce((s,l)=> s + l.nominalRate * l.purchasePrice, 0) / Math.max(1, total);
       return { total, weightedROI, projectedWeightedROI, avgRate };
     }
-    const kpis = computeKPIs(loansWithAmort);
+    const kpis = computeKPIs(currentLoans);
 
 
     /* -------------------------
@@ -1387,7 +1418,7 @@ function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
   // -------------------------
   // Draw loan lines ONLY  (+ line hover tooltip)
   // -------------------------
-  const loanById = new Map(loansWithAmort.map(l => [String(l.id ?? l.loanId), l]));
+  const loanById = new Map(currentLoans.map(l => [String(l.id ?? l.loanId), l]));
   const loanPaths = [];
 
   function setActiveLoan(activeId){
@@ -1650,10 +1681,11 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
       // -------------------------------
       // KPI4 — ROI Spread value (SAFE)
       // -------------------------------
-      const roiValues = loansWithAmort.map(l => {
-        const e = getCurrentOwnedRoiEntry(l);
-        return e?.roi ?? 0;
-      });
+      const roiValues = currentLoans.map(l => {
+      const e = getCurrentOwnedRoiEntry(l);
+      return e?.roi ?? 0;
+    });
+    ;
       
       const minROI = Math.min(...roiValues);
       const maxROI = Math.max(...roiValues);
@@ -1671,7 +1703,7 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
     const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
 
-    loansWithAmort
+    currentLoans
       .slice()
       .sort((a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate))
       .forEach((loan, idx) => {
@@ -1774,8 +1806,9 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
     const nameSelect = document.getElementById("filterName");
     const schoolSelect = document.getElementById("filterSchool");
     
-    const uniqueNames = [...new Set(loansWithAmort.map(l => l.name).filter(Boolean))];
-    const uniqueSchools = [...new Set(loansWithAmort.map(l => l.school).filter(Boolean))];
+    const uniqueNames = [...new Set(currentLoans.map(l => l.name).filter(Boolean))];
+    const uniqueSchools = [...new Set(currentLoans.map(l => l.school).filter(Boolean))];
+
     
     uniqueNames.forEach(n => {
       const opt = document.createElement("option");
