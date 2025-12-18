@@ -703,7 +703,10 @@ html[data-theme="dark"] .drawer-chart{
        Script (organized with sections)
        ==================================== -->
   <script type="module">
-    import { buildAmortSchedule } from "../js/loanEngine.js";
+    import { loadLoans } from "../js/loadLoans.js";
+    import { normalizeLoan } from "../js/normalizeLoan.js";
+    import { attachSchedules } from "../js/loanEngine.js";
+
     
     function addMonths(date, months) {
       const d = new Date(date);
@@ -737,6 +740,29 @@ html[data-theme="dark"] .drawer-chart{
     // Dynamic loans loaded from backend
     let loans = [];
 
+function assertLoanShape(l, idx) {
+  const required = [
+    "loanId",
+    "loanName",
+    "purchaseDate",
+    "loanStartDate",
+    "principal",
+    "purchasePrice",
+    "rate",
+    "termYears",
+    "graceYears"
+  ];
+
+  required.forEach(k => {
+    if (l[k] === undefined || l[k] === null) {
+      console.warn(
+        `[ROI schema drift] loan[${idx}] missing "${k}"`,
+        l
+      );
+    }
+  });
+}
+    
     async function loadLoans() {
       const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
       const data = await res.json();
@@ -753,8 +779,12 @@ html[data-theme="dark"] .drawer-chart{
         upfrontFee: Number(l.upfrontFee ?? 150),
         monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
       }));
+// DEV-ONLY: catch backend / engine drift early
+loans.forEach((l, i) => assertLoanShape(l, i));
+      
     }
 
+    
     /* -------------------------
        Amortization logic
        ------------------------- */
