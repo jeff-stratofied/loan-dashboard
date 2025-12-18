@@ -1879,7 +1879,35 @@ if (!isKpi4) {
     // ------------------------------------
     let net;
     
-const net = principal + interest - fees;
+    if (opts.projected === true) {
+      // portfolio net-to-date (today baseline)
+      const baseline = portfolioViews?.kpis?.totalNetToDate ?? 0;
+    
+      // projected net at THIS month
+      const projectedHere = principal + interest - fees;
+    
+      // projected net at TODAY (first row >= today)
+      if (!createKpiStackedChart.__kpi2TodayNet) {
+        const todayRow = rows.find(r => r.date >= new Date());
+        if (todayRow) {
+          createKpiStackedChart.__kpi2TodayNet =
+            todayRow.contributions.reduce(
+              (s, c) => s + (c.principal ?? 0) + (c.interest ?? 0) - (c.fees ?? 0),
+              0
+            );
+        } else {
+          createKpiStackedChart.__kpi2TodayNet = projectedHere;
+        }
+      }
+    
+      net =
+        baseline +
+        (projectedHere - createKpiStackedChart.__kpi2TodayNet);
+    } else {
+      // KPI1 / others unchanged
+      net = principal + interest - fees;
+    }
+
 
 let tooltipLines;
 
@@ -2557,14 +2585,13 @@ function openKpi2() {
   drawerSub.textContent =
     "Projected lifetime earnings across all loans, assuming full term.";
 
-  drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerPrimary.textContent =
-    formatCurrency(portfolioViews.kpis.totalNetToDate);
-  
-  drawerSecondaryTitle.textContent = "Projected Lifetime";
-  drawerSecondary.textContent =
-    formatCurrency(portfolioViews.kpis.totalNetProjected);
-    resetDrawerContent();
+  drawerPrimaryTitle.textContent = "Projected Net Earnings";
+  drawerPrimary.textContent = formatCurrency(kpis.totalNetProjected);
+
+  drawerSecondaryTitle.textContent = "Projected Total Fees";
+  drawerSecondary.textContent = formatCurrency(kpis.totalFeesProjected);
+
+  resetDrawerContent();
 
   // --- Chart ---
   renderKPI2Chart(loansWithEarnings);
@@ -3507,49 +3534,21 @@ function renderKPI2Chart(loans) {
   // (this keeps loan IDs aligned with KPI_COLOR_MAP + stacking order)
   const rows = buildProjectedDrawerRows(loans);
 
-  // ---------------------------------------------
-  // KPI2 FIX: rebase rows to portfolio net-to-date
-  // ---------------------------------------------
-  const baseline = portfolioViews?.kpis?.totalNetToDate ?? 0;
-  
-  // Find first row >= today
-  const TODAY = new Date();
-  TODAY.setHours(0,0,0,0);
-  
-  let todayProjected = 0;
-  const todayRow = rows.find(r => r.date >= TODAY);
-  if (todayRow) {
-    todayProjected = todayRow.contributions.reduce(
-      (s,c) => s + (c.net ?? 0),
-      0
-    );
+  if (!rows || !rows.length) {
+    container.innerHTML =
+      `<div style="color:var(--muted);font-size:13px">
+        No projected earnings data available
+      </div>`;
+    return;
   }
-  
-  // Rebase every row
-  const rebasedRows = rows.map(r => {
-    const rowNet = r.contributions.reduce(
-      (s,c) => s + (c.net ?? 0),
-      0
-    );
-  
-    const delta = rowNet - todayProjected;
-    const rebasedNet = baseline + delta;
-  
-    return {
-      ...r,
-      contributions: r.contributions.map(c => ({
-        ...c,
-        net: rebasedNet * (c.net / rowNet || 0)
-      }))
-    };
-  });
 
+  // KPI2 uses long horizon => thinner bars, non-dense x-axis
   createKpiStackedChart(
     container,
-    rebasedRows,
-    { denseXAxis:false, thinBars:true, projected:true }
+    rows,
+    { denseXAxis: false, thinBars: true, projected: true }
   );
-
+}
 
     
     function renderKPI3Chart(data, containerId = "kpi3Chart"){
