@@ -3,7 +3,7 @@
     {
       "loanName": "PSU 2024 8.83",
       "user": "jeff",
-      "visible": false,
+      "visible": true,
       "school": "Penn State",
       "loanStartDate": "2024-01-31",
       "purchaseDate": "2024-01-31",
@@ -17,7 +17,7 @@
     {
       "loanName": "OSU 2024 8.00",
       "user": "jeff",
-      "visible": false,
+      "visible": true,
       "school": "Ohio State",
       "loanStartDate": "2024-02-01",
       "purchaseDate": "2024-02-01",
@@ -31,7 +31,7 @@
     {
       "loanName": "PIT 2024 8.25",
       "user": "jeff",
-      "visible": false,
+      "visible": true,
       "school": "Pitt",
       "loanStartDate": "2024-03-15",
       "purchaseDate": "2024-06-15",
@@ -45,7 +45,7 @@
     {
       "loanName": "CMU 2024 9.50",
       "user": "jeff",
-      "visible": false,
+      "visible": true,
       "school": "Carnegie Mellon",
       "loanStartDate": "2024-06-30",
       "purchaseDate": "2024-09-30",
@@ -59,7 +59,7 @@
     {
       "loanName": "MICH 2024 9.00",
       "user": "jeff",
-      "visible": false,
+      "visible": true,
       "school": "Michigan",
       "loanStartDate": "2024-07-31",
       "purchaseDate": "2024-12-31",
