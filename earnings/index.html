@@ -3482,19 +3482,96 @@ function renderKPI1Chart(loans, containerId = "drawerChartArea") {
   createKpiStackedChart(drawerChartArea, portfolioViews.rows, { denseXAxis: true });
 
 }
-    function renderKPI2Chart(loans) {
-  const rows = buildProjectedDrawerRows(loans);
+function renderKPI2Chart(loans) {
+  const container = document.getElementById("drawerChartArea");
+  if (!container) return;
 
+  container.innerHTML = "";
+
+  // IMPORTANT:
+  // KPI2 MUST use projected earnings timelines,
+  // NOT amort cash flows
+  const projectedSeries =
+    portfolioViews?.projectedEarningsSeries || {};
+
+  const rows = [];
+
+  // Build portfolio-level stacked rows by month
+  const monthly = new Map();
+
+  loans.forEach(loan => {
+    if (hiddenLoans.has(loan.loanId)) return;
+
+    const series = projectedSeries[loan.loanId];
+    if (!series || !series.length) return;
+
+    series.forEach(r => {
+      const d = new Date(r.loanDate);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+
+      if (!monthly.has(key)) {
+        monthly.set(key, {
+          date: d,
+          contributions: []
+        });
+      }
+
+      monthly.get(key).contributions.push({
+        loanId: loan.loanId,
+        principal: r.cumPrincipal,
+        interest: r.cumInterest,
+        fees: r.cumFees,
+        net: r.netEarnings
+      });
+    });
+  });
+
+  // Sort chronologically
+  const sorted = [...monthly.values()].sort(
+    (a, b) => a.date - b.date
+  );
+
+  // Normalize: ensure every loan appears every month
+  const allLoanIds = loans.map(l => l.loanId);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const row = sorted[i];
+    const present = new Set(row.contributions.map(c => c.loanId));
+
+    allLoanIds.forEach(id => {
+      if (!present.has(id)) {
+        let last = { principal: 0, interest: 0, fees: 0, net: 0 };
+
+        for (let j = i - 1; j >= 0; j--) {
+          const prev = sorted[j].contributions.find(c => c.loanId === id);
+          if (prev) {
+            last = prev;
+            break;
+          }
+        }
+
+        row.contributions.push({
+          loanId: id,
+          principal: last.principal,
+          interest: last.interest,
+          fees: last.fees,
+          net: last.net
+        });
+      }
+    });
+  }
+
+  // Render using the SAME stacked chart renderer as KPI1
   createKpiStackedChart(
-    document.getElementById("drawerChartArea"),
-    rows,
+    container,
+    sorted,
     {
-      denseXAxis: false,     // monthly ticks (M1, M12, M24…)
-      thinBars: true,        // long horizon looks better thinner
-      projected: true        // flag for styling if needed later
+      denseXAxis: false,
+      thinBars: false
     }
   );
 }
+
 
     
     function renderKPI3Chart(data, containerId = "kpi3Chart"){
