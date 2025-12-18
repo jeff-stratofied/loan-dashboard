@@ -2737,6 +2737,9 @@ function renderAvgRateDrawer() {
       seg.addEventListener('mouseleave', () => {
         tooltip.style.display = 'none';
       });
+    const id = l.id ?? l.loanId;
+    seg.dataset.loanId = String(id);
+    seg.dataset.type = "rate-seg";
 
       svg.appendChild(seg);
     });
@@ -2754,7 +2757,7 @@ function renderAvgRateDrawer() {
   // ==================================
   // TABLE — matches Weighted ROI To Date
   // ==================================
-drawerExtraEl.innerHTML = `
+drawerExtra.innerHTML = `
   <div style="margin-top:12px">
     <h3 style="margin:0 0 8px 0">Loans by Interest Rate</h3>
     <div style="
@@ -2788,7 +2791,7 @@ drawerExtraEl.innerHTML = `
             } catch {}
 
             return `
-              <tr>
+              <tr data-loan-id="${id}">
                 <td style="text-align:left;">
                   <span style="
                     display:inline-block;
@@ -2826,10 +2829,39 @@ drawerExtraEl.innerHTML = `
   </div>
 `;
 
+// -----------------------------------------
+// Avg Rate table row → chart segment hover
+// -----------------------------------------
+const chartSvg = drawerChartArea.querySelector("svg");
+const table = drawerExtra.querySelector("table");
 
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  drawer.scrollTop = 0;
+if (chartSvg && table) {
+  const segs = Array.from(
+    chartSvg.querySelectorAll('rect[data-type="rate-seg"]')
+  );
+
+  table.querySelectorAll("tbody tr[data-loan-id]").forEach(row => {
+    const rowLoanId = row.dataset.loanId;
+
+    row.addEventListener("mouseenter", () => {
+      segs.forEach(s => {
+        s.setAttribute(
+          "opacity",
+          s.dataset.loanId === rowLoanId ? "1" : "0.15"
+        );
+      });
+    });
+
+    row.addEventListener("mouseleave", () => {
+      segs.forEach(s => s.setAttribute("opacity", "1"));
+    });
+  });
+}
+
+drawer.classList.add('open');
+drawer.setAttribute('aria-hidden', 'false');
+drawer.scrollTop = 0;
+
 }
 
 
