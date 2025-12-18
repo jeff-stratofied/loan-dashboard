@@ -357,11 +357,11 @@ export function buildPortfolioViews(loansWithAmort) {
   
 
 // ----------------------------------------------
-// 3) Earnings Timeline (per-loan & portfolio)
+// 3) Earnings Timeline (PROJECTED AS-OF)
 // ----------------------------------------------
 //
-// netEarnings = (cumPrincipal + cumInterest) - cumFees
-// Only months the user actually owns the loan (loanDate >= purchaseDate)
+// netEarnings = earned so far
+// projectedNet = earned + remaining lifetime
 // ----------------------------------------------
 
 const earningsSeries = {};
@@ -372,11 +372,11 @@ loansWithAmort.forEach(loan => {
 
   let cumPrincipal = 0;
   let cumInterest  = 0;
-  let cumFees      = 0;   // fees optional
-  let net           = 0;
+  let cumFees      = 0;
 
-  earningsSeries[loan.id] = loan.amort.schedule
-    .filter(r => r.loanDate >= purchase) // owned months only
+  // --- build earned-to-date series first
+  const earnedSeries = loan.amort.schedule
+    .filter(r => r.loanDate >= purchase)
     .map(r => {
       cumPrincipal += r.principalPaid;
       cumInterest  += r.interest;
@@ -384,10 +384,7 @@ loansWithAmort.forEach(loan => {
       const feeThisMonth = Number(r.feeThisMonth ?? 0);
       cumFees += feeThisMonth;
 
-      net = cumPrincipal + cumInterest - cumFees;
-
       return {
-        // required by earnings charts + mini charts
         loanDate: r.loanDate,
         ownershipDate: r.loanDate,
         monthIndex: r.monthIndex,
@@ -396,19 +393,38 @@ loansWithAmort.forEach(loan => {
         interest: r.interest,
         balance: r.balance,
 
-        // cumulative values
         cumPrincipal,
         cumInterest,
         cumFees,
-        netEarnings: net
+        netEarnings: cumPrincipal + cumInterest - cumFees
       };
     });
 
+  if (!earnedSeries.length) {
+    earningsSeries[loan.id] = [];
+    earningsKpis[loan.id] = 0;
+    return;
+  }
 
-  // KPI = last net earnings point
-  const last = earningsSeries[loan.id][earningsSeries[loan.id].length - 1];
-  earningsKpis[loan.id] = last ? last.netEarnings : 0;
+  // --- lifetime net (final earned point)
+  const lifetimeNet =
+    earnedSeries[earnedSeries.length - 1].netEarnings;
+
+  // --- PROJECTED-AS-OF timeline
+  earningsSeries[loan.id] = earnedSeries.map(r => {
+    const earned = r.netEarnings;
+    const projected = earned + (lifetimeNet - earned);
+
+    return {
+      ...r,
+      netEarnings: projected
+    };
+  });
+
+  // KPI2 value = lifetime net (unchanged)
+  earningsKpis[loan.id] = lifetimeNet;
 });
+
 
 
 
