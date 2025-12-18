@@ -3507,9 +3507,9 @@ function renderKPI2Chart(loans) {
   const monthly = new Map();
 
   loans.forEach(loan => {
-    if (hiddenLoans.has(loan.loanId)) return;
+    if (hiddenLoans.has(loan.id)) return;
 
-    const series = projectedSeries[loan.loanId];
+    const series = projectedSeries[loan.id];
     if (!Array.isArray(series) || !series.length) return;
 
     series.forEach(r => {
@@ -3526,7 +3526,7 @@ function renderKPI2Chart(loans) {
       }
 
       monthly.get(key).contributions.push({
-        loanId: loan.loanId,
+        loanId: loan.id,
         principal: r.cumPrincipal ?? 0,
         interest: r.cumInterest ?? 0,
         fees: r.cumFees ?? 0,
@@ -3550,6 +3550,7 @@ function renderKPI2Chart(loans) {
     thinBars: false
   });
 }
+
 
 
 
