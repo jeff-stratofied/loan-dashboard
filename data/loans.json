@@ -2,7 +2,7 @@
   "loans": [
     {
       "loanName": "PSU 2024 8.83",
-      "user": "nick",
+      "user": "jeff",
       "visible": true,
       "school": "Penn State",
       "loanStartDate": "2024-01-31",
@@ -16,7 +16,7 @@
     },
     {
       "loanName": "OSU 2024 8.00",
-      "user": "nick",
+      "user": "jeff",
       "visible": true,
       "school": "Ohio State",
       "loanStartDate": "2024-02-01",
@@ -30,7 +30,7 @@
     },
     {
       "loanName": "PIT 2024 8.25",
-      "user": "nick",
+      "user": "jeff",
       "visible": true,
       "school": "Pitt",
       "loanStartDate": "2024-03-15",
@@ -142,7 +142,7 @@
     },
     {
       "loanName": "WCC 2014 5.00",
-      "user": "nick",
+      "user": "jeff",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2014-06-01",
@@ -156,7 +156,7 @@
     },
     {
       "loanName": "WCC 2017 5.00",
-      "user": "nick",
+      "user": "jeff",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2017-01-01",
