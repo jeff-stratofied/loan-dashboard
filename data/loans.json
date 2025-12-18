@@ -167,6 +167,20 @@
       "termYears": 15,
       "graceYears": 4,
       "loanId": "7Q75NE4HOQ"
+    },
+    {
+      "loanName": "PSU 2024 8.83 (Copy)",
+      "user": "jeff",
+      "visible": true,
+      "school": "Penn State",
+      "loanStartDate": "2025-01-01",
+      "purchaseDate": "2025-01-01",
+      "principal": 7000,
+      "purchasePrice": 7000,
+      "rate": 0.09,
+      "termYears": 10,
+      "graceYears": 2,
+      "loanId": "EOJYIFL33F"
     }
   ]
 }
