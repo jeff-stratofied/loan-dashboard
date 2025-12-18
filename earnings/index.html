@@ -1865,17 +1865,49 @@ if (!isKpi4) {
       return;
     }
     
-
     const principal = row.contributions
-    .reduce((s, c) => s + (c.principal ?? 0), 0);
-
+      .reduce((s, c) => s + (c.principal ?? 0), 0);
+    
     const interest = row.contributions
-    .reduce((s, c) => s + (c.interest ?? 0), 0);
-
+      .reduce((s, c) => s + (c.interest ?? 0), 0);
+    
     const fees = row.contributions
-    .reduce((s, c) => s + (c.fees ?? 0), 0);
+      .reduce((s, c) => s + (c.fees ?? 0), 0);
+    
+    // ------------------------------------
+    // KPI2 FIX: cumulative baseline offset
+    // ------------------------------------
+    let net;
+    
+    if (opts.projected === true) {
+      // portfolio net-to-date (today baseline)
+      const baseline = portfolioViews?.kpis?.totalNetToDate ?? 0;
+    
+      // projected net at THIS month
+      const projectedHere = principal + interest - fees;
+    
+      // projected net at TODAY (first row >= today)
+      if (!createKpiStackedChart.__kpi2TodayNet) {
+        const todayRow = rows.find(r => r.date >= new Date());
+        if (todayRow) {
+          createKpiStackedChart.__kpi2TodayNet =
+            todayRow.contributions.reduce(
+              (s, c) => s + (c.principal ?? 0) + (c.interest ?? 0) - (c.fees ?? 0),
+              0
+            );
+        } else {
+          createKpiStackedChart.__kpi2TodayNet = projectedHere;
+        }
+      }
+    
+      net =
+        baseline +
+        (projectedHere - createKpiStackedChart.__kpi2TodayNet);
+    } else {
+      // KPI1 / others unchanged
+      net = principal + interest - fees;
+    }
 
-    const net = principal + interest - fees;
 
 let tooltipLines;
 
