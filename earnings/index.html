@@ -761,7 +761,7 @@ html[data-theme="dark"] .legend .sw {
 
     <div class="header-controls">
       <div style="font-size:13px; color:var(--muted)">
-        Name: <strong style="color:var(--brand)">Jeff Customer</strong>
+        Name: <strong id="currentUserLabel" style="color:var(--brand)"></strong>
       </div>
       <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
     </div>
@@ -915,17 +915,37 @@ html[data-theme="dark"] .legend .sw {
 
 
 
-  <script type="module">
-    import {
-      addMonths,
-      monthDiff,
-      formatDate,
-      formatMonthYear,
-      buildAmortSchedule,
-      attachSchedules,
-      buildPortfolioViews
-    } from "../js/loanEngine.js";
+<script type="module">
+  import {
+    addMonths,
+    monthDiff,
+    formatDate,
+    formatMonthYear,
+    buildAmortSchedule,
+    attachSchedules,
+    buildPortfolioViews
+  } from "../js/loanEngine.js";
 
+  // ----------------------------------
+  // Multi-user support (match ROI)
+  // ----------------------------------
+  const PAGE_USER =
+    new URLSearchParams(window.location.search).get("user") || "jeff";
+
+  const USER_LABELS = {
+    jeff: "Jeff Customer",
+    nick: "Nick Lender",
+    john: "John Investor"
+  };
+
+  const currentUserLabelEl = document.getElementById("currentUserLabel");
+  if (currentUserLabelEl) {
+    currentUserLabelEl.textContent =
+      USER_LABELS[PAGE_USER] || PAGE_USER;
+  }
+
+
+    
     // --------------------------
     // Settings & base data
     // --------------------------
@@ -951,6 +971,11 @@ html[data-theme="dark"] .legend .sw {
     }
 
     let loans = [];
+
+    const PAGE_USER =
+    new URLSearchParams(window.location.search).get("user") || "jeff";
+
+    
     let portfolioViews = null;
 
     async function loadLoansFromBackend() {
@@ -1212,6 +1237,14 @@ const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
         };
       });
 
+    // ----------------------------------------
+    // MULTI-USER FILTER (matches ROI behavior)
+    // ----------------------------------------
+    loansWithEarnings = loansWithEarnings.filter(l =>
+      (l.user ?? "jeff") === PAGE_USER
+    );
+
+  
 // Canonical loan order: earliest purchase date first
 loansWithEarnings.sort((a, b) => {
   const da = new Date(a.purchaseDate).getTime() || 0;
