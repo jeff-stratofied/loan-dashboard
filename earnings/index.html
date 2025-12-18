@@ -1661,16 +1661,17 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // Y scale + gridlines (KPI2 style)
   // ----------------------------
   let maxVal = 0;
-  rows.forEach(r => {
-    const totalPos = r.contributions
-      .filter(c => c.net >= 0)
-      .reduce((s, c) => s + c.net, 0);
-    const totalNeg = r.contributions
-      .filter(c => c.net < 0)
-      .reduce((s, c) => s + Math.abs(c.net), 0);
+rows.forEach(r => {
+  const total = r.contributions.reduce((s, c) => {
+    if (opts.useMonthly === true) {
+      return s + (c.monthlyNet ?? 0);
+    }
+    return s + (c.net ?? 0);
+  }, 0);
 
-    maxVal = Math.max(maxVal, totalPos, totalNeg);
-  });
+  maxVal = Math.max(maxVal, Math.abs(total));
+});
+
   if (maxVal < 1) maxVal = 1;
 
   const usableH = h - padT - padB;
