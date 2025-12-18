@@ -1909,9 +1909,18 @@ if (opts.useMonthly === true) {
     (s, c) => s + (c.monthlyNet ?? 0), 0
   );
 
-  const cumulativeNet = row.contributions.reduce(
-    (s, c) => s + (c.cumulativeNet ?? 0), 0
+// KPI1 cumulative must be derived from monthly totals, not summed per-loan cumulatives
+let cumulativeNet = 0;
+
+for (let i = 0; i <= rowIndex; i++) {
+  const r = rows[i];
+  const monthNet = r.contributions.reduce(
+    (s, c) => s + (c.monthlyNet ?? 0),
+    0
   );
+  cumulativeNet += monthNet;
+}
+
 
   tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
