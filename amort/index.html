@@ -702,6 +702,32 @@ apiLoans = rawLoans.map(l => ({
   loanName: l.loanName || ""
 }));
 
+// --------------------------------------------------
+// NORMALIZE API LOANS → ENGINE SHAPE (CRITICAL)
+// --------------------------------------------------
+apiLoans = apiLoans.map(l => ({
+  ...l,
+
+  // 🔑 Rate normalization
+  nominalRate: Number(l.nominalRate ?? l.rate ?? 0),
+
+  // 🔑 Ensure numeric fields
+  principal: Number(l.principal ?? l.purchasePrice ?? 0),
+  purchasePrice: Number(l.purchasePrice ?? l.principal ?? 0),
+
+  termYears: Number(l.termYears ?? 0),
+  graceYears: Number(l.graceYears ?? 0),
+
+  // 🔑 Dates (string → ISO-safe)
+  loanStartDate: l.loanStartDate,
+  purchaseDate: l.purchaseDate,
+
+  // 🔑 User fields (already correct, but keep explicit)
+  user: l.user,
+  visible: l.visible
+}));
+
+  
 apiLoans = attachSchedules(apiLoans);
 
   allLoans = apiLoans.map(l => {
@@ -739,13 +765,9 @@ apiLoans = attachSchedules(apiLoans);
     };
   });
 
-console.log(
-  "Pre-normalize users:",
-  allLoans.map(l => ({
-    name: l.loanName,
-    user: l.user
-  }))
-);
+console.log(apiLoans[0].nominalRate); // number
+console.log(apiLoans[0].rate);        // still exists (API)
+
 
   
 // --------------------------------------------------
