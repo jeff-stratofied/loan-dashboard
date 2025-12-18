@@ -187,14 +187,28 @@
       "user": "jeff",
       "visible": true,
       "school": "USC",
-      "loanStartDate": "2024-03-11",
-      "purchaseDate": "2024-10-22",
-      "principal": 6000,
-      "purchasePrice": 5000,
-      "rate": 0.068,
-      "termYears": 12,
-      "graceYears": 1,
+      "loanStartDate": "2025-02-10",
+      "purchaseDate": "2025-02-10",
+      "principal": 9000,
+      "purchasePrice": 9000,
+      "rate": 0.079,
+      "termYears": 7,
+      "graceYears": 0.5,
       "loanId": "BHH0A15A7A"
+    },
+    {
+      "loanName": "NYU 2025 8.70 (Copy)",
+      "user": "jeff",
+      "visible": true,
+      "school": "NYU",
+      "loanStartDate": "2024-11-05",
+      "purchaseDate": "2025-02-11",
+      "principal": 7000,
+      "purchasePrice": 6500,
+      "rate": 0.092,
+      "termYears": 10,
+      "graceYears": 2,
+      "loanId": "S4I46M5NFY"
     }
   ]
 }
