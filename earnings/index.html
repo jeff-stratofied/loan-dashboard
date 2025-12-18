@@ -1294,27 +1294,24 @@ function computeEarningsKPIs(list) {
   let totalPrincipal = 0;
   let monthsCounted = 1;
   let projectedNetTotal = 0;
-let projectedMonthsTotal = 0;
-
+  let projectedMonthsTotal = 0;
 
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
-// --- KPI3 start for Method A: earliest LOAN start month (calendar timeline) ---
-const startTimes = list
-  .map(l => new Date(l.loanStartDate || l.purchaseDate || TODAY).getTime())
-  .filter(t => Number.isFinite(t));
+  // --- KPI3 start for Method A: earliest LOAN start month (calendar timeline) ---
+  const startTimes = list
+    .map(l => new Date(l.loanStartDate || l.purchaseDate || TODAY).getTime())
+    .filter(t => Number.isFinite(t));
 
-const portfolioStart = startTimes.length
-  ? new Date(Math.min(...startTimes))
-  : TODAY;
+  const portfolioStart = startTimes.length
+    ? new Date(Math.min(...startTimes))
+    : TODAY;
 
-portfolioStart.setHours(0,0,0,0);
+  portfolioStart.setHours(0,0,0,0);
 
-// expose portfolio start for KPI3 chart math (if used elsewhere)
-window.__PORTFOLIO_START__ = portfolioStart;
-
-
+  // expose portfolio start for KPI3 chart math (if used elsewhere)
+  window.__PORTFOLIO_START__ = portfolioStart;
 
   list.forEach(l => {
     totalPrincipal += Number(l.purchasePrice || 0);
@@ -1323,12 +1320,11 @@ window.__PORTFOLIO_START__ = portfolioStart;
     if (!sched.length) return;
 
     const lastIdx = sched.length - 1;
-     const atEnd = sched[lastIdx];
+    const atEnd = sched[lastIdx];
 
     // KPI4 — projected avg monthly earnings (lifetime)
     projectedNetTotal += Number(atEnd.netEarnings || 0);
     projectedMonthsTotal += sched.length;
-
 
     // Use PURCHASE date (ownership timeline)
     const purchase = new Date(l.purchaseDate || l.loanStartDate);
@@ -1340,14 +1336,11 @@ window.__PORTFOLIO_START__ = portfolioStart;
     const currentIdx = Math.max(0, Math.min(diff - 1, lastIdx));
     const atCurrent = sched[currentIdx];
 
-    // KPI3 requires TRUE cumulative net-to-date per loan
+    // KPI1 / KPI3 — true net-to-date
     totalNetToDate += Number(atCurrent?.netEarnings || 0);
+    totalFeesToDate += Number(atCurrent?.cumFees || 0);
 
-
-    totalFeesToDate += Number(atCurrent.cumFees || 0);
-
-    // projected = last owned-row in schedule (future owned months exist in sched)
-   
+    // KPI2 — projected totals
     totalNetProjected += Number(atEnd.netEarnings || 0);
     totalFeesProjected += Number(atEnd.cumFees || 0);
 
@@ -1355,29 +1348,32 @@ window.__PORTFOLIO_START__ = portfolioStart;
   });
 
   const projectedAvgMonthlyNet =
-  projectedMonthsTotal > 0
-    ? projectedNetTotal / projectedMonthsTotal
-    : 0;
+    projectedMonthsTotal > 0
+      ? projectedNetTotal / projectedMonthsTotal
+      : 0;
 
+  // --- KPI3 Avg Monthly Earnings (Method A: calendar months) ---
+  const portfolioMonths =
+    Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
 
-// --- KPI3 Avg Monthly Earnings (Method A: calendar months) ---
-const portfolioMonths =
-  Math.max(1, monthDiff(portfolioStart, TODAY) + 1);
+  const avgMonthlyNet = totalNetToDate / portfolioMonths;
+  const monthsCountedKpi3 = portfolioMonths;
 
-const avgMonthlyNet = totalNetToDate / portfolioMonths;
-const monthsCountedKpi3 = portfolioMonths;
-
-  return {
-  totalNetToDate,
-  totalNetProjected,
-  totalFeesToDate,
-  totalFeesProjected,
-  totalPrincipal,
-  avgMonthlyNet,
-  monthsCounted: monthsCountedKpi3,
-  projectedAvgMonthlyNet
+  // 🔴 NEW: persist KPIs for drawer access
+  window.kpis = {
+    totalNetToDate,
+    totalNetProjected,
+    totalFeesToDate,
+    totalFeesProjected,
+    totalPrincipal,
+    avgMonthlyNet,
+    monthsCounted: monthsCountedKpi3,
+    projectedAvgMonthlyNet
   };
-  }
+
+  return window.kpis;
+}
+
 
 
     function getCurrentEarningsRow(loan) {
