@@ -2570,6 +2570,12 @@ createKpiStackedChart(
 
 function openKpi2() {
   console.log("openKpi2 fired");
+
+  console.log("KPI values at openKpi2", {
+  totalNetProjected: kpis?.totalNetProjected,
+  totalFeesProjected: kpis?.totalFeesProjected
+});
+
   currentLoan = null;
 
   resetDrawerContent(); // <-- MOVE THIS UP HERE
