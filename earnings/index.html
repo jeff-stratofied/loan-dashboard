@@ -2374,91 +2374,112 @@ function buildPortfolioDrawerRows(loans) {
 
   loans.forEach(loan => {
     (loan.earningsSchedule || []).forEach(r => {
-      // skip any non-owned rows, just in case
+      // skip any non-owned rows
       if (!r.isOwned) return;
 
-  
-      // KPI2 — purchase-aligned ownership timeline
-const idx = (r.ownershipMonthIndex ?? 0) - 1;
-if (idx < 0) return;
+      // KPI1 — purchase-aligned ownership timeline
+      const idx = (r.ownershipMonthIndex ?? 0) - 1;
+      if (idx < 0) return;
 
-const d = addMonths(
-  new Date(loan.purchaseDate),
-  idx
-);
-d.setHours(0, 0, 0, 0);
+      const d = addMonths(
+        new Date(loan.purchaseDate),
+        idx
+      );
+      d.setHours(0, 0, 0, 0);
 
-const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      // 🔴 NEW: STOP AT TODAY (KPI1 rule)
+      if (d > TODAY) return;
 
-if (!monthly.has(key)) {
-  monthly.set(key, {
-    date: d,
-    contributions: []
-  });
-}
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
 
-
-    monthly.get(key).contributions.push({
-      loanId: loan.loanId,
-    
-      principal: r.cumPrincipal ?? 0,
-      interest:  r.cumInterest  ?? 0,
-      fees:      r.cumFees      ?? 0,
-    
-      // canonical net (must match bar height + hover)
-      net: (r.cumPrincipal ?? 0) + (r.cumInterest ?? 0) - (r.cumFees ?? 0),
-    
-      hasData: true
-    });
-
-
-
-    });
-  });
-
-// convert Map → sorted array BEFORE normalizing
-const sorted = [...monthly.values()].sort((a, b) => a.date - b.date);
-
-// Normalize alignment: every row must include every loan
-const allLoanIds = loans.map(l => l.loanId);
-
-for (let i = 0; i < sorted.length; i++) {
-  const row = sorted[i];
-  const present = new Set(row.contributions.map(c => c.loanId));
-
-  allLoanIds.forEach(id => {
-    if (!present.has(id)) {
-
-      // carry forward the last known cumulative values for this loan
-      let last = {
-      principal: 0,
-      interest: 0,
-      fees: 0,
-      net: 0
-      };
-
-      // IMPORTANT: look backward only in sorted order
-      for (let j = i - 1; j >= 0; j--) {
-      const prev = sorted[j].contributions.find(c => c.loanId === id);
-      if (prev) {
-      last = prev;
-      break;
+      if (!monthly.has(key)) {
+        monthly.set(key, {
+          date: d,
+          contributions: []
+        });
       }
-    }
-    row.contributions.push({
-      loanId: id,
-      principal: last.principal,
-      interest: last.interest,
-      fees: last.fees,
-      net: last.net,
-      hasData: false
+
+      // 🔴 CHANGED: monthly values for bars
+      const principal = r.principalPaid ?? 0;
+      const interest  = r.interestPaid  ?? 0;
+      const fees      = r.feeThisMonth  ?? 0;
+
+      monthly.get(key).contributions.push({
+        loanId: loan.loanId,
+
+        // monthly components (bar height)
+        principal,
+        interest,
+        fees,
+        monthlyNet: principal + interest - fees,   // ✅ BAR VALUE
+
+        // cumulative values (for hover only)
+        cumulativePrincipal: r.cumPrincipal ?? 0,
+        cumulativeInterest:  r.cumInterest  ?? 0,
+        cumulativeFees:      r.cumFees      ?? 0,
+        cumulativeNet:
+          (r.cumPrincipal ?? 0) +
+          (r.cumInterest  ?? 0) -
+          (r.cumFees      ?? 0),
+
+        hasData: true
+      });
     });
-    }
   });
+
+  // convert Map → sorted array
+  const sorted = [...monthly.values()].sort((a, b) => a.date - b.date);
+
+  // Normalize alignment: every row must include every loan
+  const allLoanIds = loans.map(l => l.loanId);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const row = sorted[i];
+    const present = new Set(row.contributions.map(c => c.loanId));
+
+    allLoanIds.forEach(id => {
+      if (!present.has(id)) {
+
+        // carry forward cumulative values ONLY
+        let last = {
+          cumulativePrincipal: 0,
+          cumulativeInterest:  0,
+          cumulativeFees:      0,
+          cumulativeNet:       0
+        };
+
+        for (let j = i - 1; j >= 0; j--) {
+          const prev = sorted[j].contributions.find(c => c.loanId === id);
+          if (prev) {
+            last = prev;
+            break;
+          }
+        }
+
+        row.contributions.push({
+          loanId: id,
+
+          // no activity this month
+          principal: 0,
+          interest:  0,
+          fees:      0,
+          monthlyNet: 0,
+
+          // cumulative carried forward
+          cumulativePrincipal: last.cumulativePrincipal,
+          cumulativeInterest:  last.cumulativeInterest,
+          cumulativeFees:      last.cumulativeFees,
+          cumulativeNet:       last.cumulativeNet,
+
+          hasData: false
+        });
+      }
+    });
+  }
+
+  return sorted;
 }
 
-return sorted;
-}
 
 function buildProjectedDrawerRows(loans) {
   const monthly = new Map(); // key = ownership month index (1-based)
