@@ -692,17 +692,6 @@ const rawLoans = Array.isArray(apiResult)
   ? apiResult
   : apiResult.loans;
 
-console.log(
-  "Before filter:",
-  allLoans.map(l => ({
-    name: l.loanName,
-    user: JSON.stringify(l.user),
-    userType: typeof l.user,
-    visible: l.visible,
-    visibleType: typeof l.visible
-  }))
-);
-
   
 apiLoans = rawLoans.map(l => ({
   ...l,
@@ -757,6 +746,17 @@ allLoans = allLoans.map(l => ({
   visible: l.visible !== false
 }));
 
+console.log(
+  "Before filter:",
+  allLoans.map(l => ({
+    name: l.loanName,
+    user: JSON.stringify(l.user),
+    userType: typeof l.user,
+    visible: l.visible,
+    visibleType: typeof l.visible
+  }))
+);
+  
 // --------------------------------------------------
 // USER + VISIBILITY FILTER (STEP 2B)
 // --------------------------------------------------
