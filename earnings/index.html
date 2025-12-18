@@ -2381,24 +2381,26 @@ function buildPortfolioDrawerRows(loans) {
       // skip any non-owned rows, just in case
       if (!r.isOwned) return;
 
-      // use ownershipDate when present (purchase-based timeline)
-      const rawDate = r.ownershipDate || r.loanDate;
-      if (!rawDate) return;
+  
+      // KPI2 — purchase-aligned ownership timeline
+const idx = (r.ownershipMonthIndex ?? 0) - 1;
+if (idx < 0) return;
 
-      const d = new Date(rawDate);
-      d.setHours(0, 0, 0, 0);
+const d = addMonths(
+  new Date(loan.purchaseDate),
+  idx
+);
+d.setHours(0, 0, 0, 0);
 
-      // do not show future months in the KPI drawers
-      if (d > TODAY) return;
+const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
 
-      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+if (!monthly.has(key)) {
+  monthly.set(key, {
+    date: d,
+    contributions: []
+  });
+}
 
-      if (!monthly.has(key)) {
-        monthly.set(key, {
-          date: d,
-          contributions: []
-        });
-      }
 
     monthly.get(key).contributions.push({
       loanId: loan.loanId,
