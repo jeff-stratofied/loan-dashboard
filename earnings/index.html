@@ -2591,7 +2591,7 @@ function openKpi3() {
   Months Counted
   <span class="info-icon" title="Months counted is the total months each loan has been owned.">ⓘ</span>
 `;
-  drawerSecondary.textContent = kpis.monthsCounted.toString();
+  drawerSecondary.textContent = String(Math.max(0, Number(kpis?.monthsCounted ?? 0)));
 
   resetDrawerContent();
 
@@ -2692,10 +2692,13 @@ const avg = cumulativeNet / portfolioMonths;
 
 
 function openKpi4(){
-  console.assert(
-  Number.isFinite(kpis.projectedAvgMonthlyNet),
-  "❌ KPI4 projectedAvgMonthlyNet missing or invalid"
-);  
+  if (!Number.isFinite(kpis.projectedAvgMonthlyNet)) {
+  console.warn(
+    "KPI4 projectedAvgMonthlyNet missing; defaulting to 0"
+  );
+  kpis.projectedAvgMonthlyNet = 0;
+}
+  
   currentLoan = null;
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
@@ -2777,7 +2780,8 @@ drawerExtra.querySelectorAll(".loan-swatch").forEach(el => {
   rows,
   { denseXAxis: false, isKpi4: true }
 );
-const tableEl = renderKpi4Table(loansWithEarnings, kpis);
+const tableEl = renderKPI4Table(loansWithEarnings, kpis);
+
 drawerExtra.appendChild(tableEl);
 
   drawerExtra.querySelectorAll(".loan-swatch").forEach(el => {
