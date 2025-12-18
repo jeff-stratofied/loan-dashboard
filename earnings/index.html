@@ -2569,44 +2569,32 @@ createKpiStackedChart(
 }  
 
 function openKpi2() {
-  // Open KPI drawer, not loan drawer
-  const drawer = document.getElementById("kpiDrawer1");
+  currentLoan = null;
 
-  // Titles
-  document.getElementById("kpi1Title").textContent =
-    "Projected Total Net Earnings";
+  resetDrawerContent(); // <-- MOVE THIS UP HERE
 
-  document.getElementById("kpi1Sub").textContent =
+  drawerTitle.textContent = "Projected Total Net Earnings";
+  drawerSub.textContent =
     "Projected lifetime earnings across all loans, assuming full term.";
 
-  // PRIMARY
-  document.getElementById("kpi1PrimaryTitle").textContent =
-    "Projected Net Earnings";
+  drawerPrimaryTitle.textContent = "Projected Net Earnings";
+  drawerPrimary.textContent = formatCurrency(kpis.totalNetProjected);
 
-  document.getElementById("kpi1Primary").textContent =
-    formatCurrency(kpis.totalNetProjected);
+  drawerSecondaryTitle.textContent = "Projected Total Fees";
+  drawerSecondary.textContent = formatCurrency(kpis.totalFeesProjected);
 
-  // SECONDARY
-  document.getElementById("kpi1SecondaryTitle").textContent =
-    "Projected Total Fees";
+  // --- Chart ---
+  renderKPI2Chart(loansWithEarnings);
 
-  document.getElementById("kpi1Secondary").textContent =
-    formatCurrency(kpis.totalFeesProjected);
+  drawerExtra.innerHTML = `
+    <div class="amort-wrap" id="kpi2Table"></div>
+  `;
 
-  // Clear old body
-  drawer.querySelector(".drawer-body").innerHTML = "";
+  renderKPI2Table(loansWithEarnings, "kpi2Table");
 
-  // Render KPI2 chart
-  const chartWrap = document.createElement("div");
-  chartWrap.className = "drawer-chart";
-  drawer.querySelector(".drawer-body").appendChild(chartWrap);
-
-  renderKPI2Chart(loansWithEarnings, chartWrap);
-
-  // Show drawer
-  drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
+  openDrawer();
 }
+
 
 
 
