@@ -1860,6 +1860,11 @@ if (!isKpi4) {
       Math.min(rows.length - 1, Math.floor((x - padL) / barW))
     );
     const row = rows[idx];
+    if (!row || !row.contributions) {
+      hideMiniTooltip();
+      return;
+    }
+    
 
     const principal = row.contributions
     .reduce((s, c) => s + (c.principal ?? 0), 0);
@@ -3482,95 +3487,66 @@ function renderKPI1Chart(loans, containerId = "drawerChartArea") {
   createKpiStackedChart(drawerChartArea, portfolioViews.rows, { denseXAxis: true });
 
 }
+  
 function renderKPI2Chart(loans) {
   const container = document.getElementById("drawerChartArea");
   if (!container) return;
 
   container.innerHTML = "";
 
-  // IMPORTANT:
-  // KPI2 MUST use projected earnings timelines,
-  // NOT amort cash flows
-  const projectedSeries =
-    portfolioViews?.projectedEarningsSeries || {};
+  if (!portfolioViews || !portfolioViews.projectedEarningsSeries) {
+    console.warn("KPI2: projectedEarningsSeries not ready");
+    return;
+  }
 
-  const rows = [];
-
-  // Build portfolio-level stacked rows by month
+  const projectedSeries = portfolioViews.projectedEarningsSeries;
   const monthly = new Map();
 
   loans.forEach(loan => {
     if (hiddenLoans.has(loan.loanId)) return;
 
     const series = projectedSeries[loan.loanId];
-    if (!series || !series.length) return;
+    if (!Array.isArray(series) || !series.length) return;
 
     series.forEach(r => {
-      const d = new Date(r.loanDate);
+      const d = new Date(r.loanDate || r.ownershipDate);
+      if (!Number.isFinite(d.getTime())) return;
+
       const key = `${d.getFullYear()}-${d.getMonth()}`;
 
       if (!monthly.has(key)) {
         monthly.set(key, {
-          date: d,
+          date: new Date(d),
           contributions: []
         });
       }
 
       monthly.get(key).contributions.push({
         loanId: loan.loanId,
-        principal: r.cumPrincipal,
-        interest: r.cumInterest,
-        fees: r.cumFees,
-        net: r.netEarnings
+        principal: r.cumPrincipal ?? 0,
+        interest: r.cumInterest ?? 0,
+        fees: r.cumFees ?? 0,
+        net: r.netEarnings ?? 0
       });
     });
   });
 
-  // Sort chronologically
-  const sorted = [...monthly.values()].sort(
-    (a, b) => a.date - b.date
-  );
+  const rows = [...monthly.values()].sort((a, b) => a.date - b.date);
 
-  // Normalize: ensure every loan appears every month
-  const allLoanIds = loans.map(l => l.loanId);
-
-  for (let i = 0; i < sorted.length; i++) {
-    const row = sorted[i];
-    const present = new Set(row.contributions.map(c => c.loanId));
-
-    allLoanIds.forEach(id => {
-      if (!present.has(id)) {
-        let last = { principal: 0, interest: 0, fees: 0, net: 0 };
-
-        for (let j = i - 1; j >= 0; j--) {
-          const prev = sorted[j].contributions.find(c => c.loanId === id);
-          if (prev) {
-            last = prev;
-            break;
-          }
-        }
-
-        row.contributions.push({
-          loanId: id,
-          principal: last.principal,
-          interest: last.interest,
-          fees: last.fees,
-          net: last.net
-        });
-      }
-    });
+  if (!rows.length) {
+    container.innerHTML =
+      `<div style="color:var(--muted);font-size:13px">
+        No projected earnings data available
+      </div>`;
+    return;
   }
 
-  // Render using the SAME stacked chart renderer as KPI1
-  createKpiStackedChart(
-    container,
-    sorted,
-    {
-      denseXAxis: false,
-      thinBars: false
-    }
-  );
+  createKpiStackedChart(container, rows, {
+    denseXAxis: false,
+    thinBars: false
+  });
 }
+
 
 
     
