@@ -2417,14 +2417,19 @@ function buildPortfolioDrawerRows(loans) {
         });
       }
 
-       monthly.get(key).contributions.push({
-  loanId: loan.loanId,
-  principal: r.principalPaid || 0,
-  interest: r.interestPaid || 0,
-  fees: r.feeThisMonth || 0,
-  net: (r.principalPaid || 0) + (r.interestPaid || 0) - (r.feeThisMonth || 0),
-  hasData: true
-});
+    monthly.get(key).contributions.push({
+      loanId: loan.loanId,
+    
+      principal: r.cumPrincipal ?? 0,
+      interest:  r.cumInterest  ?? 0,
+      fees:      r.cumFees      ?? 0,
+    
+      // canonical net (must match bar height + hover)
+      net: (r.cumPrincipal ?? 0) + (r.cumInterest ?? 0) - (r.cumFees ?? 0),
+    
+      hasData: true
+    });
+
 
 
     });
