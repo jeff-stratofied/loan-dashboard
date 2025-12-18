@@ -2438,26 +2438,29 @@ function buildPortfolioDrawerRows(loans) {
       const interest  = r.interestPaid  ?? 0;
       const fees      = r.feeThisMonth  ?? 0;
 
-      monthly.get(key).contributions.push({
-        loanId: loan.loanId,
+monthly.get(key).contributions.push({
+  loanId: loan.loanId,
 
-        // monthly components (bar height)
-        principal,
-        interest,
-        fees,
-        monthlyNet: principal + interest - fees,   // ✅ BAR VALUE
+  // MONTHLY components (for bar height)
+  principal: r.principalPaid ?? 0,
+  interest:  r.interestPaid  ?? 0,
+  fees:      r.feeThisMonth  ?? 0,
 
-        // cumulative values (for hover only)
-        cumulativePrincipal: r.cumPrincipal ?? 0,
-        cumulativeInterest:  r.cumInterest  ?? 0,
-        cumulativeFees:      r.cumFees      ?? 0,
-        cumulativeNet:
-          (r.cumPrincipal ?? 0) +
-          (r.cumInterest  ?? 0) -
-          (r.cumFees      ?? 0),
+  // MONTHLY net (THIS drives KPI1 bars)
+  monthlyNet:
+    (r.principalPaid ?? 0) +
+    (r.interestPaid ?? 0) -
+    (r.feeThisMonth ?? 0),
 
-        hasData: true
-      });
+  // CUMULATIVE net (THIS drives hover + KPI tile alignment)
+  cumulativeNet: r.netEarnings ?? 0,
+
+  // keep for KPI2 compatibility
+  net: r.netEarnings ?? 0,
+
+  hasData: true
+});
+
     });
   });
 
