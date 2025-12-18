@@ -2577,25 +2577,25 @@ function openKpi2() {
   drawerSub.textContent =
     "Projected lifetime earnings across all loans, assuming full term.";
 
-  drawerPrimaryTitle.textContent = "Projected Net Earnings";
-  drawerPrimary.textContent = formatCurrency(kpis.totalNetProjected);
-
-  drawerSecondaryTitle.textContent = "Projected Total Fees";
-  drawerSecondary.textContent = formatCurrency(kpis.totalFeesProjected);
-
-  // --- Chart ---
+   // --- Chart ---
   renderKPI2Chart(loansWithEarnings);
-
+  
   drawerExtra.innerHTML = `
     <div class="amort-wrap" id="kpi2Table"></div>
   `;
-
   renderKPI2Table(loansWithEarnings, "kpi2Table");
+  
+  // ✅ SET STATS LAST (nothing after this wipes them)
+  drawerPrimaryTitle.textContent = "Projected Net Earnings";
+  drawerPrimary.textContent =
+    formatCurrency(kpis.totalNetProjected);
+  
+  drawerSecondaryTitle.textContent = "Projected Total Fees";
+  drawerSecondary.textContent =
+    formatCurrency(kpis.totalFeesProjected);
 
   openDrawer();
 }
-
-
 
 
 function openKpi3() {
