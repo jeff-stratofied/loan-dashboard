@@ -569,7 +569,8 @@ html[data-theme="dark"] .close-btn {
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "nick";
 
-
+let currentLoans = [];
+    
     const USER_LABELS = {
       jeff: "Jeff Customer",
       nick: "Nick Lender",
@@ -577,7 +578,7 @@ html[data-theme="dark"] .close-btn {
     };
     
     document.getElementById("currentUserLabel").textContent =
-      USER_LABELS[PAGE_USER];
+  USER_LABELS[PAGE_USER] || "Unknown User";
 
     let tpvSeriesData = [];   // <-- GLOBAL so all drawers can use it
     
@@ -756,7 +757,8 @@ allLoans = allLoans.map(l => ({
 allLoans = allLoans.filter(l =>
   l.user === PAGE_USER && l.visible === true
 );
-
+// ✅ ensure UI renders filtered set
+currentLoans = [...allLoans];
   
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
@@ -856,7 +858,7 @@ document.getElementById('tpvTile').textContent =
     const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
 
-    allLoans.forEach((loan, idx) => {
+    currentLoans.forEach((loan, idx) => {
       const tile = document.createElement('div');
       tile.className = 'tile';
 
