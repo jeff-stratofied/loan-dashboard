@@ -3498,46 +3498,11 @@ function renderKPI2Chart(loans) {
 
   container.innerHTML = "";
 
-  if (!portfolioViews || !portfolioViews.projectedEarningsSeries) {
-    console.warn("KPI2: projectedEarningsSeries not ready");
-    return;
-  }
+  // Build KPI2 rows using the same normalized row-builder used elsewhere
+  // (this keeps loan IDs aligned with KPI_COLOR_MAP + stacking order)
+  const rows = buildProjectedDrawerRows(loans);
 
-  const projectedSeries = portfolioViews.projectedEarningsSeries;
-  const monthly = new Map();
-
-  loans.forEach(loan => {
-    if (hiddenLoans.has(loan.id)) return;
-
-    const series = projectedSeries[loan.id];
-    if (!Array.isArray(series) || !series.length) return;
-
-    series.forEach(r => {
-      const d = new Date(r.loanDate || r.ownershipDate);
-      if (!Number.isFinite(d.getTime())) return;
-
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-
-      if (!monthly.has(key)) {
-        monthly.set(key, {
-          date: new Date(d),
-          contributions: []
-        });
-      }
-
-      monthly.get(key).contributions.push({
-        loanId: loan.id,
-        principal: r.cumPrincipal ?? 0,
-        interest: r.cumInterest ?? 0,
-        fees: r.cumFees ?? 0,
-        net: r.netEarnings ?? 0
-      });
-    });
-  });
-
-  const rows = [...monthly.values()].sort((a, b) => a.date - b.date);
-
-  if (!rows.length) {
+  if (!rows || !rows.length) {
     container.innerHTML =
       `<div style="color:var(--muted);font-size:13px">
         No projected earnings data available
@@ -3545,14 +3510,13 @@ function renderKPI2Chart(loans) {
     return;
   }
 
-  createKpiStackedChart(container, rows, {
-    denseXAxis: false,
-    thinBars: false
-  });
+  // KPI2 uses long horizon => thinner bars, non-dense x-axis
+  createKpiStackedChart(
+    container,
+    rows,
+    { denseXAxis: false, thinBars: true, projected: true }
+  );
 }
-
-
-
 
     
     function renderKPI3Chart(data, containerId = "kpi3Chart"){
