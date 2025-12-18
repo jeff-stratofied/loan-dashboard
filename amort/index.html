@@ -566,7 +566,9 @@ html[data-theme="dark"] .close-btn {
 
   <script type="module">
     import { loadLoans, attachSchedules } from "../js/loanEngine.js";
-    const PAGE_USER = "jeff";
+    const PAGE_USER =
+  new URLSearchParams(window.location.search).get("user") || "jeff";
+
 
     const USER_LABELS = {
       jeff: "Jeff Customer",
