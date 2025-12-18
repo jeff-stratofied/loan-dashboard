@@ -1840,97 +1840,47 @@ if (!isKpi4) {
   const lensRadius = 40;   // match KPI2 / loan drawer
   const lensScale = 1.5;
 
-  function handleMove(e) {
-    const rect = svg.getBoundingClientRect();
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    const mouseY = ((e.clientY - rect.top) / rect.height) * h;
+function handleMove(e) {
+  const rect = svg.getBoundingClientRect();
+  const mouseX = ((e.clientX - rect.left) / rect.width) * w;
 
-    const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
-    const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
+  const x = Math.max(padL, Math.min(w - padR, mouseX));
 
-    if (!lensInstance) {
-      lensInstance = createLens(svg, lensRadius, lensScale);
-      const clones = Array.from(svg.querySelectorAll("rect"));
-      clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-      svg.appendChild(lensInstance.group);
-    }
-
-    updateLens(lensInstance, x, y);
-
-    // Map lens X position → month index
-    let cumulativeNet = 0;
-
-for (let i = 0; i <= idx; i++) {
-  const r = rows[i];
-  const monthNet = r.contributions.reduce(
-    (s, c) => s + (c.monthlyNet ?? 0),
-    0
-  );
-  cumulativeNet += monthNet;
-}
-
-    const row = rows[idx];
-    if (!row || !row.contributions) {
-      hideMiniTooltip();
-      return;
-    }
-    
-    const principal = row.contributions
-      .reduce((s, c) => s + (c.principal ?? 0), 0);
-    
-    const interest = row.contributions
-      .reduce((s, c) => s + (c.interest ?? 0), 0);
-    
-    const fees = row.contributions
-      .reduce((s, c) => s + (c.fees ?? 0), 0);
-    
-    // ------------------------------------
-    // KPI2 FIX: cumulative baseline offset
-    // ------------------------------------
-    let net;
-    
-// TEMP: force KPI2 to use cumulative net directly
-net = row.contributions.reduce(
-  (s, c) => s + (c.net ?? 0),
-  0
-);
-
-
-
-let tooltipLines;
-
-if (opts.useMonthly === true) {
-  // ===== KPI1 =====
-  const principal = row.contributions.reduce(
-    (s, c) => s + (c.principal ?? 0), 0
+  // ✅ CORRECT month index
+  const rowIndex = Math.max(
+    0,
+    Math.min(rows.length - 1,
+      Math.floor((x - padL) / barW)
+    )
   );
 
-  const interest = row.contributions.reduce(
-    (s, c) => s + (c.interest ?? 0), 0
-  );
+  const row = rows[rowIndex];
+  if (!row) return;
 
-  const fees = row.contributions.reduce(
-    (s, c) => s + (c.fees ?? 0), 0
-  );
+  if (!lensInstance) {
+    lensInstance = createLens(svg, lensRadius, lensScale);
+    const clones = Array.from(svg.querySelectorAll("rect"));
+    clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
+    svg.appendChild(lensInstance.group);
+  }
 
-  const monthNet = row.contributions.reduce(
-    (s, c) => s + (c.monthlyNet ?? 0), 0
-  );
+  updateLens(lensInstance, x, h / 2);
 
-// KPI1 cumulative must be derived from monthly totals, not summed per-loan cumulatives
-let cumulativeNet = 0;
+  // --- Monthly totals ---
+  const principal = row.contributions.reduce((s,c)=>s+(c.principal ?? 0),0);
+  const interest  = row.contributions.reduce((s,c)=>s+(c.interest  ?? 0),0);
+  const fees      = row.contributions.reduce((s,c)=>s+(c.fees      ?? 0),0);
+  const monthNet  = row.contributions.reduce((s,c)=>s+(c.monthlyNet ?? 0),0);
 
-for (let i = 0; i <= rowIndex; i++) {
-  const r = rows[i];
-  const monthNet = r.contributions.reduce(
-    (s, c) => s + (c.monthlyNet ?? 0),
-    0
-  );
-  cumulativeNet += monthNet;
-}
+  // --- Cumulative net (derived from monthly, NOT per-loan cumulative) ---
+  let cumulativeNet = 0;
+  for (let i = 0; i <= rowIndex; i++) {
+    cumulativeNet += rows[i].contributions.reduce(
+      (s,c)=>s+(c.monthlyNet ?? 0),0
+    );
+  }
 
-
-  tooltipLines = [
+  const tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
     `Principal: ${formatCurrency(principal)}`,
     `Interest: ${formatCurrency(interest)}`,
@@ -1939,33 +1889,10 @@ for (let i = 0; i <= rowIndex; i++) {
     `Cumulative Net: ${formatCurrency(cumulativeNet)}`
   ];
 
-} else {
-  // ===== KPI2 =====
-  const net = row.contributions.reduce(
-    (s, c) => s + (c.net ?? 0),
-    0
-  );
-
-  tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Principal: ${formatCurrency(
-      row.contributions.reduce((s,c)=>s+(c.principal??0),0)
-    )}`,
-    `Interest: ${formatCurrency(
-      row.contributions.reduce((s,c)=>s+(c.interest??0),0)
-    )}`,
-    `Fees: -${formatCurrency(
-      row.contributions.reduce((s,c)=>s+(c.fees??0),0)
-    )}`,
-    `Net: ${formatCurrency(net)}`
-  ];
+  setMiniTooltipContent(tooltipLines);
+  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
 }
 
-
-setMiniTooltipContent(tooltipLines);
-positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-
-  }
 
   function handleLeave() {
     removeLens(svg, lensInstance);
@@ -2438,8 +2365,9 @@ function buildPortfolioDrawerRows(loans) {
         idx
       );
       d.setHours(0, 0, 0, 0);
+      d.setDate(1); // ✅ CRITICAL FIX — normalize to month start
 
-      // 🔴 NEW: STOP AT TODAY (KPI1 rule)
+      // 🔴 STOP AT TODAY (KPI1 rule)
       if (d > TODAY) return;
 
       const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
@@ -2451,34 +2379,28 @@ function buildPortfolioDrawerRows(loans) {
         });
       }
 
-      // 🔴 CHANGED: monthly values for bars
-      const principal = r.principalPaid ?? 0;
-      const interest  = r.interestPaid  ?? 0;
-      const fees      = r.feeThisMonth  ?? 0;
+      monthly.get(key).contributions.push({
+        loanId: loan.loanId,
 
-monthly.get(key).contributions.push({
-  loanId: loan.loanId,
+        // MONTHLY components (for bar height)
+        principal: r.principalPaid ?? 0,
+        interest:  r.interestPaid  ?? 0,
+        fees:      r.feeThisMonth  ?? 0,
 
-  // MONTHLY components (for bar height)
-  principal: r.principalPaid ?? 0,
-  interest:  r.interestPaid  ?? 0,
-  fees:      r.feeThisMonth  ?? 0,
+        // MONTHLY net (THIS drives KPI1 bars)
+        monthlyNet:
+          (r.principalPaid ?? 0) +
+          (r.interestPaid ?? 0) -
+          (r.feeThisMonth ?? 0),
 
-  // MONTHLY net (THIS drives KPI1 bars)
-  monthlyNet:
-    (r.principalPaid ?? 0) +
-    (r.interestPaid ?? 0) -
-    (r.feeThisMonth ?? 0),
+        // CUMULATIVE net (for hover + KPI alignment)
+        cumulativeNet: r.netEarnings ?? 0,
 
-  // CUMULATIVE net (THIS drives hover + KPI tile alignment)
-  cumulativeNet: r.netEarnings ?? 0,
+        // keep for KPI2 compatibility
+        net: r.netEarnings ?? 0,
 
-  // keep for KPI2 compatibility
-  net: r.netEarnings ?? 0,
-
-  hasData: true
-});
-
+        hasData: true
+      });
     });
   });
 
@@ -2494,8 +2416,6 @@ monthly.get(key).contributions.push({
 
     allLoanIds.forEach(id => {
       if (!present.has(id)) {
-
-        // carry forward cumulative values ONLY
         let last = {
           cumulativePrincipal: 0,
           cumulativeInterest:  0,
@@ -2534,6 +2454,7 @@ monthly.get(key).contributions.push({
 
   return sorted;
 }
+
 
 
 function buildProjectedDrawerRows(loans) {
