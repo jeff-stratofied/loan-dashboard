@@ -763,51 +763,31 @@ function assertLoanShape(l, idx) {
   });
 }
     
-    async function loadLoans() {
-      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-      const data = await res.json();
-      loans = (data.loans || []).map(l => ({
-        ...l,
-        id: l.loanId,
-        name: l.loanName ?? `Loan ${l.loanId}`,
-        school: l.school ?? "",
-        loanStartDate: l.loanStartDate || "",
-        termYears: Number(l.termYears ?? 0),
-        graceYears: Number(l.graceYears ?? 0),
-        purchasePrice: Number(l.purchasePrice ?? 0),
-        nominalRate: Number(l.nominalRate ?? 0),
-        upfrontFee: Number(l.upfrontFee ?? 150),
-        monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
-      }));
 // DEV-ONLY: catch backend / engine drift early
 loans.forEach((l, i) => assertLoanShape(l, i));
       
     }
 
-    
-    /* -------------------------
-       Amortization logic
-       ------------------------- */
-    function calcAmort(principal, annualRate, termYears, graceYears){
-      const monthlyRate = annualRate/12;
-      const totalMonths = Math.round(termYears*12);
-      const graceMonths = Math.round(graceYears*12);
-      const repayMonths = Math.max(1, totalMonths - graceMonths);
-      let balance = principal; const schedule=[];
-      for(let m=1;m<=graceMonths;m++){ const interest = +(balance*monthlyRate).toFixed(2); balance = +(balance + interest).toFixed(2); schedule.push({ monthIndex:m, payment:0, principalPaid:0, interest, balance }); }
-      const payment = monthlyRate===0 ? +(balance/repayMonths).toFixed(2) : +((balance*monthlyRate)/(1-Math.pow(1+monthlyRate,-repayMonths))).toFixed(2);
-      for(let m=1;m<=repayMonths;m++){ const interest = +(balance*monthlyRate).toFixed(2); const principalPaid = +Math.min(balance, +(payment - interest).toFixed(2)); balance = +(Math.max(0, balance - principalPaid).toFixed(2)); schedule.push({ monthIndex: graceMonths + m, payment:+payment.toFixed(2), principalPaid, interest, balance }); }
-      return { payment, schedule };
-    }
-
     async function initROI() {
-      const TODAY = new Date();
-      const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-      const formattedLoans = loans.map(l => ({
-        ...l,
-        purchasePrice: Number(l.principal ?? l.purchasePrice ?? 0),
-        nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-      }));
+    const TODAY = new Date();
+  
+    // -------------------------------
+    // LOAD + NORMALIZE LOANS (ROI)
+    // -------------------------------
+    const apiResult = await loadLoans();
+  
+    const rawLoans = Array.isArray(apiResult)
+      ? apiResult
+      : apiResult.loans;
+  
+    let loans = rawLoans.map(normalizeLoan);
+  
+    // DEV-ONLY: catch backend / engine drift early
+    loans.forEach((l, i) => assertLoanShape(l, i));
+  
+    // Attach amort schedules (SAME as Amort page)
+    const loansWithAmort = attachSchedules(loans);
+
 
       const loansWithAmort = formattedLoans.map(l => {
         // compute amortization schedule for this loan
