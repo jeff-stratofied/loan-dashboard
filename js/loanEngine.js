@@ -425,6 +425,32 @@ loansWithAmort.forEach(loan => {
   earningsKpis[loan.id] = lifetimeNet;
 });
 
+// ----------------------------------------------
+// 3b) Projected Earnings Timeline (AS-OF)
+// ----------------------------------------------
+
+const projectedEarningsSeries = {};
+
+Object.keys(earningsSeries).forEach(loanId => {
+  const series = earningsSeries[loanId];
+  if (!series.length) {
+    projectedEarningsSeries[loanId] = [];
+    return;
+  }
+
+  const lifetimeNet =
+    series[series.length - 1].netEarnings;
+
+  projectedEarningsSeries[loanId] = series.map(r => {
+    const earned = r.netEarnings;
+    const projected = earned + (lifetimeNet - earned);
+
+    return {
+      ...r,
+      netEarnings: projected
+    };
+  });
+});
 
 
 
@@ -457,22 +483,24 @@ loansWithAmort.forEach(loan => {
   // Return unified views
   // ----------------------------------------------
 
-  return {
-    loans: loansWithAmort,
+return {
+  loans: loansWithAmort,
 
-    // amort page data
-    incomeLabels,
-    incomePayments,
-    amortKpis,
+  // amort page data
+  incomeLabels,
+  incomePayments,
+  amortKpis,
 
-    // ROI page data
-    roiSeries,
-    roiKpis,
+  // ROI page data
+  roiSeries,
+  roiKpis,
 
-    // earnings page data
-    earningsSeries,
-    earningsKpis
-  };
+  // earnings page data
+  earningsSeries,              // earned-to-date (KPI1)
+  projectedEarningsSeries,     // projected-as-of (KPI2)
+  earningsKpis
+};
+
 
 
   
