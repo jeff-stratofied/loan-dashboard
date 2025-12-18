@@ -843,17 +843,49 @@ loans.forEach((l, i) => assertLoanShape(l, i));
 
 
       
-    function getCurrentOwnedRoiEntry(loan){
-      const today = new Date();
-      const ownedEntries = loan.roiSeries.filter(r => r.ownershipDate && r.ownershipDate <= today);
-      if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
-      return ownedEntries[ownedEntries.length - 1];
-    }
+function getCurrentOwnedRoiEntry(loan) {
+  const today = new Date();
 
-    function getLastOwnedRoiEntry(loan){
-      if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
-      return loan.roiSeries[loan.roiSeries.length - 1];
-    }
+  const sched = loan.amort?.schedule || [];
+  const owned = sched.filter(r => r.isOwned && r.loanDate <= today);
+
+  if (!owned.length) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  const last = owned[owned.length - 1];
+
+  const realized = (last.cumPrincipal + last.cumInterest) - last.cumFees;
+  const unrealized = last.balance * 0.95;
+  const loanValue = realized + unrealized;
+
+  const roi =
+    loan.purchasePrice > 0
+      ? (loanValue - loan.purchasePrice) / loan.purchasePrice
+      : 0;
+
+  return { roi, loanValue };
+}
+
+
+  function getLastOwnedRoiEntry(loan) {
+  const sched = loan.amort?.schedule || [];
+  if (!sched.length) return { roi: 0, loanValue: loan.purchasePrice };
+
+  const last = sched[sched.length - 1];
+
+  const realized = (last.cumPrincipal + last.cumInterest) - last.cumFees;
+  const unrealized = last.balance * 0.95;
+  const loanValue = realized + unrealized;
+
+  const roi =
+    loan.purchasePrice > 0
+      ? (loanValue - loan.purchasePrice) / loan.purchasePrice
+      : 0;
+
+  return { roi, loanValue };
+}
+
 
     function computeKPIs(list){
       const total = list.reduce((s,l)=>s + l.purchasePrice,0);
