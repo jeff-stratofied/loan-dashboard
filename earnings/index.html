@@ -1750,9 +1750,14 @@ if (opts.thinBars) {
   .filter(Boolean);
 
 sortedContribs.forEach(c => {
-  const net = c.net || 0;
+  // KPI1 uses MONTHLY net, KPI2 uses cumulative net
+  const net = opts.useMonthly === true
+    ? (c.monthlyNet ?? 0)
+    : (c.net ?? 0);
+
   const hVal = Math.max(0, net * scale);
   if (!Number.isFinite(hVal) || hVal <= 0) return;
+
 
   const bar = document.createElementNS(svgNS, "rect");
   bar.dataset.loanId = c.loanId;
@@ -1885,30 +1890,59 @@ net = row.contributions.reduce(
 
 let tooltipLines;
 
-if (isKpi4) {
-  // KPI4 — Projected Avg Monthly Earnings
-  const net = row.contributions
-    .reduce((s, c) => s + (c.net ?? 0), 0);
+if (opts.useMonthly === true) {
+  // ===== KPI1 =====
+  const principal = row.contributions.reduce(
+    (s, c) => s + (c.principal ?? 0), 0
+  );
+
+  const interest = row.contributions.reduce(
+    (s, c) => s + (c.interest ?? 0), 0
+  );
+
+  const fees = row.contributions.reduce(
+    (s, c) => s + (c.fees ?? 0), 0
+  );
+
+  const monthNet = row.contributions.reduce(
+    (s, c) => s + (c.monthlyNet ?? 0), 0
+  );
+
+  const cumulativeNet = row.contributions.reduce(
+    (s, c) => s + (c.cumulativeNet ?? 0), 0
+  );
 
   tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
-    `Projected Net: ${formatCurrency(net)}`
+    `Principal: ${formatCurrency(principal)}`,
+    `Interest: ${formatCurrency(interest)}`,
+    `Fees: -${formatCurrency(fees)}`,
+    `Month Net: ${formatCurrency(monthNet)}`,
+    `Cumulative Net: ${formatCurrency(cumulativeNet)}`
   ];
+
 } else {
-  // Other KPIs (unchanged behavior)
-  const kpi1ComparableNet =
-  row.contributions.reduce(
+  // ===== KPI2 =====
+  const net = row.contributions.reduce(
     (s, c) => s + (c.net ?? 0),
     0
   );
 
-tooltipLines = [
-  `Date: ${formatMonthYear(row.date)}`,
-  `Chart Net (calendar): ${formatCurrency(net)}`,
-  `KPI1-style Net: ${formatCurrency(kpi1ComparableNet)}`
-];
-
+  tooltipLines = [
+    `Date: ${formatMonthYear(row.date)}`,
+    `Principal: ${formatCurrency(
+      row.contributions.reduce((s,c)=>s+(c.principal??0),0)
+    )}`,
+    `Interest: ${formatCurrency(
+      row.contributions.reduce((s,c)=>s+(c.interest??0),0)
+    )}`,
+    `Fees: -${formatCurrency(
+      row.contributions.reduce((s,c)=>s+(c.fees??0),0)
+    )}`,
+    `Net: ${formatCurrency(net)}`
+  ];
 }
+
 
 setMiniTooltipContent(tooltipLines);
 positionMiniTooltip(e.clientX, e.clientY, lensRadius);
@@ -2561,6 +2595,9 @@ function buildProjectedDrawerRows(loans) {
 function openKpi1(){
   currentLoan = null;
 
+  // 🔴 RESET FIRST — otherwise you wipe what you set
+  resetDrawerContent();
+
   drawerTitle.textContent = "Total Net Earnings to Date";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
   drawerPrimaryTitle.textContent = "Net Earnings to Date";
@@ -2568,22 +2605,26 @@ function openKpi1(){
   drawerSecondaryTitle.textContent = "Total Fees to Date";
   drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
 
-  resetDrawerContent();
-
   const rows = buildPortfolioDrawerRows(loansWithEarnings);
 
-// KPI1 uses dense x-axis
-createKpiStackedChart(
-  document.getElementById("drawerChartArea"),
-  rows,
-  { denseXAxis: true, thinBars: false }
-);
+  // ✅ KPI1 = MONTHLY bars, dense axis, NO projection semantics
+  createKpiStackedChart(
+    document.getElementById("drawerChartArea"),
+    rows,
+    {
+      useMonthly: true,   // 🔴 THIS is what makes bars visible again
+      denseXAxis: true,
+      thinBars: false
+    }
+  );
 
-  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
 
   openDrawer();
-}  
+}
+
 
 function openKpi2() {
   console.log("openKpi2 fired");
