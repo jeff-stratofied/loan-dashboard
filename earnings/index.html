@@ -824,9 +824,10 @@ html[data-theme="dark"] .legend .sw {
   </select>
 
   <label class="compact-toggle">
-    <input type="checkbox" id="toggleCompact" checked />
-    <span>Compact</span>
-  </label>
+  <input type="checkbox" id="toggleCompact" />
+  <span>Compact</span>
+</label>
+
 
   <button class="btn reset-btn" id="resetFilters">Reset filters</button>
 
@@ -2953,12 +2954,23 @@ resetBtn.addEventListener("click", () => {
   applyLoanFilters();
 });
 
-// ---- Compact tile toggle
+/* -------------------------
+   Compact tile toggle (persisted)
+   ------------------------- */
+const savedCompact = localStorage.getItem("loanGridCompact");
+if (savedCompact !== null) {
+  compactToggle.checked = savedCompact === "true";
+}
+
+// Apply initial state
 loanGrid.classList.toggle("compact", compactToggle.checked);
 
+// Persist on change
 compactToggle.addEventListener("change", () => {
   loanGrid.classList.toggle("compact", compactToggle.checked);
+  localStorage.setItem("loanGridCompact", compactToggle.checked);
 });
+
 
 
   // build portfolio-wide earnings series for charts (mini + drawer + KPI)
