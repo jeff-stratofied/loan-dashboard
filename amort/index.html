@@ -746,16 +746,7 @@ allLoans = allLoans.map(l => ({
   visible: l.visible !== false
 }));
 
-console.log(
-  "Before filter:",
-  allLoans.map(l => ({
-    name: l.loanName,
-    user: JSON.stringify(l.user),
-    userType: typeof l.user,
-    visible: l.visible,
-    visibleType: typeof l.visible
-  }))
-);
+console.log("PAGE_USER raw:", PAGE_USER);
   
 // --------------------------------------------------
 // USER + VISIBILITY FILTER (STEP 2B)
