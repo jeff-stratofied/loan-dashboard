@@ -567,6 +567,8 @@ html[data-theme="dark"] .close-btn {
   <script type="module">
     import { loadLoans } from "../js/loadLoans.js";
 import { attachSchedules } from "../js/loanEngine.js";
+    import { normalizeLoan } from "../js/normalizeLoan.js";
+
 
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
@@ -694,38 +696,9 @@ const rawLoans = Array.isArray(apiResult)
   ? apiResult
   : apiResult.loans;
 
-  
-apiLoans = rawLoans.map(l => ({
-  ...l,
-  id: String(l.loanId ?? l.id),
-  loanId: String(l.loanId ?? l.id),
-  loanName: l.loanName || ""
-}));
+  apiLoans = rawLoans.map(normalizeLoan);
 
-// --------------------------------------------------
-// NORMALIZE API LOANS → ENGINE SHAPE (CRITICAL)
-// --------------------------------------------------
-apiLoans = apiLoans.map(l => ({
-  ...l,
-
-  // 🔑 Rate normalization
-  nominalRate: Number(l.nominalRate ?? l.rate ?? 0),
-
-  // 🔑 Ensure numeric fields
-  principal: Number(l.principal ?? l.purchasePrice ?? 0),
-  purchasePrice: Number(l.purchasePrice ?? l.principal ?? 0),
-
-  termYears: Number(l.termYears ?? 0),
-  graceYears: Number(l.graceYears ?? 0),
-
-  // 🔑 Dates (string → ISO-safe)
-  loanStartDate: l.loanStartDate,
-  purchaseDate: l.purchaseDate,
-
-  // 🔑 User fields (already correct, but keep explicit)
-  user: l.user,
-  visible: l.visible
-}));
+  console.log("Normalized loan sample:", apiLoans[0]);
 
   // --------------------------------------------------
 // DEV-ONLY SCHEMA DRIFT GUARD
@@ -807,9 +780,6 @@ apiLoans = attachSchedules(apiLoans);
       miniPts
     };
   });
-
-console.log(apiLoans[0].nominalRate); // number
-console.log(apiLoans[0].rate);        // still exists (API)
 
 
   
