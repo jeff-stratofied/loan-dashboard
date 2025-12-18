@@ -917,9 +917,6 @@ html[data-theme="dark"] .legend .sw {
 
 
 <script type="module">
-throw new Error("SCRIPT START");
-
-  
   import {
     addMonths,
     monthDiff,
@@ -1880,35 +1877,7 @@ if (!isKpi4) {
 // ------------------------------------
 // KPI2 / KPI3 / KPI1 tooltip net
 // ------------------------------------
-if (opts.projected === true) {
-  // portfolio net-to-date (today baseline)
-  const baseline = portfolioViews?.kpis?.totalNetToDate ?? 0;
-
-  // projected net at THIS month
-  const projectedHere = principal + interest - fees;
-
-  // projected net at TODAY (first row >= today)
-  if (!createKpiStackedChart.__kpi2TodayNet) {
-    const todayRow = rows.find(r => r.date >= new Date());
-    if (todayRow) {
-      createKpiStackedChart.__kpi2TodayNet =
-        todayRow.contributions.reduce(
-          (s, c) => s + (c.principal ?? 0) + (c.interest ?? 0) - (c.fees ?? 0),
-          0
-        );
-    } else {
-      createKpiStackedChart.__kpi2TodayNet = projectedHere;
-    }
-  }
-
-  net =
-    baseline +
-    (projectedHere - createKpiStackedChart.__kpi2TodayNet);
-} else {
-  // KPI1 / others unchanged
-  net = principal + interest - fees;
-}
-
+const net = principal + interest - fees;
 
 let tooltipLines;
 
@@ -2730,7 +2699,7 @@ function openKpi4(){
     "KPI4 projectedAvgMonthlyNet missing; defaulting to 0"
   );
   kpis.projectedAvgMonthlyNet = 0;
-
+}
   
   currentLoan = null;
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
@@ -4243,7 +4212,6 @@ function renderKPI4Table(data, containerId = "kpi4Table") {
       a.click();
       URL.revokeObjectURL(url);
     }
-
   </script>
 </body>
 </html>
