@@ -830,7 +830,7 @@ currentLoans = [...allLoans];
     });
   
   // Now it is safe: allLoans exists
-    tpvSeriesData = tpvSeries(allLoans);   // assign to global
+    tpvSeriesData = tpvSeries(currentLoans);   // assign to global
 // --------------------------------------------------
 // Sort loans by purchase date (match Earnings page)
 // --------------------------------------------------
@@ -1844,6 +1844,17 @@ if (i % 6 === 0) {
 
 
 function renderTPVDrawer() {
+  if (!currentLoans.length) {
+  drawerTitle.textContent = 'Total Portfolio Value';
+  drawerSub.textContent = 'No loans for this user';
+  drawerPrimary.textContent = '$0';
+  drawerSecondary.textContent = '$0';
+  drawerChartArea.innerHTML = '<p class="small">No data available</p>';
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  return;
+}
+
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -1851,7 +1862,8 @@ function renderTPVDrawer() {
   drawerSub.textContent = 'Purchase + accrued interest (grace) + cumulative payments';
 
   drawerPrimaryTitle.textContent = 'Current TPV';
-  const curMonthIdx = getCurrentMonthIndex(allLoans);
+  const curMonthIdx = getCurrentMonthIndex(currentLoans);
+
 
 const curVal =
   tpvSeriesData.length > 0 &&
@@ -1864,7 +1876,7 @@ drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
 
   drawerSecondaryTitle.textContent = 'Total Invested';
   drawerSecondary.textContent =
-    `$${allLoans.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
+  `$${currentLoans.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
 
   drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
