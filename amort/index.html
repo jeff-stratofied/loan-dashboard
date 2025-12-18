@@ -727,6 +727,49 @@ apiLoans = apiLoans.map(l => ({
   visible: l.visible
 }));
 
+  // --------------------------------------------------
+// DEV-ONLY SCHEMA DRIFT GUARD
+// --------------------------------------------------
+const DEV_MODE =
+  location.hostname === "localhost" ||
+  location.hostname.includes("github.io");
+
+if (DEV_MODE) {
+  apiLoans.forEach(l => {
+    const problems = [];
+
+    if (!Number.isFinite(l.nominalRate))
+      problems.push("nominalRate");
+
+    if (!Number.isFinite(l.principal))
+      problems.push("principal");
+
+    if (!Number.isFinite(l.purchasePrice))
+      problems.push("purchasePrice");
+
+    if (!Number.isFinite(l.termYears))
+      problems.push("termYears");
+
+    if (!l.loanStartDate)
+      problems.push("loanStartDate");
+
+    if (!l.user)
+      problems.push("user");
+
+    if (problems.length) {
+      console.warn(
+        "⚠️ Loan schema issue",
+        {
+          loanId: l.loanId,
+          loanName: l.loanName,
+          problems,
+          loan: l
+        }
+      );
+    }
+  });
+}
+
   
 apiLoans = attachSchedules(apiLoans);
 
