@@ -2,7 +2,7 @@
   "loans": [
     {
       "loanName": "PSU 2024 8.83",
-      "user": "john",
+      "user": "jeff",
       "visible": true,
       "school": "Penn State",
       "loanStartDate": "2024-01-31",
@@ -16,7 +16,7 @@
     },
     {
       "loanName": "OSU 2024 8.00",
-      "user": "john",
+      "user": "jeff",
       "visible": true,
       "school": "Ohio State",
       "loanStartDate": "2024-02-01",
@@ -30,7 +30,7 @@
     },
     {
       "loanName": "PIT 2024 8.25",
-      "user": "john",
+      "user": "jeff",
       "visible": true,
       "school": "Pitt",
       "loanStartDate": "2024-03-15",
@@ -44,7 +44,7 @@
     },
     {
       "loanName": "CMU 2024 9.50",
-      "user": "john",
+      "user": "jeff",
       "visible": true,
       "school": "Carnegie Mellon",
       "loanStartDate": "2024-06-30",
@@ -142,7 +142,7 @@
     },
     {
       "loanName": "WCC 2014 5.00",
-      "user": "nick",
+      "user": "jeff",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2014-06-01",
@@ -156,7 +156,7 @@
     },
     {
       "loanName": "WCC 2017 5.00",
-      "user": "nick",
+      "user": "jeff",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2017-01-01",
@@ -181,6 +181,20 @@
       "termYears": 10,
       "graceYears": 2,
       "loanId": "EOJYIFL33F"
+    },
+    {
+      "loanName": "USC 2025 7.90 (Copy)",
+      "user": "jeff",
+      "visible": true,
+      "school": "USC",
+      "loanStartDate": "2024-03-11",
+      "purchaseDate": "2024-10-22",
+      "principal": 6000,
+      "purchasePrice": 5000,
+      "rate": 0.068,
+      "termYears": 12,
+      "graceYears": 1,
+      "loanId": "BHH0A15A7A"
     }
   ]
 }
