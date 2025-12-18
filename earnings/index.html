@@ -1756,7 +1756,8 @@ sortedContribs.forEach(c => {
     ? (c.monthlyNet ?? 0)
     : (c.net ?? 0);
 
-  const hVal = Math.max(0, net * scale);
+  const hVal = Math.abs(net) * scale;
+
   if (!Number.isFinite(hVal) || hVal <= 0) return;
 
 
@@ -1857,10 +1858,17 @@ if (!isKpi4) {
     updateLens(lensInstance, x, y);
 
     // Map lens X position → month index
-    const idx = Math.max(
-      0,
-      Math.min(rows.length - 1, Math.floor((x - padL) / barW))
-    );
+    let cumulativeNet = 0;
+
+for (let i = 0; i <= idx; i++) {
+  const r = rows[i];
+  const monthNet = r.contributions.reduce(
+    (s, c) => s + (c.monthlyNet ?? 0),
+    0
+  );
+  cumulativeNet += monthNet;
+}
+
     const row = rows[idx];
     if (!row || !row.contributions) {
       hideMiniTooltip();
