@@ -2,7 +2,7 @@
   "loans": [
     {
       "loanName": "PSU 2024 8.83",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Penn State",
       "loanStartDate": "2024-01-31",
@@ -16,7 +16,7 @@
     },
     {
       "loanName": "OSU 2024 8.00",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Ohio State",
       "loanStartDate": "2024-02-01",
@@ -30,7 +30,7 @@
     },
     {
       "loanName": "PIT 2024 8.25",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Pitt",
       "loanStartDate": "2024-03-15",
