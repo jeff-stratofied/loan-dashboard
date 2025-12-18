@@ -2737,7 +2737,7 @@ function renderAvgRateDrawer() {
       seg.addEventListener('mouseleave', () => {
         tooltip.style.display = 'none';
       });
-    const id = l.id ?? l.loanId;
+    const id = loan.id ?? loan.loanId;
     seg.dataset.loanId = String(id);
     seg.dataset.type = "rate-seg";
 
