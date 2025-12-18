@@ -737,6 +737,15 @@ apiLoans = attachSchedules(apiLoans);
     };
   });
 
+console.log(
+  "Pre-normalize users:",
+  allLoans.map(l => ({
+    name: l.loanName,
+    user: l.user
+  }))
+);
+
+  
 // --------------------------------------------------
 // NORMALIZE user + visible (match Admin defaults)
 // --------------------------------------------------
@@ -746,7 +755,6 @@ allLoans = allLoans.map(l => ({
   visible: l.visible !== false
 }));
 
-console.log("PAGE_USER raw:", PAGE_USER);
   
 // --------------------------------------------------
 // USER + VISIBILITY FILTER (STEP 2B)
