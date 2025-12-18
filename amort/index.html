@@ -692,11 +692,8 @@ const rawLoans = Array.isArray(apiResult)
   ? apiResult
   : apiResult.loans;
 
-// 🔍 DEBUG — verify Admin data is arriving
-console.log(
-  "Amort rawLoans users:",
-  rawLoans.map(l => l.user)
-);
+console.log("PAGE_USER:", PAGE_USER);
+console.log("currentLoans:", currentLoans.map(l => l.loanName));
   
 apiLoans = rawLoans.map(l => ({
   ...l,
@@ -801,7 +798,7 @@ currentLoans = [...allLoans];
      /* ============================
        Render KPI tiles
        ============================ */
-    cachedKPIs = computeKPIs(allLoans);
+    cachedKPIs = computeKPIs(currentLoans);
     const kpis = cachedKPIs;
     
     const kpisEl = document.getElementById('kpis');
@@ -857,7 +854,7 @@ document.getElementById('tpvTile').textContent =
        ============================ */
     const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
-
+  grid.innerHTML = "";
     currentLoans.forEach((loan, idx) => {
       const tile = document.createElement('div');
       tile.className = 'tile';
