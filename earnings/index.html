@@ -1900,13 +1900,18 @@ if (isKpi4) {
   ];
 } else {
   // Other KPIs (unchanged behavior)
-  tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Principal: ${formatCurrency(principal)}`,
-    `Interest: ${formatCurrency(interest)}`,
-    `Fees: -${formatCurrency(fees)}`,
-    `Net: ${formatCurrency(net)}`
-  ];
+  const kpi1ComparableNet =
+  row.contributions.reduce(
+    (s, c) => s + (c.net ?? 0),
+    0
+  );
+
+tooltipLines = [
+  `Date: ${formatMonthYear(row.date)}`,
+  `Chart Net (calendar): ${formatCurrency(net)}`,
+  `KPI1-style Net: ${formatCurrency(kpi1ComparableNet)}`
+];
+
 }
 
 setMiniTooltipContent(tooltipLines);
