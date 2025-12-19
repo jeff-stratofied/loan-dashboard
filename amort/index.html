@@ -2283,6 +2283,7 @@ function renderRatesDrawer() {
         'fill',
         window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'
       );
+      rect.setAttribute('data-loan-id', l.loanId);
 
       rect.addEventListener('mousemove', ev => {
         tooltip.style.display = 'block';
@@ -2344,7 +2345,10 @@ function renderRatesDrawer() {
           </thead>
           <tbody>
             ${sorted.map(l => `
-              <tr style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}">
+              <tr
+                data-loan-id="${l.loanId}"
+                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
+              >
                 <!-- Swatch -->
                 <td>
                   <span style="
@@ -2357,14 +2361,14 @@ function renderRatesDrawer() {
                 </td>
 
                 <!-- Loan + School -->
-                <td>
+                <td style="text-align:left;">
                   <div style="font-weight:700;">${l.loanName}</div>
                   <div style="font-size:12px; color:var(--muted); margin-top:2px;">
                     ${l.school || ''}
                   </div>
                 </td>
 
-                <!-- Rate (colored) -->
+                <!-- Rate -->
                 <td style="color:var(--loan-color); font-weight:600;">
                   ${(l.nominalRate * 100).toFixed(2)}%
                 </td>
@@ -2381,10 +2385,37 @@ function renderRatesDrawer() {
     </div>
   `;
 
+  // ---------------------------------
+  // TABLE HOVER → CHART HIGHLIGHT
+  // ---------------------------------
+  document
+    .querySelectorAll('.kpi2-table tbody tr')
+    .forEach(tr => {
+      const loanId = tr.dataset.loanId;
+
+      tr.addEventListener('mouseenter', () => {
+        document
+          .querySelectorAll('#drawerChartArea rect[data-loan-id]')
+          .forEach(rect => {
+            rect.style.opacity =
+              rect.dataset.loanId === loanId ? '1' : '0.15';
+          });
+      });
+
+      tr.addEventListener('mouseleave', () => {
+        document
+          .querySelectorAll('#drawerChartArea rect[data-loan-id]')
+          .forEach(rect => {
+            rect.style.opacity = '1';
+          });
+      });
+    });
+
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
 
