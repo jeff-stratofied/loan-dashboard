@@ -1385,6 +1385,26 @@ resetBtn.addEventListener("click", () => {
       })}`;
     }
 
+  function highlightLoanInRateChart(loanId) {
+  document
+    .querySelectorAll('#drawerChartArea [data-loan-id]')
+    .forEach(el => {
+      el.style.opacity =
+        el.dataset.loanId === loanId ? '1' : '0.15';
+      el.style.strokeWidth =
+        el.dataset.loanId === loanId ? '3' : '1';
+    });
+}
+
+function clearRateChartHighlight() {
+  document
+    .querySelectorAll('#drawerChartArea [data-loan-id]')
+    .forEach(el => {
+      el.style.opacity = '1';
+      el.style.strokeWidth = '1.6';
+    });
+}
+
   
     /* ---------- Open drawer for loan ---------- */
     function openDrawerForLoan(loan) {
@@ -2333,6 +2353,24 @@ function renderRatesDrawer() {
     </div>
   `;
 
+// ------------------------------
+// Row hover → highlight chart loan
+// ------------------------------
+document
+  .querySelectorAll('#drawerExtra tr[data-loan-id]')
+  .forEach(tr => {
+    const loanId = tr.dataset.loanId;
+
+    tr.addEventListener('mouseenter', () => {
+      highlightLoanInRateChart(loanId);
+    });
+
+    tr.addEventListener('mouseleave', () => {
+      clearRateChartHighlight();
+    });
+  });
+
+  
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
