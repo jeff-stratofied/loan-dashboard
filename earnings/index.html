@@ -2020,13 +2020,19 @@ function renderKpi3AvgLineChart(container, rows) {
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
 
-  const maxValRaw = Math.max(1, ...rows.map(r => Number(r.avg) || 0));
-  const maxVal = maxValRaw * 1.15; // a little headroom like other charts
-
+  const maxValRaw = Math.max(...rows.map(r => Number(r.avg) || 0));
+  const minValRaw = Math.min(...rows.map(r => Number(r.avg) || 0));
+  
+  // add padding like other charts
+  const maxVal = maxValRaw * 1.15;
+  const minVal = minValRaw * 1.15;
+  
   const usableH = h - padT - padB;
   const usableW = w - padL - padR;
+  
+  const range = maxVal - minVal || 1;
+  const scaleY = usableH / range;
 
-  const scaleY = usableH / maxVal;
   const stepX = usableW / Math.max(1, rows.length - 1);
 
   // Grid + Y labels
