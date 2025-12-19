@@ -724,16 +724,6 @@ html[data-theme="dark"] .legend .sw {
   padding: 8px;
 }
 
-
-#drawerExtra tbody tr {
-  transition: background 0.15s ease;
-}
-
-#drawerExtra tbody tr:hover {
-  background: rgba(100, 116, 139, 0.15);
-}
-
-
     
   </style>
 </head>
@@ -3844,29 +3834,7 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
   const table = document.getElementById(containerId);
   if (!table) return;
 
-  // ---------------------------------
-  // Row hover → highlight chart
-  // ---------------------------------
-  table.querySelectorAll("tr[data-loan-id]").forEach(tr => {
-    const loanId = tr.dataset.loanId;
 
-    tr.addEventListener("mouseenter", () => {
-      document
-        .querySelectorAll("#drawerChartArea svg rect")
-        .forEach(r => {
-          r.style.opacity =
-            r.dataset.loanId === loanId ? "1" : "0.2";
-        });
-    });
-
-    tr.addEventListener("mouseleave", () => {
-      document
-        .querySelectorAll("#drawerChartArea svg rect")
-        .forEach(r => {
-          r.style.opacity = "1";
-        });
-    });
-  });
 
   // ---------------------------------
   // Swatch click → toggle loan
