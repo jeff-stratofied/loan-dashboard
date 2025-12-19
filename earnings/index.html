@@ -2732,109 +2732,67 @@ const avg = cumulativeNet / portfolioMonths;
 
 function openKpi4(){
   if (!Number.isFinite(kpis.projectedAvgMonthlyNet)) {
-  console.warn(
-    "KPI4 projectedAvgMonthlyNet missing; defaulting to 0"
-  );
-  kpis.projectedAvgMonthlyNet = 0;
-}
-  
+    console.warn(
+      "KPI4 projectedAvgMonthlyNet missing; defaulting to 0"
+    );
+    kpis.projectedAvgMonthlyNet = 0;
+  }
+
   currentLoan = null;
+
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent = "Portfolio-level earnings across all loans.";
   drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
-  drawerPrimary.textContent =
-  formatCurrency(kpis.projectedAvgMonthlyNet);
+  drawerPrimary.textContent = formatCurrency(kpis.projectedAvgMonthlyNet);
+
   drawerSecondaryTitle.textContent = "Total Fees to Date";
   drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
+
   resetDrawerContent();
+
+  // ✅ Render KPI4 chart (single source of truth)
   renderKPI4Chart(loansWithEarnings, "drawerChartArea");
+
+  // ✅ Render KPI4 table
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI4Table(loansWithEarnings, "drawerKpiTable");
 
   // KPI4 table row hover → highlight chart bars
-drawerExtra.querySelectorAll("tr[data-loan-id]").forEach(row => {
-  const loanId = row.dataset.loanId;
+  drawerExtra.querySelectorAll("tr[data-loan-id]").forEach(row => {
+    const loanId = row.dataset.loanId;
 
-  row.addEventListener("mouseenter", () => {
-    highlightLoanInKpiChart(drawerChartArea, loanId);
-  });
+    row.addEventListener("mouseenter", () => {
+      highlightLoanInKpiChart(drawerChartArea, loanId);
+    });
 
-  row.addEventListener("mouseleave", () => {
-    clearKpiChartHighlight(drawerChartArea);
-  });
-});
-
-
-// KPI4 table: swatch click toggles loan visibility
-drawerExtra.querySelectorAll(".loan-swatch").forEach(el => {
-  const loanId = el.dataset.loanId;
-
-  el.style.cursor = "pointer";
-  el.title = hiddenLoans.has(loanId) ? "Click to show loan" : "Click to hide loan";
-
-  // Visual off-state
-  if (hiddenLoans.has(loanId)) {
-    el.style.opacity = "0.25";
-  }
-
-  el.addEventListener("click", (e) => {
-    e.stopPropagation();
-    toggleLoanVisibility(loanId);
-  });
-});
-
-  
-  openDrawer();
-
-  const rows = [];
-
-  loansWithEarnings.forEach(loan => {
-    (loan.earningsSchedule || []).forEach((r, idx) => {
-      const d = r.ownershipDate || r.loanDate;
-      if (!d) return;
-
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-
-      let row = rows.find(x => x.key === key);
-      if (!row) {
-      row = {
-        key,
-        date: new Date(d),
-        contributions: []
-      };
-        rows.push(row);
-      }
-
-      row.contributions.push({
-        loanId: loan.loanId,
-        net: r.netEarnings
-      });
+    row.addEventListener("mouseleave", () => {
+      clearKpiChartHighlight(drawerChartArea);
     });
   });
 
-  rows.sort((a, b) => a.date - b.date);
-
-   createKpiStackedChart(
-  drawerChartArea,
-  rows,
-  { denseXAxis: false, isKpi4: true }
-);
-const tableEl = renderKPI4Table(loansWithEarnings, kpis);
-
-drawerExtra.appendChild(tableEl);
-
+  // KPI4 table: swatch click toggles loan visibility
   drawerExtra.querySelectorAll(".loan-swatch").forEach(el => {
-  el.addEventListener("mouseenter", () => {
     const loanId = el.dataset.loanId;
-    highlightLoanInChart(loanId);
+
+    el.style.cursor = "pointer";
+    el.title = hiddenLoans.has(loanId)
+      ? "Click to show loan"
+      : "Click to hide loan";
+
+    if (hiddenLoans.has(loanId)) {
+      el.style.opacity = "0.25";
+    }
+
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleLoanVisibility(loanId);
+    });
   });
 
-  el.addEventListener("mouseleave", () => {
-    clearChartHighlight();
-  });
-});
- 
+  openDrawer();
+  return; // 🚫 STOP — prevent legacy code from running
 }
+
 
 
     // ===========================
