@@ -353,6 +353,12 @@
       transition:background-color .25s ease, color .25s ease, border-color .25s ease;
     }
     td{ padding:8px; border-bottom:1px dashed rgba(15,23,42,0.04); text-align:right; transition:color .25s ease, border-color .25s ease; }
+  
+    /* KPI2 Avg Rate — allow loan color to show */
+    .kpi2-table td.kpi2-rate {
+      color: inherit !important;
+    }
+
     td:first-child, th:first-child{ text-align:left }
 
     .actions{ display:flex; gap:8px; margin-top:12px }
@@ -1917,10 +1923,8 @@ drawerExtra.innerHTML = `
               </td>
 
               <!-- Rate (ONLY colored column) -->
-              <td style="
-                color:${window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'};
-                font-weight:600;
-              ">
+              <td class="kpi2-rate"
+                  style="color:${window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'}; font-weight:600;">
                 ${(l.nominalRate * 100).toFixed(2)}%
               </td>
 
