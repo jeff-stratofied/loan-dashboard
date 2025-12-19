@@ -342,89 +342,192 @@ const schoolOptions = [
   "Texas Tech University"
 ];
 
+  function openEventsDrawer(loan) {
+  const existing = document.getElementById("events-drawer");
+  if (existing) existing.remove();
 
-  function normalizeLoan(l, idx) {
+  const drawer = document.createElement("div");
+  drawer.id = "events-drawer";
+  drawer.style.cssText = `
+    position:fixed;
+    top:0;
+    right:0;
+    width:360px;
+    height:100%;
+    background:var(--card);
+    box-shadow:var(--shadow);
+    padding:16px;
+    z-index:1000;
+    overflow:auto;
+  `;
+
+  drawer.innerHTML = `
+    <h3 style="margin-top:0">Events — ${loan.loanName}</h3>
+
+    <div style="margin-bottom:12px;color:var(--muted);font-size:0.8rem">
+      Prepayment events only (v1)
+    </div>
+
+    <div id="event-list" style="margin-bottom:16px">
+      ${
+        loan.events.length === 0
+          ? `<div style="color:var(--muted)">No events yet</div>`
+          : loan.events.map(e => `
+              <div style="margin-bottom:6px">
+                💰 ${e.date} — $${Number(e.amount).toLocaleString()}
+              </div>
+            `).join("")
+      }
+    </div>
+
+    <hr style="border-color:var(--border);margin:12px 0">
+
+    <h4>Add Prepayment</h4>
+
+    <input type="date" id="evt-date" style="margin-bottom:6px">
+    <input type="number" id="evt-amount" placeholder="Amount" style="margin-bottom:8px">
+
+    <button id="add-event-btn">Add Prepayment</button>
+    <button id="close-event-btn" style="margin-left:6px">Close</button>
+  `;
+
+  document.body.appendChild(drawer);
+
+  drawer.querySelector("#close-event-btn").onclick = () => drawer.remove();
+
+  drawer.querySelector("#add-event-btn").onclick = () => {
+    const date = drawer.querySelector("#evt-date").value;
+    const amount = Number(drawer.querySelector("#evt-amount").value);
+
+    if (!date || !amount || amount <= 0) {
+      alert("Enter a valid date and amount");
+      return;
+    }
+
+    loan.events.push({
+      id: crypto.randomUUID(),
+      type: "prepayment",
+      date,
+      amount
+    });
+
+    loan.events.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    drawer.remove();
+    openEventsDrawer(loan); // re-render
+  };
+}
+
+
+function normalizeLoan(l, idx) {
 
   // If backend ID is numeric (old system), replace it with a new random ID
   let newId;
   if (!l.loanId || /^[0-9]+$/.test(String(l.loanId))) {
     newId = generateLoanId();
   } else {
-    newId = l.loanId; // keep existing random ID
+    newId = l.loanId;
   }
 
-    return {
-      loanId: l.loanId ?? generateLoanId(),
-      loanName: l.loanName ?? "",
-      school: l.school ?? "",
-      loanStartDate: l.loanStartDate ?? "",
-      purchaseDate: l.purchaseDate ?? "",
-      principal: Number(l.principal ?? 0),
-      purchasePrice: Number(l.purchasePrice ?? 0),
-      rate: Number(l.rate ?? 0),
-      termYears: Number(l.termYears ?? 10),
-      graceYears: Number(l.graceYears ?? 0),
-    
-      // ✅ REQUIRED FIELDS
-      user: l.user ?? "jeff",
-      visible: l.visible !== false
-    };
-    }
+  return {
+    loanId: newId,
+    loanName: l.loanName ?? "",
+    school: l.school ?? "",
+    loanStartDate: l.loanStartDate ?? "",
+    purchaseDate: l.purchaseDate ?? "",
+    principal: Number(l.principal ?? 0),
+    purchasePrice: Number(l.purchasePrice ?? 0),
+    rate: Number(l.rate ?? 0),
+    termYears: Number(l.termYears ?? 10),
+    graceYears: Number(l.graceYears ?? 0),
 
-  /* Render table */
-  function renderTable() {
-    const tbody = document.getElementById("loan-table-body");
-    tbody.innerHTML = "";
+    // REQUIRED FIELDS
+    user: l.user ?? "jeff",
+    visible: l.visible !== false,
 
-    currentLoans.forEach((loan) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${loan.loanId}</td>
+    // ✅ NEW (inert for now)
+    events: Array.isArray(l.events) ? l.events : []
+  };
+}
 
-        <td><input type="text" value="${loan.loanName}" data-field="loanName"></td>
+/* Render table */
+function renderTable() {
+  const tbody = document.getElementById("loan-table-body");
+  tbody.innerHTML = "";
 
-        <td>
-          <select data-field="user">
-            <option value="jeff" ${loan.user === "jeff" ? "selected" : ""}>Jeff Customer</option>
-            <option value="nick" ${loan.user === "nick" ? "selected" : ""}>Nick Lender</option>
-            <option value="john" ${loan.user === "john" ? "selected" : ""}>John Investor</option>
-          </select>
-        </td>
-        
-        <td style="text-align:center">
-          <input
-            type="checkbox"
-            data-field="visible"
-            ${loan.visible !== false ? "checked" : ""}
-          />
-        </td>
+  currentLoans.forEach((loan) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${loan.loanId}</td>
 
+      <td>
+        <input type="text" value="${loan.loanName}" data-field="loanName">
+      </td>
 
-        <td>
-          <select data-field="school">
-            ${schoolOptions.map(s => 
-              `<option value="${s}" ${loan.school === s ? "selected" : ""}>${s}</option>`
-            ).join("")}
-          </select>
-        </td>
+      <td>
+        <select data-field="user">
+          <option value="jeff" ${loan.user === "jeff" ? "selected" : ""}>Jeff Customer</option>
+          <option value="nick" ${loan.user === "nick" ? "selected" : ""}>Nick Lender</option>
+          <option value="john" ${loan.user === "john" ? "selected" : ""}>John Investor</option>
+        </select>
+      </td>
 
-        <td><input type="date" value="${loan.loanStartDate}" data-field="loanStartDate"></td>
-        <td><input type="date" value="${loan.purchaseDate}" data-field="purchaseDate"></td>
-        <td class="col-money"><input type="number" step="0.01" value="${loan.principal}" data-field="principal"></td>
-        <td class="col-money"><input type="number" step="0.01" value="${loan.purchasePrice}" data-field="purchasePrice"></td>
-        <td class="col-rate"><input type="number" step="0.0001" value="${loan.rate}" data-field="rate"></td>
-        <td class="col-years"><input type="number" step="1" value="${loan.termYears}" data-field="termYears"></td>
-        <td class="col-years"><input type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears"></td>
-        <td class="col-actions">
-          <button class="delete-btn" data-action="delete">Delete</button>
-          <button class="delete-btn" data-action="duplicate" style="margin-left:6px;">Duplicate</button>
-        </td>
+      <td style="text-align:center">
+        <input
+          type="checkbox"
+          data-field="visible"
+          ${loan.visible !== false ? "checked" : ""}
+        />
+      </td>
 
-      `;
-      tr.dataset.loanId = loan.loanId;
-      tbody.appendChild(tr);
-    });
-  }
+      <td>
+        <select data-field="school">
+          ${schoolOptions.map(s =>
+            `<option value="${s}" ${loan.school === s ? "selected" : ""}>${s}</option>`
+          ).join("")}
+        </select>
+      </td>
+
+      <td>
+        <input type="date" value="${loan.loanStartDate}" data-field="loanStartDate">
+      </td>
+
+      <td>
+        <input type="date" value="${loan.purchaseDate}" data-field="purchaseDate">
+      </td>
+
+      <td class="col-money">
+        <input type="number" step="0.01" value="${loan.principal}" data-field="principal">
+      </td>
+
+      <td class="col-money">
+        <input type="number" step="0.01" value="${loan.purchasePrice}" data-field="purchasePrice">
+      </td>
+
+      <td class="col-rate">
+        <input type="number" step="0.0001" value="${loan.rate}" data-field="rate">
+      </td>
+
+      <td class="col-years">
+        <input type="number" step="1" value="${loan.termYears}" data-field="termYears">
+      </td>
+
+      <td class="col-years">
+        <input type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears">
+      </td>
+
+      <td class="col-actions">
+        <button class="delete-btn" data-action="events">Events</button>
+        <button class="delete-btn" data-action="duplicate" style="margin-left:6px;">Duplicate</button>
+        <button class="delete-btn" data-action="delete" style="margin-left:6px;">Delete</button>
+      </td>
+    `;
+
+    tr.dataset.loanId = loan.loanId;
+    tbody.appendChild(tr);
+  });
+}
+
 
   /* Collect from table */
 function collectLoans() {
@@ -547,6 +650,12 @@ async function saveToBackend() {
 
     const row = e.target.closest("tr");
     const idx = Array.from(row.parentNode.children).indexOf(row);
+    
+      if (action === "events") {
+      const loan = currentLoans[idx];
+      openEventsDrawer(loan);
+      return;
+    }
 
     if (action === "delete") {
       currentLoans.splice(idx, 1);
