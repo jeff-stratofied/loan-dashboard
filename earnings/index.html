@@ -2140,7 +2140,10 @@ function renderKpi3AvgLineChart(container, rows) {
 
     const tooltipLines = [
       `Date: ${formatMonthYear(r.date)}`,
-      `Avg / Month: ${formatCurrency(r.avg)}`,
+      `Avg / Month: ${formatCurrency(
+      r.netToDate / window.kpis.monthsCounted
+    )}`,
+
       `Net to Date: ${formatCurrency(r.netToDate)}`
     ];
 
