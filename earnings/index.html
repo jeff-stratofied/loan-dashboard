@@ -1153,10 +1153,24 @@ const amort = calcAmort(
 
         amort.schedule = amort.schedule.map(row => {
           const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
-          const loanDate = addMonths(loanStart, row.monthIndex - 1);
-          const ownershipDate = ownershipMonthIndex >= 1
-            ? addMonths(purchaseDt, ownershipMonthIndex - 1)
+          // Calendar month anchor (always first of month)
+        const loanDateRaw = addMonths(loanStart, row.monthIndex - 1);
+        const loanDate = new Date(
+          loanDateRaw.getFullYear(),
+          loanDateRaw.getMonth(),
+          1
+        );
+        
+        // Ownership month anchored to calendar month
+        const ownershipDate =
+          ownershipMonthIndex >= 1
+            ? new Date(
+                purchaseDt.getFullYear(),
+                purchaseDt.getMonth() + (ownershipMonthIndex - 1),
+                1
+              )
             : null;
+
 
           return {
             ...row,
@@ -1225,10 +1239,26 @@ const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
           };
         }).filter(r => r.isOwned);
 
+      // -----------------------------
+      // FORCE one row per calendar month
+      // -----------------------------
+      const byMonth = new Map();
+      
+      earningsSchedule.forEach(r => {
+        const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
+        byMonth.set(key, r); // last write wins (correct cumulative values)
+      });
+      
+      const normalizedEarningsSchedule =
+        [...byMonth.values()].sort((a, b) =>
+          a.ownershipDate - b.ownershipDate
+        );
+
+    
         return {
           ...normalizedLoan,
           amort,
-          earningsSchedule,
+          earningsSchedule: normalizedEarningsSchedule,
           balanceAtPurchase,
           monthsSinceStart
         };
