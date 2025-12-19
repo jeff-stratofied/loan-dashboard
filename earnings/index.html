@@ -1657,27 +1657,31 @@ function createKpiStackedChart(container, rows, opts = {}) {
   // Use global color map (already built in rebuildLoansWithEarnings)
   const colors = window.KPI_COLOR_MAP || {};
 
-  // ----------------------------
-  // Y scale + gridlines (KPI2 style)
-  // ----------------------------
-  let maxVal = 0;
-rows.forEach(r => {
-  const total = r.contributions.reduce((s, c) => {
-    if (opts.useMonthly === true) {
-      return s + (c.monthlyNet ?? 0);
-    }
-    return s + (c.net ?? 0);
-  }, 0);
-
-  maxVal = Math.max(maxVal, Math.abs(total));
-});
-
-  if (maxVal < 1) maxVal = 1;
-
-  const usableH = h - padT - padB;
-  // Full vertical range for positive earnings (zero at bottom)
-const scale = usableH / maxVal;
-const yZero = padT + usableH;
+// ----------------------------
+// Y scale (KPI1 monthly-correct)
+// ----------------------------
+    let maxVal = 1;
+    
+    rows.forEach(r => {
+      const monthTotal = r.contributions.reduce((s, c) => {
+        return s + (opts.useMonthly === true
+          ? (c.monthlyNet ?? 0)
+          : (c.net ?? 0)
+        );
+      }, 0);
+    
+      // KPI1: scale off positive monthly totals only
+      if (monthTotal > maxVal) {
+        maxVal = monthTotal;
+      }
+    });
+    
+    // Add headroom so bars don’t hit top
+    maxVal = maxVal * 1.15;
+    
+    const usableH = h - padT - padB;
+    const scale = usableH / maxVal;
+    const yZero = padT + usableH;
 
 
   // Horizontal grid lines + Y-axis labels (like KPI2 / drawer chart)
@@ -1751,11 +1755,12 @@ if (opts.thinBars) {
   .filter(Boolean);
 
 sortedContribs.forEach(c => {
-  // KPI1 uses MONTHLY net, KPI2 uses cumulative net
-  // KPI1 MUST use cumulative net so bars never dip
-const net = c.cumulativeNet ?? c.net ?? 0;
-
-  const hVal = Math.abs(net) * scale;
+   // KPI1: bars represent MONTHLY earnings
+  const segVal = opts.useMonthly === true
+    ? (c.monthlyNet ?? 0)
+    : (c.net ?? 0);
+  
+  const hVal = Math.abs(segVal) * scale;
 
   if (!Number.isFinite(hVal) || hVal <= 0) return;
 
@@ -1873,12 +1878,14 @@ function handleMove(e) {
   const fees      = row.contributions.reduce((s,c)=>s+(c.fees      ?? 0),0);
   const monthNet  = row.contributions.reduce((s,c)=>s+(c.monthlyNet ?? 0),0);
 
-  // --- Cumulative net (derived from monthly, NOT per-loan cumulative) ---
-  // KPI1 cumulative = sum of per-loan cumulativeNet at this row
-const cumulativeNet = row.contributions.reduce(
-  (s,c)=>s+(c.cumulativeNet ?? 0), 0
-);
-
+  // KPI1 cumulative = running sum of MONTHLY totals up to this row
+  let cumulativeNet = 0;
+  for (let i = 0; i <= rowIndex; i++) {
+    cumulativeNet += rows[i].contributions.reduce(
+      (s, c) => s + (c.monthlyNet ?? 0),
+      0
+    );
+  }
 
   const tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
@@ -2550,13 +2557,14 @@ function openKpi1(){
   const rows = buildPortfolioDrawerRows(loansWithEarnings);
 
   // ✅ KPI1 = MONTHLY bars, dense axis, NO projection semantics
-  createKpiStackedChart(
+createKpiStackedChart(
   document.getElementById("drawerChartArea"),
   rows,
   {
     denseXAxis: true,
     thinBars: false,
-    useMonthly: true   // ✅ CRITICAL
+    useMonthly: true,      // ✅ KPI1 bars use monthlyNet
+    projected: false       // ✅ KPI1 is not the projected/baseline-offset mode
   }
 );
 
