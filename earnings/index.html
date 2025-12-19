@@ -1933,23 +1933,23 @@ function handleMove(e) {
   // --- Monthly totals ---
   const owned = row.contributions.filter(c => c.hasData === true);
   
-  const principal = owned.reduce(
-    (s, c) => s + (c.principal ?? 0),
+   const principal = owned.reduce(
+    (s, c) => s + (c.cumulativePrincipal ?? 0),
     0
   );
   
   const interest = owned.reduce(
-    (s, c) => s + (c.interest ?? 0),
+    (s, c) => s + (c.cumulativeInterest ?? 0),
     0
   );
   
   const fees = owned.reduce(
-    (s, c) => s + (c.fees ?? 0),
+    (s, c) => s + (c.cumulativeFees ?? 0),
     0
   );
   
   const cumulativeNet = owned.reduce(
-    (s, c) => s + (c.net ?? 0),
+    (s, c) => s + (c.cumulativeNet ?? c.net ?? 0),
     0
   );
 
