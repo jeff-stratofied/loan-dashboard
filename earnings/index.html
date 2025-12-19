@@ -693,27 +693,14 @@ html[data-theme="dark"] .legend .sw {
   color: var(--text) !important;
 }
 
-/* KPI4 table: color text to match loan swatch */
-.kpi4-table tbody tr td:nth-child(2),
-.kpi4-table tbody tr td:nth-child(3),
-.kpi4-table tbody tr td:nth-child(4),
-.kpi4-table tbody tr td:nth-child(5) {
-  color: inherit !important;
+/* KPI4 ONLY: force neutral text like KPI3 */
+.kpi4-table td,
+.kpi4-table td *,
+.kpi4-table a {
+  color: var(--text) !important;
 }
 
-.kpi4-table tbody tr {
-  color: var(--text);
-}
-
-.kpi4-table tbody tr[data-loan-id] {
-  --loan-color: var(--text);
-}
-
-    .kpi4-table tbody tr[data-loan-id] {
-  cursor: pointer;
-}
-
-
+    
 .kpi4-table tbody tr[data-loan-id] td {
   color: var(--loan-color) !important;
 }
@@ -2126,6 +2113,39 @@ for (let i = 0; i < rows.length; i += xEvery) {
   dot.setAttribute("opacity", "0");
   svg.appendChild(dot);
 
+// ----------------------------
+// TODAY vertical dotted line
+// ----------------------------
+const TODAY = new Date();
+TODAY.setHours(0,0,0,0);
+
+const firstDate = rows[0]?.date;
+const lastDate  = rows[rows.length - 1]?.date;
+
+if (firstDate && lastDate) {
+  const totalMonths = monthDiff(firstDate, lastDate);
+  let monthsToToday = monthDiff(firstDate, TODAY);
+
+  if (!Number.isFinite(monthsToToday)) monthsToToday = 0;
+  monthsToToday = Math.max(0, Math.min(monthsToToday, totalMonths));
+
+  const ratio = totalMonths > 0 ? monthsToToday / totalMonths : 0;
+  const todayX = padL + ratio * usableW;
+
+  const todayLine = document.createElementNS(svgNS, "line");
+  todayLine.setAttribute("x1", todayX);
+  todayLine.setAttribute("x2", todayX);
+  todayLine.setAttribute("y1", padT);
+  todayLine.setAttribute("y2", h - padB);
+  todayLine.setAttribute("stroke", "#64748b");
+  todayLine.setAttribute("stroke-dasharray", "4,3");
+  todayLine.setAttribute("stroke-width", "1");
+  todayLine.setAttribute("pointer-events", "none");
+
+  svg.appendChild(todayLine);
+}
+
+  
   container.appendChild(svg);
 
   function idxFromClientX(clientX) {
