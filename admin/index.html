@@ -342,7 +342,7 @@ const schoolOptions = [
   "Texas Tech University"
 ];
 
-  function openEventsDrawer(loan) {
+function openEventsDrawer(loan) {
   const existing = document.getElementById("events-drawer");
   if (existing) existing.remove();
 
@@ -373,8 +373,21 @@ const schoolOptions = [
         loan.events.length === 0
           ? `<div style="color:var(--muted)">No events yet</div>`
           : loan.events.map(e => `
-              <div style="margin-bottom:6px">
-                💰 ${e.date} — $${Number(e.amount).toLocaleString()}
+              <div style="
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                margin-bottom:6px;
+              ">
+                <div>
+                  💰 ${e.date} — $${Number(e.amount).toLocaleString()}
+                </div>
+                <button
+                  data-event-id="${e.id}"
+                  style="font-size:11px;padding:2px 6px"
+                >
+                  Delete
+                </button>
               </div>
             `).join("")
       }
@@ -384,17 +397,43 @@ const schoolOptions = [
 
     <h4>Add Prepayment</h4>
 
-    <input type="date" id="evt-date" style="margin-bottom:6px">
-    <input type="number" id="evt-amount" placeholder="Amount" style="margin-bottom:8px">
+    <input type="date" id="evt-date" style="margin-bottom:6px;width:100%">
+    <input type="number" id="evt-amount" placeholder="Amount" style="margin-bottom:8px;width:100%">
 
     <button id="add-event-btn">Add Prepayment</button>
     <button id="close-event-btn" style="margin-left:6px">Close</button>
   `;
 
+  // ----------------------------------
+  // Append drawer BEFORE wiring events
+  // ----------------------------------
   document.body.appendChild(drawer);
 
-  drawer.querySelector("#close-event-btn").onclick = () => drawer.remove();
+  // ----------------------------------
+  // Delete event handlers
+  // ----------------------------------
+  drawer.querySelectorAll("button[data-event-id]").forEach(btn => {
+    btn.onclick = () => {
+      if (!confirm("Delete this event?")) return;
 
+      const id = btn.dataset.eventId;
+      loan.events = loan.events.filter(e => e.id !== id);
+
+      drawer.remove();
+      openEventsDrawer(loan);
+    };
+  });
+
+  // ----------------------------------
+  // Close drawer
+  // ----------------------------------
+  drawer.querySelector("#close-event-btn").onclick = () => {
+    drawer.remove();
+  };
+
+  // ----------------------------------
+  // Add prepayment
+  // ----------------------------------
   drawer.querySelector("#add-event-btn").onclick = () => {
     const date = drawer.querySelector("#evt-date").value;
     const amount = Number(drawer.querySelector("#evt-amount").value);
@@ -414,9 +453,10 @@ const schoolOptions = [
     loan.events.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     drawer.remove();
-    openEventsDrawer(loan); // re-render
+    openEventsDrawer(loan);
   };
 }
+
 
 
 function normalizeLoan(l, idx) {
