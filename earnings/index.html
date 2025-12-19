@@ -2410,28 +2410,26 @@ function buildPortfolioDrawerRows(loans) {
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
-  const monthly = new Map(); // key: YYYY-MM
+const monthly = new Map(); // key: YYYY-MM (ownership calendar month)
 
-  loans.forEach(loan => {
-    (loan.earningsSchedule || []).forEach(r => {
-      // skip any non-owned rows
-      if (!r.isOwned) return;
+loans.forEach(loan => {
+  (loan.earningsSchedule || []).forEach(r => {
+    // skip any non-owned rows
+    if (!r.isOwned || !r.ownershipDate) return;
 
-      // KPI1 — purchase-aligned ownership timeline
-      const idx = (r.ownershipMonthIndex ?? 0) - 1;
-      if (idx < 0) return;
+    // ✅ SINGLE SOURCE OF TRUTH: ownership calendar month
+    const d = new Date(
+      r.ownershipDate.getFullYear(),
+      r.ownershipDate.getMonth(),
+      1
+    );
+    d.setHours(0, 0, 0, 0);
 
-      const d = addMonths(
-        new Date(loan.purchaseDate),
-        idx
-      );
-      d.setHours(0, 0, 0, 0);
-      d.setDate(1); // ✅ CRITICAL FIX — normalize to month start
+    // 🔴 STOP AT TODAY (KPI1 rule)
+    if (d > TODAY) return;
 
-      // 🔴 STOP AT TODAY (KPI1 rule)
-      if (d > TODAY) return;
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
 
-      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
 
       if (!monthly.has(key)) {
         monthly.set(key, {
@@ -2440,28 +2438,32 @@ function buildPortfolioDrawerRows(loans) {
         });
       }
 
-      monthly.get(key).contributions.push({
-        loanId: loan.loanId,
+ monthly.get(key).contributions.push({
+  loanId: loan.loanId,
 
-        // MONTHLY components (for bar height)
-        principal: r.principalPaid ?? 0,
-        interest:  r.interestPaid  ?? 0,
-        fees:      r.feeThisMonth  ?? 0,
+  // MONTHLY components
+  principal: r.principalPaid ?? 0,
+  interest:  r.interestPaid  ?? 0,
+  fees:      r.feeThisMonth  ?? 0,
 
-        // MONTHLY net (THIS drives KPI1 bars)
-        monthlyNet:
-          (r.principalPaid ?? 0) +
-          (r.interestPaid ?? 0) -
-          (r.feeThisMonth ?? 0),
+  // MONTHLY net
+  monthlyNet:
+    (r.principalPaid ?? 0) +
+    (r.interestPaid ?? 0) -
+    (r.feeThisMonth ?? 0),
 
-        // CUMULATIVE net (for hover + KPI alignment)
-        cumulativeNet: r.netEarnings ?? 0,
+  // CUMULATIVE values (MUST exist for carry-forward logic)
+  cumulativePrincipal: r.cumPrincipal ?? 0,
+  cumulativeInterest:  r.cumInterest  ?? 0,
+  cumulativeFees:      r.cumFees      ?? 0,
+  cumulativeNet:       r.netEarnings  ?? 0,
 
-        // keep for KPI2 compatibility
-        net: r.netEarnings ?? 0,
+  // compatibility
+  net: r.netEarnings ?? 0,
 
-        hasData: true
-      });
+  hasData: true
+});
+
     });
   });
 
