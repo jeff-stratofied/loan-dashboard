@@ -223,6 +223,30 @@ input:focus, select:focus {
 .cell-school { min-width: 140px; }
 .cell-name { min-width: 150px; }
 
+  /* Tight numeric columns */
+.col-money,
+.col-rate,
+.col-years {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Make inputs shrink to content */
+.col-money input,
+.col-rate input,
+.col-years input {
+  width: 100%;
+  min-width: 72px;
+  text-align: right;
+}
+
+/* Actions column gets priority space */
+.col-actions {
+  white-space: nowrap;
+  width: 1%;
+}
+
+
 </style>
 
 
@@ -274,12 +298,12 @@ input:focus, select:focus {
       <th>School</th>
       <th>Loan Start Date</th>
       <th>Purchase Date</th>
-      <th>Orig Loan Amt</th>
-      <th>Purchase Price</th>
-      <th>Rate</th>
-      <th>Term (yrs)</th>
-      <th>Grace (yrs)</th>
-      <th>Actions</th>
+      <th class="col-money">Orig Loan Amt</th>
+      <th class="col-money">Purchase Price</th>
+      <th class="col-rate">Rate</th>
+      <th class="col-years">Term (yrs)</th>
+      <th class="col-years">Grace (yrs)</th>
+      <th class="col-actions">Actions</th>
     </tr>
   </thead>
   <tbody id="loan-table-body"></tbody>
@@ -386,13 +410,16 @@ const schoolOptions = [
 
         <td><input type="date" value="${loan.loanStartDate}" data-field="loanStartDate"></td>
         <td><input type="date" value="${loan.purchaseDate}" data-field="purchaseDate"></td>
+        <td class="col-money"><input type="number" step="0.01" value="${loan.principal}" data-field="principal"></td>
+        <td class="col-money"><input type="number" step="0.01" value="${loan.purchasePrice}" data-field="purchasePrice"></td>
+        <td class="col-rate"><input type="number" step="0.0001" value="${loan.rate}" data-field="rate"></td>
+        <td class="col-years"><input type="number" step="1" value="${loan.termYears}" data-field="termYears"></td>
+        <td class="col-years"><input type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears"></td>
+        <td class="col-actions">
+          <button class="delete-btn" data-action="delete">Delete</button>
+          <button class="delete-btn" data-action="duplicate" style="margin-left:6px;">Duplicate</button>
+        </td>
 
-        <td><input type="number" step="0.01" value="${loan.principal}" data-field="principal"></td>
-        <td><input type="number" step="0.01" value="${loan.purchasePrice}" data-field="purchasePrice"></td>
-
-        <td><input type="number" step="0.0001" value="${loan.rate}" data-field="rate"></td>
-        <td><input type="number" step="1" value="${loan.termYears}" data-field="termYears"></td>
-        <td><input type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears"></td>
 
         <td>
         <button class="delete-btn" data-action="delete">Delete</button>
