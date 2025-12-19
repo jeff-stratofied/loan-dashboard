@@ -946,6 +946,7 @@ html[data-theme="dark"] .drawer-chart{
 
 function computeKPIs(list) {
   const total = list.reduce((s, l) => s + l.purchasePrice, 0);
+  const today = new Date();
 
   // -------------------------------------
   // Weighted ROI to Date (unchanged)
@@ -969,10 +970,8 @@ function computeKPIs(list) {
     ) / Math.max(1, total);
 
   // -------------------------------------
-  // Yield to Date (Annualized)
+  // Yield to Date (Annualized, seasoned)
   // -------------------------------------
-  const today = new Date();
-
   let weightedYield = 0;
 
   list.forEach(l => {
@@ -980,27 +979,26 @@ function computeKPIs(list) {
     if (!entry || !entry.ownershipDate) return;
 
     const invested = l.purchasePrice;
-    if (!invested) return;
-
-    // Current value = realized cashflows + current loan value
     const currentValue = entry.loanValue;
+    if (!invested || currentValue <= 0) return;
 
-    // Total return multiple
-    const multiple = currentValue / invested;
-    if (multiple <= 0) return;
-
-    // Time owned in years
     const years =
-      Math.max(
-        1 / 12,
-        (today - new Date(entry.ownershipDate)) /
-          (365.25 * 24 * 60 * 60 * 1000)
-      );
+      (today - new Date(entry.ownershipDate)) /
+      (365.25 * 24 * 60 * 60 * 1000);
 
-    // Annualized yield
-    const annualizedYield = Math.pow(multiple, 1 / years) - 1;
+    const multiple = currentValue / invested;
 
-    weightedYield += invested * annualizedYield;
+    let yieldValue;
+
+    // 🔒 Guardrail: only annualize if >= 12 months owned
+    if (years >= 1) {
+      yieldValue = Math.pow(multiple, 1 / years) - 1;
+    } else {
+      // simple return to date (non-annualized)
+      yieldValue = multiple - 1;
+    }
+
+    weightedYield += invested * yieldValue;
   });
 
   const yieldToDateAnnualized = weightedYield / Math.max(1, total);
@@ -1012,6 +1010,7 @@ function computeKPIs(list) {
     yieldToDateAnnualized
   };
 }
+
 
     const kpis = computeKPIs(currentLoans);
 
@@ -2703,7 +2702,8 @@ drawer.scrollTop = 0;
   drawerTitle.textContent = "Yield to Date (Annualized)";
   drawerSub.textContent =
     "What annualized return am I actually earning so far? " +
-    "Computed from realized cashflows plus current loan value.";
+    "Computed from realized cashflows plus current loan value." +
+    "Annualized once loans are seasoned ≥ 12 months.";
 
   // ----------------------------------
   // Primary: portfolio yield
