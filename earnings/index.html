@@ -1765,6 +1765,16 @@ if (opts.thinBars) {
 let yPos = yZero;
 let yNeg = yZero;
 
+    // Contributions for this month, respecting hidden loans
+const sortedContribs = r.contributions
+  .filter(c => !hiddenLoans.has(c.loanId))
+  .sort((a, b) => {
+    const av = (opts.useMonthly === true) ? (a.monthlyNet ?? 0) : (a.net ?? 0);
+    const bv = (opts.useMonthly === true) ? (b.monthlyNet ?? 0) : (b.net ?? 0);
+    return Math.abs(bv) - Math.abs(av);
+  });
+
+
 sortedContribs.forEach(c => {
   const segVal = opts.useMonthly === true
     ? (c.monthlyNet ?? 0)
