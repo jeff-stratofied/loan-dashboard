@@ -1385,7 +1385,7 @@ resetBtn.addEventListener("click", () => {
       })}`;
     }
 
-  function highlightLoanInRateChart(loanId) {
+  function highlightLoanInDistributionChart(loanId) {
   document
     .querySelectorAll('#drawerChartArea [data-loan-id]')
     .forEach(el => {
@@ -1396,7 +1396,7 @@ resetBtn.addEventListener("click", () => {
     });
 }
 
-function clearRateChartHighlight() {
+function clearDistributionChartHighlight() {
   document
     .querySelectorAll('#drawerChartArea [data-loan-id]')
     .forEach(el => {
@@ -1812,6 +1812,8 @@ const totalInvested = allLoans.reduce(
         'fill',
         window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'
       );
+      rect.setAttribute('data-loan-id', l.loanId);
+
 
       // Hover: identify loan segment
       rect.addEventListener('mousemove', ev => {
@@ -1846,10 +1848,8 @@ if (i % 6 === 0) {
   svg.appendChild(text);
 }
 
-
-
-
   });
+  
 
   // --------------------------------------------------
   // CURRENT MONTH MARKER (RIGHT EDGE)
@@ -1918,6 +1918,33 @@ if (i % 6 === 0) {
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
+
+  // ------------------------------
+// Table hover → bar highlight
+// ------------------------------
+document
+  .querySelectorAll('#drawerExtra tr[data-loan-id]')
+  .forEach(tr => {
+    const loanId = tr.dataset.loanId;
+
+    tr.addEventListener('mouseenter', () => {
+      document
+        .querySelectorAll('#drawerChartArea rect[data-loan-id]')
+        .forEach(r => {
+          r.style.opacity =
+            r.dataset.loanId === loanId ? '1' : '0.15';
+        });
+    });
+
+    tr.addEventListener('mouseleave', () => {
+      document
+        .querySelectorAll('#drawerChartArea rect[data-loan-id]')
+        .forEach(r => {
+          r.style.opacity = '1';
+        });
+    });
+  });
+
 }
 
 
