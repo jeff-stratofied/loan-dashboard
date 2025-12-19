@@ -4084,44 +4084,50 @@ function renderKPI4Table(data, containerId = "kpi4Table") {
       const last = sched[sched.length - 1];
       const months = sched.length;
 
-      // KPI4 = projected avg/month (using the loan's schedule, same as original earnings KPI4)
-      const avg = months > 0 ? (Number(last.netEarnings || 0) / months) : 0;
+      // Projected values
+      const projectedAvg =
+        months > 0 ? Number(last.netEarnings || 0) / months : 0;
       const projectedNet = Number(last.netEarnings || 0);
 
-      const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
+      // Maturity date = purchase + term + grace
+      let maturity = "";
+      try {
+        const d = new Date(l.purchaseDate);
+        const totalMonths = Math.round(
+          (Number(l.termYears || 0) + Number(l.graceYears || 0)) * 12
+        );
+        d.setMonth(d.getMonth() + totalMonths);
+        maturity = d.toISOString().slice(0, 10);
+      } catch {}
 
       return {
         loanId: l.loanId,
         cells: [
-          // Loan On/Off swatch (ONLY swatch in the row)
-          `<div
-            class="loan-swatch"
-            data-loan-id="${l.loanId}"
-            title="Toggle loan"
-            style="
-              width:10px;
-              height:10px;
-              border-radius:2px;
-              background:${color};
-              margin:4px auto;
-              cursor:pointer;
-            "
-          ></div>`,
-
-          // Loan name + school (ONLY colored text)
+          // Loan (name over school)
           `<div style="line-height:1.15">
-            <div style="font-weight:600;color:${color}">
+            <div style="font-weight:600;color:var(--text)">
               ${l.loanName}
             </div>
-            <div style="font-size:12px;color:${color};opacity:0.85;margin-top:2px">
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">
               ${l.school || ""}
             </div>
           </div>`,
 
-          // Everything else = BLACK text
-          `<span style="color:var(--text)">${formatCurrency(avg)}</span>`,
-          `<span style="color:var(--text)">${formatCurrency(projectedNet)}</span>`,
-          `<span style="color:var(--text)">${months} mo</span>`
+          `<span style="color:var(--text)">
+            ${formatCurrency(projectedAvg)}
+          </span>`,
+
+          `<span style="color:var(--text)">
+            ${formatCurrency(projectedNet)}
+          </span>`,
+
+          `<span style="color:var(--text)">
+            ${formatCurrency(l.purchasePrice || 0)}
+          </span>`,
+
+          `<span style="color:var(--text)">
+            ${maturity}
+          </span>`
         ]
       };
     })
@@ -4130,56 +4136,16 @@ function renderKPI4Table(data, containerId = "kpi4Table") {
   renderKpiTable(
     containerId,
     [
-      `<span style="white-space:nowrap">Loan On/Off</span>`,
       "Loan",
       "Projected Avg Monthly Earnings",
       "Projected Net",
-      "Months"
+      "Purchase Price",
+      "Maturity Date"
     ],
     rows
   );
-
-  const table = document.getElementById(containerId);
-  if (!table) return;
-
-  // Row hover → highlight chart
-  table.querySelectorAll("tr[data-loan-id]").forEach(tr => {
-    const loanId = tr.dataset.loanId;
-
-    tr.addEventListener("mouseenter", () => {
-      highlightLoanInKpiChart(
-        document.getElementById("drawerChartArea"),
-        loanId
-      );
-    });
-
-    tr.addEventListener("mouseleave", () => {
-      clearKpiChartHighlight(
-        document.getElementById("drawerChartArea")
-      );
-    });
-  });
-
-  // Swatch click → toggle loan visibility
-  table.querySelectorAll(".loan-swatch").forEach(sw => {
-    const loanId = sw.dataset.loanId;
-
-    sw.addEventListener("click", e => {
-      e.stopPropagation();
-
-      if (hiddenLoans.has(loanId)) {
-        hiddenLoans.delete(loanId);
-        sw.style.opacity = "1";
-      } else {
-        hiddenLoans.add(loanId);
-        sw.style.opacity = "0.25";
-      }
-
-      // Re-render KPI4 chart
-      renderKPI4Chart(loansWithEarnings);
-    });
-  });
 }
+
 
 
 
