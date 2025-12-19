@@ -1678,51 +1678,59 @@ function createKpiStackedChart(container, rows, opts = {}) {
 // ----------------------------
 // Y scale (KPI1 monthly-correct)
 // ----------------------------
-     let maxVal = 1;
-
+    let maxPos = 0;
+    let maxNeg = 0;
+    
     rows.forEach(r => {
-      const monthTotal = r.contributions.reduce((s, c) => {
+      const total = r.contributions.reduce((s, c) => {
         const v = (opts.useMonthly === true) ? (c.monthlyNet ?? 0) : (c.net ?? 0);
         return s + (Number(v) || 0);
       }, 0);
-      if (monthTotal > maxVal) maxVal = monthTotal;
+    
+      if (total > maxPos) maxPos = total;
+      if (total < maxNeg) maxNeg = total;
     });
-  
-    const axisMax = niceAxisMax(maxVal);     // nice rounded top
+    
+    maxPos = niceAxisMax(maxPos);
+    maxNeg = Math.abs(niceAxisMax(Math.abs(maxNeg)));
+    
+    const yRange = maxPos + maxNeg || 1;
     const usableH = h - padT - padB;
-    const scale   = usableH / axisMax;
-    const yZero   = padT + usableH;
-  
-  
+    const scale = usableH / yRange;
+    const yZero = padT + maxPos * scale;
   
       // Horizontal grid lines + Y-axis labels (nice rounded ticks)
-  const gridAboveZero = 4;
+const gridAbove = 4;
+const gridBelow = maxNeg > 0 ? 2 : 0;
 
-  for (let gy = 0; gy <= gridAboveZero; gy++) {
-    const y = yZero - gy * (usableH / gridAboveZero);
+for (let gy = -gridBelow; gy <= gridAbove; gy++) {
+  const value =
+    gy >= 0
+      ? (maxPos / gridAbove) * gy
+      : -(maxNeg / gridBelow) * Math.abs(gy);
 
-    const gridLine = document.createElementNS(svgNS, "line");
-    gridLine.setAttribute("x1", padL);
-    gridLine.setAttribute("x2", w - padR);
-    gridLine.setAttribute("y1", y);
-    gridLine.setAttribute("y2", y);
-    gridLine.setAttribute("stroke", "var(--grid-strong)");
-    gridLine.setAttribute("stroke-width", gy === 0 ? "1" : "0.7");
-    svg.appendChild(gridLine);
+  const y = yZero - value * scale;
 
-    // label positive ticks (skip 0)
-    if (gy > 0) {
-      const lbl = document.createElementNS(svgNS, "text");
-      const value = (axisMax / gridAboveZero) * gy;   // axisMax from step 2b
-      lbl.textContent = "$" + Math.round(value).toLocaleString();
-      lbl.setAttribute("x", padL - 12);
-      lbl.setAttribute("y", y + 4);
-      lbl.setAttribute("font-size", "11");
-      lbl.setAttribute("fill", "var(--text)");
-      lbl.setAttribute("text-anchor", "end");
-      svg.appendChild(lbl);
-    }
+  const line = document.createElementNS(svgNS, "line");
+  line.setAttribute("x1", padL);
+  line.setAttribute("x2", w - padR);
+  line.setAttribute("y1", y);
+  line.setAttribute("y2", y);
+  line.setAttribute("stroke", gy === 0 ? "var(--grid-strong)" : "var(--grid-light)");
+  svg.appendChild(line);
+
+  if (gy !== 0) {
+    const lbl = document.createElementNS(svgNS, "text");
+    lbl.textContent = formatCurrency(value);
+    lbl.setAttribute("x", padL - 12);
+    lbl.setAttribute("y", y + 4);
+    lbl.setAttribute("font-size", "11");
+    lbl.setAttribute("fill", "var(--text)");
+    lbl.setAttribute("text-anchor", "end");
+    svg.appendChild(lbl);
   }
+}
+
 
 
   // Zero axis
@@ -1754,39 +1762,38 @@ if (opts.thinBars) {
   bw = Math.max(2, barW * 0.85);    // thick, fills horizontal space
 }
 
-    let yUp = yZero;
-
-    // SORT to ensure stacking order is consistent every month
-    const sortedContribs = loansWithEarnings
-  .filter(l => !hiddenLoans.has(l.loanId))
-  .map(l => r.contributions.find(c => c.loanId === l.loanId))
-  .filter(Boolean);
+let yPos = yZero;
+let yNeg = yZero;
 
 sortedContribs.forEach(c => {
-   // KPI1: bars represent MONTHLY earnings
   const segVal = opts.useMonthly === true
     ? (c.monthlyNet ?? 0)
     : (c.net ?? 0);
-  
+
+  if (!Number.isFinite(segVal) || segVal === 0) return;
+
   const hVal = Math.abs(segVal) * scale;
-
-  if (!Number.isFinite(hVal) || hVal <= 0) return;
-
+  if (hVal <= 0) return;
 
   const bar = document.createElementNS(svgNS, "rect");
   bar.dataset.loanId = c.loanId;
-  const xBar = x + (barW - bw) / 2;  // center within the month slot
+
+  const xBar = x + (barW - bw) / 2;
   bar.setAttribute("x", xBar);
   bar.setAttribute("width", bw);
   bar.setAttribute("height", hVal);
   bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
 
-  bar.setAttribute("y", yUp - hVal);
-  yUp -= hVal;
+  if (segVal > 0) {
+    bar.setAttribute("y", yPos - hVal);
+    yPos -= hVal;
+  } else {
+    bar.setAttribute("y", yNeg);
+    yNeg += hVal;
+  }
 
   svg.appendChild(bar);
 });
-
 
 
     // X-axis labels (denser for KPI1, sparse for others)
