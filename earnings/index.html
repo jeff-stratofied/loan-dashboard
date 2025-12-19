@@ -1752,9 +1752,8 @@ if (opts.thinBars) {
 
 sortedContribs.forEach(c => {
   // KPI1 uses MONTHLY net, KPI2 uses cumulative net
-  const net = opts.useMonthly === true
-    ? (c.monthlyNet ?? 0)
-    : (c.net ?? 0);
+  // KPI1 MUST use cumulative net so bars never dip
+const net = c.cumulativeNet ?? c.net ?? 0;
 
   const hVal = Math.abs(net) * scale;
 
@@ -1875,12 +1874,11 @@ function handleMove(e) {
   const monthNet  = row.contributions.reduce((s,c)=>s+(c.monthlyNet ?? 0),0);
 
   // --- Cumulative net (derived from monthly, NOT per-loan cumulative) ---
-  let cumulativeNet = 0;
-  for (let i = 0; i <= rowIndex; i++) {
-    cumulativeNet += rows[i].contributions.reduce(
-      (s,c)=>s+(c.monthlyNet ?? 0),0
-    );
-  }
+  // KPI1 cumulative = sum of per-loan cumulativeNet at this row
+const cumulativeNet = row.contributions.reduce(
+  (s,c)=>s+(c.cumulativeNet ?? 0), 0
+);
+
 
   const tooltipLines = [
     `Date: ${formatMonthYear(row.date)}`,
