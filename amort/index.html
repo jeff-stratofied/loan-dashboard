@@ -354,11 +354,6 @@
     }
     td{ padding:8px; border-bottom:1px dashed rgba(15,23,42,0.04); text-align:right; transition:color .25s ease, border-color .25s ease; }
   
-    /* KPI2 Avg Rate — allow loan color to show */
-    .kpi2-table td.kpi2-rate {
-      color: inherit !important;
-    }
-
     td:first-child, th:first-child{ text-align:left }
 
     .actions{ display:flex; gap:8px; margin-top:12px }
@@ -1390,16 +1385,6 @@ resetBtn.addEventListener("click", () => {
         el.dataset.loanId === loanId ? '3' : '1';
     });
 }
-
-function clearDistributionChartHighlight() {
-  document
-    .querySelectorAll('#drawerChartArea [data-loan-id]')
-    .forEach(el => {
-      el.style.opacity = '1';
-      el.style.strokeWidth = '1.6';
-    });
-}
-
   
     /* ---------- Open drawer for loan ---------- */
     function openDrawerForLoan(loan) {
@@ -1860,32 +1845,6 @@ if (i % 6 === 0) {
   svg.appendChild(curLine);
 
   drawerChartArea.appendChild(svg);
-
-  // --------------------------------------------------
-// TABLE HOVER → DISTRIBUTION BAR HIGHLIGHT (KPI2)
-// --------------------------------------------------
-document
-  .querySelectorAll('#drawerExtra tr[data-loan-id]')
-  .forEach(tr => {
-    const loanId = String(tr.dataset.loanId);
-
-    tr.addEventListener('mouseenter', () => {
-      document
-        .querySelectorAll('#drawerChartArea rect[data-loan-id]')
-        .forEach(rect => {
-          rect.style.opacity =
-            rect.dataset.loanId === loanId ? '1' : '0.15';
-        });
-    });
-
-    tr.addEventListener('mouseleave', () => {
-      document
-        .querySelectorAll('#drawerChartArea rect[data-loan-id]')
-        .forEach(rect => {
-          rect.style.opacity = '1';
-        });
-    });
-  });
 
 
 drawerExtra.innerHTML = `
@@ -2407,14 +2366,6 @@ document
   .querySelectorAll('#drawerExtra tr[data-loan-id]')
   .forEach(tr => {
     const loanId = tr.dataset.loanId;
-
-    tr.addEventListener('mouseenter', () => {
-      highlightLoanInRateChart(loanId);
-    });
-
-    tr.addEventListener('mouseleave', () => {
-      clearRateChartHighlight();
-    });
   });
 
   
