@@ -2140,9 +2140,7 @@ function renderKpi3AvgLineChart(container, rows) {
 
     const tooltipLines = [
       `Date: ${formatMonthYear(r.date)}`,
-      `Avg / Month: ${formatCurrency(
-      r.netToDate / window.kpis.monthsCounted
-    )}`,
+     `Avg / Month: ${formatCurrency(r.avg)}`,
 
       `Net to Date: ${formatCurrency(r.netToDate)}`
     ];
@@ -2792,10 +2790,13 @@ const avgRows = chartMonths.map(m => {
 
   cumulativeNet += monthNet;
 
-  const portfolioMonths =
-  Math.max(1, monthDiff(window.__PORTFOLIO_START__, new Date()) + 1);
+    const monthsElapsed = Math.max(
+    1,
+    monthDiff(portfolioStart, m.date) + 1
+  );
 
-const avg = cumulativeNet / portfolioMonths;
+  const avg = cumulativeNet / monthsElapsed;
+
 
   return {
     date: m.date,
