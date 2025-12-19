@@ -1841,10 +1841,12 @@ if (!isKpi4) {
   const lensScale = 1.5;
 
 function handleMove(e) {
-  const rect = svg.getBoundingClientRect();
-  const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-
-  const x = Math.max(padL, Math.min(w - padR, mouseX));
+    const rect = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+    const mouseY = ((e.clientY - rect.top) / rect.height) * h;
+  
+    const x = Math.max(padL, Math.min(w - padR, mouseX));
+    const y = Math.max(padT, Math.min(h - padB, mouseY));
 
   // ✅ CORRECT month index
   const rowIndex = Math.max(
@@ -1864,7 +1866,7 @@ function handleMove(e) {
     svg.appendChild(lensInstance.group);
   }
 
-  updateLens(lensInstance, x, h / 2);
+  updateLens(lensInstance, x, y);
 
   // --- Monthly totals ---
   const principal = row.contributions.reduce((s,c)=>s+(c.principal ?? 0),0);
@@ -2551,14 +2553,14 @@ function openKpi1(){
 
   // ✅ KPI1 = MONTHLY bars, dense axis, NO projection semantics
   createKpiStackedChart(
-    document.getElementById("drawerChartArea"),
-    rows,
-    {
-      useMonthly: true,   // 🔴 THIS is what makes bars visible again
-      denseXAxis: true,
-      thinBars: false
-    }
-  );
+  document.getElementById("drawerChartArea"),
+  rows,
+  {
+    denseXAxis: true,
+    thinBars: false,
+    useMonthly: true   // ✅ CRITICAL
+  }
+);
 
   drawerExtra.innerHTML =
     `<div class="amort-wrap" id="drawerKpiTable"></div>`;
