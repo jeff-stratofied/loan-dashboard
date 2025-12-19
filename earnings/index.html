@@ -2784,9 +2784,10 @@ const chartMonths =
 
 const avgRows = chartMonths.map(m => {
   const monthNet = (m.contributions || []).reduce(
-    (sum, c) => sum + (c.hasData ? (Number(c.net) || 0) : 0),
-    0
-  );
+  (sum, c) => sum + (c.hasData ? (Number(c.monthlyNet) || 0) : 0),
+  0
+);
+
 
   cumulativeNet += monthNet;
 
