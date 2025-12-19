@@ -332,17 +332,6 @@
     }
 
     
-    /* KPI2 table — color rows by loan color */
-    .kpi2-table tbody tr[data-loan-id] {
-    color: var(--loan-color);
-    }
-
-.kpi2-table tbody tr[data-loan-id] td {
-  color: inherit;
-}
-
-
-    
     .legend { display:flex; gap:10px; font-size:12px; align-items:center; margin-top:6px; }
     .legend .item { display:flex; gap:6px; align-items:center; }
     .legend .sw { width:12px; height:8px; border-radius:2px; display:inline-block; }
@@ -1893,45 +1882,51 @@ document
   });
 
 
-  // --------------------------------------------------
-  // KPI4 TABLE — COLORED, LOAN NAME (NOT ID)
-  // --------------------------------------------------
-  drawerExtra.innerHTML = `
+drawerExtra.innerHTML = `
   <div style="margin-top:10px">
     <strong class="small">Loans — Invested Capital</strong>
-    <div style="max-height:45vh; overflow:auto; margin-top:6px;
-         border-radius:6px; padding:6px;
-         border:1px solid var(--border); background:var(--card)">
-      <table style="width:100%; font-size:13px">
+
+    <div style="
+      max-height:45vh;
+      overflow:auto;
+      margin-top:6px;
+      border-radius:6px;
+      padding:6px;
+      border:1px solid var(--border);
+      background:var(--card);
+    ">
+      <table class="kpi2-table" style="width:100%; font-size:13px">
         <thead>
           <tr>
             <th>Loan</th>
-            <th>Purchase Date</th>
-            <th style="text-align:right">Invested</th>
+            <th>Rate</th>
+            <th>Purchase Price</th>
           </tr>
         </thead>
         <tbody>
           ${allLoans.map(l => `
-            <tr data-loan-id="${l.loanId}"
-                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId]}">
-              <td>
-                <span style="
-                  display:inline-block;
-                  width:10px;
-                  height:10px;
-                  border-radius:2px;
-                  background:var(--loan-color);
-                  margin-right:6px;
-                  vertical-align:middle;
-                "></span>
-                ${l.loanName}
-                <div style="font-size:12px;color:var(--muted)">
-                  ${l.school || ""}
+            <tr data-loan-id="${l.loanId}">
+              <!-- Loan name + school (2 rows) -->
+              <td style="text-align:left">
+                <div style="font-weight:700">
+                  ${l.loanName}
+                </div>
+                <div style="font-size:12px; margin-top:2px">
+                  ${l.school || ''}
                 </div>
               </td>
-              <td>${l.purchaseDate}</td>
-              <td style="text-align:right">
-                $${l.purchasePrice.toLocaleString()}
+
+              <!-- Rate (ONLY colored column) -->
+              <td style="
+                color:${window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'};
+                font-weight:600;
+              ">
+                ${(l.nominalRate * 100).toFixed(2)}%
+              </td>
+
+              <!-- Purchase price (normal text) -->
+              <td>
+                $${Number(l.purchasePrice || 0).toLocaleString()}
               </td>
             </tr>
           `).join('')}
@@ -1940,6 +1935,7 @@ document
     </div>
   </div>
 `;
+
 
 
   drawer.classList.add('open');
