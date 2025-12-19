@@ -1360,10 +1360,12 @@ function computeEarningsKPIs(list) {
     const purchase = new Date(l.purchaseDate || l.loanStartDate);
     purchase.setHours(0, 0, 0, 0);
 
+    // Use CURRENT calendar month index (aligns with KPI1 chart)
     const diffRaw = monthDiff(purchase, TODAY);
-    const diff = Number.isFinite(diffRaw) ? Math.max(1, diffRaw) : 1;
+    const diff = Number.isFinite(diffRaw) ? Math.max(0, diffRaw) : 0;
+    
+    const currentIdx = Math.max(0, Math.min(diff, lastIdx));
 
-    const currentIdx = Math.max(0, Math.min(diff - 1, lastIdx));
     const atCurrent = sched[currentIdx];
 
     // KPI1 / KPI3 — true net-to-date
