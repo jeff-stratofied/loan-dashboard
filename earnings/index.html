@@ -2023,9 +2023,9 @@ function renderKpi3AvgLineChart(container, rows) {
   const maxValRaw = Math.max(...rows.map(r => Number(r.avg) || 0));
   const minValRaw = Math.min(...rows.map(r => Number(r.avg) || 0));
   
-  // add padding like other charts
-  const maxVal = maxValRaw * 1.15;
-  const minVal = minValRaw * 1.15;
+  const maxVal = niceAxisMax(maxValRaw);
+  const minVal = -niceAxisMax(Math.abs(minValRaw));
+
   
   const usableH = h - padT - padB;
   const usableW = w - padL - padR;
@@ -2135,7 +2135,8 @@ function renderKpi3AvgLineChart(container, rows) {
     const r = rows[idx];
 
     const x = padL + idx * stepX;
-    const y = h - padB - (Number(r.avg) || 0) * scaleY;
+    const y =
+    padT + (maxVal - (Number(r.avg) || 0)) * scaleY;
 
     vLine.setAttribute("x1", x);
     vLine.setAttribute("x2", x);
