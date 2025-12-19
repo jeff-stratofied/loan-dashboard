@@ -1842,14 +1842,18 @@ if (!isKpi4) {
 
 function handleMove(e) {
   const rect = svg.getBoundingClientRect();
+
   const mouseX = ((e.clientX - rect.left) / rect.width) * w;
+  const mouseY = ((e.clientY - rect.top) / rect.height) * h;
 
   const x = Math.max(padL, Math.min(w - padR, mouseX));
+  const y = Math.max(padT, Math.min(h - padB, mouseY)); // ✅ allow vertical motion
 
   // ✅ CORRECT month index
   const rowIndex = Math.max(
     0,
-    Math.min(rows.length - 1,
+    Math.min(
+      rows.length - 1,
       Math.floor((x - padL) / barW)
     )
   );
@@ -1864,34 +1868,12 @@ function handleMove(e) {
     svg.appendChild(lensInstance.group);
   }
 
-  updateLens(lensInstance, x, h / 2);
+  // ✅ FIX: lens now follows mouse vertically AND horizontally
+  updateLens(lensInstance, x, y);
 
   // --- Monthly totals ---
-  const principal = row.contributions.reduce((s,c)=>s+(c.principal ?? 0),0);
-  const interest  = row.contributions.reduce((s,c)=>s+(c.interest  ?? 0),0);
-  const fees      = row.contributions.reduce((s,c)=>s+(c.fees      ?? 0),0);
-  const monthNet  = row.contributions.reduce((s,c)=>s+(c.monthlyNet ?? 0),0);
+  const principal = row.contributions.reduce(
 
-  // --- Cumulative net (derived from monthly, NOT per-loan cumulative) ---
-  let cumulativeNet = 0;
-  for (let i = 0; i <= rowIndex; i++) {
-    cumulativeNet += rows[i].contributions.reduce(
-      (s,c)=>s+(c.monthlyNet ?? 0),0
-    );
-  }
-
-  const tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Principal: ${formatCurrency(principal)}`,
-    `Interest: ${formatCurrency(interest)}`,
-    `Fees: -${formatCurrency(fees)}`,
-    `Month Net: ${formatCurrency(monthNet)}`,
-    `Cumulative Net: ${formatCurrency(cumulativeNet)}`
-  ];
-
-  setMiniTooltipContent(tooltipLines);
-  positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-}
 
 
   function handleLeave() {
