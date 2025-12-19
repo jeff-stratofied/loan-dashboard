@@ -1933,33 +1933,36 @@ function handleMove(e) {
   // --- Monthly totals ---
   const owned = row.contributions.filter(c => c.hasData === true);
   
-   const principal = owned.reduce(
-    (s, c) => s + (c.cumulativePrincipal ?? 0),
-    0
-  );
-  
-  const interest = owned.reduce(
-    (s, c) => s + (c.cumulativeInterest ?? 0),
-    0
-  );
-  
-  const fees = owned.reduce(
-    (s, c) => s + (c.cumulativeFees ?? 0),
-    0
-  );
-  
-  const cumulativeNet = owned.reduce(
-    (s, c) => s + (c.cumulativeNet ?? c.net ?? 0),
-    0
-  );
+// CUMULATIVE-ONLY tooltip values (portfolio = sum of per-loan cumulative at this month)
+const principal = row.contributions.reduce(
+  (s, c) => s + (Number(c.cumulativePrincipal) || 0),
+  0
+);
 
-  const tooltipLines = [
-    `Date: ${formatMonthYear(row.date)}`,
-    `Principal: ${formatCurrency(principal)}`,
-    `Interest: ${formatCurrency(interest)}`,
-    `Fees: -${formatCurrency(fees)}`,
-    `Cumulative Net: ${formatCurrency(cumulativeNet)}`
-  ];
+const interest = row.contributions.reduce(
+  (s, c) => s + (Number(c.cumulativeInterest) || 0),
+  0
+);
+
+const fees = row.contributions.reduce(
+  (s, c) => s + (Number(c.cumulativeFees) || 0),
+  0
+);
+
+// KPI1/KPI2 cumulative = sum of per-loan cumulativeNet at this month
+const cumulativeNet = row.contributions.reduce(
+  (s, c) => s + (Number(c.cumulativeNet ?? c.net) || 0),
+  0
+);
+
+const tooltipLines = [
+  `Date: ${formatMonthYear(row.date)}`,
+  `Principal: ${formatCurrency(principal)}`,
+  `Interest: ${formatCurrency(interest)}`,
+  `Fees: -${formatCurrency(fees)}`,
+  `Cumulative Net: ${formatCurrency(cumulativeNet)}`
+];
+
 
 
   setMiniTooltipContent(tooltipLines);
