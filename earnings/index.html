@@ -1931,23 +1931,24 @@ function handleMove(e) {
   updateLens(lensInstance, x, y);
 
   // --- Monthly totals ---
-    const principal = row.contributions.reduce(
+  const owned = row.contributions.filter(c => c.hasData === true);
+  
+  const principal = owned.reduce(
     (s, c) => s + (c.principal ?? 0),
     0
   );
-
-  const interest = row.contributions.reduce(
+  
+  const interest = owned.reduce(
     (s, c) => s + (c.interest ?? 0),
     0
   );
-
-  const fees = row.contributions.reduce(
+  
+  const fees = owned.reduce(
     (s, c) => s + (c.fees ?? 0),
     0
   );
-
-  // ✅ KPI1-consistent cumulative net
-  const cumulativeNet = row.contributions.reduce(
+  
+  const cumulativeNet = owned.reduce(
     (s, c) => s + (c.net ?? 0),
     0
   );
