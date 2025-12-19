@@ -2530,51 +2530,57 @@ loans.forEach(loan => {
   return sorted;
 }
 
-
-
 function buildProjectedDrawerRows(loans) {
-  const monthly = new Map(); // key = ownership month index (1-based)
-
-  // Anchor timeline to earliest purchase date
-  const purchaseDates = loans
-    .map(l => new Date(l.purchaseDate))
-    .filter(d => !isNaN(d));
-
-  const anchorDate = purchaseDates.length
-    ? new Date(Math.min(...purchaseDates))
-    : new Date();
+  const monthly = new Map(); // key: YYYY-MM (ownership calendar month)
 
   loans.forEach(loan => {
     (loan.earningsSchedule || []).forEach(r => {
-      const m = r.ownershipMonthIndex;
-      if (!Number.isFinite(m) || m < 1) return;
+      if (!r.isOwned || !r.ownershipDate) return;
 
-      if (!monthly.has(m)) {
-        const d = new Date(anchorDate);
-        d.setMonth(d.getMonth() + (m - 1));
+      // ✅ SINGLE SOURCE OF TRUTH: ownership calendar month
+      const d = new Date(
+        r.ownershipDate.getFullYear(),
+        r.ownershipDate.getMonth(),
+        1
+      );
+      d.setHours(0, 0, 0, 0);
 
-        monthly.set(m, {
-          date: d,                 // ✅ REQUIRED
-          contributions: []
-        });
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+
+      if (!monthly.has(key)) {
+        monthly.set(key, { date: d, contributions: [] });
       }
 
-      monthly.get(m).contributions.push({
+      const principalPaid = Number(r.principalPaid ?? 0);
+      const interestPaid  = Number(r.interestPaid ?? r.interest ?? 0);
+      const feeThisMonth  = Number(r.feeThisMonth ?? 0);
+
+      monthly.get(key).contributions.push({
         loanId: loan.loanId,
-        principal: r.cumPrincipal,
-        interest: r.cumInterest,
-        fees: r.cumFees,
-        net: r.netEarnings,
+
+        // MONTHLY activity (kept for completeness; hover will NOT show these)
+        principal: principalPaid,
+        interest: interestPaid,
+        fees: feeThisMonth,
+        monthlyNet: principalPaid + interestPaid - feeThisMonth,
+
+        // CUMULATIVE (what KPI2 + hover should use)
+        cumulativePrincipal: Number(r.cumPrincipal ?? 0),
+        cumulativeInterest:  Number(r.cumInterest ?? 0),
+        cumulativeFees:      Number(r.cumFees ?? 0),
+        cumulativeNet:       Number(r.netEarnings ?? 0),
+
+        // compatibility
+        net: Number(r.netEarnings ?? 0),
+
         hasData: true
       });
     });
   });
 
-  const sorted = [...monthly.values()].sort(
-    (a, b) => a.date - b.date
-  );
+  const sorted = [...monthly.values()].sort((a, b) => a.date - b.date);
 
-  // Normalize alignment (same as KPI1)
+  // Normalize alignment: every row must include every loan (carry-forward cumulative)
   const allLoanIds = loans.map(l => l.loanId);
 
   for (let i = 0; i < sorted.length; i++) {
@@ -2582,31 +2588,44 @@ function buildProjectedDrawerRows(loans) {
     const present = new Set(row.contributions.map(c => c.loanId));
 
     allLoanIds.forEach(id => {
-      if (!present.has(id)) {
-        let last = { principal: 0, interest: 0, fees: 0, net: 0 };
+      if (present.has(id)) return;
 
-        for (let j = i - 1; j >= 0; j--) {
-          const prev = sorted[j].contributions.find(c => c.loanId === id);
-          if (prev) {
-            last = prev;
-            break;
-          }
-        }
+      let last = {
+        cumulativePrincipal: 0,
+        cumulativeInterest: 0,
+        cumulativeFees: 0,
+        cumulativeNet: 0
+      };
 
-        row.contributions.push({
-          loanId: id,
-          principal: last.principal,
-          interest: last.interest,
-          fees: last.fees,
-          net: last.net,
-          hasData: false
-        });
+      for (let j = i - 1; j >= 0; j--) {
+        const prev = sorted[j].contributions.find(c => c.loanId === id);
+        if (prev) { last = prev; break; }
       }
+
+      row.contributions.push({
+        loanId: id,
+
+        principal: 0,
+        interest: 0,
+        fees: 0,
+        monthlyNet: 0,
+
+        cumulativePrincipal: last.cumulativePrincipal,
+        cumulativeInterest:  last.cumulativeInterest,
+        cumulativeFees:      last.cumulativeFees,
+        cumulativeNet:       last.cumulativeNet,
+
+        // compatibility
+        net: last.cumulativeNet,
+
+        hasData: false
+      });
     });
   }
 
   return sorted;
 }
+
 
 
 function openKpi1(){
