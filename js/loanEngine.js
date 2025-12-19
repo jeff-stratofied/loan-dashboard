@@ -143,7 +143,8 @@ export function buildAmortSchedule(loan) {
     termYears,
     graceYears,
     loanStartDate,
-    purchaseDate
+    purchaseDate,
+    events = []          // ✅ NEW (safe default)
   } = loan;
 
   const monthlyRate = nominalRate / 12;
@@ -153,29 +154,36 @@ export function buildAmortSchedule(loan) {
   const start = new Date(loanStartDate);
   const purchase = new Date(purchaseDate);
 
+  // Normalize + index events by month (prepayment only for now)
+  const eventMap = {};
+  events
+    .filter(e => e.type === "prepayment" && e.date)
+    .forEach(e => {
+      const d = new Date(e.date);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      if (!eventMap[key]) eventMap[key] = [];
+      eventMap[key].push(e);
+    });
+
   const schedule = [];
 
-  // Payment formula (post-grace)
-  const r = monthlyRate;
-  const N = totalMonths;
-
   // ----------------------------------------------
-  // FIX: Compute balance after grace period
-  // Payments must amortize the post-grace balance,
-  // not the original principal.
+  // Compute balance after grace period
   // ----------------------------------------------
   let adjustedBalance = principal;
   for (let g = 0; g < graceMonths; g++) {
-  adjustedBalance += adjustedBalance * r; // interest-only during grace
+    adjustedBalance += adjustedBalance * monthlyRate;
   }
 
   // ----------------------------------------------
-  // Correct monthly payment based on adjusted balance
+  // Monthly payment based on adjusted balance
   // ----------------------------------------------
+  const r = monthlyRate;
+  const N = totalMonths;
   const P = adjustedBalance;
+
   const payment =
     r === 0 ? P / N : (P * r) / (1 - Math.pow(1 + r, -N));
-
 
   let balance = P;
 
@@ -188,9 +196,9 @@ export function buildAmortSchedule(loan) {
     let paymentAmt = 0;
 
     if (i < graceMonths) {
-      // During grace: interest accrues, no payments
-      principalPaid = 0;
+      // Grace period: interest accrues, no scheduled payment
       paymentAmt = 0;
+      principalPaid = 0;
       balance += interest;
     } else {
       // Normal amortization
@@ -199,16 +207,41 @@ export function buildAmortSchedule(loan) {
       balance = Math.max(0, balance - principalPaid);
     }
 
+    // ----------------------------------------------
+    // ✅ APPLY PREPAYMENT EVENTS (Phase 2)
+    // ----------------------------------------------
+    const eventKey = `${loanDate.getFullYear()}-${loanDate.getMonth()}`;
+    const monthEvents = eventMap[eventKey] || [];
+
+    let prepaymentThisMonth = 0;
+
+    monthEvents.forEach(e => {
+      const amt = Number(e.amount || 0);
+      if (amt <= 0) return;
+
+      const applied = Math.min(balance, amt);
+      prepaymentThisMonth += applied;
+      balance -= applied;
+    });
+
+    // Treat prepayment as extra principal paid
+    principalPaid += prepaymentThisMonth;
+
     const isOwned = loanDate >= purchase;
     const ownershipDate = isOwned ? loanDate : null;
 
     schedule.push({
       monthIndex,
       loanDate,
+
       payment: +(paymentAmt.toFixed(2)),
       principalPaid: +(principalPaid.toFixed(2)),
       interest: +(interest.toFixed(2)),
       balance: +(balance.toFixed(2)),
+
+      // NEW (harmless if unused)
+      prepayment: +(prepaymentThisMonth.toFixed(2)),
+
       isOwned,
       ownershipDate
     });
@@ -216,6 +249,7 @@ export function buildAmortSchedule(loan) {
 
   return schedule;
 }
+
 
 // -------------------------------
 // Attach schedules to all loans
