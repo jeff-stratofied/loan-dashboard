@@ -78,20 +78,24 @@ export async function loadLoans() {
     );
 
     return {
-      // ---- Stable fields used by ALL dashboards ----
       id,
       loanName,
       name: loanName,
       school,
-
+    
       loanStartDate,
       purchaseDate,
-
+    
       principal,
       purchasePrice,
       nominalRate,
       termYears,
       graceYears,
+    
+      // ✅ ADD THIS LINE
+      events: Array.isArray(l.events) ? l.events : []
+    };
+
     };
   });
 }
