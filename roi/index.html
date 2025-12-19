@@ -2685,54 +2685,44 @@ drawer.scrollTop = 0;
 }
 
 
-  function renderYieldToDateDrawer() {
+function renderYieldToDateDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
 
   drawer.classList.remove('loan-mode');
-
   drawerAmortContainer.innerHTML = '';
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
 
-  // ----------------------------------
-  // Title + explanation
-  // ----------------------------------
   drawerTitle.textContent = "Yield to Date (Annualized)";
   drawerSub.textContent =
     "What annualized return am I actually earning so far? " +
-    "Computed from realized cashflows plus current loan value." +
+    "Computed from realized cashflows plus current loan value.  " +
     "Annualized once loans are seasoned ≥ 12 months.";
 
-  // ----------------------------------
-  // Primary: portfolio yield
-  // ----------------------------------
+  // -------------------------
+  // Primary / Secondary
+  // -------------------------
   drawerPrimaryTitle.textContent = "Yield to Date (Annualized)";
   drawerPrimary.textContent =
     (kpis.yieldToDateAnnualized * 100).toFixed(2) + "%";
 
-  // ----------------------------------
-  // Secondary: portfolio value today
-  // ----------------------------------
   let portfolioValue = 0;
   currentLoans.forEach(l => {
-    const entry = getCurrentOwnedRoiEntry(l);
-    portfolioValue += entry?.loanValue || 0;
+    const e = getCurrentOwnedRoiEntry(l);
+    portfolioValue += e?.loanValue || 0;
   });
 
   drawerSecondaryTitle.textContent = "Portfolio Value Today";
   drawerSecondary.textContent =
     "$" + Math.round(portfolioValue).toLocaleString();
 
-  // ----------------------------------
-  // Build historical ROI timeline (to-date)
-  // ----------------------------------
+  // -------------------------
+  // Chart
+  // -------------------------
   const timeline = buildHistoricalRoiTimeline(currentLoans);
 
-  // ----------------------------------
-  // Chart: weighted ROI to date
-  // ----------------------------------
   createMultiSeriesChart(
     drawerChartArea,
     timeline.perLoanSeries,
@@ -2744,9 +2734,30 @@ drawer.scrollTop = 0;
     }
   );
 
-  // ----------------------------------
-  // Table: Yield + ROI per loan
-  // ----------------------------------
+  // -------------------------
+  // Helpers
+  // -------------------------
+  const today = new Date();
+
+  function computeYieldToDate(entry, loan) {
+    const invested = loan.purchasePrice;
+    const currentValue = entry.loanValue;
+    const years =
+      (today - new Date(entry.ownershipDate)) /
+      (365.25 * 24 * 60 * 60 * 1000);
+
+    const multiple = currentValue / invested;
+
+    // 🔒 SAME seasoning rule as KPI
+    if (years >= 1) {
+      return Math.pow(multiple, 1 / years) - 1;
+    }
+    return multiple - 1;
+  }
+
+  // -------------------------
+  // Table (with swatches + hover)
+  // -------------------------
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
       <h3 style="margin:0 0 8px 0">Yield to Date — By Loan</h3>
@@ -2758,10 +2769,10 @@ drawer.scrollTop = 0;
         padding:6px;
         background:var(--card);
       ">
-        <table style="width:100%;font-size:13px;">
+        <table class="roi-table" style="width:100%;font-size:13px;">
           <thead>
             <tr>
-              <th style="text-align:left;">Loan</th>
+              <th>Loan</th>
               <th style="text-align:right;">Yield to Date</th>
               <th style="text-align:right;">ROI to Date</th>
               <th style="text-align:right;">Current Value</th>
@@ -2772,26 +2783,25 @@ drawer.scrollTop = 0;
               const entry = getCurrentOwnedRoiEntry(l);
               if (!entry || !entry.ownershipDate) return '';
 
-              const years =
-                Math.max(
-                  1 / 12,
-                  (Date.now() - new Date(entry.ownershipDate)) /
-                    (365.25 * 24 * 60 * 60 * 1000)
-                );
-
-              const multiple =
-                (entry.loanValue || l.purchasePrice) /
-                Math.max(1, l.purchasePrice);
-
-              const yieldAnnualized =
-                Math.pow(multiple, 1 / years) - 1;
+              const y = computeYieldToDate(entry, l);
+              const color = window.KPI_COLOR_MAP[l.id] || '#64748b';
 
               return `
-                <tr>
-                  <td style="text-align:left;">${l.name}</td>
-                  <td>${(yieldAnnualized * 100).toFixed(2)}%</td>
+                <tr data-loan-id="${l.id}">
+                  <td>
+                    <span style="
+                      display:inline-block;
+                      width:10px;
+                      height:10px;
+                      border-radius:50%;
+                      background:${color};
+                      margin-right:6px;
+                    "></span>
+                    ${l.name}
+                  </td>
+                  <td>${(y * 100).toFixed(2)}%</td>
                   <td>${((entry.roi || 0) * 100).toFixed(2)}%</td>
-                  <td>$${Math.round(entry.loanValue || 0).toLocaleString()}</td>
+                  <td>$${Math.round(entry.loanValue).toLocaleString()}</td>
                 </tr>
               `;
             }).join('')}
@@ -2801,10 +2811,38 @@ drawer.scrollTop = 0;
     </div>
   `;
 
+  // -------------------------
+  // Table ↔ Chart interaction
+  // -------------------------
+  const rows = drawerExtra.querySelectorAll('tbody tr');
+  const paths = drawerChartArea.querySelectorAll('path[data-loan-id]');
+
+  function highlightLoan(id) {
+    paths.forEach(p => {
+      const active = p.dataset.loanId === String(id);
+      p.setAttribute('stroke-opacity', active ? '1' : '0.15');
+      p.setAttribute('stroke-width', active ? '2.6' : '1.2');
+    });
+  }
+
+  function clearHighlight() {
+    paths.forEach(p => {
+      p.setAttribute('stroke-opacity', '0.9');
+      p.setAttribute('stroke-width', '1.2');
+    });
+  }
+
+  rows.forEach(r => {
+    const id = r.dataset.loanId;
+    r.addEventListener('mouseenter', () => highlightLoan(id));
+    r.addEventListener('mouseleave', clearHighlight);
+  });
+
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 }
+
 
 /*  DELETE if not needed
 function renderAvgRateDrawer() {
