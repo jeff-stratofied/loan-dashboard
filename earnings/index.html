@@ -3515,7 +3515,8 @@ const currentX = padL + todayIndex * barW;
       svg.addEventListener("mouseleave", handleLeave);
     }
 
-
+  
+/* LEGACY - DO NOTUSE -----
     // KPI 1: Total Net Earnings to Date (portfolio stacked chart)
 function renderKPI1Chart(loans, containerId = "drawerChartArea") {
   const containerEl = document.getElementById(containerId);
@@ -3530,6 +3531,8 @@ function renderKPI1Chart(loans, containerId = "drawerChartArea") {
   createKpiStackedChart(drawerChartArea, portfolioViews.rows, { denseXAxis: true });
 
 }
+----- LEGACY - DO NOT USE*/
+  
   
 function renderKPI2Chart(loans) {
   const container = document.getElementById("drawerChartArea");
@@ -3721,11 +3724,16 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
       }
 
       const rows = buildPortfolioDrawerRows(loansWithEarnings);
+     
+
+      /* WRONG — tables must not render charts -------
       createKpiStackedChart(
         document.getElementById("drawerChartArea"),
         rows,
         { denseXAxis: true, thinBars: false }
       );
+      ----------- WRONG — tables must not render charts */
+      
     });
   });
 }
