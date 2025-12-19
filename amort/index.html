@@ -2199,10 +2199,12 @@ function renderRatesDrawer() {
   const maxRate = Math.max(...rates);
 
   drawerPrimaryTitle.textContent = 'Avg Rate';
-  drawerPrimary.textContent = `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
+  drawerPrimary.textContent =
+    `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
 
   drawerSecondaryTitle.textContent = 'Rate Range';
-  drawerSecondary.textContent = `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%`;
+  drawerSecondary.textContent =
+    `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%`;
 
   drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
@@ -2212,31 +2214,52 @@ function renderRatesDrawer() {
   // ---------------------------------
   // KPI2 — STACKED RATE HISTOGRAM
   // ---------------------------------
+  const bins = 5;
   const min = minRate;
   const max = maxRate;
-  const bins = 5;
   const width = (max - min) / bins || 1;
 
-  // bucket loans by rate bin
   const binLoans = Array.from({ length: bins }, () => []);
 
   allLoans.forEach(l => {
     const r = l.nominalRate * 100;
     let idx = Math.floor((r - min) / Math.max(0.0001, width));
-    if (idx >= bins) idx = bins - 1;
-    if (idx < 0) idx = 0;
+    idx = Math.max(0, Math.min(bins - 1, idx));
     binLoans[idx].push(l);
   });
 
   const svgNS = 'http://www.w3.org/2000/svg';
   const w = 480, h = 220, pad = 30;
+
   const svg = document.createElementNS(svgNS, 'svg');
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
 
+  // ------------------------------
+  // AXES
+  // ------------------------------
+  const yAxis = document.createElementNS(svgNS, 'line');
+  yAxis.setAttribute('x1', pad);
+  yAxis.setAttribute('x2', pad);
+  yAxis.setAttribute('y1', pad);
+  yAxis.setAttribute('y2', h - pad);
+  yAxis.setAttribute('stroke', '#cbd5e1');
+  svg.appendChild(yAxis);
+
+  const xAxis = document.createElementNS(svgNS, 'line');
+  xAxis.setAttribute('x1', pad);
+  xAxis.setAttribute('x2', w - pad);
+  xAxis.setAttribute('y1', h - pad);
+  xAxis.setAttribute('y2', h - pad);
+  xAxis.setAttribute('stroke', '#cbd5e1');
+  svg.appendChild(xAxis);
+
   const maxCount = Math.max(...binLoans.map(b => b.length), 1);
 
+  // ------------------------------
+  // BARS
+  // ------------------------------
   for (let i = 0; i < bins; i++) {
     const loansInBin = binLoans[i];
     if (!loansInBin.length) continue;
@@ -2249,27 +2272,26 @@ function renderRatesDrawer() {
     const unitH = (h - pad * 2) / maxCount;
 
     loansInBin.forEach(l => {
-      const segH = unitH;
-      yCursor -= segH;
+      yCursor -= unitH;
 
       const rect = document.createElementNS(svgNS, 'rect');
       rect.setAttribute('x', x);
       rect.setAttribute('y', yCursor);
       rect.setAttribute('width', barW);
-      rect.setAttribute('height', segH);
+      rect.setAttribute('height', unitH);
       rect.setAttribute(
         'fill',
         window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'
       );
 
-      // tooltip per loan segment
-      rect.addEventListener('mousemove', (ev) => {
+      rect.addEventListener('mousemove', ev => {
         tooltip.style.display = 'block';
         tooltip.style.left = ev.clientX + 'px';
         tooltip.style.top = (ev.clientY - 12) + 'px';
         tooltip.innerHTML =
           `${l.loanName}<br>${(l.nominalRate * 100).toFixed(2)}%`;
       });
+
       rect.addEventListener('mouseleave', () => {
         tooltip.style.display = 'none';
       });
@@ -2277,8 +2299,9 @@ function renderRatesDrawer() {
       svg.appendChild(rect);
     });
 
-    // X-axis label
-    const label = `${(min + i * width).toFixed(2)}–${(min + (i + 1) * width).toFixed(2)}`;
+    // X-axis labels
+    const label =
+      `${(min + i * width).toFixed(2)}–${(min + (i + 1) * width).toFixed(2)}`;
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', x + barW / 2);
     text.setAttribute('y', h - pad + 14);
@@ -2294,15 +2317,23 @@ function renderRatesDrawer() {
   // ---------------------------------
   // KPI2 TABLE — SORTED BY RATE
   // ---------------------------------
-  const sorted = allLoans.slice().sort((a, b) => b.nominalRate - a.nominalRate);
+  const sorted = allLoans
+    .slice()
+    .sort((a, b) => b.nominalRate - a.nominalRate);
 
   drawerExtra.innerHTML = `
     <div style="margin-top:10px">
       <strong class="small">Loans sorted by rate</strong>
-      <div style="max-height:45vh;overflow:auto;margin-top:6px;
-           border-radius:6px;padding:6px;
-           border:1px solid var(--border);background:var(--card)">
-        <table class="kpi2-table" style="width:100%;font-size:13px">
+      <div style="
+        max-height:45vh;
+        overflow:auto;
+        margin-top:6px;
+        border-radius:6px;
+        padding:6px;
+        border:1px solid var(--border);
+        background:var(--card)
+      ">
+        <table class="kpi2-table" style="width:100%; font-size:13px">
           <thead>
             <tr>
               <th>Loan</th>
@@ -2313,44 +2344,20 @@ function renderRatesDrawer() {
           </thead>
           <tbody>
             ${sorted.map(l => `
-              <tr
-                data-loan-id="${l.loanId}"
-                style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}"
-              >
+              <tr style="--loan-color:${window.KPI_COLOR_MAP?.[l.loanId] || 'var(--text)'}">
                 <td>
-                  <span style="
-                    display:inline-block;
-                    width:10px;
-                    height:10px;
-                    border-radius:2px;
-                    background:var(--loan-color);
-                    margin-right:6px;
-                    vertical-align:middle;
-                  "></span>
-                  <td>
-                    <span style="
-                      display:inline-block;
-                      width:10px;
-                      height:10px;
-                      border-radius:2px;
-                      background:var(--loan-color);
-                      margin-right:6px;
-                      vertical-align:middle;
-                    "></span>
-  <div style="display:inline-block; vertical-align:middle;">
-    <div style="font-weight:700;">${l.loanName}</div>
-    <div style="font-size:12px; color:var(--muted); margin-top:2px;">
-      ${l.school || ""}
-    </div>
-  </div>
-</td>
-
+                  <div style="font-weight:700;">${l.loanName}</div>
+                  <div style="font-size:12px; color:var(--muted); margin-top:2px;">
+                    ${l.school || ''}
+                  </div>
                 </td>
                 <td style="color:var(--loan-color); font-weight:600;">
                   ${(l.nominalRate * 100).toFixed(2)}%
                 </td>
                 <td>${l.purchaseDate}</td>
-                <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
+                <td style="text-align:right;">
+                  $${l.purchasePrice.toLocaleString()}
+                </td>
               </tr>
             `).join('')}
           </tbody>
@@ -2359,20 +2366,11 @@ function renderRatesDrawer() {
     </div>
   `;
 
-// ------------------------------
-// Row hover → highlight chart loan
-// ------------------------------
-document
-  .querySelectorAll('#drawerExtra tr[data-loan-id]')
-  .forEach(tr => {
-    const loanId = tr.dataset.loanId;
-  });
-
-  
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 function renderPaymentsDrawer() {
   currentMode = 'kpi';
