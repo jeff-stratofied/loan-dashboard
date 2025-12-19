@@ -95,8 +95,6 @@ export async function loadLoans() {
       // ✅ ADD THIS LINE
       events: Array.isArray(l.events) ? l.events : []
     };
-
-    };
   });
 }
 
