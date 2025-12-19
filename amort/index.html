@@ -1671,20 +1671,17 @@ function renderDistributionDrawer() {
 
   drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
   drawerSub.textContent = 'Number of loans purchased by month';
-  // compute once, before setting labels
-const totalInvested = allLoans.reduce(
-  (s, l) => s + (l.purchasePrice || 0),
-  0
-    );
-    
-    // PRIMARY
-    drawerPrimaryTitle.textContent = 'Total Invested';
-    drawerPrimary.textContent = `$${totalInvested.toLocaleString()}`;
-    
-    // SECONDARY
-    drawerSecondaryTitle.textContent = 'Loan Count';
-    drawerSecondary.textContent = allLoans.length.toLocaleString();
 
+  const totalInvested = allLoans.reduce(
+    (s, l) => s + (l.purchasePrice || 0),
+    0
+  );
+
+  drawerPrimaryTitle.textContent = 'Total Invested';
+  drawerPrimary.textContent = `$${totalInvested.toLocaleString()}`;
+
+  drawerSecondaryTitle.textContent = 'Loan Count';
+  drawerSecondary.textContent = allLoans.length.toLocaleString();
 
   drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
@@ -1715,56 +1712,49 @@ const totalInvested = allLoans.reduce(
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
 
-// ------------------------------
-// AXES (X + Y)
-// ------------------------------
+  // ------------------------------
+  // AXES
+  // ------------------------------
+  const yAxis = document.createElementNS(svgNS, 'line');
+  yAxis.setAttribute('x1', pad);
+  yAxis.setAttribute('x2', pad);
+  yAxis.setAttribute('y1', pad);
+  yAxis.setAttribute('y2', h - pad);
+  yAxis.setAttribute('stroke', '#cbd5e1');
+  svg.appendChild(yAxis);
 
-    // Y axis
-    const yAxis = document.createElementNS(svgNS, 'line');
-    yAxis.setAttribute('x1', pad);
-    yAxis.setAttribute('x2', pad);
-    yAxis.setAttribute('y1', pad);
-    yAxis.setAttribute('y2', h - pad);
-    yAxis.setAttribute('stroke', '#cbd5e1');
-    svg.appendChild(yAxis);
-    
-    // X axis
-    const xAxis = document.createElementNS(svgNS, 'line');
-    xAxis.setAttribute('x1', pad);
-    xAxis.setAttribute('x2', w - pad);
-    xAxis.setAttribute('y1', h - pad);
-    xAxis.setAttribute('y2', h - pad);
-    xAxis.setAttribute('stroke', '#cbd5e1');
-    svg.appendChild(xAxis);
+  const xAxis = document.createElementNS(svgNS, 'line');
+  xAxis.setAttribute('x1', pad);
+  xAxis.setAttribute('x2', w - pad);
+  xAxis.setAttribute('y1', h - pad);
+  xAxis.setAttribute('y2', h - pad);
+  xAxis.setAttribute('stroke', '#cbd5e1');
+  svg.appendChild(xAxis);
 
-  
-    const maxValue = Math.max(
+  const maxValue = Math.max(
     ...months.map(m =>
       loansByMonth[m].reduce((s, l) => s + l.purchasePrice, 0)
-      ),
-      1
-    );
+    ),
+    1
+  );
 
+  // Y-axis ticks
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const ratio = i / steps;
+    const y = h - pad - ratio * (h - pad * 2);
 
-  // Y-axis ticks (loan counts)
-    const steps = 4;
-    for (let i = 0; i <= steps; i++) {
-      const ratio = i / steps;
-      const y = h - pad - ratio * (h - pad * 2);
-    
-      const label = document.createElementNS(svgNS, 'text');
-      label.setAttribute('x', pad - 12);
-      label.setAttribute('y', y + 4);
-      label.setAttribute('font-size', '11');
-      label.setAttribute('text-anchor', 'end');
-      label.setAttribute('fill', '#64748b');
-      label.textContent =
-        '$' + Math.round(ratio * maxValue).toLocaleString();
-    
-      svg.appendChild(label);
-    }
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('x', pad - 12);
+    label.setAttribute('y', y + 4);
+    label.setAttribute('font-size', '11');
+    label.setAttribute('text-anchor', 'end');
+    label.setAttribute('fill', '#64748b');
+    label.textContent =
+      '$' + Math.round(ratio * maxValue).toLocaleString();
 
-
+    svg.appendChild(label);
+  }
 
   // --------------------------------------------------
   // STACKED BARS (ONE SEGMENT PER LOAN)
@@ -1777,10 +1767,9 @@ const totalInvested = allLoans.reduce(
 
     let yCursor = h - pad;
     const scale = (h - pad * 2) / maxValue;
-    
+
     loans.forEach(l => {
       const segH = l.purchasePrice * scale;
-
       yCursor -= segH;
 
       const rect = document.createElementNS(svgNS, 'rect');
@@ -1794,8 +1783,6 @@ const totalInvested = allLoans.reduce(
       );
       rect.setAttribute('data-loan-id', l.loanId);
 
-
-      // Hover: identify loan segment
       rect.addEventListener('mousemove', ev => {
         tooltip.style.display = 'block';
         tooltip.style.left = ev.clientX + 'px';
@@ -1814,26 +1801,18 @@ const totalInvested = allLoans.reduce(
       svg.appendChild(rect);
     });
 
-// --------------------------------------------------
-// X-AXIS LABELS — EVERY 6 BARS (TRUE 6-MONTH SPACING)
-// --------------------------------------------------
-if (i % 6 === 0) {
-  const text = document.createElementNS(svgNS, 'text');
-  text.setAttribute('x', x + barW / 2);
-  text.setAttribute('y', h - pad + 16);
-  text.setAttribute('font-size', '11');
-  text.setAttribute('text-anchor', 'middle');
-  text.setAttribute('fill', '#475569');
-  text.textContent = m; // e.g. "Jun 2023"
-  svg.appendChild(text);
-}
-
+    if (i % 6 === 0) {
+      const text = document.createElementNS(svgNS, 'text');
+      text.setAttribute('x', x + barW / 2);
+      text.setAttribute('y', h - pad + 16);
+      text.setAttribute('font-size', '11');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('fill', '#475569');
+      text.textContent = m;
+      svg.appendChild(text);
+    }
   });
-  
 
-  // --------------------------------------------------
-  // CURRENT MONTH MARKER (RIGHT EDGE)
-  // --------------------------------------------------
   const curLine = document.createElementNS(svgNS, 'line');
   curLine.setAttribute('x1', w - pad);
   curLine.setAttribute('x2', w - pad);
@@ -1846,66 +1825,84 @@ if (i % 6 === 0) {
 
   drawerChartArea.appendChild(svg);
 
-
-drawerExtra.innerHTML = `
-  <div style="margin-top:10px">
-    <strong class="small">Loans — Invested Capital</strong>
-
-    <div style="
-      max-height:45vh;
-      overflow:auto;
-      margin-top:6px;
-      border-radius:6px;
-      padding:6px;
-      border:1px solid var(--border);
-      background:var(--card);
-    ">
-      <table class="kpi2-table" style="width:100%; font-size:13px">
-        <thead>
-          <tr>
-            <th>Loan</th>
-            <th>Rate</th>
-            <th>Purchase Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${allLoans.map(l => `
-            <tr data-loan-id="${l.loanId}">
-              <!-- Loan name + school (2 rows) -->
-              <td style="text-align:left">
-                <div style="font-weight:700">
-                  ${l.loanName}
-                </div>
-                <div style="font-size:12px; margin-top:2px">
-                  ${l.school || ''}
-                </div>
-              </td>
-
-              <!-- Rate (ONLY colored column) -->
-              <td class="kpi2-rate"
-                  style="color:${window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'}; font-weight:600;">
-                ${(l.nominalRate * 100).toFixed(2)}%
-              </td>
-
-              <!-- Purchase price (normal text) -->
-              <td>
-                $${Number(l.purchasePrice || 0).toLocaleString()}
-              </td>
+  // --------------------------------------------------
+  // KPI4 TABLE — MATCH KPI2
+  // --------------------------------------------------
+  drawerExtra.innerHTML = `
+    <div style="margin-top:10px">
+      <strong class="small">Loans — Invested Capital</strong>
+      <div style="
+        max-height:45vh;
+        overflow:auto;
+        margin-top:6px;
+        border-radius:6px;
+        padding:6px;
+        border:1px solid var(--border);
+        background:var(--card)
+      ">
+        <table class="kpi2-table" style="width:100%; font-size:13px">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Loan</th>
+              <th>Rate</th>
+              <th>Purchase Price</th>
             </tr>
-          `).join('')}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            ${allLoans.map(l => `
+              <tr data-loan-id="${l.loanId}">
+                <td>
+                  <span style="
+                    display:inline-block;
+                    width:10px;
+                    height:10px;
+                    border-radius:2px;
+                    background:${window.KPI_COLOR_MAP?.[l.loanId] || '#64748b'};
+                  "></span>
+                </td>
+                <td style="text-align:left;">
+                  <div style="font-weight:700">${l.loanName}</div>
+                  <div style="font-size:12px; color:var(--muted); margin-top:2px">
+                    ${l.school || ''}
+                  </div>
+                </td>
+                <td style="color:${window.KPI_COLOR_MAP?.[l.loanId]}; font-weight:600;">
+                  ${(l.nominalRate * 100).toFixed(2)}%
+                </td>
+                <td>
+                  $${Number(l.purchasePrice || 0).toLocaleString()}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-`;
+  `;
 
-
+  // ---------------------------------
+  // TABLE → CHART HOVER (KPI4)
+  // ---------------------------------
+  drawerExtra.querySelectorAll('tbody tr').forEach(tr => {
+    const id = tr.dataset.loanId;
+    tr.addEventListener('mouseenter', () => {
+      svg.querySelectorAll('[data-loan-id]').forEach(el => {
+        el.style.opacity = el.dataset.loanId === id ? '1' : '0.15';
+      });
+    });
+    tr.addEventListener('mouseleave', () => {
+      svg.querySelectorAll('[data-loan-id]').forEach(el => {
+        el.style.opacity = '1';
+      });
+    });
+  });
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
-
 }
+
 
 
 function renderTPVDrawer() {
