@@ -2004,7 +2004,8 @@ function clearKpiChartHighlight(container) {
 
 
     
-function renderKpi3AvgLineChart(container, rows) {
+function renderKpi3AvgLineChart(container, rows, opts = {}) {
+
   container.innerHTML = "";
   if (!rows || !rows.length) return;
 
@@ -2078,7 +2079,12 @@ function renderKpi3AvgLineChart(container, rows) {
   // ----------------------------
   const xAxisY = h - padB + 18;
 
-  for (let i = 0; i < rows.length; i += 4) {
+  const xEvery = (opts && Number.isFinite(opts.xLabelEveryMonths))
+  ? opts.xLabelEveryMonths
+  : 4;
+
+for (let i = 0; i < rows.length; i += xEvery) {
+
     const x = padL + i * stepX;
 
     // small tick
@@ -2169,51 +2175,64 @@ function renderKpi3AvgLineChart(container, rows) {
 
 function buildKpi4AvgMonthlyRows(loans) {
   const TODAY = new Date();
-  TODAY.setHours(0,0,0,0);
+  TODAY.setHours(0, 0, 0, 0);
 
-  const start = window.__PORTFOLIO_START__;
-  const lastMaturity = new Date(
-    Math.max(...loans.map(l =>
-      new Date(l.purchaseDate).getTime() +
-      Math.round((l.termYears + l.graceYears) * 12) * 30 * 24 * 3600 * 1000
-    ))
+  // KPI3 already sets this in computeEarningsKPIs
+  const start = window.__PORTFOLIO_START__
+    ? new Date(window.__PORTFOLIO_START__)
+    : TODAY;
+  start.setHours(0, 0, 0, 0);
+
+  // Use the REAL last maturity month = latest ownershipDate in any schedule
+  const lastMaturityMs = Math.max(
+    ...loans.map(l => {
+      const sched = l.earningsSchedule || [];
+      const last = sched[sched.length - 1];
+      const d = last?.ownershipDate ? new Date(last.ownershipDate) : null;
+      return d ? d.getTime() : 0;
+    })
   );
 
-  const rows = [];
-  let cumNet = 0;
+  const lastMaturity = lastMaturityMs ? new Date(lastMaturityMs) : new Date(TODAY);
+  // normalize to first-of-month
+  lastMaturity.setHours(0, 0, 0, 0);
+  const end = new Date(lastMaturity.getFullYear(), lastMaturity.getMonth(), 1);
 
-  let m = 0;
-  while (true) {
-    const date = new Date(start.getFullYear(), start.getMonth() + m, 1);
-    if (date > lastMaturity) break;
+  const rows = [];
+  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  while (cursor <= end) {
+    let netToDate = 0;
 
     loans.forEach(l => {
       const sched = l.earningsSchedule || [];
+      if (!sched.length) return;
+
       const purchase = new Date(l.purchaseDate);
-      purchase.setHours(0,0,0,0);
+      purchase.setHours(0, 0, 0, 0);
 
-      const idx = monthDiff(purchase, date);
-      if (idx < 0) return;
+      // before purchase month => not owned yet
+      const idxRaw = monthDiff(purchase, cursor);
+      if (!Number.isFinite(idxRaw) || idxRaw < 0) return;
 
-      if (date <= TODAY) {
-        const r = sched[Math.min(idx, sched.length - 1)];
-        if (r) cumNet += r.netEarnings - (rows.at(-1)?.netToDate ?? 0);
-      }
+      const idx = Math.max(0, Math.min(idxRaw, sched.length - 1));
+      netToDate += Number(sched[idx]?.netEarnings || 0);
     });
 
-    const monthsElapsed = monthDiff(start, date) + 1;
+    const monthsElapsed = Math.max(1, monthDiff(start, cursor) + 1);
 
     rows.push({
-      date,
-      netToDate: cumNet,
-      avg: monthsElapsed > 0 ? cumNet / monthsElapsed : 0
+      date: new Date(cursor),
+      netToDate,
+      avg: netToDate / monthsElapsed
     });
 
-    m++;
+    cursor.setMonth(cursor.getMonth() + 1);
   }
 
   return rows;
 }
+
 
 
   
@@ -2913,8 +2932,10 @@ drawerSub.textContent =
  const rows = buildKpi4AvgMonthlyRows(loansWithEarnings);
 renderKpi3AvgLineChart(
   document.getElementById("drawerChartArea"),
-  rows
+  rows,
+  { xLabelEveryMonths: 24 }
 );
+
 
   // ✅ Render KPI4 table
   drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
