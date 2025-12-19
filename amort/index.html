@@ -1867,6 +1867,33 @@ if (i % 6 === 0) {
   drawerChartArea.appendChild(svg);
 
   // --------------------------------------------------
+// TABLE HOVER → DISTRIBUTION BAR HIGHLIGHT (KPI2)
+// --------------------------------------------------
+document
+  .querySelectorAll('#drawerExtra tr[data-loan-id]')
+  .forEach(tr => {
+    const loanId = String(tr.dataset.loanId);
+
+    tr.addEventListener('mouseenter', () => {
+      document
+        .querySelectorAll('#drawerChartArea rect[data-loan-id]')
+        .forEach(rect => {
+          rect.style.opacity =
+            rect.dataset.loanId === loanId ? '1' : '0.15';
+        });
+    });
+
+    tr.addEventListener('mouseleave', () => {
+      document
+        .querySelectorAll('#drawerChartArea rect[data-loan-id]')
+        .forEach(rect => {
+          rect.style.opacity = '1';
+        });
+    });
+  });
+
+
+  // --------------------------------------------------
   // KPI4 TABLE — COLORED, LOAN NAME (NOT ID)
   // --------------------------------------------------
   drawerExtra.innerHTML = `
@@ -1918,32 +1945,6 @@ if (i % 6 === 0) {
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
-
-  // ------------------------------
-// Table hover → bar highlight
-// ------------------------------
-document
-  .querySelectorAll('#drawerExtra tr[data-loan-id]')
-  .forEach(tr => {
-    const loanId = tr.dataset.loanId;
-
-    tr.addEventListener('mouseenter', () => {
-      document
-        .querySelectorAll('#drawerChartArea rect[data-loan-id]')
-        .forEach(r => {
-          r.style.opacity =
-            r.dataset.loanId === loanId ? '1' : '0.15';
-        });
-    });
-
-    tr.addEventListener('mouseleave', () => {
-      document
-        .querySelectorAll('#drawerChartArea rect[data-loan-id]')
-        .forEach(r => {
-          r.style.opacity = '1';
-        });
-    });
-  });
 
 }
 
