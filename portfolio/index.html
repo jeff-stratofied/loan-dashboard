@@ -276,11 +276,12 @@
   // ===============================
   // INLINE DATA LOADER (MINIMAL)
   // ===============================
-  async function loadPortfolioLoans(user) {
-    const res = await fetch(`../data/${user}-loans.json`);
-    if (!res.ok) throw new Error("Loan data not found");
-    return await res.json();
+    function loadPortfolioLoans() {
+    if (Array.isArray(window.currentLoans)) return window.currentLoans;
+    if (Array.isArray(window.allLoans)) return window.allLoans;
+    throw new Error("No loan data found on page");
   }
+
 
 
   
@@ -403,7 +404,8 @@ function renderROIChart(loans, el) {
 const params = new URLSearchParams(window.location.search);
 const PAGE_USER = params.get("user") || "jeff";
 
-const loans = await loadPortfolioLoans(PAGE_USER);
+const loans = loadPortfolioLoans();
+
 
 // ROI
 renderROIChart(loans, document.getElementById("roiChartPreview"));
