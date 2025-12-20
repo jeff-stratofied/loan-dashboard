@@ -2694,75 +2694,73 @@ function renderCapitalRecoveryDrawer() {
   // --------------------------------------------------
   // Build per-loan recovery series
   // --------------------------------------------------
-const loanSeriesList = [];
-const datesSet = new Set();
+  const loanSeriesList = [];
+  const datesSet = new Set();
 
-let totalRecovered = 0;
-let totalInvested = 0;
+  let totalRecovered = 0;
+  let totalInvested = 0;
 
-currentLoans.forEach(l => {
-  if (!l.amort || !l.amort.schedule) return;
+  currentLoans.forEach(l => {
+    if (!l.amort || !l.amort.schedule) return;
 
-  let cumPrincipal = 0;
+    let cumPrincipal = 0;
 
-  const data = l.amort.schedule
-    .filter(r => r.isOwned)
-    .map(r => {
-      cumPrincipal += r.principalPaid || 0;
-      datesSet.add(+r.loanDate);
+    const data = l.amort.schedule
+      .filter(r => r.isOwned)
+      .map(r => {
+        cumPrincipal += r.principalPaid || 0;
+        datesSet.add(+r.loanDate);
 
-      return {
-        date: r.loanDate,
-        y: l.purchasePrice ? cumPrincipal / l.purchasePrice : 0
-      };
+        return {
+          date: r.loanDate,
+          y: l.purchasePrice
+            ? Math.min(cumPrincipal / l.purchasePrice, 2) // cap @ 200%
+            : 0
+        };
+      });
+
+    loanSeriesList.push({
+      id: l.id,
+      color: window.KPI_COLOR_MAP?.[l.id] || '#64748b',
+      data
     });
 
-  loanSeriesList.push({
-    id: l.id,
-    color: window.KPI_COLOR_MAP[l.id],
-    data
+    totalRecovered += cumPrincipal;
+    totalInvested += l.purchasePrice || 0;
   });
-
-  totalRecovered += cumPrincipal;
-  totalInvested += l.purchasePrice;
-});
-
 
   const dates = Array.from(datesSet)
     .sort((a, b) => a - b)
-    .map(d => new Date(d));
+    .map(ms => new Date(ms));
 
   // --------------------------------------------------
-  // Weighted portfolio avg (black line)
+  // Build weighted portfolio recovery line (black)
   // --------------------------------------------------
-  const weightedSeries = dates.map(d => {
+  const weightedSeries = [];
+
+  dates.forEach(d => {
     let recovered = 0;
     let invested = 0;
 
-    currentLoans.forEach(l => {
-      if (!l.amort || !l.amort.schedule) return;
+    loanSeriesList.forEach(s => {
+      const loan = currentLoans.find(l => l.id === s.id);
+      if (!loan) return;
 
-      const rows = l.amort.schedule.filter(
-        r => r.isOwned && r.loanDate <= d
-      );
+      const point = s.data.find(p => +p.date === +d);
+      if (!point) return;
 
-      const principal = rows.reduce(
-        (s, r) => s + (r.principalPaid || 0),
-        0
-      );
-
-      recovered += principal;
-      invested += l.purchasePrice;
+      recovered += point.y * loan.purchasePrice;
+      invested += loan.purchasePrice;
     });
 
-    return {
+    weightedSeries.push({
       date: d,
-      value: invested ? recovered / invested : 0
-    };
+      y: invested ? recovered / invested : 0
+    });
   });
 
   // --------------------------------------------------
-  // Primary / Secondary
+  // Primary / Secondary KPIs
   // --------------------------------------------------
   drawerPrimaryTitle.textContent = "Capital Recovered";
   drawerPrimary.textContent =
@@ -2785,7 +2783,6 @@ currentLoans.forEach(l => {
       dates
     }
   );
-
 
   // --------------------------------------------------
   // Table
@@ -2815,6 +2812,8 @@ currentLoans.forEach(l => {
               if (!l.amort || !l.amort.schedule) return '';
 
               const rows = l.amort.schedule.filter(r => r.isOwned);
+              if (!rows.length) return '';
+
               const recovered = rows.reduce(
                 (s, r) => s + (r.principalPaid || 0),
                 0
@@ -2825,9 +2824,9 @@ currentLoans.forEach(l => {
                 : 0;
 
               const last = rows[rows.length - 1];
-              const balance = last ? last.balance : 0;
+              const balance = last?.balance || 0;
 
-              const color = window.KPI_COLOR_MAP[l.id] || '#64748b';
+              const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
 
               return `
                 <tr data-loan-id="${l.id}">
@@ -2892,6 +2891,7 @@ currentLoans.forEach(l => {
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 }
+
 
 
 
