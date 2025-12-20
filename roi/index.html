@@ -3120,6 +3120,9 @@ function renderCapitalRecoveryDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
 
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+
   drawer.classList.remove('loan-mode');
   drawerAmortContainer.style.display = 'none';
   drawerLegend.style.display = 'none';
