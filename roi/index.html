@@ -2176,6 +2176,7 @@ function populateProjectedROILoanTable(){
 
 function openDrawerForLoan(loan){
       currentMode='loan'; currentLoan=loan;
+      drawerAmortContainer.style.display = '';    
       drawer.classList.add('loan-mode');
 
       // --- loan drawer heading (match earnings structure) ---
@@ -2389,7 +2390,7 @@ function renderTPVDrawer() {
 
 
   // Reset drawer
-  drawerAmortContainer.innerHTML = '';
+  drawerAmortContainer.style.display = 'none';
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
@@ -2589,7 +2590,7 @@ currentLoan = null;
 
     drawer.classList.remove('loan-mode');
 
-drawerAmortContainer.innerHTML = '';
+drawerAmortContainer.style.display = 'none';
 drawerLegend.style.display = 'none';
 drawerChartArea.innerHTML = '';
 drawerExtra.innerHTML = '';
@@ -2952,7 +2953,7 @@ function renderROISpreadDrawer() {
   currentLoan = null;
   drawer.classList.remove('loan-mode');
 
-  drawerAmortContainer.innerHTML = '';
+  drawerAmortContainer.style.display = 'none';
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
@@ -3120,7 +3121,7 @@ function renderCapitalRecoveryDrawer() {
   currentLoan = null;
 
   drawer.classList.remove('loan-mode');
-  drawerAmortContainer.innerHTML = '';
+  drawerAmortContainer.style.display = 'none';
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
