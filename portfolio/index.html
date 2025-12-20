@@ -350,15 +350,17 @@ async function initPortfolioLoans(PAGE_USER) {
     monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
   }));
 
-  const loansWithAmort = rawLoans.map(l => {
-    const amortSchedule = buildAmortSchedule(l);
-    return {
-      ...l,
-      amort: amortSchedule,
-      user: l.user ?? "jeff",
-      visible: l.visible !== false
-    };
-  });
+const loansWithAmort = rawLoans.map(l => {
+  const schedule = buildAmortSchedule(l);
+
+  return {
+    ...l,
+    amort: { schedule },   // 🔑 MATCH amort page contract
+    user: l.user ?? "jeff",
+    visible: l.visible !== false
+  };
+});
+
 
   // EXACT same filter as ROI
   currentLoans = loansWithAmort.filter(
