@@ -2626,23 +2626,13 @@ drawerSecondaryTitle.textContent = "Projected Portfolio Value";
 drawerSecondary.textContent = "$" + projPortfolioValue.toLocaleString();
 
 // ===============================
-// 3. Build timeline (calendar aligned)
+// Import chart for rates/projected roi
 // ===============================
-const timeline = buildProjectedRoiTimeline(loansWithAmort);
-      
-// ===============================
-// 4. Render multi-series chart WITH hover
-// ===============================
-createMultiSeriesChart(
-  drawerChartArea,
-  timeline.perLoanSeries,
-  timeline.weightedSeries,
-  {
-    weightedColor: "#000",
-    weightedWidth: 2.6,
-    dates: timeline.dates
-  }
-);
+import {
+  buildProjectedRoiTimeline,
+  createMultiSeriesChart
+} from "../js/charts/projectedWeightedROIChart.js";
+
 
 // ===============================
 // 5. Table of projected ROI for each loan
