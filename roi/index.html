@@ -1731,10 +1731,11 @@ function createHistogram(containerEl, values, bins=6, opts={}) {
         <p id="wproj">${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
       </div>
     
-      <div class="kpi" data-kpi="yield">
-        <h3>Yield to Date (Annualized)</h3>
-        <p>${(kpis.yieldToDateAnnualized * 100).toFixed(2)}%</p>
+      <div class="kpi" data-kpi="capitalRecovery">
+        <h3>Capital Recovered</h3>
+        <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
       </div>
+
     
       <div class="kpi" data-kpi="spread">
         <h3>ROI Spread</h3>
@@ -2686,15 +2687,12 @@ function renderCapitalRecoveryDrawer() {
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
 
-  // --------------------------------------------------
-  // Header
-  // --------------------------------------------------
   drawerTitle.textContent = "Capital Recovery Over Time";
   drawerSub.textContent =
-    "How quickly invested capital is returned across loans.";
+    "How much of your invested principal has been returned through payments and prepayments.";
 
   // --------------------------------------------------
-  // Compute per-loan recovery series
+  // Build per-loan recovery series
   // --------------------------------------------------
   const perLoanSeries = {};
   const datesSet = new Set();
@@ -2705,22 +2703,19 @@ function renderCapitalRecoveryDrawer() {
   currentLoans.forEach(l => {
     if (!l.amort || !l.amort.schedule) return;
 
-    const schedule = l.amort.schedule.filter(r => r.isOwned);
     let cumPrincipal = 0;
 
-    perLoanSeries[l.id] = schedule.map(r => {
-      cumPrincipal += r.principalPaid || 0;
-      const pct = l.purchasePrice
-        ? cumPrincipal / l.purchasePrice
-        : 0;
+    perLoanSeries[l.id] = l.amort.schedule
+      .filter(r => r.isOwned)
+      .map(r => {
+        cumPrincipal += r.principalPaid || 0;
+        datesSet.add(+r.loanDate);
 
-      datesSet.add(+r.loanDate);
-
-      return {
-        date: r.loanDate,
-        value: pct
-      };
-    });
+        return {
+          date: r.loanDate,
+          value: l.purchasePrice ? cumPrincipal / l.purchasePrice : 0
+        };
+      });
 
     totalRecovered += cumPrincipal;
     totalInvested += l.purchasePrice;
@@ -2728,10 +2723,10 @@ function renderCapitalRecoveryDrawer() {
 
   const dates = Array.from(datesSet)
     .sort((a, b) => a - b)
-    .map(t => new Date(t));
+    .map(d => new Date(d));
 
   // --------------------------------------------------
-  // Weighted portfolio average series (black line)
+  // Weighted portfolio avg (black line)
   // --------------------------------------------------
   const weightedSeries = dates.map(d => {
     let recovered = 0;
@@ -2760,7 +2755,7 @@ function renderCapitalRecoveryDrawer() {
   });
 
   // --------------------------------------------------
-  // Primary / Secondary metrics
+  // Primary / Secondary
   // --------------------------------------------------
   drawerPrimaryTitle.textContent = "Capital Recovered";
   drawerPrimary.textContent =
@@ -2771,7 +2766,7 @@ function renderCapitalRecoveryDrawer() {
     ((totalRecovered / Math.max(1, totalInvested)) * 100).toFixed(2) + "%";
 
   // --------------------------------------------------
-  // Chart (same behavior as ROI / Earnings)
+  // Chart
   // --------------------------------------------------
   createMultiSeriesChart(
     drawerChartArea,
@@ -2816,6 +2811,7 @@ function renderCapitalRecoveryDrawer() {
                 (s, r) => s + (r.principalPaid || 0),
                 0
               );
+
               const pct = l.purchasePrice
                 ? recovered / l.purchasePrice
                 : 0;
@@ -2858,7 +2854,7 @@ function renderCapitalRecoveryDrawer() {
   `;
 
   // --------------------------------------------------
-  // Table ↔ Chart interaction
+  // Table ↔ Chart hover interaction
   // --------------------------------------------------
   const rows = drawerExtra.querySelectorAll('tbody tr');
   const paths = drawerChartArea.querySelectorAll('path[data-loan-id]');
@@ -2888,6 +2884,7 @@ function renderCapitalRecoveryDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 }
+
 
 
 
