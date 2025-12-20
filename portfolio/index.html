@@ -366,6 +366,86 @@ const loansWithAmort = rawLoans.map(l => {
     applyTheme(current === "dark" ? "light" : "dark");
   });
 
+function renderAmortMiniDrawer(loan, container) {
+  if (!loan?.amort?.schedule?.length) {
+    container.innerHTML = "<div style='color:var(--muted)'>No amort data</div>";
+    return;
+  }
+
+  const schedule = loan.amort.schedule;
+
+  container.innerHTML = `
+    <div style="font-weight:600;font-size:13px;margin-bottom:6px">
+      ${loan.name}
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      Rate ${(loan.nominalRate * 100).toFixed(2)}% •
+      Purchase ${loan.purchasePrice.toLocaleString()}
+    </div>
+
+    <div id="amortMiniChart" style="
+      height:180px;
+      margin-bottom:10px;
+    "></div>
+
+    <div style="
+      border:1px solid var(--border);
+      border-radius:10px;
+      overflow:auto;
+      max-height:220px;
+      background:var(--card);
+    ">
+      <table style="width:100%;font-size:12px;border-collapse:collapse">
+        <thead>
+          <tr style="position:sticky;top:0;background:var(--surface)">
+            <th style="text-align:left;padding:6px">Date</th>
+            <th style="text-align:right;padding:6px">Payment</th>
+            <th style="text-align:right;padding:6px">Balance</th>
+          </tr>
+        </thead>
+        <tbody id="amortMiniBody"></tbody>
+      </table>
+    </div>
+  `;
+
+  // -------------------------
+  // MINI CHART (Balance only)
+  // -------------------------
+  const chartEl = container.querySelector("#amortMiniChart");
+  const w = chartEl.clientWidth;
+  const h = chartEl.clientHeight;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+
+  const max = Math.max(...schedule.map(r => r.balance), 1);
+
+  const pts = schedule.map((r, i) => {
+    const x = (i / (schedule.length - 1 || 1)) * (w - 20) + 10;
+    const y = h - 20 - (r.balance / max) * (h - 40);
+    return `${x},${y}`;
+  }).join(" ");
+
+  const line = document.createElementNS(svg.namespaceURI, "polyline");
+  line.setAttribute("points", pts);
+  line.setAttribute("fill", "none");
+  line.setAttribute("stroke", "var(--accent)");
+  line.setAttribute("stroke-width", "3");
+
+  svg.appendChild(line);
+  chartEl.appendChild(svg);
+
+  // -------------------------
+  // TABLE (FIRST 12 ROWS)
+  // -------------------------
+  const tbody = container.querySelector("#amortMiniBody");
+
+  schedule.slice(0, 12).forEach(r => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="padding:6px">${r.monthIndex}</td>
+      <td style="padding:6px
 
   
   // ===============================
@@ -382,96 +462,7 @@ document.getElementById("tileAmort").onclick = () =>
   location.href = `../index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
 
 
-function renderROIChart(loans, el) {
-  el.innerHTML = "";
-  const w = el.clientWidth;
-  const h = el.clientHeight;
 
-  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-  svg.setAttribute("width", w);
-  svg.setAttribute("height", h);
-
-  const vals = loans.map(l => l.projectedROI || 0);
-  const max = Math.max(...vals, 0.05);
-
-  const pts = vals.map((v,i) => {
-    const x = (i/(vals.length-1||1))*(w-20)+10;
-    const y = h-20-(v/max)*(h-40);
-    return `${x},${y}`;
-  }).join(" ");
-
-  const poly = document.createElementNS(svg.namespaceURI,"polyline");
-  poly.setAttribute("points", pts);
-  poly.setAttribute("fill","none");
-  poly.setAttribute("stroke","var(--brand)");
-  poly.setAttribute("stroke-width","3");
-
-  svg.appendChild(poly);
-  el.appendChild(svg);
-}
-
-  function renderEarningsChart(loans, el) {
-  el.innerHTML = "";
-  const w = el.clientWidth;
-  const h = el.clientHeight;
-
-  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-  svg.setAttribute("width", w);
-  svg.setAttribute("height", h);
-
-  const vals = loans.map(l => l.projectedNet || 0);
-  const max = Math.max(...vals, 1);
-
-  vals.forEach((v,i)=>{
-    const barW = (w-20)/vals.length;
-    const x = 10 + i*barW;
-    const barH = (v/max)*(h-30);
-    const y = h-20-barH;
-
-    const r = document.createElementNS(svg.namespaceURI,"rect");
-    r.setAttribute("x", x+2);
-    r.setAttribute("y", y);
-    r.setAttribute("width", barW-4);
-    r.setAttribute("height", barH);
-    r.setAttribute("rx","3");
-    r.setAttribute("fill","var(--brand)");
-
-    svg.appendChild(r);
-  });
-
-  el.appendChild(svg);
-}
-
-
-  function renderAmortPreview(loan, el) {
-  el.innerHTML = "";
-  const w = el.clientWidth;
-  const h = el.clientHeight;
-
-  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-  svg.setAttribute("width", w);
-  svg.setAttribute("height", h);
-
-  const sched = loan.amort || [];
-  if (!sched.length) return;
-
-  const max = sched[0].balance || 1;
-
-  const pts = sched.map((r,i)=>{
-    const x = (i/(sched.length-1||1))*(w-20)+10;
-    const y = h-20-(r.balance/max)*(h-40);
-    return `${x},${y}`;
-  }).join(" ");
-
-  const p = document.createElementNS(svg.namespaceURI,"polyline");
-  p.setAttribute("points", pts);
-  p.setAttribute("fill","none");
-  p.setAttribute("stroke","var(--accent)");
-  p.setAttribute("stroke-width","3");
-
-  svg.appendChild(p);
-  el.appendChild(svg);
-}
 
   // ===============================
 // LOAD + RENDER
@@ -496,8 +487,16 @@ tileEarnings.onclick = () =>
 document.getElementById("earningsMini").innerHTML =
   "<div style='color:var(--muted)'>Earnings mini-drawer</div>";
 
-document.getElementById("amortMini").innerHTML =
-  "<div style='color:var(--muted)'>Amort mini-drawer</div>";
+const amortMini = document.getElementById("amortMini");
+
+const firstLoan = [...currentLoans].sort(
+  (a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate)
+)[0];
+
+if (firstLoan) {
+  renderAmortMiniDrawer(firstLoan, amortMini);
+}
+
 
 
   
