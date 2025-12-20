@@ -479,19 +479,6 @@ const loans = currentLoans;
 
 
 
-// ROI
-renderROIChart(loans, document.getElementById("roiChartPreview"));
-
-// Earnings
-renderEarningsChart(loans, document.getElementById("earningsChartPreview"));
-
-// Amort (first purchased loan)
-const firstLoan = [...loans].sort(
-  (a,b)=>new Date(a.purchaseDate)-new Date(b.purchaseDate)
-)[0];
-
-renderAmortPreview(firstLoan, document.getElementById("amortChartPreview"));
-
 tileROI.onclick = () =>
   location.href = `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
 
