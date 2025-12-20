@@ -414,33 +414,15 @@ function renderAmortMiniDrawer(loan, container) {
   `;
 
 
-  // -------------------------
-  // MINI CHART (Balance only)
-  // -------------------------
-  const chartEl = container.querySelector("#amortMiniChart");
-  const w = chartEl.clientWidth;
-  const h = chartEl.clientHeight;
+const chartEl = container.querySelector("#amortMiniChart");
 
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("width", w);
-  svg.setAttribute("height", h);
+renderAmortLoanChart({
+  loan,
+  container: chartEl,
+  height: 180,
+  compact: true
+});
 
-  const max = Math.max(...schedule.map(r => r.balance), 1);
-
-  const pts = schedule.map((r, i) => {
-    const x = (i / (schedule.length - 1 || 1)) * (w - 20) + 10;
-    const y = h - 20 - (r.balance / max) * (h - 40);
-    return `${x},${y}`;
-  }).join(" ");
-
-  const line = document.createElementNS(svg.namespaceURI, "polyline");
-  line.setAttribute("points", pts);
-  line.setAttribute("fill", "none");
-  line.setAttribute("stroke", "var(--accent)");
-  line.setAttribute("stroke-width", "3");
-
-  svg.appendChild(line);
-  chartEl.appendChild(svg);
 
   // -------------------------
   // TABLE (FIRST 12 ROWS)
