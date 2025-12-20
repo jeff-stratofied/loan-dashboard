@@ -272,12 +272,23 @@
     applyTheme(current === "dark" ? "light" : "dark");
   });
 
+    // ===============================
+    // PAGE LOGIC
+    // ===============================
+    const params = new URLSearchParams(window.location.search);
+    let PAGE_USER = params.get("user") || "jeff";
+  
   // ===============================
-  // PAGE LOGIC
+  // INLINE DATA LOADER (MINIMAL)
   // ===============================
-  const params = new URLSearchParams(window.location.search);
-  let PAGE_USER = params.get("user") || "jeff";
+  async function loadPortfolioLoans(user) {
+    const res = await fetch(`../data/${user}-loans.json`);
+    if (!res.ok) throw new Error("Loan data not found");
+    return await res.json();
+  }
 
+
+  
   // ===============================
   // NAVIGATION ONLY (NO CHART IMPORTS)
   // ===============================
@@ -300,6 +311,128 @@
       `../index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
   });
 
+function renderROIChart(loans, el) {
+  el.innerHTML = "";
+  const w = el.clientWidth;
+  const h = el.clientHeight;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+
+  const vals = loans.map(l => l.projectedROI || 0);
+  const max = Math.max(...vals, 0.05);
+
+  const pts = vals.map((v,i) => {
+    const x = (i/(vals.length-1||1))*(w-20)+10;
+    const y = h-20-(v/max)*(h-40);
+    return `${x},${y}`;
+  }).join(" ");
+
+  const poly = document.createElementNS(svg.namespaceURI,"polyline");
+  poly.setAttribute("points", pts);
+  poly.setAttribute("fill","none");
+  poly.setAttribute("stroke","var(--brand)");
+  poly.setAttribute("stroke-width","3");
+
+  svg.appendChild(poly);
+  el.appendChild(svg);
+}
+
+  function renderEarningsChart(loans, el) {
+  el.innerHTML = "";
+  const w = el.clientWidth;
+  const h = el.clientHeight;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+
+  const vals = loans.map(l => l.projectedNet || 0);
+  const max = Math.max(...vals, 1);
+
+  vals.forEach((v,i)=>{
+    const barW = (w-20)/vals.length;
+    const x = 10 + i*barW;
+    const barH = (v/max)*(h-30);
+    const y = h-20-barH;
+
+    const r = document.createElementNS(svg.namespaceURI,"rect");
+    r.setAttribute("x", x+2);
+    r.setAttribute("y", y);
+    r.setAttribute("width", barW-4);
+    r.setAttribute("height", barH);
+    r.setAttribute("rx","3");
+    r.setAttribute("fill","var(--brand)");
+
+    svg.appendChild(r);
+  });
+
+  el.appendChild(svg);
+}
+
+
+  function renderAmortPreview(loan, el) {
+  el.innerHTML = "";
+  const w = el.clientWidth;
+  const h = el.clientHeight;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+
+  const sched = loan.amort || [];
+  if (!sched.length) return;
+
+  const max = sched[0].balance || 1;
+
+  const pts = sched.map((r,i)=>{
+    const x = (i/(sched.length-1||1))*(w-20)+10;
+    const y = h-20-(r.balance/max)*(h-40);
+    return `${x},${y}`;
+  }).join(" ");
+
+  const p = document.createElementNS(svg.namespaceURI,"polyline");
+  p.setAttribute("points", pts);
+  p.setAttribute("fill","none");
+  p.setAttribute("stroke","var(--accent)");
+  p.setAttribute("stroke-width","3");
+
+  svg.appendChild(p);
+  el.appendChild(svg);
+}
+
+  // ===============================
+// LOAD + RENDER
+// ===============================
+const params = new URLSearchParams(window.location.search);
+const PAGE_USER = params.get("user") || "jeff";
+
+const loans = await loadPortfolioLoans(PAGE_USER);
+
+// ROI
+renderROIChart(loans, document.getElementById("roiChartPreview"));
+
+// Earnings
+renderEarningsChart(loans, document.getElementById("earningsChartPreview"));
+
+// Amort (first purchased loan)
+const firstLoan = [...loans].sort(
+  (a,b)=>new Date(a.purchaseDate)-new Date(b.purchaseDate)
+)[0];
+
+renderAmortPreview(firstLoan, document.getElementById("amortChartPreview"));
+
+tileROI.onclick = () =>
+  location.href = `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
+
+tileEarnings.onclick = () =>
+  location.href = `../index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
+
+tileAmort.onclick = () =>
+  location.href = `../index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
+
+  
   
 </script>
 
