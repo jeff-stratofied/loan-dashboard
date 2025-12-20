@@ -969,36 +969,35 @@ function computeKPIs(list) {
     ) / Math.max(1, total);
 
   // -------------------------------------
-  // Capital Recovery (NEW)
+  // Capital Recovery (FIXED)
   // -------------------------------------
-  let recoveredPrincipalWeighted = 0;
   let recoveredPrincipalTotal = 0;
-
+  let investedPrincipalTotal = 0;
+  
   list.forEach(l => {
     if (!l.amort || !l.amort.schedule) return;
-
+  
     const recovered = l.amort.schedule
       .filter(r => r.isOwned)
       .reduce((s, r) => s + (r.principalPaid || 0), 0);
-
+  
     recoveredPrincipalTotal += recovered;
-    recoveredPrincipalWeighted += recovered * l.purchasePrice;
+    investedPrincipalTotal += l.purchasePrice;
   });
-
+  
   const capitalRecoveryPct =
-    recoveredPrincipalWeighted / Math.max(1, total * total);
+    investedPrincipalTotal > 0
+      ? recoveredPrincipalTotal / investedPrincipalTotal
+      : 0;
+    
+    return {
+      total,
+      weightedROI,
+      projectedWeightedROI,
+      capitalRecoveredAmount: recoveredPrincipalTotal,
+      capitalRecoveryPct
+    };
 
-  return {
-    total,
-
-    // existing KPIs
-    weightedROI,
-    projectedWeightedROI,
-
-    // NEW KPI
-    capitalRecoveredAmount: recoveredPrincipalTotal,
-    capitalRecoveryPct
-  };
 }
 
 
@@ -3122,208 +3121,98 @@ function renderCapitalRecoveryDrawer() {
 
   drawerTitle.textContent = "Capital Recovery Over Time";
   drawerSub.textContent =
-    "How much of your invested principal has been returned through payments and prepayments.";
+    "Cumulative principal returned as a percentage of purchase price.";
 
-  // --------------------------------------------------
+  // ----------------------------------
   // Build per-loan recovery series
-  // --------------------------------------------------
+  // ----------------------------------
   const loanSeriesList = [];
   const datesSet = new Set();
-
-  let totalRecovered = 0;
-  let totalInvested = 0;
 
   currentLoans.forEach(l => {
     if (!l.amort || !l.amort.schedule) return;
 
     let cumPrincipal = 0;
 
-    const data = l.amort.schedule
+    const series = l.amort.schedule
       .filter(r => r.isOwned)
       .map(r => {
         cumPrincipal += r.principalPaid || 0;
+        const pct = l.purchasePrice > 0
+          ? cumPrincipal / l.purchasePrice
+          : 0;
+
         datesSet.add(+r.loanDate);
 
         return {
           date: r.loanDate,
-          y: l.purchasePrice
-            ? Math.min(cumPrincipal / l.purchasePrice, 2) // cap @ 200%
-            : 0
+          y: pct
         };
       });
 
     loanSeriesList.push({
       id: l.id,
-      color: window.KPI_COLOR_MAP?.[l.id] || '#64748b',
-      data
+      name: l.name,
+      color: window.KPI_COLOR_MAP?.[l.id],
+      data: series
     });
-
-    totalRecovered += cumPrincipal;
-    totalInvested += l.purchasePrice || 0;
   });
 
-  const dates = Array.from(datesSet)
+  const globalDates = Array.from(datesSet)
     .sort((a, b) => a - b)
-    .map(ms => new Date(ms));
+    .map(d => new Date(d));
 
-  // --------------------------------------------------
-  // Build weighted portfolio recovery line (black)
-  // --------------------------------------------------
-  const weightedSeries = [];
+  // ----------------------------------
+  // Aggregate portfolio recovery line
+  // ----------------------------------
+  let totalInvested = currentLoans.reduce(
+    (s, l) => s + l.purchasePrice,
+    0
+  );
 
-  dates.forEach(d => {
+  const portfolioSeries = globalDates.map(d => {
     let recovered = 0;
-    let invested = 0;
 
-    loanSeriesList.forEach(s => {
-      const loan = currentLoans.find(l => l.id === s.id);
-      if (!loan) return;
-
-      const point = s.data.find(p => +p.date === +d);
-      if (!point) return;
-
-      recovered += point.y * loan.purchasePrice;
-      invested += loan.purchasePrice;
+    currentLoans.forEach(l => {
+      const row = l.amort.schedule.find(
+        r => r.isOwned && r.loanDate.getTime() === d.getTime()
+      );
+      if (row) recovered += row.principalPaid || 0;
     });
 
-    weightedSeries.push({
+    return {
       date: d,
-      y: invested ? recovered / invested : 0
-    });
+      y: totalInvested > 0 ? recovered / totalInvested : 0
+    };
   });
 
-  // --------------------------------------------------
-  // Primary / Secondary KPIs
-  // --------------------------------------------------
-  drawerPrimaryTitle.textContent = "Capital Recovered";
-  drawerPrimary.textContent =
-    "$" + Math.round(totalRecovered).toLocaleString();
-
-  drawerSecondaryTitle.textContent = "% Recovered";
-  drawerSecondary.textContent =
-    ((totalRecovered / Math.max(1, totalInvested)) * 100).toFixed(2) + "%";
-
-  // --------------------------------------------------
-  // Chart
-  // --------------------------------------------------
+  // ----------------------------------
+  // Render chart (NO ROI LOGIC)
+  // ----------------------------------
   createMultiSeriesChart(
-    drawerChartArea,
+    document.getElementById("drawerChartArea"),
     loanSeriesList,
-    weightedSeries,
+    portfolioSeries,
     {
-      weightedColor: "#000",
-      weightedWidth: 2.6,
-      dates
+      dates: globalDates,
+      weightedColor: "#111827",
+      weightedWidth: 3,
+      tickSpacingX: 12
     }
   );
 
-  // --------------------------------------------------
-  // Table
-  // --------------------------------------------------
-  drawerExtra.innerHTML = `
-    <div style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">Capital Recovery — By Loan</h3>
-      <div style="
-        max-height:300px;
-        overflow:auto;
-        border:1px solid var(--border);
-        border-radius:8px;
-        padding:6px;
-        background:var(--card);
-      ">
-        <table class="roi-table" style="width:100%;font-size:13px;">
-          <thead>
-            <tr>
-              <th>Loan</th>
-              <th style="text-align:right;">Capital Recovered</th>
-              <th style="text-align:right;">% Recovered</th>
-              <th style="text-align:right;">Remaining Balance</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${currentLoans.map(l => {
-              if (!l.amort || !l.amort.schedule) return '';
+  // ----------------------------------
+  // PRIMARY / SECONDARY METRICS (FIXED)
+  // ----------------------------------
+  drawerPrimaryTitle.textContent = "Capital Recovered";
+  drawerPrimary.textContent =
+    "$" + kpis.capitalRecoveredAmount.toLocaleString();
 
-              const rows = l.amort.schedule.filter(r => r.isOwned);
-              if (!rows.length) return '';
-
-              const recovered = rows.reduce(
-                (s, r) => s + (r.principalPaid || 0),
-                0
-              );
-
-              const pct = l.purchasePrice
-                ? recovered / l.purchasePrice
-                : 0;
-
-              const last = rows[rows.length - 1];
-              const balance = last?.balance || 0;
-
-              const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
-
-              return `
-                <tr data-loan-id="${l.id}">
-                  <td>
-                    <span style="
-                      display:inline-block;
-                      width:10px;
-                      height:10px;
-                      border-radius:50%;
-                      background:${color};
-                      margin-right:6px;
-                    "></span>
-                    <div style="font-weight:500">${l.name}</div>
-                    <div style="font-size:11px;color:var(--muted)">${l.school}</div>
-                  </td>
-                  <td style="text-align:right">
-                    $${Math.round(recovered).toLocaleString()}
-                  </td>
-                  <td style="text-align:right;color:${color}">
-                    ${(pct * 100).toFixed(2)}%
-                  </td>
-                  <td style="text-align:right">
-                    $${Math.round(balance).toLocaleString()}
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
-
-  // --------------------------------------------------
-  // Table ↔ Chart hover interaction
-  // --------------------------------------------------
-  const rows = drawerExtra.querySelectorAll('tbody tr');
-  const paths = drawerChartArea.querySelectorAll('path[data-loan-id]');
-
-  function highlightLoan(id) {
-    paths.forEach(p => {
-      const active = p.dataset.loanId === String(id);
-      p.setAttribute('stroke-opacity', active ? '1' : '0.15');
-      p.setAttribute('stroke-width', active ? '2.6' : '1.2');
-    });
-  }
-
-  function clearHighlight() {
-    paths.forEach(p => {
-      p.setAttribute('stroke-opacity', '0.9');
-      p.setAttribute('stroke-width', '1.2');
-    });
-  }
-
-  rows.forEach(r => {
-    const id = r.dataset.loanId;
-    r.addEventListener('mouseenter', () => highlightLoan(id));
-    r.addEventListener('mouseleave', clearHighlight);
-  });
-
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  drawer.scrollTop = 0;
+  drawerSecondaryTitle.textContent = "% Recovered";
+  drawerSecondary.textContent =
+    (kpis.capitalRecoveryPct * 100).toFixed(2) + "%";
 }
+
 
 
       
