@@ -273,43 +273,34 @@
   });
 
   // ===============================
-  // IMPORTS (CAN FAIL SAFELY NOW)
-  // ===============================
-  import { loadLoans } from "../js/loadLoans.js";
-  import { renderProjectedWeightedROIChart } from "../js/roiCharts.js";
-  import { renderProjectedTotalNetEarningsChart } from "../js/earningsCharts.js";
-  import { renderLoanAmortChart } from "../js/amortCharts.js";
-
-
-  // ===============================
   // PAGE LOGIC
   // ===============================
   const params = new URLSearchParams(window.location.search);
   let PAGE_USER = params.get("user") || "jeff";
 
-  const loans = await loadLoans(PAGE_USER);
+  // ===============================
+  // NAVIGATION ONLY (NO CHART IMPORTS)
+  // ===============================
+  
+  // ROI
+  document.getElementById("tileROI").addEventListener("click", () => {
+    window.location.href =
+      `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
+  });
+  
+  // Earnings
+  document.getElementById("tileEarnings").addEventListener("click", () => {
+    window.location.href =
+      `../index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
+  });
+  
+  // Amort
+  document.getElementById("tileAmort").addEventListener("click", () => {
+    window.location.href =
+      `../index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
+  });
 
-  renderProjectedWeightedROIChart(
-    loans,
-    document.getElementById("roiChartPreview"),
-    { compact: true }
-  );
-
-  renderProjectedTotalNetEarningsChart(
-    loans,
-    document.getElementById("earningsChartPreview"),
-    { compact: true }
-  );
-
-  const firstLoan = [...loans].sort(
-    (a,b)=>new Date(a.purchaseDate)-new Date(b.purchaseDate)
-  )[0];
-
-  renderLoanAmortChart(
-    firstLoan,
-    document.getElementById("amortChartPreview"),
-    { compact: true }
-  );
+  
 </script>
 
 </body>
