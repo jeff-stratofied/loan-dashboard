@@ -254,57 +254,50 @@
      SCRIPT
      =============================== -->
 <script type="module">
-  import { loadLoans } from "../js/loadLoans.js";
-  import { renderProjectedWeightedROIChart } from "../js/roiCharts.js";
-  import { renderProjectedTotalNetEarningsChart } from "../js/earningsCharts.js";
-  import { renderLoanAmortChart } from "../js/amortCharts.js";
+  // ===============================
+  // THEME INIT (RUNS FIRST)
+  // ===============================
+  const themeToggle = document.getElementById("themeToggle");
 
+  function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+    themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
+  }
+
+  applyTheme(localStorage.getItem("theme") || "light");
+
+  themeToggle.addEventListener("click", () => {
+    const current = document.documentElement.getAttribute("data-theme");
+    applyTheme(current === "dark" ? "light" : "dark");
+  });
+
+  // ===============================
+  // IMPORTS (CAN FAIL SAFELY NOW)
+  // ===============================
+  import { loadLoans } from "./js/loadLoans.js";
+  import { renderProjectedWeightedROIChart } from "./js/roiCharts.js";
+  import { renderProjectedTotalNetEarningsChart } from "./js/earningsCharts.js";
+  import { renderLoanAmortChart } from "./js/amortCharts.js";
+
+  // ===============================
+  // PAGE LOGIC
+  // ===============================
   const params = new URLSearchParams(window.location.search);
   let PAGE_USER = params.get("user") || "jeff";
 
-  const userSelect = document.getElementById("userSelect");
-  userSelect.value = PAGE_USER;
-
-  userSelect.onchange = () => {
-    PAGE_USER = userSelect.value;
-    window.location.search = `?user=${PAGE_USER}`;
-  };
-
-      // ===============================
-    // Theme toggle (ROI/Earnings exact)
-    // ===============================
-    const themeToggle = document.getElementById("themeToggle");
-    
-    function applyTheme(theme) {
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
-      themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
-    }
-    
-    // init theme on load
-    applyTheme(localStorage.getItem("theme") || "light");
-    
-    // toggle
-    themeToggle.addEventListener("click", () => {
-      const current = document.documentElement.getAttribute("data-theme");
-      applyTheme(current === "dark" ? "light" : "dark");
-    });
-
-
-
-  // Load + render
   const loans = await loadLoans(PAGE_USER);
 
   renderProjectedWeightedROIChart(
     loans,
     document.getElementById("roiChartPreview"),
-    { compact:true }
+    { compact: true }
   );
 
   renderProjectedTotalNetEarningsChart(
     loans,
     document.getElementById("earningsChartPreview"),
-    { compact:true }
+    { compact: true }
   );
 
   const firstLoan = [...loans].sort(
@@ -314,24 +307,9 @@
   renderLoanAmortChart(
     firstLoan,
     document.getElementById("amortChartPreview"),
-    { compact:true }
+    { compact: true }
   );
-
-  // Navigation
-  document.getElementById("tileROI").onclick = () => {
-    window.location.href =
-      `index-roi.html?user=${PAGE_USER}&open=projectedROI`;
-  };
-
-  document.getElementById("tileEarnings").onclick = () => {
-    window.location.href =
-      `index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
-  };
-
-  document.getElementById("tileAmort").onclick = () => {
-    window.location.href =
-      `index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
-  };
 </script>
+
 </body>
 </html>
