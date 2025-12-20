@@ -1376,8 +1376,9 @@ resetBtn.addEventListener("click", () => {
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
-    let currentLoan = null;
-    let currentMode = null; // 'loan' or 'kpi'
+    window.currentLoan = null;
+    window.currentMode = null; // 'loan' | 'kpi'
+
 
     function closeDrawer() {
       drawer.classList.remove('open');
