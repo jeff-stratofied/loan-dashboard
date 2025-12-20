@@ -248,6 +248,49 @@
 
 </div>
 
+<!-- ===============================
+     SHARED DRAWER (MATCH AMORT PAGE)
+     =============================== -->
+<div id="drawer" class="drawer" aria-hidden="true">
+  <div class="drawer-body" id="drawerBody">
+    <header class="drawer-header">
+      <h2 id="drawerTitle"></h2>
+      <p id="drawerSub" class="drawer-sub"></p>
+    </header>
+
+    <section class="drawer-kpis">
+      <div>
+        <div class="kpi-label" id="drawerPrimaryTitle"></div>
+        <div class="kpi-value" id="drawerPrimary"></div>
+      </div>
+      <div>
+        <div class="kpi-label" id="drawerSecondaryTitle"></div>
+        <div class="kpi-value" id="drawerSecondary"></div>
+      </div>
+    </section>
+
+    <section class="drawer-chart" id="drawerChartArea"></section>
+
+    <section class="drawer-amort" id="drawerAmortContainer">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Payment</th>
+            <th>Principal</th>
+            <th>Interest</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="amortBody"></tbody>
+      </table>
+    </section>
+
+    <section class="drawer-extra" id="drawerExtra"></section>
+  </div>
+</div>
+
+  
 <div id="tooltip" class="tooltip"></div>
 
 <!-- ===============================
@@ -256,6 +299,20 @@
 <script type="module">
 
   import { buildAmortSchedule } from "../js/loanEngine.js";
+  import { renderAmortLoanDrawer } from "../js/amortLoanDrawer.js";
+
+  // ===============================
+// DRAWER GLOBALS (REQUIRED)
+// ===============================
+window.drawer = document.getElementById("drawer");
+window.drawerBody = document.getElementById("drawerBody");
+window.drawerTitle = document.getElementById("drawerTitle");
+window.drawerSub = document.getElementById("drawerSub");
+window.drawerChartArea = document.getElementById("drawerChartArea");
+window.drawerExtra = document.getElementById("drawerExtra");
+window.drawerAmortContainer = document.getElementById("drawerAmortContainer");
+window.amortBody = document.getElementById("amortBody");
+
 
   // ===============================
 // LOAN INITIALIZATION (MATCH ROI)
@@ -457,14 +514,42 @@ const firstLoan = [...loans].sort(
 
 renderAmortPreview(firstLoan, document.getElementById("amortChartPreview"));
 
+  document
+  .getElementById("amortChartPreview")
+  .addEventListener("click", (e) => {
+    e.stopPropagation();
+    tileAmort.onclick();
+  });
+
 tileROI.onclick = () =>
   location.href = `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
 
 tileEarnings.onclick = () =>
   location.href = `../index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
 
-tileAmort.onclick = () =>
-  location.href = `../index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
+tileAmort.onclick = () => {
+  const firstLoan = [...currentLoans].sort(
+    (a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate)
+  )[0];
+
+  if (!firstLoan) return;
+
+  renderAmortLoanDrawer(firstLoan);
+};
+
+
+  function closeDrawer() {
+  drawer.classList.remove("open");
+  drawer.setAttribute("aria-hidden", "true");
+}
+
+drawer.addEventListener("click", (e) => {
+  if (e.target === drawer) closeDrawer();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeDrawer();
+});
 
   
   
