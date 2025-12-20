@@ -254,6 +254,52 @@
      SCRIPT
      =============================== -->
 <script type="module">
+
+  import { buildAmortSchedule } from "../js/loanEngine.js";
+
+  // ===============================
+// LOAN INITIALIZATION (MATCH ROI)
+// ===============================
+let currentLoans = [];
+
+async function initPortfolioLoans(PAGE_USER) {
+  const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
+  const data = await res.json();
+
+  const rawLoans = (data.loans || []).map(l => ({
+    ...l,
+    id: l.loanId,
+    name: l.loanName ?? `Loan ${l.loanId}`,
+    school: l.school ?? "",
+    loanStartDate: l.loanStartDate || "",
+    termYears: Number(l.termYears ?? 0),
+    graceYears: Number(l.graceYears ?? 0),
+    purchasePrice: Number(l.purchasePrice ?? 0),
+    nominalRate: Number(l.rate ?? l.nominalRate ?? 0),
+    upfrontFee: Number(l.upfrontFee ?? 150),
+    monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
+  }));
+
+  const loansWithAmort = rawLoans.map(l => {
+    const amortSchedule = buildAmortSchedule(l);
+    return {
+      ...l,
+      amort: amortSchedule,
+      user: l.user ?? "jeff",
+      visible: l.visible !== false
+    };
+  });
+
+  // EXACT same filter as ROI
+  currentLoans = loansWithAmort.filter(
+    l => l.user === PAGE_USER && l.visible === true
+  );
+
+  // expose for charts / loaders
+  window.currentLoans = currentLoans;
+}
+
+  
   // ===============================
   // THEME INIT (RUNS FIRST)
   // ===============================
@@ -271,17 +317,6 @@
     const current = document.documentElement.getAttribute("data-theme");
     applyTheme(current === "dark" ? "light" : "dark");
   });
-
-
-  // ===============================
-  // INLINE DATA LOADER (MINIMAL)
-  // ===============================
-    function loadPortfolioLoans() {
-    if (Array.isArray(window.currentLoans)) return window.currentLoans;
-    if (Array.isArray(window.allLoans)) return window.allLoans;
-    throw new Error("No loan data found on page");
-  }
-
 
 
   
@@ -404,7 +439,9 @@ function renderROIChart(loans, el) {
 const params = new URLSearchParams(window.location.search);
 const PAGE_USER = params.get("user") || "jeff";
 
-const loans = loadPortfolioLoans();
+await initPortfolioLoans(PAGE_USER);
+const loans = currentLoans;
+
 
 
 // ROI
