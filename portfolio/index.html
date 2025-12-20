@@ -47,8 +47,6 @@
       --chart-bg:linear-gradient(180deg,#1e293b,#0f172a);
     }
 
-
-
     html,body {
       height:100%;
       margin:0;
@@ -144,6 +142,22 @@
       box-shadow:0 12px 30px rgba(0,0,0,0.18);
     }
 
+.tile-body {
+  flex:1;
+  display:flex;
+}
+
+.mini-drawer {
+  flex:1;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+  overflow:auto;
+  min-height:320px;
+}
+
+    
     .tile-title {
       font-weight:700;
       font-size:14px;
@@ -230,68 +244,33 @@
     <div class="portfolio-tile" id="tileROI">
       <div class="tile-title">Return On Investment</div>
       <div class="tile-sub">View the ROI for your portfolio</div>
-      <div class="tile-chart" id="roiChartPreview"></div>
+      <div class="tile-body">
+  <div class="mini-drawer" id="roiMini"></div>
+</div>
     </div>
 
     <div class="portfolio-tile" id="tileEarnings">
       <div class="tile-title">Portfolio Earnings</div>
       <div class="tile-sub">View current and projected earnings for your portfolio</div>
-      <div class="tile-chart" id="earningsChartPreview"></div>
+      <div class="tile-body">
+  <div class="mini-drawer" id="earningsMini"></div>
+</div>
     </div>
 
     <div class="portfolio-tile" id="tileAmort">
       <div class="tile-title">Loan Amortization Schedules</div>
       <div class="tile-sub">View all loan amortization schedules and total portfolio value</div>
-      <div class="tile-chart" id="amortChartPreview"></div>
+      <div class="tile-body">
+  <div class="mini-drawer" id="amortMini"></div>
+</div>
+
     </div>
   </section>
 
 </div>
 
-<!-- ===============================
-     SHARED DRAWER (MATCH AMORT PAGE)
-     =============================== -->
-<div id="drawer" class="drawer" aria-hidden="true">
-  <div class="drawer-body" id="drawerBody">
-    <header class="drawer-header">
-      <h2 id="drawerTitle"></h2>
-      <p id="drawerSub" class="drawer-sub"></p>
-    </header>
 
-    <section class="drawer-kpis">
-      <div>
-        <div class="kpi-label" id="drawerPrimaryTitle"></div>
-        <div class="kpi-value" id="drawerPrimary"></div>
-      </div>
-      <div>
-        <div class="kpi-label" id="drawerSecondaryTitle"></div>
-        <div class="kpi-value" id="drawerSecondary"></div>
-      </div>
-    </section>
 
-    <section class="drawer-chart" id="drawerChartArea"></section>
-
-    <section class="drawer-amort" id="drawerAmortContainer">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Payment</th>
-            <th>Principal</th>
-            <th>Interest</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody id="amortBody"></tbody>
-      </table>
-    </section>
-
-    <section class="drawer-extra" id="drawerExtra"></section>
-  </div>
-</div>
-
-  
-<div id="tooltip" class="tooltip"></div>
 
 <!-- ===============================
      SCRIPT
@@ -299,7 +278,7 @@
 <script type="module">
 
   import { buildAmortSchedule } from "../js/loanEngine.js";
-  import { renderAmortLoanDrawer } from "../js/drawers/amortLoanDrawer.js";
+  
 
 // ===============================
 // REQUIRED GLOBAL — amort drawer
@@ -317,14 +296,6 @@ window.formatCurrency = function formatCurrency(val) {
   // ===============================
 // DRAWER GLOBALS (REQUIRED)
 // ===============================
-window.drawer = document.getElementById("drawer");
-window.drawerBody = document.getElementById("drawerBody");
-window.drawerTitle = document.getElementById("drawerTitle");
-window.drawerSub = document.getElementById("drawerSub");
-window.drawerChartArea = document.getElementById("drawerChartArea");
-window.drawerExtra = document.getElementById("drawerExtra");
-window.drawerAmortContainer = document.getElementById("drawerAmortContainer");
-window.amortBody = document.getElementById("amortBody");
 
 
   // ===============================
@@ -396,23 +367,15 @@ const loansWithAmort = rawLoans.map(l => {
   // NAVIGATION ONLY (NO CHART IMPORTS)
   // ===============================
   
-  // ROI
-  document.getElementById("tileROI").addEventListener("click", () => {
-    window.location.href =
-      `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
-  });
-  
-  // Earnings
-  document.getElementById("tileEarnings").addEventListener("click", () => {
-    window.location.href =
-      `../index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
-  });
-  
-  // Amort
-  document.getElementById("tileAmort").addEventListener("click", () => {
-    window.location.href =
-      `../index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
-  });
+ document.getElementById("tileROI").onclick = () =>
+  location.href = `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
+
+document.getElementById("tileEarnings").onclick = () =>
+  location.href = `../index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
+
+document.getElementById("tileAmort").onclick = () =>
+  location.href = `../index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
+
 
 function renderROIChart(loans, el) {
   el.innerHTML = "";
@@ -535,37 +498,16 @@ tileROI.onclick = () =>
 tileEarnings.onclick = () =>
   location.href = `../index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
 
-tileAmort.onclick = () => {
-  const firstLoan = [...currentLoans].sort(
-    (a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate)
-  )[0];
+  document.getElementById("roiMini").innerHTML =
+  "<div style='color:var(--muted)'>ROI mini-drawer</div>";
 
-  if (!firstLoan) return;
+document.getElementById("earningsMini").innerHTML =
+  "<div style='color:var(--muted)'>Earnings mini-drawer</div>";
 
-  renderAmortLoanDrawer(firstLoan);
-};
+document.getElementById("amortMini").innerHTML =
+  "<div style='color:var(--muted)'>Amort mini-drawer</div>";
 
-    document
-  .getElementById("amortChartPreview")
-  .addEventListener("click", (e) => {
-    e.stopPropagation();
-    tileAmort.onclick();
-  });
 
-  function closeDrawer() {
-  drawer.classList.remove("open");
-  drawer.setAttribute("aria-hidden", "true");
-}
-
-drawer.addEventListener("click", (e) => {
-  if (e.target === drawer) closeDrawer();
-});
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeDrawer();
-});
-
-  
   
 </script>
 
