@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>My Portfolio</title>
+
+  <!-- ===============================
+       SHARED THEME + PAGE STYLES
+       (copied from ROI/Earnings)
+       =============================== -->
+  <style>
+    :root {
+      --bg:#f8fafc;
+      --surface:#f1f5f9;
+      --card:#ffffff;
+      --border:#e2e8f0;
+      --text:#0f172a;
+      --muted:#64748b;
+      --brand:#0ea5e9;
+      --accent:#7c3aed;
+      --shadow:0 12px 30px rgba(15,23,42,0.06);
+      --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
+      --tooltip-bg:#0f172a;
+      --tooltip-text:#f8fafc;
+    }
+
+    html[data-theme="dark"] {
+      color-scheme:dark;
+      --bg:#0f172a;
+      --surface:#1e293b;
+      --card:#1e293b;
+      --border:#334155;
+      --text:#f1f5f9;
+      --muted:#94a3b8;
+      --brand:#38bdf8;
+      --shadow:rgba(0,0,0,0.45);
+      --chart-bg:linear-gradient(180deg,#1e293b,#0f172a);
+    }
+
+    html,body {
+      height:100%;
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+      color:var(--text);
+    }
+
+    body {
+      background:linear-gradient(180deg,var(--surface),var(--bg));
+      overflow:hidden;
+    }
+
+    html[data-theme="dark"] body {
+      background:linear-gradient(180deg,#0b1224,#0f172a);
+    }
+
+    .app {
+      max-width:1200px;
+      margin:0 auto;
+      padding:16px;
+      height:100%;
+      overflow-y:auto;
+    }
+
+    header {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      margin-bottom:16px;
+    }
+
+    .header-top {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+
+    h1 {
+      font-size:20px;
+      margin:0;
+    }
+
+    .lead {
+      font-size:13px;
+      color:var(--muted);
+      margin:0;
+    }
+
+    .header-controls {
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    .theme-icon {
+      width:38px;
+      height:38px;
+      border-radius:10px;
+      border:1px solid var(--border);
+      background:var(--card);
+      cursor:pointer;
+      font-size:16px;
+    }
+
+    /* ===============================
+       PORTFOLIO GRID
+       =============================== */
+    .portfolio-grid {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+      margin-top:16px;
+    }
+
+    .portfolio-tile {
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:16px;
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      transition:transform .18s ease, box-shadow .18s ease;
+    }
+
+    .portfolio-tile:hover {
+      transform:translateY(-4px);
+      box-shadow:0 12px 30px rgba(0,0,0,0.18);
+    }
+
+    .tile-title {
+      font-weight:700;
+      font-size:14px;
+    }
+
+    .tile-sub {
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .tile-chart {
+      flex:1;
+      border-radius:10px;
+      background:var(--chart-bg);
+      border:1px solid var(--border);
+      padding:8px;
+      min-height:220px;
+    }
+
+    @media(max-width:1000px){
+      .portfolio-grid {
+        grid-template-columns:1fr;
+      }
+    }
+
+    /* Tooltip (shared) */
+    .tooltip {
+      position:fixed;
+      pointer-events:none;
+      background:var(--tooltip-bg);
+      color:var(--tooltip-text);
+      padding:6px 8px;
+      border-radius:6px;
+      font-size:12px;
+      transform:translate(-50%,-120%);
+      display:none;
+      z-index:9999;
+    }
+  </style>
+</head>
+
+<body>
+<div class="app" role="main">
+
+  <!-- ===============================
+       HEADER
+       =============================== -->
+  <header>
+    <div class="header-top">
+      <div>
+        <h1>My Portfolio</h1>
+        <p class="lead">
+          View performance, earnings, and loan schedules across your portfolio.
+        </p>
+      </div>
+
+      <div class="header-controls">
+        <div style="font-size:13px;color:var(--muted)">
+          User:
+          <select id="userSelect" style="
+            border:1px solid var(--border);
+            border-radius:6px;
+            padding:4px 6px;
+            background:var(--card);
+            color:var(--text);
+            font-weight:600;
+          ">
+            <option value="jeff">Jeff Customer</option>
+            <option value="nick">Nick Lender</option>
+            <option value="john">John Investor</option>
+          </select>
+        </div>
+
+        <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===============================
+       PORTFOLIO TILES
+       =============================== -->
+  <section class="portfolio-grid">
+    <div class="portfolio-tile" id="tileROI">
+      <div class="tile-title">Return On Investment</div>
+      <div class="tile-sub">View the ROI for your portfolio</div>
+      <div class="tile-chart" id="roiChartPreview"></div>
+    </div>
+
+    <div class="portfolio-tile" id="tileEarnings">
+      <div class="tile-title">Portfolio Earnings</div>
+      <div class="tile-sub">View current and projected earnings for your portfolio</div>
+      <div class="tile-chart" id="earningsChartPreview"></div>
+    </div>
+
+    <div class="portfolio-tile" id="tileAmort">
+      <div class="tile-title">Loan Amortization Schedules</div>
+      <div class="tile-sub">View all loan amortization schedules and total portfolio value</div>
+      <div class="tile-chart" id="amortChartPreview"></div>
+    </div>
+  </section>
+
+</div>
+
+<div id="tooltip" class="tooltip"></div>
+
+<!-- ===============================
+     SCRIPT
+     =============================== -->
+<script type="module">
+  import { loadLoans } from "../js/loadLoans.js";
+  import { renderProjectedWeightedROIChart } from "../js/roiCharts.js";
+  import { renderProjectedTotalNetEarningsChart } from "../js/earningsCharts.js";
+  import { renderLoanAmortChart } from "../js/amortCharts.js";
+
+  const params = new URLSearchParams(window.location.search);
+  let PAGE_USER = params.get("user") || "jeff";
+
+  const userSelect = document.getElementById("userSelect");
+  userSelect.value = PAGE_USER;
+
+  userSelect.onchange = () => {
+    PAGE_USER = userSelect.value;
+    window.location.search = `?user=${PAGE_USER}`;
+  };
+
+  // Theme toggle (shared behavior)
+  const themeToggle = document.getElementById("themeToggle");
+  themeToggle.onclick = () => {
+    const html = document.documentElement;
+    html.dataset.theme =
+      html.dataset.theme === "dark" ? "light" : "dark";
+  };
+
+  // Load + render
+  const loans = await loadLoans(PAGE_USER);
+
+  renderProjectedWeightedROIChart(
+    loans,
+    document.getElementById("roiChartPreview"),
+    { compact:true }
+  );
+
+  renderProjectedTotalNetEarningsChart(
+    loans,
+    document.getElementById("earningsChartPreview"),
+    { compact:true }
+  );
+
+  const firstLoan = [...loans].sort(
+    (a,b)=>new Date(a.purchaseDate)-new Date(b.purchaseDate)
+  )[0];
+
+  renderLoanAmortChart(
+    firstLoan,
+    document.getElementById("amortChartPreview"),
+    { compact:true }
+  );
+
+  // Navigation
+  document.getElementById("tileROI").onclick = () => {
+    window.location.href =
+      `index-roi.html?user=${PAGE_USER}&open=projectedROI`;
+  };
+
+  document.getElementById("tileEarnings").onclick = () => {
+    window.location.href =
+      `index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
+  };
+
+  document.getElementById("tileAmort").onclick = () => {
+    window.location.href =
+      `index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
+  };
+</script>
+</body>
+</html>
