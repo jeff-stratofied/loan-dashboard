@@ -12,7 +12,15 @@
       "rate": 0.0883,
       "termYears": 10,
       "graceYears": 0,
-      "loanId": "7EO4B3SHJY"
+      "loanId": "7EO4B3SHJY",
+      "events": [
+        {
+          "id": "653175a2-1761-4be4-9f77-5a8ff0c4341c",
+          "type": "prepayment",
+          "date": "2024-07-01",
+          "amount": 5000
+        }
+      ]
     },
     {
       "loanName": "OSU 2024 8.00",
@@ -26,7 +34,8 @@
       "rate": 0.08,
       "termYears": 8,
       "graceYears": 0.5,
-      "loanId": "C0RAT4N23A"
+      "loanId": "C0RAT4N23A",
+      "events": []
     },
     {
       "loanName": "PIT 2024 8.25",
@@ -40,7 +49,8 @@
       "rate": 0.0825,
       "termYears": 12,
       "graceYears": 1.5,
-      "loanId": "HCZB8N2L8Z"
+      "loanId": "HCZB8N2L8Z",
+      "events": []
     },
     {
       "loanName": "CMU 2024 9.50",
@@ -54,7 +64,8 @@
       "rate": 0.095,
       "termYears": 9,
       "graceYears": 1,
-      "loanId": "0MK5TFLK8O"
+      "loanId": "0MK5TFLK8O",
+      "events": []
     },
     {
       "loanName": "MICH 2024 9.00",
@@ -68,7 +79,8 @@
       "rate": 0.09,
       "termYears": 10,
       "graceYears": 0.5,
-      "loanId": "GXCZPI4VJC"
+      "loanId": "GXCZPI4VJC",
+      "events": []
     },
     {
       "loanName": "UCLA 2025 7.30",
@@ -82,7 +94,8 @@
       "rate": 0.073,
       "termYears": 5,
       "graceYears": 0,
-      "loanId": "QVGKDMCI3U"
+      "loanId": "QVGKDMCI3U",
+      "events": []
     },
     {
       "loanName": "USC 2025 7.90",
@@ -96,7 +109,8 @@
       "rate": 0.079,
       "termYears": 7,
       "graceYears": 0.5,
-      "loanId": "BZV8U2T3WU"
+      "loanId": "BZV8U2T3WU",
+      "events": []
     },
     {
       "loanName": "PSU 2025 8.10",
@@ -110,7 +124,8 @@
       "rate": 0.081,
       "termYears": 9,
       "graceYears": 1,
-      "loanId": "HXLBADG3MP"
+      "loanId": "HXLBADG3MP",
+      "events": []
     },
     {
       "loanName": "MICH 2025 8.50",
@@ -124,7 +139,8 @@
       "rate": 0.085,
       "termYears": 8,
       "graceYears": 0.5,
-      "loanId": "S8RIL31Z34"
+      "loanId": "S8RIL31Z34",
+      "events": []
     },
     {
       "loanName": "NYU 2025 8.70",
@@ -138,7 +154,8 @@
       "rate": 0.087,
       "termYears": 10,
       "graceYears": 1,
-      "loanId": "X0S5QZ4WHE"
+      "loanId": "X0S5QZ4WHE",
+      "events": []
     },
     {
       "loanName": "WCC 2014 5.00",
@@ -152,7 +169,8 @@
       "rate": 0.05,
       "termYears": 10,
       "graceYears": 4,
-      "loanId": "48FUE6FARN"
+      "loanId": "48FUE6FARN",
+      "events": []
     },
     {
       "loanName": "WCC 2017 5.00",
@@ -166,7 +184,8 @@
       "rate": 0.05,
       "termYears": 15,
       "graceYears": 4,
-      "loanId": "7Q75NE4HOQ"
+      "loanId": "7Q75NE4HOQ",
+      "events": []
     },
     {
       "loanName": "PSU 2024 9.00",
@@ -180,7 +199,8 @@
       "rate": 0.09,
       "termYears": 10,
       "graceYears": 2,
-      "loanId": "EOJYIFL33F"
+      "loanId": "EOJYIFL33F",
+      "events": []
     },
     {
       "loanName": "USC 2025 7.90",
@@ -194,7 +214,8 @@
       "rate": 0.079,
       "termYears": 7,
       "graceYears": 0.5,
-      "loanId": "BHH0A15A7A"
+      "loanId": "BHH0A15A7A",
+      "events": []
     },
     {
       "loanName": "NYU 2025 8.70",
@@ -208,7 +229,8 @@
       "rate": 0.087,
       "termYears": 10,
       "graceYears": 1,
-      "loanId": "S4I46M5NFY"
+      "loanId": "S4I46M5NFY",
+      "events": []
     },
     {
       "loanName": "CMU 2024 9.00",
@@ -222,7 +244,8 @@
       "rate": 0.09,
       "termYears": 10,
       "graceYears": 1,
-      "loanId": "L5UUOEUJAU"
+      "loanId": "L5UUOEUJAU",
+      "events": []
     },
     {
       "loanName": "MICH 2024 12.00",
@@ -236,7 +259,8 @@
       "rate": 0.12,
       "termYears": 10,
       "graceYears": 0,
-      "loanId": "O3MVZU9I0G"
+      "loanId": "O3MVZU9I0G",
+      "events": []
     }
   ]
 }
