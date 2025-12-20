@@ -12,7 +12,7 @@
   - offsetDateByMonths
 */
 
-
+ 
 
 
     export function renderAmortLoanDrawer(loan) {
