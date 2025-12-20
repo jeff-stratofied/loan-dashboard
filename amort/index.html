@@ -586,7 +586,13 @@ html[data-theme="dark"] .close-btn {
 import { attachSchedules } from "../js/loanEngine.js";
     import { normalizeLoan } from "../js/normalizeLoan.js";
 
+// ---------------------------
+// Drawer state (REQUIRED)
+// ---------------------------
+let currentMode = null;   // 'kpi' | 'loan'
+let currentLoan = null;
 
+    
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
 
