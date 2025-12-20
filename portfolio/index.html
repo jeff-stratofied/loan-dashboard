@@ -442,10 +442,19 @@ function renderAmortMiniDrawer(loan, container) {
   const tbody = container.querySelector("#amortMiniBody");
 
   schedule.slice(0, 12).forEach(r => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td style="padding:6px">${r.monthIndex}</td>
-      <td style="padding:6px
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td style="padding:6px">${r.monthIndex}</td>
+    <td style="padding:6px;text-align:right">
+      ${formatCurrency(r.payment)}
+    </td>
+    <td style="padding:6px;text-align:right">
+      ${formatCurrency(r.balance)}
+    </td>
+  `;
+  tbody.appendChild(tr);
+});
+
 
   
   // ===============================
