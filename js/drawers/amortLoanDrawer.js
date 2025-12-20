@@ -67,7 +67,13 @@ loan.amort.schedule.forEach((r) => {
   const tr = document.createElement('tr');
 
   tr.innerHTML = `
-    <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
+    <td style="text-align:left">
+  ${window.offsetDateByMonths(
+    loan.loanStartDate,
+    r.monthIndex - 1
+  )}
+</td>
+
     <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
     <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
     <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
