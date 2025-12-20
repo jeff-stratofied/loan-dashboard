@@ -703,12 +703,12 @@ html[data-theme="dark"] .drawer-chart{
        Script (organized with sections)
        ==================================== -->
   <script type="module">
-   <script type="module">
   import { buildAmortSchedule } from "../js/loanEngine.js";
   import {
     buildProjectedRoiTimeline,
     createMultiSeriesChart
   } from "../js/charts/projectedWeightedROIChart.js";
+
 
 
   const PAGE_USER =
@@ -1191,11 +1191,12 @@ function computeKPIs(list) {
     return d;
   }
 
+
    // --- Multi-series chart (loan lines + weighted line) ---
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
    ============================================================ */
-
+/*  DELETE if not needed
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
@@ -1397,7 +1398,8 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   svg.appendChild(axis);
   containerEl.appendChild(svg);
 }
-
+DELETE if not needed  */
+      
 // ============================================================
 // ROI SPREAD CHART (loan lines ONLY — no weighted line)
 // ============================================================
