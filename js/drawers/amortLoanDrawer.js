@@ -390,5 +390,5 @@ drawer.setAttribute('aria-hidden', 'false');
 drawerBody.scrollTop = 0;
 
   drawerChartArea.appendChild(svg);
-});
+}
 
