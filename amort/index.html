@@ -273,6 +273,17 @@
       cursor:pointer;
       transition:background-color .25s ease, color .25s ease;
     }
+    .close-btn:hover{
+  background:var(--card);
+}
+
+.drawer-head{
+  padding:20px;
+  flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+
+    
     .drawer h2{
       margin:0 0 4px;
       font-size:20px;
@@ -288,8 +299,14 @@
   }
 
 
-    .drawer-body,
-    #drawerBody{ flex:1 1 auto; overflow-y:auto; overflow-x:hidden; padding:0 20px 20px; }
+   .drawer-body,
+#drawerBody{
+  flex:1 1 auto;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:20px;
+}
+
 
     .drawer,
     .drawer-body,
@@ -592,6 +609,24 @@ import { attachSchedules } from "../js/loanEngine.js";
 let currentMode = null;   // 'kpi' | 'loan'
 let currentLoan = null;
 
+    // ===============================
+// GLOBAL DRAWER STATE (REQUIRED)
+// ===============================
+let currentMode = null;   // 'loan' | 'kpi'
+let currentLoan = null;
+
+const drawer = document.getElementById('drawer');
+const drawerBody = document.getElementById('drawerBody');
+const drawerTitle = document.getElementById('drawerTitle');
+const drawerSub = document.getElementById('drawerSub');
+const drawerChartArea = document.getElementById('drawerChartArea');
+const drawerExtra = document.getElementById('drawerExtra');
+const drawerPrimaryTitle = document.getElementById('drawerPrimaryTitle');
+const drawerPrimary = document.getElementById('drawerPrimary');
+const drawerSecondaryTitle = document.getElementById('drawerSecondaryTitle');
+const drawerSecondary = document.getElementById('drawerSecondary');
+const closeBtn = document.getElementById('closeBtn');
+
     
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
@@ -697,6 +732,36 @@ function buildStaticLoans() {
         y: s.balance
       }));
 
+
+// ===============================
+// DRAWER CLOSE / RESET (ROI MATCH)
+// ===============================
+function closeDrawer() {
+  drawer.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
+  currentMode = null;
+  currentLoan = null;
+}
+
+closeBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  closeDrawer();
+});
+
+// click outside drawer closes it
+document.addEventListener('click', (e) => {
+  if (!drawer.classList.contains('open')) return;
+  if (drawer.contains(e.target)) return;
+  closeDrawer();
+});
+
+// escape key closes drawer
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrawer();
+});
+
+
+    
     return {
       ...l,
       loanName: "Loan " + l.loanId,
@@ -1371,7 +1436,6 @@ function openDrawerForLoan(loan) {
   currentMode = 'loan';
   currentLoan = loan;
 
-  // ---------- HEADER ----------
   drawerTitle.textContent = loan.loanName;
   drawerSub.innerHTML = `
     <div>${loan.school || ''}</div>
@@ -1387,111 +1451,36 @@ function openDrawerForLoan(loan) {
   drawerSecondaryTitle.textContent = 'Rate';
   drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
 
-  // ---------- RESET CONTENT (LOAN-SAFE) ----------
+  // reset content safely
   drawerChartArea.innerHTML = '';
   drawerExtra.style.display = 'block';
   amortBody.innerHTML = '';
 
-  // ---------- AMORT TABLE ----------
-  const purchaseDate = new Date(loan.purchaseDate + 'T00:00:00');
-
+  // ---------------------------
+  // AMORT TABLE
+  // ---------------------------
   loan.amort.schedule.forEach(r => {
-    const rowDate = new Date(loan.loanStartDate + 'T00:00:00');
-    rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
-
-    const isBefore = rowDate < purchaseDate;
-    const isPurchase =
-      rowDate.getTime() === purchaseDate.getTime();
-
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td style="text-align:left">
-        ${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}
-      </td>
+      <td>${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
       <td>$${r.payment.toFixed(2)}</td>
       <td>$${r.principalPaid.toFixed(2)}</td>
       <td>$${r.interest.toFixed(2)}</td>
       <td>$${r.balance.toFixed(2)}</td>
     `;
-
-    if (isBefore) tr.style.opacity = '0.45';
-
-    if (isPurchase) {
-      tr.querySelectorAll('td').forEach(td => {
-        td.style.borderTop = '2px solid #22c55e';
-      });
-    }
-
     amortBody.appendChild(tr);
   });
 
-  // ---------- CHART ----------
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const w = 520, h = 260, pad = 36;
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
+  // ---------------------------
+  // AMORT CHART
+  // ---------------------------
+  renderAmortChart(drawerChartArea, loan);
 
-  const sched = loan.amort.schedule;
-  const series = {
-    bal: sched.map(s => s.balance),
-    p: sched.map(s => s.cumPrincipal),
-    i: sched.map(s => s.cumInterest),
-    t: sched.map(s => s.cumTotal)
-  };
-
-  const allY = [...series.bal, ...series.p, ...series.i, ...series.t];
-  const minY = Math.min(...allY);
-  const maxY = Math.max(...allY);
-  const range = Math.max(1, maxY - minY);
-
-  const stepX = (w - pad * 2) / Math.max(1, sched.length - 1);
-  const toXY = (y, i) => [
-    pad + i * stepX,
-    pad + (h - pad * 2) - ((y - minY) / range) * (h - pad * 2)
-  ];
-
-  function path(arr) {
-    return arr.map((y, i) => {
-      const [x, yy] = toXY(y, i);
-      return `${i ? 'L' : 'M'} ${x} ${yy}`;
-    }).join(' ');
-  }
-
-  // grid
-  for (let g = 0; g <= 4; g++) {
-    const y = pad + g * ((h - pad * 2) / 4);
-    const l = document.createElementNS(svgNS, 'line');
-    l.setAttribute('x1', pad);
-    l.setAttribute('x2', w - pad);
-    l.setAttribute('y1', y);
-    l.setAttribute('y2', y);
-    l.setAttribute('stroke', '#e5e7eb');
-    svg.appendChild(l);
-  }
-
-  const draw = (d, c, w) => {
-    const p = document.createElementNS(svgNS, 'path');
-    p.setAttribute('d', d);
-    p.setAttribute('fill', 'none');
-    p.setAttribute('stroke', c);
-    p.setAttribute('stroke-width', w);
-    svg.appendChild(p);
-  };
-
-  draw(path(series.bal), '#0f172a', 2);
-  draw(path(series.p), '#06b6d4', 1.6);
-  draw(path(series.i), '#a78bfa', 1.6);
-  draw(path(series.t), '#fb7185', 1.4);
-
-  drawerChartArea.appendChild(svg);
-
-  // ---------- OPEN ----------
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
 
