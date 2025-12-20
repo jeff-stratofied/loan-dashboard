@@ -2694,32 +2694,39 @@ function renderCapitalRecoveryDrawer() {
   // --------------------------------------------------
   // Build per-loan recovery series
   // --------------------------------------------------
-  const perLoanSeries = {};
-  const datesSet = new Set();
+const loanSeriesList = [];
+const datesSet = new Set();
 
-  let totalRecovered = 0;
-  let totalInvested = 0;
+let totalRecovered = 0;
+let totalInvested = 0;
 
-  currentLoans.forEach(l => {
-    if (!l.amort || !l.amort.schedule) return;
+currentLoans.forEach(l => {
+  if (!l.amort || !l.amort.schedule) return;
 
-    let cumPrincipal = 0;
+  let cumPrincipal = 0;
 
-    perLoanSeries[l.id] = l.amort.schedule
-      .filter(r => r.isOwned)
-      .map(r => {
-        cumPrincipal += r.principalPaid || 0;
-        datesSet.add(+r.loanDate);
+  const data = l.amort.schedule
+    .filter(r => r.isOwned)
+    .map(r => {
+      cumPrincipal += r.principalPaid || 0;
+      datesSet.add(+r.loanDate);
 
-        return {
-          date: r.loanDate,
-          value: l.purchasePrice ? cumPrincipal / l.purchasePrice : 0
-        };
-      });
+      return {
+        date: r.loanDate,
+        y: l.purchasePrice ? cumPrincipal / l.purchasePrice : 0
+      };
+    });
 
-    totalRecovered += cumPrincipal;
-    totalInvested += l.purchasePrice;
+  loanSeriesList.push({
+    id: l.id,
+    color: window.KPI_COLOR_MAP[l.id],
+    data
   });
+
+  totalRecovered += cumPrincipal;
+  totalInvested += l.purchasePrice;
+});
+
 
   const dates = Array.from(datesSet)
     .sort((a, b) => a - b)
@@ -2770,7 +2777,7 @@ function renderCapitalRecoveryDrawer() {
   // --------------------------------------------------
   createMultiSeriesChart(
     drawerChartArea,
-    perLoanSeries,
+    loanSeriesList,
     weightedSeries,
     {
       weightedColor: "#000",
@@ -2778,6 +2785,7 @@ function renderCapitalRecoveryDrawer() {
       dates
     }
   );
+
 
   // --------------------------------------------------
   // Table
