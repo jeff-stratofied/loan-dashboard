@@ -514,13 +514,6 @@ const firstLoan = [...loans].sort(
 
 renderAmortPreview(firstLoan, document.getElementById("amortChartPreview"));
 
-  document
-  .getElementById("amortChartPreview")
-  .addEventListener("click", (e) => {
-    e.stopPropagation();
-    tileAmort.onclick();
-  });
-
 tileROI.onclick = () =>
   location.href = `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
 
@@ -537,6 +530,12 @@ tileAmort.onclick = () => {
   renderAmortLoanDrawer(firstLoan);
 };
 
+    document
+  .getElementById("amortChartPreview")
+  .addEventListener("click", (e) => {
+    e.stopPropagation();
+    tileAmort.onclick();
+  });
 
   function closeDrawer() {
   drawer.classList.remove("open");
