@@ -16,8 +16,9 @@
 
 
     export function renderAmortLoanDrawer(loan) {
-      currentMode = 'loan';
-      currentLoan = loan;
+      window.currentMode = 'loan';
+      window.currentLoan = loan;
+
       drawerExtra.style.display = 'block';
 
 
