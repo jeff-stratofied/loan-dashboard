@@ -12,6 +12,32 @@
   - offsetDateByMonths
 */
  
+// -------------------------------
+// LOCAL helpers (module-safe)
+// -------------------------------
+function monthsBetween(startDateStr, endDate = new Date()) {
+  const start = new Date(startDateStr + "T00:00:00");
+  let months =
+    (endDate.getFullYear() - start.getFullYear()) * 12 +
+    (endDate.getMonth() - start.getMonth()) +
+    1;
+  return Math.max(1, months);
+}
+
+function getCurrentMonthForLoanLocal(loan) {
+  if (!loan?.amort?.schedule?.length) return 1;
+  const months = monthsBetween(loan.loanStartDate);
+  return Math.min(months, loan.amort.schedule.length);
+}
+
+function chartDateLabelLocal(startDateStr, monthIndex) {
+  const d = new Date(startDateStr + "T00:00:00");
+  d.setMonth(d.getMonth() + (monthIndex - 1));
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric"
+  });
+}
 
 
     export function renderAmortLoanDrawer(loan) {
@@ -201,7 +227,7 @@ loan.amort.schedule.forEach((r) => {
       svg.appendChild(elT);
 
             // current date marker based on today's date vs. this loan's purchase date
-      const curMonthForLoan = getCurrentMonthForLoan(loan);
+      const curMonthForLoan = getCurrentMonthForLoanLocal(loan);
       const maxMonth = schedule.length;
       const curX = pad + (Math.max(1, Math.min(curMonthForLoan, maxMonth)) - 1) * stepX;
 
@@ -267,7 +293,11 @@ svg.addEventListener('mousemove', (ev) => {
   });
 
   // Calendar date label
-  const dateLabel = chartDateLabel(loan.loanStartDate, row.monthIndex);
+  const dateLabel = chartDateLabelLocal(
+  loan.loanStartDate,
+  row.monthIndex
+);
+
 
   // Tooltip
   tooltip.style.display = 'block';
