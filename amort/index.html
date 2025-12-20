@@ -242,21 +242,19 @@
       right:0;
       top:0;
       height:100vh;
-      max-width:760px;
-      width:760px;
+      width:560px;
       background:var(--card);
-      border-left:1px solid var(--border);
-      box-shadow:-28px 0 80px var(--drawer-shadow);
+      box-shadow:-28px 0 80px rgba(2,6,23,0.14);
       transform:translateX(110%);
-      transition:transform .28s cubic-bezier(.2,.9,.3,1),
-                 background-color .25s ease, color .25s ease,
-                 border-color .25s ease, box-shadow .25s ease;
+      transition:transform .28s cubic-bezier(.2,.9,.3,1), background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+      z-index:90;
+      overflow:hidden;
+      padding:0;
+      border-left:1px solid var(--border);
       display:flex;
       flex-direction:column;
-      z-index:120;
     }
-    .drawer.open{ transform:translateX(0); }
-
+    .drawer.open{ transform:translateX(0) }
 
        .drawer-header {
       padding:20px;
@@ -305,17 +303,19 @@
     .drawer-footer .actions{ justify-content:flex-start; }
 
     .drawer-chart{
-      height:260px;
+      height:220px;
       background:var(--chart-bg);
       border-radius:8px;
-      border:1px solid rgba(15,23,42,0.06);
-      display:block;
+      border:1px solid rgba(15,23,42,0.03);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:8px;
       position:relative;
       padding:8px;
-      margin-bottom:12px;
       box-shadow:0 6px 18px rgba(15,23,42,0.06);
+      transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
-
 
     /* KPI drawer table row hover (match ROI / Earnings) */
     #drawerExtra table tbody tr:hover {
@@ -501,83 +501,72 @@ html[data-theme="dark"] .close-btn {
   </div>
 
   <!-- Right drawer -->
-<aside id="drawer" class="drawer" aria-hidden="true">
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div class="drawer-head">
+        <div>
+          <h2 id="drawerTitle">Drawer</h2>
+          <div class="muted" id="drawerSub">details</div>
+        </div>
 
-  <div class="drawer-head">
-    <div>
-      <h2 id="drawerTitle"></h2>
-      <div class="muted" id="drawerSub"></div>
-    </div>
-
-    <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn" id="downloadCsvBtn">Download CSV</button>
-      <button class="close-btn" id="closeBtn">✕</button>
-    </div>
-  </div>
-
-  <div id="drawerBody" class="drawer-body">
-
-    <!-- Chart -->
-    <div class="drawer-chart">
-      <div id="drawerChartArea" style="width:100%;height:100%;"></div>
-    </div>
-
-    <!-- KPI cards -->
-    <div style="display:flex; gap:10px; margin-bottom:12px;">
-      <div style="flex:1;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);">
-        <div class="muted-small" id="drawerPrimaryTitle"></div>
-        <div class="main-val" id="drawerPrimary"></div>
-      </div>
-
-      <div style="width:120px;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);">
-        <div class="muted-small" id="drawerSecondaryTitle"></div>
-        <div class="main-val" id="drawerSecondary"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="downloadCsvBtn">Download CSV</button>
+          <button class="close-btn" id="closeBtn" aria-label="Close drawer">✕</button>
+        </div>
       </div>
     </div>
 
-    <!-- Amortization table -->
-    <div id="drawerExtra">
-      <h3 style="margin-top:8px">Amortization</h3>
+    <div id="drawerBody" class="drawer-body">
+      <div class="drawer-chart" id="drawerChartArea"></div>
+      <div class="legend" id="drawerLegend" style="display:none"></div>
 
-      <div class="small" style="margin:4px 0 8px 0;">
-        <span style="
-          display:inline-block;
-          width:10px;
-          height:2px;
-          background:#22c55e;
-          vertical-align:middle;
-          margin-right:6px;
-        "></span>
-        Green line indicates the month the loan was purchased
+      <div style="display:flex;gap:10px;margin-bottom:8px">
+        <div style="flex:1;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--muted)" id="drawerPrimaryTitle">Purchase Price</div>
+          <div id="drawerPrimary" style="font-weight:800;font-size:18px"></div>
+        </div>
+        <div style="width:120px;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--muted)" id="drawerSecondaryTitle">Rate</div>
+          <div id="drawerSecondary" style="font-weight:800;font-size:16px"></div>
+        </div>
       </div>
 
-      <div class="amort-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Payment</th>
-              <th>Principal</th>
-              <th>Interest</th>
-              <th>Balance</th>
-            </tr>
-          </thead>
-          <tbody id="amortBody"></tbody>
-        </table>
+      <div id="drawerExtra"></div>
+
+      <div id="drawerAmortContainer">
+        <h3 style="margin-top:8px">Amortization</h3>
+        <!-- Purchase marker note -->
+        <div class="small" style="margin:4px 0 8px 0;">
+          <span style="
+            display:inline-block;
+            width:10px;
+            height:2px;
+            background:#22c55e;
+            vertical-align:middle;
+            margin-right:6px;
+          "></span>
+          Green line indicates the month the loan was purchased
+        </div>
+        <div class="amort-wrap" id="amortWrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th><th>Payment</th><th>Principal</th><th>Interest</th><th>Balance</th>
+              </tr>
+            </thead>
+            <tbody id="amortBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
-  </div>
-
-  <div class="drawer-footer">
-    <div class="actions">
-      <button class="btn" id="printBtn">Print</button>
-      <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
+    <div class="drawer-footer">
+      <div class="actions">
+        <button class="btn" id="printBtn">Print</button>
+        <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
+      </div>
     </div>
-  </div>
-
-</aside>
-
+  </aside>
 
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
