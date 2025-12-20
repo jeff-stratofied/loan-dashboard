@@ -237,24 +237,36 @@
     svg.sparkline{ width:170px; height:48px; display:block }
 
     /* Drawer */
-    .drawer{
-      position:fixed;
-      right:0;
-      top:0;
-      height:100vh;
-      width:560px;
-      background:var(--card);
-      box-shadow:-28px 0 80px rgba(2,6,23,0.14);
-      transform:translateX(110%);
-      transition:transform .28s cubic-bezier(.2,.9,.3,1), background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
-      z-index:90;
-      overflow:hidden;
-      padding:0;
-      border-left:1px solid var(--border);
-      display:flex;
-      flex-direction:column;
-    }
-    .drawer.open{ transform:translateX(0) }
+ .drawer{
+  position:fixed;
+  right:0;
+  top:0;
+  height:100vh;
+
+  /* ✅ MATCH ROI DRAWER */
+  width:760px;
+  max-width:760px;
+
+  background:var(--card);
+  border-left:1px solid var(--border);
+  box-shadow:-28px 0 80px var(--drawer-shadow);
+
+  transform:translateX(110%);
+  transition:
+    transform .28s cubic-bezier(.2,.9,.3,1),
+    background-color .25s ease,
+    color .25s ease,
+    border-color .25s ease,
+    box-shadow .25s ease;
+
+  display:flex;
+  flex-direction:column;
+  z-index:120;
+}
+.drawer.open{
+  transform:translateX(0);
+}
+
 
        .drawer-header {
       padding:20px;
