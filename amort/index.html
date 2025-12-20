@@ -1360,7 +1360,6 @@ resetBtn.addEventListener("click", () => {
     const drawerBody = document.getElementById('drawerBody');
     const amortBody = document.getElementById('amortBody');
     const drawerChartArea = document.getElementById('drawerChartArea');
-    const drawerLegend = document.getElementById('drawerLegend');
     const drawerExtra = document.getElementById('drawerExtra');
 
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
@@ -1464,17 +1463,9 @@ loan.amort.schedule.forEach((r) => {
 });
 
 
-
-
       /* build drawer chart (multi-line with legend & current date marker) */
       drawerChartArea.innerHTML = '';
-      drawerLegend.style.display = 'flex';
-      drawerLegend.innerHTML = `
-        <div class="item"><span class="sw" style="background:#0f172a"></span>Balance</div>
-        <div class="item"><span class="sw" style="background:#06b6d4"></span>Cum Principal</div>
-        <div class="item"><span class="sw" style="background:#a78bfa"></span>Cum Interest</div>
-        <div class="item"><span class="sw" style="background:#fb7185"></span>Total</div>
-      `;
+    
 
       const svgNS = 'http://www.w3.org/2000/svg';
       const w = 480, h = 240, pad = 28;
@@ -1695,7 +1686,6 @@ function renderDistributionDrawer() {
 
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'none';
 
   // --------------------------------------------------
   // GROUP LOANS BY PURCHASE MONTH
@@ -1951,7 +1941,6 @@ drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
 
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'none';
 
   /* ============================
      SVG + scale
@@ -2213,7 +2202,6 @@ function renderRatesDrawer() {
 
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'none';
 
   // ---------------------------------
   // KPI2 — STACKED RATE HISTOGRAM
@@ -2436,7 +2424,6 @@ function renderPaymentsDrawer() {
 
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'none';
 
   // --------------------------------------------------
   // BUILD MONTH SERIES (calendar-aligned)
