@@ -15,6 +15,10 @@
 
 
     export function renderAmortLoanDrawer(loan) {
+        if (typeof window.formatCurrency !== 'function') {
+          throw new Error('formatCurrency is not available on window');
+        }
+      
       window.currentMode = 'loan';
       window.currentLoan = loan;
 
@@ -30,7 +34,10 @@
       <div>${loan.school || ""}</div>
       <div>
         Purchased ${loan.purchaseDate}
-        • Orig Loan Amt ${formatCurrency(loan.purchasePrice || loan.origLoanAmt || 0)}
+        • Orig Loan Amt ${window.formatCurrency(
+  loan.purchasePrice || loan.origLoanAmt || 0
+)}
+
       </div>
     `;
 
