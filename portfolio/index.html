@@ -301,6 +301,19 @@
   import { buildAmortSchedule } from "../js/loanEngine.js";
   import { renderAmortLoanDrawer } from "../js/drawers/amortLoanDrawer.js";
 
+// ===============================
+// REQUIRED GLOBAL — amort drawer
+// ===============================
+window.formatCurrency = function formatCurrency(val) {
+  const n = Number(val) || 0;
+  return `$${n.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })}`;
+};
+
+
+  
   // ===============================
 // DRAWER GLOBALS (REQUIRED)
 // ===============================
