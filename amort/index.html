@@ -315,19 +315,16 @@
     .drawer-footer .actions{ justify-content:flex-start; }
 
     .drawer-chart{
-      height:220px;
-      background:var(--chart-bg);
-      border-radius:8px;
-      border:1px solid rgba(15,23,42,0.03);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      margin-bottom:8px;
-      position:relative;
-      padding:8px;
-      box-shadow:0 6px 18px rgba(15,23,42,0.06);
-      transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
-    }
+  height:260px;
+  background:var(--chart-bg);
+  border-radius:8px;
+  border:1px solid rgba(15,23,42,0.06);
+  display:block;              /* 🔑 IMPORTANT */
+  position:relative;
+  padding:8px;
+  margin-bottom:12px;
+  box-shadow:0 6px 18px rgba(15,23,42,0.06);
+}
 
     /* KPI drawer table row hover (match ROI / Earnings) */
     #drawerExtra table tbody tr:hover {
@@ -529,7 +526,9 @@ html[data-theme="dark"] .close-btn {
     </div>
 
     <div id="drawerBody" class="drawer-body">
-      <div class="drawer-chart" id="drawerChartArea"></div>
+      <div class="drawer-chart">
+  <div id="drawerChartArea" style="width:100%; height:100%;"></div>
+</div>
       <div class="legend" id="drawerLegend" style="display:none"></div>
 
       <div style="display:flex;gap:10px;margin-bottom:8px">
@@ -1660,9 +1659,19 @@ svg.addEventListener('mouseleave', () => {
 
 // These lines stay at the end of the drawer-opening function
 drawerChartArea.appendChild(svg);
+
+// OPEN FIRST
 drawer.classList.add('open');
 drawer.setAttribute('aria-hidden', 'false');
 drawerBody.scrollTop = 0;
+
+// 🔑 FORCE RE-MEASURE AFTER DRAWER IS VISIBLE
+requestAnimationFrame(() => {
+  // rebuild the chart at full width
+  drawerChartArea.innerHTML = '';
+  drawerChartArea.appendChild(svg);
+});
+
 
 } // <-- THIS closes openDrawerForLoan(loan) — required
 
@@ -2109,8 +2118,6 @@ drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
   svg.addEventListener('mouseleave', hideTPVHover);
   drawerChartArea.addEventListener('mouseleave', hideTPVHover);
 
-  drawerChartArea.appendChild(svg);
-
   /* ============================
      Snapshot table (unchanged)
   ============================ */
@@ -2190,9 +2197,19 @@ drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
   </div>
 `;
 
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  drawerBody.scrollTop = 0;
+// OPEN FIRST — make drawer visible
+drawer.classList.add('open');
+drawer.setAttribute('aria-hidden', 'false');
+
+// 🔑 RENDER AFTER LAYOUT SETTLES
+requestAnimationFrame(() => {
+  drawerChartArea.innerHTML = '';
+  drawerChartArea.appendChild(svg);
+});
+
+// reset scroll
+drawerBody.scrollTop = 0;
+
 }
 
 
@@ -2321,7 +2338,6 @@ function renderRatesDrawer() {
     svg.appendChild(text);
   }
 
-  drawerChartArea.appendChild(svg);
 
   // ---------------------------------
   // KPI2 TABLE — SORTED BY RATE
@@ -2420,9 +2436,19 @@ function renderRatesDrawer() {
       });
     });
 
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  drawerBody.scrollTop = 0;
+  // OPEN FIRST — make drawer visible
+drawer.classList.add('open');
+drawer.setAttribute('aria-hidden', 'false');
+
+// 🔑 RENDER AFTER LAYOUT SETTLES
+requestAnimationFrame(() => {
+  drawerChartArea.innerHTML = '';
+  drawerChartArea.appendChild(svg);
+});
+
+// reset scroll
+drawerBody.scrollTop = 0;
+
 }
 
 
@@ -2623,7 +2649,6 @@ function renderPaymentsDrawer() {
     tooltip.style.display = 'none';
   });
 
-  drawerChartArea.appendChild(svg);
 
   // --------------------------------------------------
   // TABLE
@@ -2652,9 +2677,19 @@ function renderPaymentsDrawer() {
     </div>
   `;
 
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  drawerBody.scrollTop = 0;
+// OPEN FIRST — make drawer visible
+drawer.classList.add('open');
+drawer.setAttribute('aria-hidden', 'false');
+
+// 🔑 RENDER AFTER LAYOUT SETTLES
+requestAnimationFrame(() => {
+  drawerChartArea.innerHTML = '';
+  drawerChartArea.appendChild(svg);
+});
+
+// reset scroll
+drawerBody.scrollTop = 0;
+
 }
 
 
