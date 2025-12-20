@@ -39,6 +39,86 @@ function chartDateLabelLocal(startDateStr, monthIndex) {
   });
 }
 
+export function renderAmortLoanChart({
+  loan,
+  container,
+  height = 240,
+  compact = false
+}) {
+  container.innerHTML = '';
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const h = height;
+  const pad = compact ? 20 : 28;
+  const w = container.getBoundingClientRect().width || 480;
+
+  const schedule = loan.amort?.schedule || [];
+  if (!schedule.length) {
+    container.innerHTML = "<p>No schedule data available</p>";
+    return;
+  }
+
+  const balances = schedule.map(s => ({ x: s.monthIndex, y: s.balance }));
+  const cumP     = schedule.map(s => ({ x: s.monthIndex, y: s.cumPrincipal }));
+  const cumI     = schedule.map(s => ({ x: s.monthIndex, y: s.cumInterest }));
+  const cumT     = schedule.map(s => ({ x: s.monthIndex, y: s.cumTotal }));
+
+  const allYs = [
+    ...balances.map(p => p.y),
+    ...cumP.map(p => p.y),
+    ...cumI.map(p => p.y),
+    ...cumT.map(p => p.y)
+  ];
+
+  const maxY = Math.max(...allYs);
+  const minY = Math.min(...allYs);
+  const range = Math.max(1, maxY - minY);
+
+  const stepX = (w - pad * 2) / Math.max(1, schedule.length - 1);
+
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+
+  function toXY(point, i) {
+    const x = pad + i * stepX;
+    const y = pad + (h - pad * 2) -
+      ((point.y - minY) / range) * (h - pad * 2);
+    return [x, y];
+  }
+
+  function buildPath(arr) {
+    return arr.map((p, i) => {
+      const [x, y] = toXY(p, i);
+      return (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+    }).join(' ');
+  }
+
+  const series = [
+    { data: balances, color: '#0f172a', width: 2 },
+    { data: cumP,     color: '#06b6d4', width: 1.6 },
+    { data: cumI,     color: '#a78bfa', width: 1.6 },
+    { data: cumT,     color: '#fb7185', width: 1.4 }
+  ];
+
+  series.forEach(s => {
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', buildPath(s.data));
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', s.color);
+    path.setAttribute('stroke-width', s.width);
+    svg.appendChild(path);
+  });
+
+  // ❌ no hover / tooltip in compact mode
+  if (!compact) {
+    // leave hover logic in renderAmortLoanDrawer
+  }
+
+  container.appendChild(svg);
+}
+
 
     export function renderAmortLoanDrawer(loan) {
 // ===============================
@@ -140,9 +220,6 @@ loan.amort.schedule.forEach((r) => {
 
   amortBody.appendChild(tr);
 });
-
-
-
 
       /* build drawer chart (multi-line with legend & current date marker) */
       drawerChartArea.innerHTML = '';
@@ -246,8 +323,6 @@ schedule.forEach((row, i) => {
   );
   svg.appendChild(label);
 });
-
-
       
       function toXY(point, i) {
         const x = pad + i * stepX;
@@ -410,6 +485,14 @@ drawer.classList.add('open');
 drawer.setAttribute('aria-hidden', 'false');
 drawerBody.scrollTop = 0;
 
-  drawerChartArea.appendChild(svg);
+  drawerLegend.style.display = 'flex';
+
+renderAmortLoanChart({
+  loan,
+  container: drawerChartArea,
+  height: 240,
+  compact: false
+});
+
 }
 
