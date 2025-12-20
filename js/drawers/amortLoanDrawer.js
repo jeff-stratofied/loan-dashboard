@@ -42,20 +42,23 @@ function chartDateLabelLocal(startDateStr, monthIndex) {
 
     export function renderAmortLoanDrawer(loan) {
 // ===============================
-// RESET DRAWER STATE (CRITICAL)
-// ===============================
-currentMode = 'loan';
-currentLoan = loan;
+  // HARD RESET DRAWER STATE
+  // ===============================
+  currentMode = 'loan';
+  currentLoan = loan;
 
-// SHOW amort section again (KPI drawers hide it)
-drawerAmortContainer.style.display = 'block';
+  // Reset all shared regions
+  drawerChartArea.innerHTML = '';
+  drawerExtra.innerHTML = '';
+  drawerLegend.style.display = 'none';
 
-// CLEAR KPI leftovers
-drawerExtra.innerHTML = '';
-drawerLegend.style.display = 'none';
+  // Force amort section visible
+  drawerAmortContainer.style.display = 'block';
 
-// CLEAR chart area before re-render
-drawerChartArea.innerHTML = '';
+  // 🔴 CRITICAL: clear amort table rows
+  if (window.amortBody) {
+    amortBody.innerHTML = '';
+  }
 
       
         if (typeof window.formatCurrency !== 'function') {
