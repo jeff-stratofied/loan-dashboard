@@ -3120,13 +3120,14 @@ function renderCapitalRecoveryDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
 
-  // open drawer
+  // -----------------------------
+  // Open + reset drawer
+  // -----------------------------
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawer.classList.remove('loan-mode');
 
-  // reset drawer areas
-  drawerAmortContainer.style.display = 'none'; // KPI drawer: hide amort table
+  drawerAmortContainer.style.display = 'none'; // KPI drawer
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
@@ -3139,7 +3140,7 @@ function renderCapitalRecoveryDrawer() {
   TODAY.setHours(23, 59, 59, 999);
 
   // --------------------------------------------------
-  // Build per-loan recovery series (to TODAY)
+  // Build per-loan recovery series
   // --------------------------------------------------
   const loanSeriesList = [];
   const datesSet = new Set();
@@ -3160,14 +3161,13 @@ function renderCapitalRecoveryDrawer() {
             : 0;
 
         datesSet.add(+r.loanDate);
-
         return { date: r.loanDate, y: pct };
       });
 
     loanSeriesList.push({
       id: l.id,
       name: l.name,
-      color: window.KPI_COLOR_MAP?.[l.id],
+      color: window.KPI_COLOR_MAP?.[l.id] || '#64748b',
       data: series
     });
   });
@@ -3177,7 +3177,7 @@ function renderCapitalRecoveryDrawer() {
     .map(ms => new Date(ms));
 
   // --------------------------------------------------
-  // Portfolio cumulative recovery line (black)
+  // Portfolio cumulative line
   // --------------------------------------------------
   const totalInvested = currentLoans.reduce(
     (s, l) => s + (l.purchasePrice || 0),
@@ -3233,17 +3233,17 @@ function renderCapitalRecoveryDrawer() {
     ((kpis.capitalRecoveryPct || 0) * 100).toFixed(2) + "%";
 
   // --------------------------------------------------
-  // Capital Recovery — By Loan table
+  // Capital Recovery table
   // --------------------------------------------------
   let html = `
     <div class="amort-wrap">
       <table class="kpi-table" id="capitalRecoveryTable">
         <thead>
           <tr>
-            <th>Loan</th>
-            <th>Cap Recovered</th>
-            <th>% Recovered</th>
-            <th>Remaining</th>
+            <th style="text-align:left">Loan</th>
+            <th style="text-align:left">Cap Recovered</th>
+            <th style="text-align:left">% Recovered</th>
+            <th style="text-align:left">Remaining</th>
           </tr>
         </thead>
         <tbody>
@@ -3266,23 +3266,38 @@ function renderCapitalRecoveryDrawer() {
 
     html += `
       <tr data-loan-id="${l.id}">
-        <td>
-          <div class="loan-cell">
-            <span class="color-swatch" style="background:${color}"></span>
-            <div class="loan-text">
-              <div class="loan-name">${l.name}</div>
-              <div class="loan-sub">${l.school || ''}</div>
+        <td style="text-align:left">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span
+              style="
+                width:10px;
+                height:10px;
+                background:${color};
+                border-radius:2px;
+                display:inline-block;
+                flex-shrink:0;
+              ">
+            </span>
+            <div>
+              <div style="font-weight:500">${l.name}</div>
+              <div style="font-size:11px;color:#64748b">
+                ${l.school || ''}
+              </div>
             </div>
           </div>
         </td>
 
-        <td style="color:${color}; font-weight:600;">
+        <td style="text-align:left;color:${color};font-weight:600">
           $${recovered.toLocaleString()}
         </td>
 
-        <td>${(pct * 100).toFixed(2)}%</td>
+        <td style="text-align:left">
+          ${(pct * 100).toFixed(2)}%
+        </td>
 
-        <td>$${remaining.toLocaleString()}</td>
+        <td style="text-align:left">
+          $${remaining.toLocaleString()}
+        </td>
       </tr>
     `;
   });
@@ -3296,7 +3311,7 @@ function renderCapitalRecoveryDrawer() {
   drawerExtra.innerHTML = html;
 
   // --------------------------------------------------
-  // Table hover → chart interaction
+  // Table hover → chart interaction (FIXED)
   // --------------------------------------------------
   const rows = document.querySelectorAll('#capitalRecoveryTable tbody tr');
 
@@ -3304,24 +3319,30 @@ function renderCapitalRecoveryDrawer() {
     const loanId = row.getAttribute('data-loan-id');
 
     row.addEventListener('mouseenter', () => {
-      document.querySelectorAll('.chart-line').forEach(p => {
-        if (p.getAttribute('data-loan-id') === loanId) {
-          p.style.opacity = '1';
-          p.style.strokeWidth = '3';
-        } else {
-          p.style.opacity = '0.15';
-        }
-      });
+      // dim all loan paths
+      document
+        .querySelectorAll('path[data-loan-id]')
+        .forEach(p => {
+          if (p.getAttribute('data-loan-id') === loanId) {
+            p.style.opacity = '1';
+            p.style.strokeWidth = '3';
+          } else {
+            p.style.opacity = '0.15';
+          }
+        });
     });
 
     row.addEventListener('mouseleave', () => {
-      document.querySelectorAll('.chart-line').forEach(p => {
-        p.style.opacity = '1';
-        p.style.strokeWidth = '';
-      });
+      document
+        .querySelectorAll('path[data-loan-id]')
+        .forEach(p => {
+          p.style.opacity = '1';
+          p.style.strokeWidth = '';
+        });
     });
   });
 }
+
 
 
 
