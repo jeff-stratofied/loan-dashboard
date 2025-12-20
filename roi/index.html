@@ -968,7 +968,7 @@ function computeKPIs(list) {
       0
     ) / Math.max(1, total);
 
-  // -------------------------------------
+ // -------------------------------------
   // Capital Recovery (FIXED)
   // -------------------------------------
   let recoveredPrincipalTotal = 0;
@@ -989,8 +989,9 @@ function computeKPIs(list) {
     investedPrincipalTotal > 0
       ? recoveredPrincipalTotal / investedPrincipalTotal
       : 0;
+
     
-    return {
+        return {
       total,
       weightedROI,
       projectedWeightedROI,
@@ -3212,6 +3213,7 @@ function renderCapitalRecoveryDrawer() {
   drawerSecondary.textContent =
     (kpis.capitalRecoveryPct * 100).toFixed(2) + "%";
 }
+
 
 
 
