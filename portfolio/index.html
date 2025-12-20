@@ -10,6 +10,8 @@
        (copied from ROI/Earnings)
        =============================== -->
   <style>
+    html { color-scheme: light; }
+    
     :root {
       --bg:#f8fafc;
       --surface:#f1f5f9;
@@ -17,29 +19,34 @@
       --border:#e2e8f0;
       --text:#0f172a;
       --muted:#64748b;
+    
       --brand:#0ea5e9;
       --accent:#7c3aed;
+    
       --shadow:0 12px 30px rgba(15,23,42,0.06);
       --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
+    
       --tooltip-bg:#0f172a;
       --tooltip-text:#f8fafc;
     }
+    
+    html[data-theme="dark"] {
+      color-scheme: dark;
+    
+      --bg:#0f172a;
+      --surface:#1e293b;
+      --card:#1e293b;
+      --border:#334155;
+      --text:#f1f5f9;
+      --muted:#94a3b8;
+    
+      --brand:#38bdf8;
+      --accent:#c4b5fd;
+    
+      --shadow:rgba(0,0,0,0.45);
+      --chart-bg:linear-gradient(180deg,#1e293b,#0f172a);
+    }
 
-      html { color-scheme: light; }
-      
-      html[data-theme="dark"] {
-        color-scheme: dark;
-      
-        --bg:#0f172a;
-        --surface:#1e293b;
-        --card:#1e293b;
-        --border:#334155;
-        --text:#f1f5f9;
-        --muted:#94a3b8;
-        --brand:#38bdf8;
-        --shadow:rgba(0,0,0,0.45);
-        --chart-bg:linear-gradient(180deg,#1e293b,#0f172a);
-      }
 
 
     html,body {
@@ -49,14 +56,17 @@
       color:var(--text);
     }
 
-    body {
-      background:linear-gradient(180deg,var(--surface),var(--bg));
-      overflow:hidden;
+       body {
+      background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+      background-color: var(--bg);
+      transition: background-color .25s ease, color .25s ease;
+      overflow: hidden;
+    }
+    
+    html[data-theme="dark"] body {
+      background: linear-gradient(180deg,#0b1224 0%, #0f172a 100%);
     }
 
-    html[data-theme="dark"] body {
-      background:linear-gradient(180deg,#0b1224,#0f172a);
-    }
 
     .app {
       max-width:1200px;
@@ -260,22 +270,26 @@
     window.location.search = `?user=${PAGE_USER}`;
   };
 
-  // Theme toggle (persist + icon)
-  const themeToggle = document.getElementById("themeToggle");
-  
-  function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-    themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
-  }
+      // ===============================
+    // Theme toggle (ROI/Earnings exact)
+    // ===============================
+    const themeToggle = document.getElementById("themeToggle");
+    
+    function applyTheme(theme) {
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+      themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
+    }
+    
+    // init theme on load
+    applyTheme(localStorage.getItem("theme") || "light");
+    
+    // toggle
+    themeToggle.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme");
+      applyTheme(current === "dark" ? "light" : "dark");
+    });
 
-  const savedTheme = localStorage.getItem("theme");
-  applyTheme(savedTheme === "dark" ? "dark" : "light");
-  
-  themeToggle.addEventListener("click", () => {
-    const current = document.documentElement.getAttribute("data-theme") || "light";
-    applyTheme(current === "dark" ? "light" : "dark");
-  });
 
 
   // Load + render
