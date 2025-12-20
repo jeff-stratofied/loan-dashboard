@@ -1211,15 +1211,16 @@ function getCurrentMonthForLoan(loan) {
   return Math.min(months, loan.amort.schedule.length);
 }
 // Convert purchaseDate + offset months → "Feb 15, 2025"
-function offsetDateByMonths(startDateStr, offset) {
-  const d = new Date(startDateStr + "T00:00:00");  // ensure no timezone shift
+window.offsetDateByMonths = function offsetDateByMonths(startDateStr, offset) {
+  const d = new Date(startDateStr + "T00:00:00"); // avoid TZ drift
   d.setMonth(d.getMonth() + offset);
   return d.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric"
   });
-}
+};
+
 // Format chart date labels
 function chartDateLabel(startDateStr, monthIndex) {
   const d = new Date(startDateStr + "T00:00:00");
