@@ -3127,7 +3127,7 @@ function renderCapitalRecoveryDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawer.classList.remove('loan-mode');
 
-  drawerAmortContainer.style.display = 'none'; // KPI drawer
+  drawerAmortContainer.style.display = 'none';
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
@@ -3140,44 +3140,57 @@ function renderCapitalRecoveryDrawer() {
   TODAY.setHours(23, 59, 59, 999);
 
   // --------------------------------------------------
-  // Build per-loan recovery series
+  // Build per-loan recovery series (MONTHLY, TO TODAY)
   // --------------------------------------------------
   const loanSeriesList = [];
-  const datesSet = new Set();
+  const monthMap = new Map(); // key = YYYY-MM → Date(1st)
+
+  function monthKey(d) {
+    return `${d.getFullYear()}-${d.getMonth()}`;
+  }
+
+  function monthStart(d) {
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
 
   currentLoans.forEach(l => {
     if (!l.amort || !l.amort.schedule) return;
 
     let cumPrincipal = 0;
+    const monthly = new Map();
 
-    const series = l.amort.schedule
+    l.amort.schedule
       .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
-      .map(r => {
+      .forEach(r => {
+        const m = monthStart(r.loanDate);
+        const k = monthKey(m);
+
         cumPrincipal += r.principalPaid || 0;
 
         const pct =
-          (l.purchasePrice || 0) > 0
-            ? cumPrincipal / l.purchasePrice
-            : 0;
+          l.purchasePrice > 0 ? cumPrincipal / l.purchasePrice : 0;
 
-        datesSet.add(+r.loanDate);
-        return { date: r.loanDate, y: pct };
+        monthly.set(k, { date: m, y: pct });
+        monthMap.set(k, m);
       });
 
     loanSeriesList.push({
       id: l.id,
       name: l.name,
       color: window.KPI_COLOR_MAP?.[l.id] || '#64748b',
-      data: series
+      data: Array.from(monthly.values())
     });
   });
 
-  const globalDates = Array.from(datesSet)
-    .sort((a, b) => a - b)
-    .map(ms => new Date(ms));
+  // --------------------------------------------------
+  // Unified MONTHLY date axis (clean)
+  // --------------------------------------------------
+  const globalDates = Array.from(monthMap.values()).sort(
+    (a, b) => a - b
+  );
 
   // --------------------------------------------------
-  // Portfolio cumulative line
+  // Portfolio cumulative line (MONTHLY)
   // --------------------------------------------------
   const totalInvested = currentLoans.reduce(
     (s, l) => s + (l.purchasePrice || 0),
@@ -3190,12 +3203,18 @@ function renderCapitalRecoveryDrawer() {
     let monthRecovered = 0;
 
     currentLoans.forEach(l => {
-      const row = l.amort?.schedule?.find(r =>
-        r.isOwned &&
-        r.loanDate &&
-        r.loanDate.getTime() === d.getTime()
-      );
-      if (row) monthRecovered += row.principalPaid || 0;
+      l.amort?.schedule
+        ?.filter(
+          r =>
+            r.isOwned &&
+            r.loanDate &&
+            r.loanDate <= TODAY &&
+            r.loanDate.getFullYear() === d.getFullYear() &&
+            r.loanDate.getMonth() === d.getMonth()
+        )
+        .forEach(r => {
+          monthRecovered += r.principalPaid || 0;
+        });
     });
 
     cumPortfolioRecovered += monthRecovered;
@@ -3207,7 +3226,15 @@ function renderCapitalRecoveryDrawer() {
   });
 
   // --------------------------------------------------
-  // Render chart
+  // Dynamic x-axis spacing (≈ 6–8 labels max)
+  // --------------------------------------------------
+  const tickSpacingX = Math.max(
+    1,
+    Math.round(globalDates.length / 7)
+  );
+
+  // --------------------------------------------------
+  // Render chart (CLEAN X-AXIS)
   // --------------------------------------------------
   createMultiSeriesChart(
     document.getElementById('drawerChartArea'),
@@ -3217,7 +3244,7 @@ function renderCapitalRecoveryDrawer() {
       dates: globalDates,
       weightedColor: '#111827',
       weightedWidth: 3,
-      tickSpacingX: 12
+      tickSpacingX
     }
   );
 
@@ -3233,17 +3260,17 @@ function renderCapitalRecoveryDrawer() {
     ((kpis.capitalRecoveryPct || 0) * 100).toFixed(2) + "%";
 
   // --------------------------------------------------
-  // Capital Recovery table
+  // Table (unchanged)
   // --------------------------------------------------
   let html = `
     <div class="amort-wrap">
       <table class="kpi-table" id="capitalRecoveryTable">
         <thead>
           <tr>
-            <th style="text-align:left">Loan</th>
-            <th style="text-align:left">Cap Recovered</th>
-            <th style="text-align:left">% Recovered</th>
-            <th style="text-align:left">Remaining</th>
+            <th>Loan</th>
+            <th>Cap Recovered</th>
+            <th>% Recovered</th>
+            <th>Remaining</th>
           </tr>
         </thead>
         <tbody>
@@ -3257,47 +3284,25 @@ function renderCapitalRecoveryDrawer() {
       .reduce((s, r) => s + (r.principalPaid || 0), 0);
 
     const pct = l.purchasePrice > 0 ? recovered / l.purchasePrice : 0;
-    const remaining = Math.max(
-      0,
-      (l.balanceAtPurchase || 0) - recovered
-    );
+    const remaining =
+      Math.max(0, (l.balanceAtPurchase || 0) - recovered);
 
     const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
 
     html += `
       <tr data-loan-id="${l.id}">
-        <td style="text-align:left">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span
-              style="
-                width:10px;
-                height:10px;
-                background:${color};
-                border-radius:2px;
-                display:inline-block;
-                flex-shrink:0;
-              ">
-            </span>
+        <td>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="width:10px;height:10px;border-radius:2px;background:${color}"></span>
             <div>
               <div style="font-weight:500">${l.name}</div>
-              <div style="font-size:11px;color:#64748b">
-                ${l.school || ''}
-              </div>
+              <div style="font-size:11px;color:#64748b">${l.school || ''}</div>
             </div>
           </div>
         </td>
-
-        <td style="text-align:left;color:${color};font-weight:600">
-          $${recovered.toLocaleString()}
-        </td>
-
-        <td style="text-align:left">
-          ${(pct * 100).toFixed(2)}%
-        </td>
-
-        <td style="text-align:left">
-          $${remaining.toLocaleString()}
-        </td>
+        <td style="color:${color};font-weight:600">$${recovered.toLocaleString()}</td>
+        <td>${(pct * 100).toFixed(2)}%</td>
+        <td>$${remaining.toLocaleString()}</td>
       </tr>
     `;
   });
@@ -3309,39 +3314,8 @@ function renderCapitalRecoveryDrawer() {
   `;
 
   drawerExtra.innerHTML = html;
-
-  // --------------------------------------------------
-  // Table hover → chart interaction (FIXED)
-  // --------------------------------------------------
-  const rows = document.querySelectorAll('#capitalRecoveryTable tbody tr');
-
-  rows.forEach(row => {
-    const loanId = row.getAttribute('data-loan-id');
-
-    row.addEventListener('mouseenter', () => {
-      // dim all loan paths
-      document
-        .querySelectorAll('path[data-loan-id]')
-        .forEach(p => {
-          if (p.getAttribute('data-loan-id') === loanId) {
-            p.style.opacity = '1';
-            p.style.strokeWidth = '3';
-          } else {
-            p.style.opacity = '0.15';
-          }
-        });
-    });
-
-    row.addEventListener('mouseleave', () => {
-      document
-        .querySelectorAll('path[data-loan-id]')
-        .forEach(p => {
-          p.style.opacity = '1';
-          p.style.strokeWidth = '';
-        });
-    });
-  });
 }
+
 
 
 
