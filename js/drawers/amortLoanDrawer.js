@@ -135,7 +135,12 @@ loan.amort.schedule.forEach((r) => {
       `;
 
       const svgNS = 'http://www.w3.org/2000/svg';
-      const w = 480, h = 240, pad = 28;
+       const h = 240;
+        const pad = 28;
+        
+        // dynamic width from container
+        const w = drawerChartArea.getBoundingClientRect().width || 480;
+
       const svg = document.createElementNS(svgNS, 'svg');
       svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
       svg.setAttribute('width', '100%');
@@ -255,9 +260,14 @@ loan.amort.schedule.forEach((r) => {
 // Drawer hover interactions
 svg.addEventListener('mousemove', (ev) => {
   const rect = svg.getBoundingClientRect();
-  const x = ev.clientX - rect.left;
 
-  let idx = Math.round((x - pad) / stepX);
+// convert mouse X (pixels) → SVG units
+const scaleX = w / rect.width;
+const mouseX = (ev.clientX - rect.left) * scaleX;
+
+let idx = Math.round((mouseX - pad) / stepX);
+idx = Math.max(0, Math.min(schedule.length - 1, idx));
+
   idx = Math.max(0, Math.min(schedule.length - 1, idx));
 
   const px = pad + idx * stepX;
@@ -318,18 +328,12 @@ svg.addEventListener('mouseleave', () => {
   tooltip.style.display = 'none';
 }); // <-- closes mouseleave listener
 
-// These lines stay at the end of the drawer-opening function
-drawerChartArea.appendChild(svg);
 
 // OPEN FIRST
 drawer.classList.add('open');
 drawer.setAttribute('aria-hidden', 'false');
 drawerBody.scrollTop = 0;
 
-// 🔑 FORCE RE-MEASURE AFTER DRAWER IS VISIBLE
-requestAnimationFrame(() => {
-  // rebuild the chart at full width
-  drawerChartArea.innerHTML = '';
   drawerChartArea.appendChild(svg);
 });
 
