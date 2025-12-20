@@ -416,12 +416,15 @@ function renderAmortMiniDrawer(loan, container) {
 
 const chartEl = container.querySelector("#amortMiniChart");
 
-renderAmortLoanChart({
-  loan,
-  container: chartEl,
-  height: 180,
-  compact: true
+requestAnimationFrame(() => {
+  renderAmortLoanChart({
+    loan,
+    container: chartEl,
+    height: 180,
+    compact: true
+  });
 });
+
 
 
   // -------------------------
