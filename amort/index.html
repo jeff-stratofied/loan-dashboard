@@ -1362,7 +1362,6 @@ resetBtn.addEventListener("click", () => {
     const drawerChartArea = document.getElementById('drawerChartArea');
     const drawerLegend = document.getElementById('drawerLegend');
     const drawerExtra = document.getElementById('drawerExtra');
-    const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
@@ -1422,7 +1421,7 @@ resetBtn.addEventListener("click", () => {
       drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
 
   /* render amort rows */
-drawerAmortContainer.style.display = 'block';
+drawerExtra.style.display = 'block';
 amortBody.innerHTML = '';
 
 // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
@@ -1694,7 +1693,6 @@ function renderDistributionDrawer() {
   drawerSecondaryTitle.textContent = 'Loan Count';
   drawerSecondary.textContent = allLoans.length.toLocaleString();
 
-  drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
   drawerLegend.style.display = 'none';
@@ -1951,7 +1949,6 @@ drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
   drawerSecondary.textContent =
   `$${currentLoans.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
 
-  drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
   drawerLegend.style.display = 'none';
@@ -2214,7 +2211,6 @@ function renderRatesDrawer() {
   drawerSecondary.textContent =
     `${minRate.toFixed(2)}% – ${maxRate.toFixed(2)}%`;
 
-  drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
   drawerLegend.style.display = 'none';
@@ -2438,7 +2434,6 @@ function renderPaymentsDrawer() {
   drawerSecondary.textContent =
     `$${allLoans.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
 
-  drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
   drawerLegend.style.display = 'none';
