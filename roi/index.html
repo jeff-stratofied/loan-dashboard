@@ -790,10 +790,11 @@ html[data-theme="dark"] .drawer-chart{
       const TODAY = new Date();
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
       const formattedLoans = loans.map(l => ({
-        ...l,
-        purchasePrice: Number(l.principal ?? l.purchasePrice ?? 0),
-        nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-      }));
+      ...l,
+      purchasePrice: Number(l.purchasePrice ?? 0),   // ✅ DO NOT overwrite
+      nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
+    }));
+
 
       const loansWithAmort = formattedLoans.map(l => {
         // compute amortization schedule for this loan
@@ -968,27 +969,31 @@ function computeKPIs(list) {
       0
     ) / Math.max(1, total);
 
- // -------------------------------------
-  // Capital Recovery (FIXED)
-  // -------------------------------------
-  let recoveredPrincipalTotal = 0;
-  let investedPrincipalTotal = 0;
-  
-  list.forEach(l => {
-    if (!l.amort || !l.amort.schedule) return;
-  
-    const recovered = l.amort.schedule
-      .filter(r => r.isOwned)
-      .reduce((s, r) => s + (r.principalPaid || 0), 0);
-  
-    recoveredPrincipalTotal += recovered;
-    investedPrincipalTotal += l.purchasePrice;
-  });
-  
-  const capitalRecoveryPct =
-    investedPrincipalTotal > 0
-      ? recoveredPrincipalTotal / investedPrincipalTotal
-      : 0;
+    // -------------------------------------
+    // Capital Recovery (TO TODAY, FIXED)
+    // -------------------------------------
+    const TODAY = new Date();
+    TODAY.setHours(23, 59, 59, 999);
+    
+    let recoveredPrincipalTotal = 0;
+    let investedPrincipalTotal = 0;
+    
+    list.forEach(l => {
+      if (!l.amort || !l.amort.schedule) return;
+    
+      // ✅ only owned rows through TODAY
+      const recovered = l.amort.schedule
+        .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
+        .reduce((s, r) => s + (r.principalPaid || 0), 0);
+    
+      recoveredPrincipalTotal += recovered;
+      investedPrincipalTotal += (l.purchasePrice || 0);
+    });
+    
+    const capitalRecoveryPct =
+      investedPrincipalTotal > 0
+        ? recoveredPrincipalTotal / investedPrincipalTotal
+        : 0;
 
     
         return {
@@ -3122,10 +3127,13 @@ function renderCapitalRecoveryDrawer() {
 
   drawerTitle.textContent = "Capital Recovery Over Time";
   drawerSub.textContent =
-    "Cumulative principal returned as a percentage of purchase price.";
+    "Cumulative principal returned as a percentage of purchase price (through today).";
+
+  const TODAY = new Date();
+  TODAY.setHours(23, 59, 59, 999);
 
   // ----------------------------------
-  // Build per-loan recovery series
+  // Build per-loan recovery series (TO TODAY)
   // ----------------------------------
   const loanSeriesList = [];
   const datesSet = new Set();
@@ -3136,19 +3144,17 @@ function renderCapitalRecoveryDrawer() {
     let cumPrincipal = 0;
 
     const series = l.amort.schedule
-      .filter(r => r.isOwned)
+      .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
       .map(r => {
         cumPrincipal += r.principalPaid || 0;
-        const pct = l.purchasePrice > 0
-          ? cumPrincipal / l.purchasePrice
+
+        const pct = (l.purchasePrice || 0) > 0
+          ? (cumPrincipal / l.purchasePrice)
           : 0;
 
         datesSet.add(+r.loanDate);
 
-        return {
-          date: r.loanDate,
-          y: pct
-        };
+        return { date: r.loanDate, y: pct };
       });
 
     loanSeriesList.push({
@@ -3161,35 +3167,36 @@ function renderCapitalRecoveryDrawer() {
 
   const globalDates = Array.from(datesSet)
     .sort((a, b) => a - b)
-    .map(d => new Date(d));
+    .map(ms => new Date(ms));
 
   // ----------------------------------
-  // Aggregate portfolio recovery line
+  // Portfolio cumulative recovery line (BLACK) (TO TODAY)
   // ----------------------------------
-  let totalInvested = currentLoans.reduce(
-    (s, l) => s + l.purchasePrice,
-    0
-  );
+  const totalInvested = currentLoans.reduce((s, l) => s + (l.purchasePrice || 0), 0);
+
+  let cumPortfolioRecovered = 0;
 
   const portfolioSeries = globalDates.map(d => {
-    let recovered = 0;
+    // sum principal paid at THIS date across loans
+    let monthRecovered = 0;
 
     currentLoans.forEach(l => {
-      const row = l.amort.schedule.find(
-        r => r.isOwned && r.loanDate.getTime() === d.getTime()
+      const row = l.amort?.schedule?.find(r =>
+        r.isOwned &&
+        r.loanDate &&
+        r.loanDate.getTime() === d.getTime()
       );
-      if (row) recovered += row.principalPaid || 0;
+      if (row) monthRecovered += (row.principalPaid || 0);
     });
+
+    cumPortfolioRecovered += monthRecovered;
 
     return {
       date: d,
-      y: totalInvested > 0 ? recovered / totalInvested : 0
+      y: totalInvested > 0 ? (cumPortfolioRecovered / totalInvested) : 0
     };
   });
 
-  // ----------------------------------
-  // Render chart (NO ROI LOGIC)
-  // ----------------------------------
   createMultiSeriesChart(
     document.getElementById("drawerChartArea"),
     loanSeriesList,
@@ -3202,17 +3209,14 @@ function renderCapitalRecoveryDrawer() {
     }
   );
 
-  // ----------------------------------
-  // PRIMARY / SECONDARY METRICS (FIXED)
-  // ----------------------------------
+  // ✅ metrics from KPIs (now TO TODAY)
   drawerPrimaryTitle.textContent = "Capital Recovered";
-  drawerPrimary.textContent =
-    "$" + kpis.capitalRecoveredAmount.toLocaleString();
+  drawerPrimary.textContent = "$" + (kpis.capitalRecoveredAmount || 0).toLocaleString();
 
   drawerSecondaryTitle.textContent = "% Recovered";
-  drawerSecondary.textContent =
-    (kpis.capitalRecoveryPct * 100).toFixed(2) + "%";
+  drawerSecondary.textContent = ((kpis.capitalRecoveryPct || 0) * 100).toFixed(2) + "%";
 }
+
 
 
 
