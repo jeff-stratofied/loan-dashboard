@@ -392,5 +392,3 @@ drawerBody.scrollTop = 0;
   drawerChartArea.appendChild(svg);
 });
 
-
-}
