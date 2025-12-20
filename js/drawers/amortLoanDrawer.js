@@ -16,9 +16,10 @@
 
 
     export function renderAmortLoanDrawer(loan) {
-      drawerExtra.innerHTML = '';
       currentMode = 'loan';
       currentLoan = loan;
+      drawerExtra.style.display = 'block';
+
 
      // ------------------------------------
     // ROI / Earnings–style amort header
