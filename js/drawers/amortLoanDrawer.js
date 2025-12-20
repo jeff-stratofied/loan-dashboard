@@ -137,7 +137,62 @@ loan.amort.schedule.forEach((r) => {
       const svgNS = 'http://www.w3.org/2000/svg';
        const h = 240;
         const pad = 28;
-        
+
+// -------------------------
+// Y AXIS (GRID + LABELS)
+// -------------------------
+const ySteps = 4;
+
+for (let i = 0; i <= ySteps; i++) {
+  const t = i / ySteps;
+  const yVal = maxY - t * (maxY - minY);
+  const y = pad + t * (h - pad * 2);
+
+  // grid line
+  const grid = document.createElementNS(svgNS, 'line');
+  grid.setAttribute('x1', pad);
+  grid.setAttribute('x2', w - pad);
+  grid.setAttribute('y1', y);
+  grid.setAttribute('y2', y);
+  grid.setAttribute('stroke', 'var(--border)');
+  grid.setAttribute('stroke-opacity', '0.25');
+  svg.appendChild(grid);
+
+  // label
+  const label = document.createElementNS(svgNS, 'text');
+  label.setAttribute('x', pad - 6);
+  label.setAttribute('y', y);
+  label.setAttribute('text-anchor', 'end');
+  label.setAttribute('dominant-baseline', 'middle');
+  label.setAttribute('font-size', '10');
+  label.setAttribute('fill', 'var(--muted)');
+  label.textContent = window.formatCurrency(yVal);
+  svg.appendChild(label);
+}
+
+// -------------------------
+// X AXIS (DATE LABELS)
+// -------------------------
+const xTickEvery = Math.ceil(schedule.length / 6);
+
+schedule.forEach((row, i) => {
+  if (i % xTickEvery !== 0 && i !== schedule.length - 1) return;
+
+  const x = pad + i * stepX;
+  const label = document.createElementNS(svgNS, 'text');
+  label.setAttribute('x', x);
+  label.setAttribute('y', h - 6);
+  label.setAttribute('text-anchor', 'middle');
+  label.setAttribute('font-size', '10');
+  label.setAttribute('fill', 'var(--muted)');
+  label.textContent = chartDateLabelLocal(
+    loan.loanStartDate,
+    row.monthIndex
+  );
+  svg.appendChild(label);
+});
+
+      
         // dynamic width from container
         const w = drawerChartArea.getBoundingClientRect().width || 480;
 
