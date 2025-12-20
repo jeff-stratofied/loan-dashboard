@@ -595,12 +595,19 @@ function collectLoans() {
       obj[k] = v;
     });
 
-    obj.loanId = row.dataset.loanId;
+    const loanId = row.dataset.loanId;
+    obj.loanId = loanId;
+
+    // ✅ PRESERVE EVENTS FROM CURRENT STATE
+    const existing = currentLoans.find(l => String(l.loanId) === String(loanId));
+    obj.events = Array.isArray(existing?.events) ? existing.events : [];
+
     list.push(obj);
   });
 
   return list;
 }
+
 
 
   
