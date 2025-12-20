@@ -3120,11 +3120,13 @@ function renderCapitalRecoveryDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
 
+  // open drawer
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
-
   drawer.classList.remove('loan-mode');
-  drawerAmortContainer.style.display = 'none';
+
+  // reset drawer areas
+  drawerAmortContainer.style.display = 'none'; // KPI drawer: hide amort table
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
@@ -3136,9 +3138,9 @@ function renderCapitalRecoveryDrawer() {
   const TODAY = new Date();
   TODAY.setHours(23, 59, 59, 999);
 
-  // ----------------------------------
-  // Build per-loan recovery series (TO TODAY)
-  // ----------------------------------
+  // --------------------------------------------------
+  // Build per-loan recovery series (to TODAY)
+  // --------------------------------------------------
   const loanSeriesList = [];
   const datesSet = new Set();
 
@@ -3152,9 +3154,10 @@ function renderCapitalRecoveryDrawer() {
       .map(r => {
         cumPrincipal += r.principalPaid || 0;
 
-        const pct = (l.purchasePrice || 0) > 0
-          ? (cumPrincipal / l.purchasePrice)
-          : 0;
+        const pct =
+          (l.purchasePrice || 0) > 0
+            ? cumPrincipal / l.purchasePrice
+            : 0;
 
         datesSet.add(+r.loanDate);
 
@@ -3173,15 +3176,17 @@ function renderCapitalRecoveryDrawer() {
     .sort((a, b) => a - b)
     .map(ms => new Date(ms));
 
-  // ----------------------------------
-  // Portfolio cumulative recovery line (BLACK) (TO TODAY)
-  // ----------------------------------
-  const totalInvested = currentLoans.reduce((s, l) => s + (l.purchasePrice || 0), 0);
+  // --------------------------------------------------
+  // Portfolio cumulative recovery line (black)
+  // --------------------------------------------------
+  const totalInvested = currentLoans.reduce(
+    (s, l) => s + (l.purchasePrice || 0),
+    0
+  );
 
   let cumPortfolioRecovered = 0;
 
   const portfolioSeries = globalDates.map(d => {
-    // sum principal paid at THIS date across loans
     let monthRecovered = 0;
 
     currentLoans.forEach(l => {
@@ -3190,36 +3195,134 @@ function renderCapitalRecoveryDrawer() {
         r.loanDate &&
         r.loanDate.getTime() === d.getTime()
       );
-      if (row) monthRecovered += (row.principalPaid || 0);
+      if (row) monthRecovered += row.principalPaid || 0;
     });
 
     cumPortfolioRecovered += monthRecovered;
 
     return {
       date: d,
-      y: totalInvested > 0 ? (cumPortfolioRecovered / totalInvested) : 0
+      y: totalInvested > 0 ? cumPortfolioRecovered / totalInvested : 0
     };
   });
 
+  // --------------------------------------------------
+  // Render chart
+  // --------------------------------------------------
   createMultiSeriesChart(
-    document.getElementById("drawerChartArea"),
+    document.getElementById('drawerChartArea'),
     loanSeriesList,
     portfolioSeries,
     {
       dates: globalDates,
-      weightedColor: "#111827",
+      weightedColor: '#111827',
       weightedWidth: 3,
       tickSpacingX: 12
     }
   );
 
-  // ✅ metrics from KPIs (now TO TODAY)
+  // --------------------------------------------------
+  // Metrics
+  // --------------------------------------------------
   drawerPrimaryTitle.textContent = "Capital Recovered";
-  drawerPrimary.textContent = "$" + (kpis.capitalRecoveredAmount || 0).toLocaleString();
+  drawerPrimary.textContent =
+    "$" + (kpis.capitalRecoveredAmount || 0).toLocaleString();
 
   drawerSecondaryTitle.textContent = "% Recovered";
-  drawerSecondary.textContent = ((kpis.capitalRecoveryPct || 0) * 100).toFixed(2) + "%";
+  drawerSecondary.textContent =
+    ((kpis.capitalRecoveryPct || 0) * 100).toFixed(2) + "%";
+
+  // --------------------------------------------------
+  // Capital Recovery — By Loan table
+  // --------------------------------------------------
+  let html = `
+    <div class="amort-wrap">
+      <table class="kpi-table" id="capitalRecoveryTable">
+        <thead>
+          <tr>
+            <th>Loan</th>
+            <th>Cap Recovered</th>
+            <th>% Recovered</th>
+            <th>Remaining</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  currentLoans.forEach(l => {
+    if (!l.amort || !l.amort.schedule) return;
+
+    const recovered = l.amort.schedule
+      .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
+      .reduce((s, r) => s + (r.principalPaid || 0), 0);
+
+    const pct = l.purchasePrice > 0 ? recovered / l.purchasePrice : 0;
+    const remaining = Math.max(
+      0,
+      (l.balanceAtPurchase || 0) - recovered
+    );
+
+    const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
+
+    html += `
+      <tr data-loan-id="${l.id}">
+        <td>
+          <div class="loan-cell">
+            <span class="color-swatch" style="background:${color}"></span>
+            <div class="loan-text">
+              <div class="loan-name">${l.name}</div>
+              <div class="loan-sub">${l.school || ''}</div>
+            </div>
+          </div>
+        </td>
+
+        <td style="color:${color}; font-weight:600;">
+          $${recovered.toLocaleString()}
+        </td>
+
+        <td>${(pct * 100).toFixed(2)}%</td>
+
+        <td>$${remaining.toLocaleString()}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  drawerExtra.innerHTML = html;
+
+  // --------------------------------------------------
+  // Table hover → chart interaction
+  // --------------------------------------------------
+  const rows = document.querySelectorAll('#capitalRecoveryTable tbody tr');
+
+  rows.forEach(row => {
+    const loanId = row.getAttribute('data-loan-id');
+
+    row.addEventListener('mouseenter', () => {
+      document.querySelectorAll('.chart-line').forEach(p => {
+        if (p.getAttribute('data-loan-id') === loanId) {
+          p.style.opacity = '1';
+          p.style.strokeWidth = '3';
+        } else {
+          p.style.opacity = '0.15';
+        }
+      });
+    });
+
+    row.addEventListener('mouseleave', () => {
+      document.querySelectorAll('.chart-line').forEach(p => {
+        p.style.opacity = '1';
+        p.style.strokeWidth = '';
+      });
+    });
+  });
 }
+
 
 
 
