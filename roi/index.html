@@ -946,7 +946,6 @@ html[data-theme="dark"] .drawer-chart{
 
 function computeKPIs(list) {
   const total = list.reduce((s, l) => s + l.purchasePrice, 0);
-  const today = new Date();
 
   // -------------------------------------
   // Weighted ROI to Date (unchanged)
@@ -970,46 +969,38 @@ function computeKPIs(list) {
     ) / Math.max(1, total);
 
   // -------------------------------------
-  // Yield to Date (Annualized, seasoned)
+  // Capital Recovery (NEW)
   // -------------------------------------
-  let weightedYield = 0;
+  let recoveredPrincipalWeighted = 0;
+  let recoveredPrincipalTotal = 0;
 
   list.forEach(l => {
-    const entry = getCurrentOwnedRoiEntry(l);
-    if (!entry || !entry.ownershipDate) return;
+    if (!l.amort || !l.amort.schedule) return;
 
-    const invested = l.purchasePrice;
-    const currentValue = entry.loanValue;
-    if (!invested || currentValue <= 0) return;
+    const recovered = l.amort.schedule
+      .filter(r => r.isOwned)
+      .reduce((s, r) => s + (r.principalPaid || 0), 0);
 
-    const years =
-      (today - new Date(entry.ownershipDate)) /
-      (365.25 * 24 * 60 * 60 * 1000);
-
-    const multiple = currentValue / invested;
-
-    let yieldValue;
-
-    // 🔒 Guardrail: only annualize if >= 12 months owned
-    if (years >= 1) {
-      yieldValue = Math.pow(multiple, 1 / years) - 1;
-    } else {
-      // simple return to date (non-annualized)
-      yieldValue = multiple - 1;
-    }
-
-    weightedYield += invested * yieldValue;
+    recoveredPrincipalTotal += recovered;
+    recoveredPrincipalWeighted += recovered * l.purchasePrice;
   });
 
-  const yieldToDateAnnualized = weightedYield / Math.max(1, total);
+  const capitalRecoveryPct =
+    recoveredPrincipalWeighted / Math.max(1, total * total);
 
   return {
     total,
+
+    // existing KPIs
     weightedROI,
     projectedWeightedROI,
-    yieldToDateAnnualized
+
+    // NEW KPI
+    capitalRecoveredAmount: recoveredPrincipalTotal,
+    capitalRecoveryPct
   };
 }
+
 
 
     const kpis = computeKPIs(currentLoans);
@@ -2685,7 +2676,7 @@ drawer.scrollTop = 0;
 }
 
 
-function renderYieldToDateDrawer() {
+function renderCapitalRecoveryDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -2695,72 +2686,110 @@ function renderYieldToDateDrawer() {
   drawerChartArea.innerHTML = '';
   drawerExtra.innerHTML = '';
 
-  drawerTitle.textContent = "Yield to Date (Annualized)";
+  // --------------------------------------------------
+  // Header
+  // --------------------------------------------------
+  drawerTitle.textContent = "Capital Recovery Over Time";
   drawerSub.textContent =
-    "What annualized return am I actually earning so far? " +
-    "Computed from realized cashflows plus current loan value.  " +
-    "Annualized once loans are seasoned ≥ 12 months.";
+    "How quickly invested capital is returned across loans.";
 
-  // -------------------------
-  // Primary / Secondary
-  // -------------------------
-  drawerPrimaryTitle.textContent = "Yield to Date (Annualized)";
-  drawerPrimary.textContent =
-    (kpis.yieldToDateAnnualized * 100).toFixed(2) + "%";
+  // --------------------------------------------------
+  // Compute per-loan recovery series
+  // --------------------------------------------------
+  const perLoanSeries = {};
+  const datesSet = new Set();
 
-  let portfolioValue = 0;
+  let totalRecovered = 0;
+  let totalInvested = 0;
+
   currentLoans.forEach(l => {
-    const e = getCurrentOwnedRoiEntry(l);
-    portfolioValue += e?.loanValue || 0;
+    if (!l.amort || !l.amort.schedule) return;
+
+    const schedule = l.amort.schedule.filter(r => r.isOwned);
+    let cumPrincipal = 0;
+
+    perLoanSeries[l.id] = schedule.map(r => {
+      cumPrincipal += r.principalPaid || 0;
+      const pct = l.purchasePrice
+        ? cumPrincipal / l.purchasePrice
+        : 0;
+
+      datesSet.add(+r.loanDate);
+
+      return {
+        date: r.loanDate,
+        value: pct
+      };
+    });
+
+    totalRecovered += cumPrincipal;
+    totalInvested += l.purchasePrice;
   });
 
-  drawerSecondaryTitle.textContent = "Portfolio Value Today";
+  const dates = Array.from(datesSet)
+    .sort((a, b) => a - b)
+    .map(t => new Date(t));
+
+  // --------------------------------------------------
+  // Weighted portfolio average series (black line)
+  // --------------------------------------------------
+  const weightedSeries = dates.map(d => {
+    let recovered = 0;
+    let invested = 0;
+
+    currentLoans.forEach(l => {
+      if (!l.amort || !l.amort.schedule) return;
+
+      const rows = l.amort.schedule.filter(
+        r => r.isOwned && r.loanDate <= d
+      );
+
+      const principal = rows.reduce(
+        (s, r) => s + (r.principalPaid || 0),
+        0
+      );
+
+      recovered += principal;
+      invested += l.purchasePrice;
+    });
+
+    return {
+      date: d,
+      value: invested ? recovered / invested : 0
+    };
+  });
+
+  // --------------------------------------------------
+  // Primary / Secondary metrics
+  // --------------------------------------------------
+  drawerPrimaryTitle.textContent = "Capital Recovered";
+  drawerPrimary.textContent =
+    "$" + Math.round(totalRecovered).toLocaleString();
+
+  drawerSecondaryTitle.textContent = "% Recovered";
   drawerSecondary.textContent =
-    "$" + Math.round(portfolioValue).toLocaleString();
+    ((totalRecovered / Math.max(1, totalInvested)) * 100).toFixed(2) + "%";
 
-  // -------------------------
-  // Chart
-  // -------------------------
-  const timeline = buildHistoricalRoiTimeline(currentLoans);
-
+  // --------------------------------------------------
+  // Chart (same behavior as ROI / Earnings)
+  // --------------------------------------------------
   createMultiSeriesChart(
     drawerChartArea,
-    timeline.perLoanSeries,
-    timeline.weightedSeries,
+    perLoanSeries,
+    weightedSeries,
     {
       weightedColor: "#000",
       weightedWidth: 2.6,
-      dates: timeline.dates
+      dates
     }
   );
 
-  // -------------------------
-  // Helpers
-  // -------------------------
-  const today = new Date();
-
-  function computeYieldToDate(entry, loan) {
-    const invested = loan.purchasePrice;
-    const currentValue = entry.loanValue;
-    const years =
-      (today - new Date(entry.ownershipDate)) /
-      (365.25 * 24 * 60 * 60 * 1000);
-
-    const multiple = currentValue / invested;
-
-    // 🔒 SAME seasoning rule as KPI
-    if (years >= 1) {
-      return Math.pow(multiple, 1 / years) - 1;
-    }
-    return multiple - 1;
-  }
-
-  // -------------------------
-  // Table (with swatches + hover)
-  // -------------------------
+  // --------------------------------------------------
+  // Table
+  // --------------------------------------------------
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">Yield to Date — By Loan</h3>
+      <h3 style="margin:0 0 8px 0">Capital Recovery — By Loan</h3>
       <div style="
         max-height:300px;
         overflow:auto;
@@ -2773,17 +2802,27 @@ function renderYieldToDateDrawer() {
           <thead>
             <tr>
               <th>Loan</th>
-              <th style="text-align:right;">Yield to Date</th>
-              <th style="text-align:right;">ROI to Date</th>
-              <th style="text-align:right;">Current Value</th>
+              <th style="text-align:right;">Capital Recovered</th>
+              <th style="text-align:right;">% Recovered</th>
+              <th style="text-align:right;">Remaining Balance</th>
             </tr>
           </thead>
           <tbody>
             ${currentLoans.map(l => {
-              const entry = getCurrentOwnedRoiEntry(l);
-              if (!entry || !entry.ownershipDate) return '';
+              if (!l.amort || !l.amort.schedule) return '';
 
-              const y = computeYieldToDate(entry, l);
+              const rows = l.amort.schedule.filter(r => r.isOwned);
+              const recovered = rows.reduce(
+                (s, r) => s + (r.principalPaid || 0),
+                0
+              );
+              const pct = l.purchasePrice
+                ? recovered / l.purchasePrice
+                : 0;
+
+              const last = rows[rows.length - 1];
+              const balance = last ? last.balance : 0;
+
               const color = window.KPI_COLOR_MAP[l.id] || '#64748b';
 
               return `
@@ -2797,11 +2836,18 @@ function renderYieldToDateDrawer() {
                       background:${color};
                       margin-right:6px;
                     "></span>
-                    ${l.name}
+                    <div style="font-weight:500">${l.name}</div>
+                    <div style="font-size:11px;color:var(--muted)">${l.school}</div>
                   </td>
-                  <td>${(y * 100).toFixed(2)}%</td>
-                  <td>${((entry.roi || 0) * 100).toFixed(2)}%</td>
-                  <td>$${Math.round(entry.loanValue).toLocaleString()}</td>
+                  <td style="text-align:right">
+                    $${Math.round(recovered).toLocaleString()}
+                  </td>
+                  <td style="text-align:right;color:${color}">
+                    ${(pct * 100).toFixed(2)}%
+                  </td>
+                  <td style="text-align:right">
+                    $${Math.round(balance).toLocaleString()}
+                  </td>
                 </tr>
               `;
             }).join('')}
@@ -2811,9 +2857,9 @@ function renderYieldToDateDrawer() {
     </div>
   `;
 
-  // -------------------------
+  // --------------------------------------------------
   // Table ↔ Chart interaction
-  // -------------------------
+  // --------------------------------------------------
   const rows = drawerExtra.querySelectorAll('tbody tr');
   const paths = drawerChartArea.querySelectorAll('path[data-loan-id]');
 
@@ -2842,6 +2888,7 @@ function renderYieldToDateDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 }
+
 
 
 /*  DELETE if not needed
@@ -3274,7 +3321,7 @@ drawerExtra.innerHTML = `
     /* -------------------------
        KPI wiring & interactions
        ------------------------- */
-    document.querySelectorAll('.kpi').forEach(k=>{ k.addEventListener('click', ev=>{ ev.stopPropagation(); const key=k.getAttribute('data-kpi'); if(key==='spread') renderROISpreadDrawer(); if(key==='tpv') renderTPVDrawer(); if(key==='rates') renderRatesDrawer(); if(key==='yield') renderYieldToDateDrawer(); }); });
+    document.querySelectorAll('.kpi').forEach(k=>{ k.addEventListener('click', ev=>{ ev.stopPropagation(); const key=k.getAttribute('data-kpi'); if(key==='spread') renderROISpreadDrawer(); if(key==='tpv') renderTPVDrawer(); if(key==='rates') renderRatesDrawer(); if(key==='capitalRecovery') renderCapitalRecoveryDrawer(); }); });
 
     /* -------------------------
        CSV / clipboard / download / print
