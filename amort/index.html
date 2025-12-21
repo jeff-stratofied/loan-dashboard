@@ -2466,12 +2466,23 @@ function renderPaymentsDrawer() {
   );
 
   const months = [];
-  const cursor = new Date(minDate);
-  cursor.setDate(1);
-  while (cursor.getTime() <= maxDate) {
-    months.push(cursor.toISOString().slice(0, 7));
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
+
+// normalize BOTH bounds to first-of-month UTC
+const start = new Date(minDate);
+start.setUTCDate(1);
+start.setUTCHours(0, 0, 0, 0);
+
+const end = new Date(maxDate);
+end.setUTCDate(1);
+end.setUTCHours(0, 0, 0, 0);
+
+const cursor = new Date(start);
+
+while (cursor <= end) {
+  months.push(cursor.toISOString().slice(0, 7));
+  cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+}
+
 
   // --------------------------------------------------
   // CURRENT MONTH INDEX
