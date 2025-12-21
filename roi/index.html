@@ -2388,6 +2388,7 @@ function renderTPVDrawer() {
   currentLoan = null;
 
   drawer.classList.remove('loan-mode');
+  drawer.classList.add('kpi-interactive'); // ✅ REQUIRED for hover interaction
 
   // -------------------------------
   // RESET DRAWER
@@ -2466,7 +2467,7 @@ function renderTPVDrawer() {
   );
 
   // ===============================
-  // 5. ROI-TO-DATE TABLE (WITH COLORS)
+  // 5. ROI-TO-DATE TABLE (INTERACTIVE)
   // ===============================
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
@@ -2494,7 +2495,7 @@ function renderTPVDrawer() {
               const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
 
               return `
-                <tr>
+                <tr data-loan-id="${l.id}"> <!-- ✅ REQUIRED -->
                   <td>
                     <span style="
                       display:inline-block;
@@ -2535,6 +2536,7 @@ function renderTPVDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
 
