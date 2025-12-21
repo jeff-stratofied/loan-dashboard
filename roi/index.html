@@ -1312,6 +1312,33 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   }
 
   // -----------------------------------
+  // TODAY vertical reference line
+  // -----------------------------------
+  const today = new Date();
+
+  let todayIdx = -1;
+  globalDates.forEach((d, i) => {
+    if (d <= today) todayIdx = i;
+  });
+
+  if (todayIdx >= 0) {
+    const todayX = dateToX(globalDates[todayIdx]);
+
+    const todayLine = document.createElementNS(svgNS, "line");
+    todayLine.setAttribute("x1", todayX);
+    todayLine.setAttribute("x2", todayX);
+    todayLine.setAttribute("y1", pad);
+    todayLine.setAttribute("y2", h - pad);
+    todayLine.setAttribute("stroke", "#111827");
+    todayLine.setAttribute("stroke-dasharray", "4 4");
+    todayLine.setAttribute("stroke-opacity", "0.55");
+    todayLine.dataset.type = "today";
+
+    svg.appendChild(todayLine);
+  }
+
+  
+  // -----------------------------------
   // X-axis
   // -----------------------------------
   const axis = document.createElementNS(svgNS, "g");
