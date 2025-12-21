@@ -2665,6 +2665,35 @@ const data = dates.map(date => {
   };
 }
 
+      // ============================================================
+// Shared helper — table row hover ↔ chart highlighting
+// (Used by KPI2 Projected Weighted ROI drawer)
+// ============================================================
+function wireTableHoverToChart(chartSvg, table) {
+  if (!chartSvg || !table) return;
+
+  const segs = Array.from(
+    chartSvg.querySelectorAll('[data-loan-id]')
+  );
+
+  table.querySelectorAll("tbody tr[data-loan-id]").forEach(row => {
+    const rowLoanId = row.dataset.loanId;
+
+    row.addEventListener("mouseenter", () => {
+      segs.forEach(s => {
+        s.setAttribute(
+          "opacity",
+          s.dataset.loanId === rowLoanId ? "1" : "0.15"
+        );
+      });
+    });
+
+    row.addEventListener("mouseleave", () => {
+      segs.forEach(s => s.setAttribute("opacity", "1"));
+    });
+  });
+}
+
 
 function renderRatesDrawer() {
   currentMode = 'kpi';
