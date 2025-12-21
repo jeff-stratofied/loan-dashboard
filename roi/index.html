@@ -789,11 +789,26 @@ html[data-theme="dark"] .drawer-chart{
     async function initROI() {
       const TODAY = new Date();
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-      const formattedLoans = loans.map(l => ({
-      ...l,
-      purchasePrice: Number(l.purchasePrice ?? 0),   // ✅ DO NOT overwrite
-      nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-    }));
+      // --------------------------------------------------
+// FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
+// --------------------------------------------------
+const userLoans = loans
+  .map(l => ({
+    ...l,
+    user: l.user ?? "jeff",
+    visible: l.visible !== false
+  }))
+  .filter(l => l.user === PAGE_USER && l.visible === true);
+
+// --------------------------------------------------
+// Normalize numeric fields (ONLY user loans)
+// --------------------------------------------------
+const formattedLoans = userLoans.map(l => ({
+  ...l,
+  purchasePrice: Number(l.purchasePrice ?? 0),
+  nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
+}));
+
 
 
       const loansWithAmort = formattedLoans.map(l => {
@@ -861,24 +876,9 @@ html[data-theme="dark"] .drawer-chart{
     balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
     roiSeries
   };
+});
 
-      });
-
-    // --------------------------------------------------
-    // NORMALIZE user + visible (match Amort page)
-    // --------------------------------------------------
-    const normalizedLoans = loansWithAmort.map(l => ({
-      ...l,
-      user: l.user ?? "jeff",
-      visible: l.visible !== false
-    }));
-
-      // --------------------------------------------------
-      // USER + VISIBILITY FILTER
-      // --------------------------------------------------
-      const currentLoans = normalizedLoans.filter(l =>
-        l.user === PAGE_USER && l.visible === true
-      );
+      const currentLoans = loansWithAmort;
 
       
     /* -------------------------
