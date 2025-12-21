@@ -703,13 +703,7 @@ html[data-theme="dark"] .drawer-chart{
        Script (organized with sections)
        ==================================== -->
   <script type="module">
-  import { buildAmortSchedule } from "../js/loanEngine.js";
-  import {
-    buildProjectedRoiTimeline,
-    createMultiSeriesChart
-  } from "../js/charts/projectedWeightedROIChart.js";
-
-
+    import { buildAmortSchedule } from "../js/loanEngine.js";
 
   const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
@@ -1191,12 +1185,11 @@ function computeKPIs(list) {
     return d;
   }
 
-
    // --- Multi-series chart (loan lines + weighted line) ---
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
    ============================================================ */
-/*  DELETE if not needed
+
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
@@ -1398,8 +1391,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   svg.appendChild(axis);
   containerEl.appendChild(svg);
 }
-DELETE if not needed  */
-      
+
 // ============================================================
 // ROI SPREAD CHART (loan lines ONLY — no weighted line)
 // ============================================================
@@ -2615,42 +2607,31 @@ let projWeightedROI = 0;
 loansWithAmort.forEach(l => {
   const last = getLastOwnedRoiEntry(l);
   projWeightedROI += l.purchasePrice * (last.roi || 0);
-  });
-  projWeightedROI = projWeightedROI / Math.max(1, totalInv);
-  
-  drawerPrimaryTitle.textContent = "Projected Weighted ROI";
-  drawerPrimary.textContent = (projWeightedROI * 100).toFixed(2) + "%";
-  
-  // ===============================
-  // 2. Compute projected portfolio value
-  // ===============================
-  let projPortfolioValue = 0;
-  loansWithAmort.forEach(l => {
-    const last = getLastOwnedRoiEntry(l);
-    projPortfolioValue += last.loanValue || 0;
-  });
-  
-  drawerSecondaryTitle.textContent = "Projected Portfolio Value";
-  drawerSecondary.textContent = "$" + projPortfolioValue.toLocaleString();
-  
-        // ===============================
-  // 3. Build timeline (calendar aligned)
-  // ===============================
-  const timeline = buildProjectedRoiTimeline(loansWithAmort);
-  
-  // ===============================
-  // 4. Render multi-series chart WITH hover
-  // ===============================
-  createMultiSeriesChart(
-    drawerChartArea,
-    timeline.perLoanSeries,
-    timeline.weightedSeries,
-    {
-      weightedColor: "#000",
-      weightedWidth: 2.6,
-      dates: timeline.dates
-    }
-  );
+});
+projWeightedROI = projWeightedROI / Math.max(1, totalInv);
+
+drawerPrimaryTitle.textContent = "Projected Weighted ROI";
+drawerPrimary.textContent = (projWeightedROI * 100).toFixed(2) + "%";
+
+// ===============================
+// 2. Compute projected portfolio value
+// ===============================
+let projPortfolioValue = 0;
+loansWithAmort.forEach(l => {
+  const last = getLastOwnedRoiEntry(l);
+  projPortfolioValue += last.loanValue || 0;
+});
+
+drawerSecondaryTitle.textContent = "Projected Portfolio Value";
+drawerSecondary.textContent = "$" + projPortfolioValue.toLocaleString();
+
+// ===============================
+// Import chart for rates/projected roi
+// ===============================
+import {
+  buildProjectedRoiTimeline,
+  createMultiSeriesChart
+} from "../js/charts/projectedWeightedROIChart.js";
 
 
 // ===============================
