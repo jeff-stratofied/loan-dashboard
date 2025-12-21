@@ -2807,6 +2807,14 @@ createKpiStackedChart(
 
 
 function openKpi2() {
+
+  // ===============================
+  // EMBED MODE SAFETY
+  // ===============================
+  currentLoan = null;
+  currentMode = 'kpi';
+
+  
   console.log("openKpi2 fired");
 
   console.log("KPI values at openKpi2", {
