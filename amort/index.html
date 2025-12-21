@@ -2452,8 +2452,9 @@ function renderPaymentsDrawer() {
     });
 
   const minDate = Math.min(
-    ...loansForSeries.map(l => monthToDate(l.purchaseDate).getTime())
-  );
+  ...loansForSeries.map(l => monthToDate(l.loanStartDate).getTime())
+);
+
 
   const maxDate = Math.max(
     ...loansForSeries.map(l => {
