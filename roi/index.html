@@ -2389,21 +2389,9 @@ function renderTPVDrawer() {
 
   drawer.classList.remove('loan-mode');
 
-  // ----------------------------------
-  // Use USER-SCOPED loans only
-  // ----------------------------------
-  const loans = (currentLoans && currentLoans.length)
-    ? currentLoans
-    : [];
-
-  if (!loans.length) {
-    console.warn('renderTPVDrawer: no loans for user', PAGE_USER);
-    return;
-  }
-
-  // ----------------------------------
-  // Reset drawer
-  // ----------------------------------
+  // -------------------------------
+  // RESET DRAWER
+  // -------------------------------
   drawerAmortContainer.style.display = 'none';
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
@@ -2412,18 +2400,31 @@ function renderTPVDrawer() {
   drawerTitle.textContent = "Weighted ROI to Date";
   drawerSub.textContent = "Current Portfolio Snapshot";
 
+  // 🔒 HARD SCOPE — USER + VISIBILITY
+  const scopedLoans = currentLoans.filter(
+    l => l.user === PAGE_USER && l.visible === true
+  );
+
+  if (!scopedLoans.length) {
+    drawerPrimaryTitle.textContent = "Weighted ROI to Date";
+    drawerPrimary.textContent = "—";
+    drawerSecondaryTitle.textContent = "Portfolio Value";
+    drawerSecondary.textContent = "$0";
+    return;
+  }
+
   // ===============================
-  // 1. Compute weighted ROI to date
+  // 1. WEIGHTED ROI TO DATE
   // ===============================
-  const totalInv = loans.reduce(
+  const totalInv = scopedLoans.reduce(
     (s, l) => s + (l.purchasePrice || 0),
     0
   );
 
   let weightedROI = 0;
-  loans.forEach(l => {
-    const last = getCurrentOwnedRoiEntry(l);
-    weightedROI += (l.purchasePrice || 0) * (last.roi || 0);
+  scopedLoans.forEach(l => {
+    const entry = getCurrentOwnedRoiEntry(l);
+    weightedROI += l.purchasePrice * (entry.roi || 0);
   });
 
   weightedROI = weightedROI / Math.max(1, totalInv);
@@ -2432,25 +2433,25 @@ function renderTPVDrawer() {
   drawerPrimary.textContent = (weightedROI * 100).toFixed(2) + "%";
 
   // ===============================
-  // 2. Compute portfolio value today
+  // 2. PORTFOLIO VALUE TODAY
   // ===============================
   let portfolioValue = 0;
-  loans.forEach(l => {
-    const last = getCurrentOwnedRoiEntry(l);
-    portfolioValue += last.loanValue || 0;
+  scopedLoans.forEach(l => {
+    const entry = getCurrentOwnedRoiEntry(l);
+    portfolioValue += entry.loanValue || 0;
   });
 
   drawerSecondaryTitle.textContent = "Portfolio Value";
   drawerSecondary.textContent =
-    "$" + portfolioValue.toLocaleString();
+    "$" + Math.round(portfolioValue).toLocaleString();
 
   // ===============================
-  // 3. Build TIMELINE (USER-SCOPED)
+  // 3. TIMELINE (SCOPED)
   // ===============================
-  const timeline = buildHistoricalRoiTimeline(loans);
+  const timeline = buildHistoricalRoiTimeline(scopedLoans);
 
   // ===============================
-  // 4. Render multi-series chart
+  // 4. CHART
   // ===============================
   createMultiSeriesChart(
     drawerChartArea,
@@ -2465,7 +2466,7 @@ function renderTPVDrawer() {
   );
 
   // ===============================
-  // 5. ROI-to-Date Table
+  // 5. ROI-TO-DATE TABLE (SCOPED)
   // ===============================
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
@@ -2478,30 +2479,48 @@ function renderTPVDrawer() {
         padding:6px;
         background:var(--card);
       ">
-        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
+        <table class="roi-table" style="width:100%;font-size:13px;">
           <thead>
             <tr>
-              <th style="text-align:left;">Loan</th>
-              <th style="text-align:left;">Purchase Date</th>
-              <th style="text-align:left;">Maturity Date</th>
-              <th style="text-align:right;">ROI to Date</th>
+              <th>Loan</th>
+              <th>Purchase Date</th>
+              <th>Maturity Date</th>
+              <th style="text-align:right">ROI to Date</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+            ${scopedLoans.map(l => {
+              const e = getCurrentOwnedRoiEntry(l);
+              return `
+                <tr>
+                  <td>
+                    <strong>${l.name}</strong><br>
+                    <span class="small">${l.school}</span>
+                  </td>
+                  <td>${formatDate(new Date(l.purchaseDate))}</td>
+                  <td>${formatMonthYear(
+                    addMonths(new Date(l.loanStartDate), l.termYears * 12)
+                  )}</td>
+                  <td style="text-align:right;font-weight:700">
+                    ${(e.roi * 100).toFixed(2)}%
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
         </table>
       </div>
     </div>
   `;
 
-  populateROILoanTable(loans);
-
   // ===============================
-  // 6. Open drawer
+  // 6. OPEN DRAWER
   // ===============================
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
-  drawer.scrollTop = 0;
+  drawerBody.scrollTop = 0;
 }
+
 
 
       /* ============================================================
