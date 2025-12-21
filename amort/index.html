@@ -2425,100 +2425,100 @@ function renderPaymentsDrawer() {
   drawerSub.textContent = 'Sum of scheduled payments across loans';
 
   const loansForSeries =
-    (typeof currentLoans !== 'undefined' && currentLoans.length)
-      ? currentLoans
-      : allLoans;
+    (currentLoans && currentLoans.length) ? currentLoans : allLoans;
+
+  // -----------------------------
+  // SAFETY: no usable loans
+  // -----------------------------
+  if (!loansForSeries.length) {
+    console.warn('Payments drawer: no loans');
+    return;
+  }
 
   drawerSecondaryTitle.textContent = 'Total Invested';
   drawerSecondary.textContent =
-    `$${loansForSeries.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
+    `$${loansForSeries.reduce((s, l) => s + (l.purchasePrice || 0), 0).toLocaleString()}`;
 
   drawerAmortContainer.style.display = 'none';
+  drawerLegend.style.display = 'none';
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'none';
 
   // --------------------------------------------------
-  // BUILD MONTH SERIES (calendar-aligned)
+  // MONTH RANGE (loanStartDate + amort length)
   // --------------------------------------------------
-  const monthToDate = ym => new Date(ym + '-01T00:00:00');
-  const monthOffset = (a, b) =>
-    (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
+  const toMonthStart = d => {
+    const x = new Date(d);
+    x.setDate(1);
+    x.setHours(0, 0, 0, 0);
+    return x;
+  };
 
-  const prettyMonth = ym =>
-    monthToDate(ym).toLocaleDateString(undefined, {
-      month: 'short',
-      year: 'numeric'
+  const starts = loansForSeries
+    .map(l => l.loanStartDate)
+    .filter(Boolean)
+    .map(d => toMonthStart(d));
+
+  const ends = loansForSeries
+    .filter(l => l.loanStartDate && l.amort?.schedule?.length)
+    .map(l => {
+      const d = toMonthStart(l.loanStartDate);
+      d.setMonth(d.getMonth() + l.amort.schedule.length - 1);
+      return d;
     });
 
-  const minDate = Math.min(
-  ...loansForSeries.map(l => monthToDate(l.loanStartDate).getTime())
-);
+  if (!starts.length || !ends.length) {
+    console.warn('Payments drawer: no month range computed', loansForSeries);
+    return;
+  }
 
-
-  const maxDate = Math.max(
-    ...loansForSeries.map(l => {
-      const lastIdx = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
-      const d = monthToDate(l.loanStartDate);
-      d.setMonth(d.getMonth() + lastIdx - 1);
-      return d.getTime();
-    })
-  );
+  const minDate = new Date(Math.min(...starts));
+  const maxDate = new Date(Math.max(...ends));
 
   const months = [];
-
-// normalize BOTH bounds to first-of-month UTC
-const start = new Date(minDate);
-start.setUTCDate(1);
-start.setUTCHours(0, 0, 0, 0);
-
-const end = new Date(maxDate);
-end.setUTCDate(1);
-end.setUTCHours(0, 0, 0, 0);
-
-const cursor = new Date(start);
-
-while (cursor <= end) {
-  months.push(cursor.toISOString().slice(0, 7));
-  cursor.setUTCMonth(cursor.getUTCMonth() + 1);
-}
-
+  const cursor = new Date(minDate);
+  while (cursor <= maxDate) {
+    months.push(cursor.toISOString().slice(0, 7)); // YYYY-MM
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
 
   // --------------------------------------------------
-  // CURRENT MONTH INDEX
+  // TODAY INDEX (calendar aligned)
   // --------------------------------------------------
-  const today = new Date();
-  today.setDate(1);
+  const today = toMonthStart(new Date());
   const todayStr = today.toISOString().slice(0, 7);
 
   let todayIndex = months.indexOf(todayStr);
   if (todayIndex === -1) {
-    todayIndex =
-      today < monthToDate(months[0]) ? 0 : months.length - 1;
+    todayIndex = today < minDate ? 0 : months.length - 1;
   }
 
-if (!months.length) {
-  console.warn("Payments drawer: no month range computed", loansForSeries);
-  return;
-}
+  // --------------------------------------------------
+  // MONTHLY PAYMENTS (calendar aligned)
+  // --------------------------------------------------
+  const ymToDate = ym => new Date(ym + '-01T00:00:00');
 
-  
-  // --------------------------------------------------
-  // MONTHLY PAYMENTS SERIES (per-loan aligned)
-  // --------------------------------------------------
+  const monthOffset = (a, b) =>
+    (a.getFullYear() - b.getFullYear()) * 12 +
+    (a.getMonth() - b.getMonth());
+
   const paymentsByMonth = months.map(ym => {
-    const globalM = monthToDate(ym);
+    const globalMonth = ymToDate(ym);
 
     return loansForSeries.reduce((sum, loan) => {
-      const pd = monthToDate(loan.purchaseDate);
-      const off = monthOffset(globalM, pd);
-      if (off < 0) return sum;
+      if (!loan.loanStartDate || !loan.amort?.schedule?.length) return sum;
 
-      const sched = loan.amort.schedule[off];
-      return sum + (sched?.payment || 0);
+      const start = toMonthStart(loan.loanStartDate);
+      const off = monthOffset(globalMonth, start);
+      if (off < 0 || off >= loan.amort.schedule.length) return sum;
+
+      return sum + (loan.amort.schedule[off]?.payment || 0);
     }, 0);
   });
 
+  // --------------------------------------------------
+  // PRIMARY KPI (matches tile math)
+  // --------------------------------------------------
   const currentMonthlyIncome = paymentsByMonth[todayIndex] || 0;
 
   drawerPrimaryTitle.textContent = 'Current Monthly Income';
@@ -2529,7 +2529,7 @@ if (!months.length) {
     })}`;
 
   // --------------------------------------------------
-  // DRAW CHART
+  // CHART
   // --------------------------------------------------
   const svgNS = 'http://www.w3.org/2000/svg';
   const w = 480, h = 220, pad = 36;
@@ -2542,10 +2542,9 @@ if (!months.length) {
   const maxV = Math.max(...paymentsByMonth, 1);
   const stepX = (w - pad * 2) / Math.max(1, months.length - 1);
 
-  // Y axis
-  const ticks = 5;
-  for (let i = 0; i <= ticks; i++) {
-    const v = (maxV / ticks) * i;
+  // Y grid
+  for (let i = 0; i <= 5; i++) {
+    const v = (maxV / 5) * i;
     const y = pad + (h - pad * 2) * (1 - v / maxV);
 
     const line = document.createElementNS(svgNS, 'line');
@@ -2553,90 +2552,78 @@ if (!months.length) {
     line.setAttribute('x2', w - pad);
     line.setAttribute('y1', y);
     line.setAttribute('y2', y);
-    line.setAttribute('stroke', '#e2e8f0');
+    line.setAttribute('stroke', 'var(--grid-light)');
     svg.appendChild(line);
 
     const label = document.createElementNS(svgNS, 'text');
     label.setAttribute('x', pad - 6);
     label.setAttribute('y', y + 4);
-    label.setAttribute('font-size', '11');
     label.setAttribute('text-anchor', 'end');
-    label.setAttribute('fill', '#475569');
+    label.setAttribute('font-size', '11');
     label.textContent = `$${Math.round(v).toLocaleString()}`;
     svg.appendChild(label);
   }
 
   // Line
-  const points = paymentsByMonth.map((v, i) => {
-    const x = pad + i * stepX;
-    const y = pad + (h - pad * 2) * (1 - v / maxV);
-    return `${x},${y}`;
-  }).join(' ');
-
   const poly = document.createElementNS(svgNS, 'polyline');
-  poly.setAttribute('points', points);
+  poly.setAttribute(
+    'points',
+    paymentsByMonth
+      .map((v, i) => {
+        const x = pad + i * stepX;
+        const y = pad + (h - pad * 2) * (1 - v / maxV);
+        return `${x},${y}`;
+      })
+      .join(' ')
+  );
   poly.setAttribute('fill', 'none');
   poly.setAttribute('stroke', '#fb7185');
   poly.setAttribute('stroke-width', '2');
   svg.appendChild(poly);
 
-  // X axis labels
-  const skip = Math.max(1, Math.floor(months.length / 6));
-  for (let i = 0; i < months.length; i += skip) {
-    const x = pad + i * stepX;
-    const text = document.createElementNS(svgNS, 'text');
-    text.setAttribute('x', x);
-    text.setAttribute('y', h - pad + 14);
-    text.setAttribute('font-size', '11');
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('fill', '#475569');
-    text.textContent = prettyMonth(months[i]);
-    svg.appendChild(text);
-  }
-
   // Hover
   const hoverLine = document.createElementNS(svgNS, 'line');
   hoverLine.setAttribute('stroke', '#111827');
   hoverLine.setAttribute('stroke-dasharray', '3 4');
-  hoverLine.setAttribute('y1', pad);
-  hoverLine.setAttribute('y2', h - pad);
   hoverLine.style.opacity = '0';
   svg.appendChild(hoverLine);
 
   const hoverDot = document.createElementNS(svgNS, 'circle');
-  hoverDot.setAttribute('r', '4');
+  hoverDot.setAttribute('r', 4);
   hoverDot.setAttribute('fill', '#fb7185');
   hoverDot.style.opacity = '0';
   svg.appendChild(hoverDot);
 
   svg.addEventListener('mousemove', ev => {
     const rect = svg.getBoundingClientRect();
-    const relX = Math.max(0, Math.min(rect.width, ev.clientX - rect.left));
-    const i = Math.max(0, Math.min(
-      months.length - 1,
-      Math.round(relX / rect.width * (months.length - 1))
+    const x = ((ev.clientX - rect.left) / rect.width) * w;
+    const idx = Math.max(0, Math.min(months.length - 1,
+      Math.round((x - pad) / stepX)
     ));
 
-    const val = paymentsByMonth[i];
-    const x = pad + i * stepX;
-    const y = pad + (h - pad * 2) * (1 - val / maxV);
+    const v = paymentsByMonth[idx];
+    const cx = pad + idx * stepX;
+    const cy = pad + (h - pad * 2) * (1 - v / maxV);
 
-    hoverLine.setAttribute('x1', x);
-    hoverLine.setAttribute('x2', x);
+    hoverLine.setAttribute('x1', cx);
+    hoverLine.setAttribute('x2', cx);
+    hoverLine.setAttribute('y1', pad);
+    hoverLine.setAttribute('y2', h - pad);
     hoverLine.style.opacity = '0.6';
 
-    hoverDot.setAttribute('cx', x);
-    hoverDot.setAttribute('cy', y);
+    hoverDot.setAttribute('cx', cx);
+    hoverDot.setAttribute('cy', cy);
     hoverDot.style.opacity = '1';
 
     tooltip.style.display = 'block';
     tooltip.style.left = ev.clientX + 'px';
     tooltip.style.top = (ev.clientY - 12) + 'px';
     tooltip.innerHTML =
-      `${prettyMonth(months[i])} · Monthly Income $${val.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })}`;
+      `${new Date(months[idx] + '-01').toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric'
+      })}<br>
+       Monthly Income $${v.toLocaleString(undefined,{minimumFractionDigits:2})}`;
   });
 
   svg.addEventListener('mouseleave', () => {
@@ -2648,7 +2635,7 @@ if (!months.length) {
   drawerChartArea.appendChild(svg);
 
   // --------------------------------------------------
-  // TABLE
+  // TABLE (Dec 2025 format)
   // --------------------------------------------------
   drawerExtra.innerHTML = `
     <strong class="small">Monthly expected payments</strong>
@@ -2665,12 +2652,12 @@ if (!months.length) {
         <tbody>
           ${months.map((m, i) => `
             <tr>
-              <td>${prettyMonth(m)}</td>
+              <td>${new Date(m + '-01').toLocaleDateString(undefined, {
+                month: 'short',
+                year: 'numeric'
+              })}</td>
               <td style="text-align:right">
-                $${paymentsByMonth[i].toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                })}
+                $${paymentsByMonth[i].toLocaleString(undefined,{minimumFractionDigits:2})}
               </td>
             </tr>
           `).join('')}
@@ -2683,6 +2670,7 @@ if (!months.length) {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
 
