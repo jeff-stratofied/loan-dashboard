@@ -933,12 +933,23 @@ html[data-theme="dark"] .drawer-chart{
         window.KPI_COLOR_MAP[id] = palette[i];
       });
       
-    function getCurrentOwnedRoiEntry(loan){
-      const today = new Date();
-      const ownedEntries = loan.roiSeries.filter(r => r.ownershipDate && r.ownershipDate <= today);
-      if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
-      return ownedEntries[ownedEntries.length - 1];
-    }
+  function getCurrentOwnedRoiEntry(loan){
+  const today = new Date();
+
+  const ownedEntries = (loan.roiSeries || [])
+    .filter(r =>
+      r.ownershipDate &&
+      r.ownershipDate <= today &&
+      loan.user === PAGE_USER
+    );
+
+  if (!ownedEntries.length) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  return ownedEntries[ownedEntries.length - 1];
+}
+
 
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
@@ -952,22 +963,25 @@ function computeKPIs(list) {
   // Weighted ROI to Date (unchanged)
   // -------------------------------------
   const weightedROI =
-    list.reduce((s, l) => {
-      const entry = getCurrentOwnedRoiEntry(l);
-      return s + l.purchasePrice * (entry.roi || 0);
-    }, 0) / Math.max(1, total);
+  list.reduce((s, l) => {
+    if (l.user !== PAGE_USER) return s;
+
+    const entry = getCurrentOwnedRoiEntry(l);
+    return s + l.purchasePrice * (entry.roi || 0);
+  }, 0) / Math.max(1, total);
+
 
   // -------------------------------------
   // Projected Weighted ROI (unchanged)
   // -------------------------------------
   const projectedWeightedROI =
-    list.reduce(
-      (s, l) =>
-        s +
-        l.purchasePrice *
-          ((l.roiSeries[l.roiSeries.length - 1] || {}).roi || 0),
-      0
-    ) / Math.max(1, total);
+  list.reduce((s, l) => {
+    if (l.user !== PAGE_USER) return s;
+
+    const last = l.roiSeries?.[l.roiSeries.length - 1];
+    return s + l.purchasePrice * (last?.roi || 0);
+  }, 0) / Math.max(1, total);
+
 
     // -------------------------------------
     // Capital Recovery (TO TODAY, FIXED)
@@ -3317,10 +3331,10 @@ function renderCapitalRecoveryDrawer() {
 }
 
 
-
-
-
-
+console.assert(
+  currentLoans.every(l => l.user === PAGE_USER),
+  '❌ Non-user loans leaked into ROI KPIs'
+);
 
 
       
