@@ -216,15 +216,16 @@
   userSelect.value = user;
 
   function buildFrames(u) {
-    document.getElementById("roiFrame").src =
-      `index-roi.html?user=${u}&embed=true&open=projectedROI`;
+  document.getElementById("roiFrame").src =
+    `/loan-dashboard/roi/index.html?user=${u}&embed=true&open=projectedROI`;
 
-    document.getElementById("earningsFrame").src =
-      `earnngs/index.html?user=${u}&embed=true&open=projectedNet`;
+  document.getElementById("earningsFrame").src =
+    `/loan-dashboard/earnings/index.html?user=${u}&embed=true&open=projectedNet`;
 
-    document.getElementById("amortFrame").src =
-      `index-amort.html?user=${u}&embed=true&openFirstLoan=true`;
-  }
+  document.getElementById("amortFrame").src =
+    `/loan-dashboard/amort/index.html?user=${u}&embed=true&openFirstLoan=true`;
+}
+
 
   buildFrames(user);
 
