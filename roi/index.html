@@ -752,6 +752,8 @@ html[data-theme="dark"] .drawer-chart{
        ------------------------- */
     // Dynamic loans loaded from backend
     let loans = [];
+let currentLoans = [];   // ← ADD THIS
+
 
     async function loadLoans() {
       const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
@@ -876,9 +878,10 @@ html[data-theme="dark"] .drawer-chart{
       // --------------------------------------------------
       // USER + VISIBILITY FILTER
       // --------------------------------------------------
-      const currentLoans = normalizedLoans.filter(l =>
-        l.user === PAGE_USER && l.visible === true
-      );
+      currentLoans = normalizedLoans.filter(l =>
+  l.user === PAGE_USER && l.visible === true
+);
+
 
       
     /* -------------------------
@@ -2795,27 +2798,28 @@ function renderRatesDrawer() {
     .sort((a, b) => a - b)
     .map(ms => new Date(ms));
 
-  const weightedSeries = dates.map(d => {
-    let total = 0;
-    let weighted = 0;
+const weightedSeries = dates.map(d => {
+  let total = 0;
+  let weighted = 0;
 
-    currentLoans.forEach(loan => {
-      const entry = loan.roiSeries.find(
-        r =>
-          r.ownershipDate.getFullYear() === d.getFullYear() &&
-          r.ownershipDate.getMonth() === d.getMonth()
-      );
-      if (!entry) return;
+  currentLoans.forEach(loan => {
+    // use LAST roiSeries entry <= this date
+    const entry = loan.roiSeries
+      .filter(r => r.ownershipDate && r.ownershipDate <= d)
+      .at(-1);
 
-      weighted += loan.purchasePrice * entry.roi;
-      total += loan.purchasePrice;
-    });
+    if (!entry) return;
 
-    return {
-      date: d,
-      y: total ? weighted / total : 0
-    };
+    weighted += loan.purchasePrice * entry.roi;
+    total += loan.purchasePrice;
   });
+
+  return {
+    date: d,
+    y: total > 0 ? weighted / total : 0
+  };
+});
+
 
   // -------------------------------
   // Primary / Secondary values
