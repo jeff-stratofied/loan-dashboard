@@ -1678,6 +1678,7 @@ drawerBody.scrollTop = 0;
 function renderDistributionDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
+drawer.classList.add('kpi-interactive');
 
   drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
   drawerSub.textContent = 'Number of loans purchased by month';
@@ -1929,6 +1930,8 @@ function renderTPVDrawer() {
 
   currentMode = 'kpi';
   currentLoan = null;
+
+  drawer.classList.remove('kpi-interactive');
 
   drawerTitle.textContent = 'Total Portfolio Value';
   drawerSub.textContent = 'Purchase + accrued interest (grace) + cumulative payments';
@@ -2197,6 +2200,7 @@ drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
 function renderRatesDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
+drawer.classList.add('kpi-interactive');
 
   drawerTitle.textContent = 'Rates Distribution';
   drawerSub.textContent = 'Histogram of loan nominal rates';
@@ -2429,6 +2433,8 @@ function renderRatesDrawer() {
 function renderPaymentsDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
+
+  drawer.classList.remove('kpi-interactive');
 
   drawerTitle.textContent = 'Total Expected Payments (monthly)';
   drawerSub.textContent = 'Sum of scheduled payments across loans';
