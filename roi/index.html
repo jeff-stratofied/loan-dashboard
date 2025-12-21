@@ -951,10 +951,22 @@ html[data-theme="dark"] .drawer-chart{
 }
 
 
-    function getLastOwnedRoiEntry(loan){
-      if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
-      return loan.roiSeries[loan.roiSeries.length - 1];
-    }
+   function getLastOwnedRoiEntry(loan){
+  if (loan.user !== PAGE_USER) {
+    return { roi: 0, loanValue: 0 };
+  }
+
+  const series = (loan.roiSeries || []).filter(r =>
+    r.ownershipDate && r.ownershipDate <= new Date()
+  );
+
+  if (!series.length) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  return series[series.length - 1];
+}
+
 
 function computeKPIs(list) {
   // 🔒 HARD GUARD
@@ -2372,6 +2384,8 @@ function smoothPath(points) {
    Using the same stable timeline engine as Projected ROI
    ============================================================ */
 function renderTPVDrawer() {
+  if (loan.user && loan.user !== PAGE_USER) return;
+
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -2574,7 +2588,9 @@ const data = dates.map(date => {
 
 
     function renderRatesDrawer(){
-  currentMode = 'kpi';
+   if (loan.user && loan.user !== PAGE_USER) return;
+
+      currentMode = 'kpi';
 currentLoan = null;
 
     drawer.classList.remove('loan-mode');
@@ -2938,6 +2954,8 @@ DELETE if not needed */
 // KPI4 — ROI SPREAD DRAWER
 // ============================================================
 function renderROISpreadDrawer() {
+  if (loan.user && loan.user !== PAGE_USER) return;
+
   currentMode = 'kpi';
   currentLoan = null;
   drawer.classList.remove('loan-mode');
@@ -3106,6 +3124,8 @@ drawerExtra.innerHTML = `
 }
 
 function renderCapitalRecoveryDrawer() {
+  if (loan.user && loan.user !== PAGE_USER) return;
+
   currentMode = 'kpi';
   currentLoan = null;
 
