@@ -3,15 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>My Portfolio</title>
+  <title>Portfolio Dashboard</title>
 
-  <!-- ===============================
-       SHARED THEME + PAGE STYLES
-       (copied from ROI/Earnings)
-       =============================== -->
   <style>
-    html { color-scheme: light; }
-    
     :root {
       --bg:#f8fafc;
       --surface:#f1f5f9;
@@ -19,72 +13,42 @@
       --border:#e2e8f0;
       --text:#0f172a;
       --muted:#64748b;
-    
       --brand:#0ea5e9;
-      --accent:#7c3aed;
-    
       --shadow:0 12px 30px rgba(15,23,42,0.06);
-      --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
-    
-      --tooltip-bg:#0f172a;
-      --tooltip-text:#f8fafc;
     }
-    
+
     html[data-theme="dark"] {
-      color-scheme: dark;
-    
       --bg:#0f172a;
       --surface:#1e293b;
       --card:#1e293b;
       --border:#334155;
       --text:#f1f5f9;
       --muted:#94a3b8;
-    
       --brand:#38bdf8;
-      --accent:#c4b5fd;
-    
       --shadow:rgba(0,0,0,0.45);
-      --chart-bg:linear-gradient(180deg,#1e293b,#0f172a);
     }
 
-    html,body {
+    html, body {
       height:100%;
       margin:0;
-      font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
       color:var(--text);
+      background:linear-gradient(180deg,var(--surface),var(--bg));
     }
-
-       body {
-      background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
-      background-color: var(--bg);
-      transition: background-color .25s ease, color .25s ease;
-      overflow: hidden;
-    }
-    
-    html[data-theme="dark"] body {
-      background: linear-gradient(180deg,#0b1224 0%, #0f172a 100%);
-    }
-
 
     .app {
-      max-width:1200px;
+      max-width:1400px;
       margin:0 auto;
       padding:16px;
       height:100%;
-      overflow-y:auto;
+      overflow:auto;
     }
 
     header {
       display:flex;
-      flex-direction:column;
-      gap:8px;
-      margin-bottom:16px;
-    }
-
-    .header-top {
-      display:flex;
-      align-items:center;
       justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:16px;
     }
 
     h1 {
@@ -95,413 +59,193 @@
     .lead {
       font-size:13px;
       color:var(--muted);
-      margin:0;
+      margin-top:4px;
     }
 
-    .header-controls {
+    .controls {
       display:flex;
       gap:10px;
       align-items:center;
     }
 
-    .theme-icon {
-      width:38px;
-      height:38px;
-      border-radius:10px;
+    select, button {
       border:1px solid var(--border);
       background:var(--card);
+      color:var(--text);
+      border-radius:6px;
+      padding:6px 8px;
+      font-weight:600;
       cursor:pointer;
-      font-size:16px;
     }
 
     /* ===============================
-       PORTFOLIO GRID
+       DASHBOARD GRID
        =============================== */
-    .portfolio-grid {
+
+    .dashboard-grid {
       display:grid;
       grid-template-columns:repeat(3,1fr);
       gap:16px;
       margin-top:16px;
     }
 
-    .portfolio-tile {
+    .frame-tile {
       background:var(--card);
       border:1px solid var(--border);
-      border-radius:14px;
-      padding:16px;
+      border-radius:16px;
       box-shadow:var(--shadow);
-      cursor:pointer;
+      overflow:hidden;
       display:flex;
       flex-direction:column;
-      gap:6px;
-      transition:transform .18s ease, box-shadow .18s ease;
+      min-height:600px;
     }
 
-.portfolio-tile {
-  min-height: 560px;   /* 👈 controls hero tile height */
-}
-
-    
-    .portfolio-tile:hover {
-      transform:translateY(-4px);
-      box-shadow:0 12px 30px rgba(0,0,0,0.18);
+    .frame-header {
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
     }
 
-.tile-body {
-  flex:1;
-  display:flex;
-}
-
-.mini-drawer {
-  flex:1;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:10px;
-  overflow:auto;
-  min-height:320px;
-}
-
-    .mini-drawer table tbody tr:nth-child(even) {
-  background: rgba(0,0,0,0.03);
-}
-html[data-theme="dark"] .mini-drawer table tbody tr:nth-child(even) {
-  background: rgba(255,255,255,0.04);
-}
-
-    
-    .tile-title {
+    .frame-title {
       font-weight:700;
       font-size:14px;
     }
 
-    .tile-sub {
+    .frame-sub {
       font-size:12px;
       color:var(--muted);
-      margin-bottom:6px;
+      margin-top:2px;
     }
 
-    .tile-chart {
+    .frame-body {
       flex:1;
-      border-radius:10px;
-      background:var(--chart-bg);
-      border:1px solid var(--border);
-      padding:8px;
-      min-height:220px;
+      position:relative;
     }
 
-    @media(max-width:1000px){
-      .portfolio-grid {
+    iframe {
+      width:100%;
+      height:100%;
+      border:none;
+    }
+
+    @media(max-width:1100px) {
+      .dashboard-grid {
         grid-template-columns:1fr;
       }
-    }
-
-    /* Tooltip (shared) */
-    .tooltip {
-      position:fixed;
-      pointer-events:none;
-      background:var(--tooltip-bg);
-      color:var(--tooltip-text);
-      padding:6px 8px;
-      border-radius:6px;
-      font-size:12px;
-      transform:translate(-50%,-120%);
-      display:none;
-      z-index:9999;
     }
   </style>
 </head>
 
 <body>
-<div class="app" role="main">
+<div class="app">
 
   <!-- ===============================
        HEADER
        =============================== -->
   <header>
-    <div class="header-top">
-      <div>
-        <h1>My Portfolio</h1>
-        <p class="lead">
-          View performance, earnings, and loan schedules across your portfolio.
-        </p>
-      </div>
+    <div>
+      <h1>Portfolio Dashboard</h1>
+      <p class="lead">
+        Performance, earnings, and loan schedules at a glance.
+      </p>
+    </div>
 
-      <div class="header-controls">
-        <div style="font-size:13px;color:var(--muted)">
-          User:
-          <select id="userSelect" style="
-            border:1px solid var(--border);
-            border-radius:6px;
-            padding:4px 6px;
-            background:var(--card);
-            color:var(--text);
-            font-weight:600;
-          ">
-            <option value="jeff">Jeff Customer</option>
-            <option value="nick">Nick Lender</option>
-            <option value="john">John Investor</option>
-          </select>
-        </div>
+    <div class="controls">
+      <label>
+        User:
+        <select id="userSelect">
+          <option value="jeff">Jeff Customer</option>
+          <option value="nick">Nick Lender</option>
+          <option value="john">John Investor</option>
+        </select>
+      </label>
 
-        <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
-      </div>
+      <button id="themeToggle">🌙</button>
     </div>
   </header>
 
   <!-- ===============================
-       PORTFOLIO TILES
+       DASHBOARD FRAMES
        =============================== -->
-  <section class="portfolio-grid">
-    <div class="portfolio-tile" id="tileROI">
-      <div class="tile-title">Return On Investment</div>
-      <div class="tile-sub">View the ROI for your portfolio</div>
-      <div class="tile-body">
-  <div class="mini-drawer" id="roiMini"></div>
-</div>
+  <section class="dashboard-grid">
+
+    <!-- ROI -->
+    <div class="frame-tile">
+      <div class="frame-header">
+        <div class="frame-title">Return on Investment</div>
+        <div class="frame-sub">Portfolio ROI and projections</div>
+      </div>
+      <div class="frame-body">
+        <iframe id="roiFrame"></iframe>
+      </div>
     </div>
 
-    <div class="portfolio-tile" id="tileEarnings">
-      <div class="tile-title">Portfolio Earnings</div>
-      <div class="tile-sub">View current and projected earnings for your portfolio</div>
-      <div class="tile-body">
-  <div class="mini-drawer" id="earningsMini"></div>
-</div>
+    <!-- Earnings -->
+    <div class="frame-tile">
+      <div class="frame-header">
+        <div class="frame-title">Earnings</div>
+        <div class="frame-sub">Cash flow and projected returns</div>
+      </div>
+      <div class="frame-body">
+        <iframe id="earningsFrame"></iframe>
+      </div>
     </div>
 
-    <div class="portfolio-tile" id="tileAmort">
-      <div class="tile-title">Loan Amortization Schedules</div>
-      <div class="tile-sub">View all loan amortization schedules and total portfolio value</div>
-      <div class="tile-body">
-  <div class="mini-drawer" id="amortMini"></div>
-</div>
-
+    <!-- Amort -->
+    <div class="frame-tile">
+      <div class="frame-header">
+        <div class="frame-title">Loan Amortization</div>
+        <div class="frame-sub">Schedules and balances</div>
+      </div>
+      <div class="frame-body">
+        <iframe id="amortFrame"></iframe>
+      </div>
     </div>
+
   </section>
 
 </div>
 
-
-
-
 <!-- ===============================
      SCRIPT
      =============================== -->
-<script type="module">
+<script>
+  const params = new URLSearchParams(location.search);
+  const user = params.get("user") || "jeff";
 
-    
-  import { renderAmortLoanChart }
-  from "/loan-dashboard/js/charts/amortLoanChart.js";
+  const userSelect = document.getElementById("userSelect");
+  userSelect.value = user;
 
+  function buildFrames(u) {
+    document.getElementById("roiFrame").src =
+      `index-roi.html?user=${u}&embed=true&open=projectedROI`;
 
-  
+    document.getElementById("earningsFrame").src =
+      `index-earnings.html?user=${u}&embed=true&open=projectedNet`;
 
-// ===============================
-// REQUIRED GLOBAL — amort drawer
-// ===============================
-window.formatCurrency = function formatCurrency(val) {
-  const n = Number(val) || 0;
-  return `$${n.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  })}`;
-};
+    document.getElementById("amortFrame").src =
+      `index-amort.html?user=${u}&embed=true&openFirstLoan=true`;
+  }
 
+  buildFrames(user);
 
-  
-  // ===============================
-// DRAWER GLOBALS (REQUIRED)
-// ===============================
+  userSelect.addEventListener("change", () => {
+    location.href = `index-portDash.html?user=${userSelect.value}`;
+  });
 
-
-  // ===============================
-// LOAN INITIALIZATION (MATCH ROI)
-// ===============================
-let currentLoans = [];
-
-async function initPortfolioLoans(PAGE_USER) {
-  const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-  const data = await res.json();
-
-  const rawLoans = (data.loans || []).map(l => ({
-    ...l,
-    id: l.loanId,
-    name: l.loanName ?? `Loan ${l.loanId}`,
-    school: l.school ?? "",
-    loanStartDate: l.loanStartDate || "",
-    termYears: Number(l.termYears ?? 0),
-    graceYears: Number(l.graceYears ?? 0),
-    purchasePrice: Number(l.purchasePrice ?? 0),
-    nominalRate: Number(l.rate ?? l.nominalRate ?? 0),
-    upfrontFee: Number(l.upfrontFee ?? 150),
-    monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
-  }));
-
-  const loansWithAmort = rawLoans.map(l => ({
-  ...l,
-  amort: l.amort,          // 👈 already provided by API
-  user: l.user ?? "jeff",
-  visible: l.visible !== false
-}));
-
-
-  // EXACT same filter as ROI
-  currentLoans = loansWithAmort.filter(
-    l => l.user === PAGE_USER && l.visible === true
-  );
-
-  // expose for charts / loaders
-  window.currentLoans = currentLoans;
-}
-
-  
-  // ===============================
-  // THEME INIT (RUNS FIRST)
-  // ===============================
+  // Theme
   const themeToggle = document.getElementById("themeToggle");
-
-  function applyTheme(theme) {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-    themeToggle.textContent = theme === "dark" ? "☀️" : "🌙";
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    localStorage.setItem("theme", t);
+    themeToggle.textContent = t === "dark" ? "☀️" : "🌙";
   }
 
   applyTheme(localStorage.getItem("theme") || "light");
 
-  themeToggle.addEventListener("click", () => {
-    const current = document.documentElement.getAttribute("data-theme");
-    applyTheme(current === "dark" ? "light" : "dark");
-  });
-
-function renderAmortMiniDrawer(loan, container) {
-  if (!loan?.amort?.schedule?.length) {
-    container.innerHTML = "<div style='color:var(--muted)'>No amort data</div>";
-    return;
-  }
-
-  const schedule = loan.amort.schedule;
-
-  container.innerHTML = `
-    <div style="font-weight:600;font-size:13px;margin-bottom:6px">
-      ${loan.name}
-    </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
-      Rate ${(loan.nominalRate * 100).toFixed(2)}% •
-      Purchase ${loan.purchasePrice.toLocaleString()}
-    </div>
-
-    <div id="amortMiniChart" style="
-      height:180px;
-      margin-bottom:10px;
-    "></div>
-
-    <div style="
-      border:1px solid var(--border);
-      border-radius:10px;
-      overflow:auto;
-      max-height:220px;
-      background:var(--card);
-    ">
-      <table style="width:100%;font-size:12px;border-collapse:collapse">
-        <thead>
-          <tr style="position:sticky;top:0;background:var(--surface)">
-            <th style="text-align:left;padding:6px">Date</th>
-            <th style="text-align:right;padding:6px">Payment</th>
-            <th style="text-align:right;padding:6px">Balance</th>
-          </tr>
-        </thead>
-        <tbody id="amortMiniBody"></tbody>
-      </table>
-    </div>
-  `;
-
-
-const chartEl = container.querySelector("#amortMiniChart");
-
-requestAnimationFrame(() => {
-  renderAmortLoanChart({
-    loan,
-    container: chartEl,
-    height: 180,
-    compact: true
-  });
-});
-
-
-
-  // -------------------------
-  // TABLE (FIRST 12 ROWS)
-  // -------------------------
-  const tbody = container.querySelector("#amortMiniBody");
-
-  schedule.slice(0, 12).forEach(r => {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td style="padding:6px">${r.monthIndex}</td>
-    <td style="padding:6px;text-align:right">
-      ${formatCurrency(r.payment)}
-    </td>
-    <td style="padding:6px;text-align:right">
-      ${formatCurrency(r.balance)}
-    </td>
-  `;
-  tbody.appendChild(tr);
-});
-}
-
-  
-  // ===============================
-  // NAVIGATION ONLY (NO CHART IMPORTS)
-  // ===============================
-  
- document.getElementById("tileROI").onclick = () =>
-  location.href = `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
-
-document.getElementById("tileEarnings").onclick = () =>
-  location.href = `../index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
-
-document.getElementById("tileAmort").onclick = () =>
-  location.href = `../index-amort.html?user=${PAGE_USER}&openFirstLoan=true`;
-
-
-
-
-  // ===============================
-// LOAD + RENDER
-// ===============================
-const params = new URLSearchParams(window.location.search);
-const PAGE_USER = params.get("user") || "jeff";
-
-await initPortfolioLoans(PAGE_USER);
-const loans = currentLoans;
-
-
-
-tileROI.onclick = () =>
-  location.href = `../index-roi.html?user=${PAGE_USER}&open=projectedROI`;
-
-tileEarnings.onclick = () =>
-  location.href = `../index-earnings.html?user=${PAGE_USER}&open=projectedNet`;
-
-  document.getElementById("roiMini").innerHTML =
-  "<div style='color:var(--muted)'>ROI mini-drawer</div>";
-
-document.getElementById("earningsMini").innerHTML =
-  "<div style='color:var(--muted)'>Earnings mini-drawer</div>";
-
-const amortMini = document.getElementById("amortMini");
-
-const firstLoan = [...currentLoans].sort(
-  (a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate)
-)[0];
-
-if (firstLoan) {
-  renderAmortMiniDrawer(firstLoan, amortMini);
-}
-
-
-
-  
+  themeToggle.onclick = () => {
+    const t = document.documentElement.getAttribute("data-theme");
+    applyTheme(t === "dark" ? "light" : "dark");
+  };
 </script>
 
 </body>
