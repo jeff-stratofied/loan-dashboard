@@ -317,11 +317,20 @@
       transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
 
-    /* KPI drawer table row hover (match ROI / Earnings) */
-    #drawerExtra table tbody tr:hover {
-      background: rgba(148, 163, 184, 0.12);
-      cursor: pointer;
-    }
+/* =========================================
+   KPI table hover — ONLY interactive KPIs
+   (KPI 2 + KPI 4)
+========================================= */
+.drawer.kpi-interactive #drawerExtra table tbody:hover tr {
+  opacity: 0.45;
+}
+
+.drawer.kpi-interactive #drawerExtra table tbody tr:hover {
+  opacity: 1;
+  background: rgba(148, 163, 184, 0.12);
+  cursor: pointer;
+}
+
 
     #drawerExtra table tbody:hover tr {
       opacity: 0.45;
