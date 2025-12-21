@@ -2187,9 +2187,12 @@ function openDrawerForLoan(loan){
       const origAmt = (loan.purchasePrice || 0);
       
       drawerSub.innerHTML = `
-      ${loan.school || "No school"}<br>
-      Purchased ${loan.purchaseDate} • Orig Loan Amt $${(loan.purchasePrice || 0).toLocaleString()}
-    `;
+  ${loan.school || "No school"}<br>
+  Purchased ${loan.purchaseDate}
+  • Orig Loan Amt $${Number(loan.originalLoanAmount || loan.origLoanAmount || loan.loanAmount || 0).toLocaleString()}
+  • Loan Purchase Price $${Number(loan.purchasePrice || 0).toLocaleString()}
+`;
+
 
       drawerPrimaryTitle.textContent = 'Orig Loan Amount'; drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
       drawerSecondaryTitle.textContent = 'Nominal Rate'; drawerSecondary.textContent = (loan.nominalRate*100).toFixed(2)+'%';
