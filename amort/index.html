@@ -2458,7 +2458,7 @@ function renderPaymentsDrawer() {
   const maxDate = Math.max(
     ...loansForSeries.map(l => {
       const lastIdx = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
-      const d = monthToDate(l.purchaseDate);
+      const d = monthToDate(l.loanStartDate);
       d.setMonth(d.getMonth() + lastIdx - 1);
       return d.getTime();
     })
@@ -2485,6 +2485,12 @@ function renderPaymentsDrawer() {
       today < monthToDate(months[0]) ? 0 : months.length - 1;
   }
 
+if (!months.length) {
+  console.warn("Payments drawer: no month range computed", loansForSeries);
+  return;
+}
+
+  
   // --------------------------------------------------
   // MONTHLY PAYMENTS SERIES (per-loan aligned)
   // --------------------------------------------------
