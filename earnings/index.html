@@ -3037,9 +3037,17 @@ if (isEmbed) {
   const open = new URLSearchParams(location.search).get("open");
 
   if (open === "projectedNet") {
-    document.querySelector('[data-kpi="projected"]')?.click();
+    // Defer until module initialization is complete
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document
+          .querySelector('[data-kpi="projected"]')
+          ?.click();
+      });
+    });
   }
 }
+
 
 
     // ===========================
