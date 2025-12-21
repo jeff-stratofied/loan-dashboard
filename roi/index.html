@@ -2466,7 +2466,7 @@ function renderTPVDrawer() {
   );
 
   // ===============================
-  // 5. ROI-TO-DATE TABLE (SCOPED)
+  // 5. ROI-TO-DATE TABLE (WITH COLORS)
   // ===============================
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
@@ -2491,9 +2491,20 @@ function renderTPVDrawer() {
           <tbody>
             ${scopedLoans.map(l => {
               const e = getCurrentOwnedRoiEntry(l);
+              const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
+
               return `
                 <tr>
                   <td>
+                    <span style="
+                      display:inline-block;
+                      width:10px;
+                      height:10px;
+                      border-radius:3px;
+                      background:${color};
+                      margin-right:8px;
+                      vertical-align:middle;
+                    "></span>
                     <strong>${l.name}</strong><br>
                     <span class="small">${l.school}</span>
                   </td>
@@ -2501,7 +2512,11 @@ function renderTPVDrawer() {
                   <td>${formatMonthYear(
                     addMonths(new Date(l.loanStartDate), l.termYears * 12)
                   )}</td>
-                  <td style="text-align:right;font-weight:700">
+                  <td style="
+                    text-align:right;
+                    font-weight:700;
+                    color:${color};
+                  ">
                     ${(e.roi * 100).toFixed(2)}%
                   </td>
                 </tr>
@@ -2520,6 +2535,7 @@ function renderTPVDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
 
