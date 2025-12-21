@@ -945,6 +945,13 @@ html[data-theme="dark"] .legend .sw {
     buildPortfolioViews
   } from "../js/loanEngine.js";
 
+  // ===============================
+// GLOBAL STATE (must be first)
+// ===============================
+let currentLoan = null;
+let currentMode = 'portfolio';
+
+  
   // ----------------------------------
   // Multi-user support (match ROI)
   // ----------------------------------
@@ -3061,7 +3068,6 @@ if (isEmbed) {
     // ===========================
     // Drawer global variables
     // ===========================
-    let currentLoan = null;
     let currentMode = null;
     
     // --------------------------
