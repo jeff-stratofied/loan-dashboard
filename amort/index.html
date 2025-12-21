@@ -1226,8 +1226,8 @@ function computeKPIs(list) {
       ? list.reduce((sum, loan) => sum + loan.nominalRate * loan.purchasePrice, 0) / totalPrincipal
       : 0;
 
-   // Expected Monthly Income for "today" based on calendar dates
-  const monthlyIncome = list.reduce((sum, loan) => {
+// Expected Monthly Income for "today" — PER LOAN (correct)
+const monthlyIncome = list.reduce((sum, loan) => {
   const idx = getCurrentMonthForLoan(loan) - 1;
   const pay = loan.amort.schedule[idx]?.payment || 0;
   return sum + pay;
@@ -2603,7 +2603,11 @@ function renderPaymentsDrawer() {
     tooltip.style.left = ev.clientX + 'px';
     tooltip.style.top = (ev.clientY - 12) + 'px';
     tooltip.innerHTML =
-      `${months[i]} • Monthly Income $${Math.round(val).toLocaleString()}`;
+  `${new Date(row.year, row.month - 1).toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric"
+  })} · Monthly Income $${value.toLocaleString()}`;
+
   });
 
   svg.addEventListener('mouseleave', () => {
