@@ -2721,6 +2721,36 @@ function wireTableHoverToChart(chartSvg, table) {
   });
 }
 
+      // ============================================================
+// KPI2 — table row ↔ chart hover binding
+// ============================================================
+function wireKpi2TableHover(chartSvg, tableEl) {
+  if (!chartSvg || !tableEl) return;
+
+  const loanPaths = Array.from(
+    chartSvg.querySelectorAll('path[data-type="loan"]')
+  );
+
+  tableEl.querySelectorAll("tbody tr[data-loan-id]").forEach(row => {
+    const rowLoanId = row.dataset.loanId;
+
+    row.addEventListener("mouseenter", () => {
+      loanPaths.forEach(p => {
+        const active = p.dataset.loanId === rowLoanId;
+        p.setAttribute("stroke-opacity", active ? "1" : "0.15");
+        p.setAttribute("stroke-width", active ? "2.6" : "1.2");
+      });
+    });
+
+    row.addEventListener("mouseleave", () => {
+      loanPaths.forEach(p => {
+        p.setAttribute("stroke-opacity", "0.9");
+        p.setAttribute("stroke-width", "1.2");
+      });
+    });
+  });
+}
+
 
 function renderRatesDrawer() {
   currentMode = 'kpi';
