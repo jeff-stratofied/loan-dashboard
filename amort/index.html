@@ -2584,6 +2584,23 @@ function renderPaymentsDrawer() {
   svg.appendChild(poly);
 
   // --------------------------------------------------
+  // TODAY MARKER
+  // --------------------------------------------------
+  const todayX = pad + todayIndex * stepX;
+
+  const todayLine = document.createElementNS(svgNS, 'line');
+  todayLine.setAttribute('x1', todayX);
+  todayLine.setAttribute('x2', todayX);
+  todayLine.setAttribute('y1', pad);
+  todayLine.setAttribute('y2', h - pad);
+  todayLine.setAttribute('stroke', '#111827');
+  todayLine.setAttribute('stroke-dasharray', '3 4');
+  todayLine.setAttribute('stroke-opacity', '0.6');
+
+  svg.appendChild(todayLine);
+
+  
+  // --------------------------------------------------
   // X AXIS LABELS — every 24 months (2 years)
   // --------------------------------------------------
   months.forEach((ym, i) => {
