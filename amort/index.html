@@ -1227,11 +1227,12 @@ function computeKPIs(list) {
       : 0;
 
    // Expected Monthly Income for "today" based on calendar dates
-  const curIdx = getCurrentMonthIndex(list) - 1;
   const monthlyIncome = list.reduce((sum, loan) => {
-    const pay = loan.amort.schedule[curIdx]?.payment || 0;
-    return sum + pay;
-  }, 0);
+  const idx = getCurrentMonthForLoan(loan) - 1;
+  const pay = loan.amort.schedule[idx]?.payment || 0;
+  return sum + pay;
+}, 0);
+
 
 
   // Total loan count
@@ -2476,7 +2477,7 @@ function renderPaymentsDrawer() {
 
   const currentMonthlyIncome = paymentsByMonth[todayIndex] || 0;
 
-  drawerPrimaryTitle.textContent = 'Monthly Income';
+  drawerPrimaryTitle.textContent = 'Current Monthly Income';
   drawerPrimary.textContent =
     `$${Math.round(currentMonthlyIncome).toLocaleString()}`;
 
