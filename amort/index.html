@@ -2424,9 +2424,14 @@ function renderPaymentsDrawer() {
   drawerTitle.textContent = 'Total Expected Payments (monthly)';
   drawerSub.textContent = 'Sum of scheduled payments across loans';
 
+  const loansForSeries =
+    (typeof currentLoans !== 'undefined' && currentLoans.length)
+      ? currentLoans
+      : allLoans;
+
   drawerSecondaryTitle.textContent = 'Total Invested';
   drawerSecondary.textContent =
-    `$${allLoans.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
+    `$${loansForSeries.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
 
   drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
@@ -2436,14 +2441,28 @@ function renderPaymentsDrawer() {
   // --------------------------------------------------
   // BUILD MONTH SERIES (calendar-aligned)
   // --------------------------------------------------
-  const monthIndex = d => new Date(d + 'T00:00:00').getTime();
-  const minDate = Math.min(...allLoans.map(l => monthIndex(l.purchaseDate)));
-  const maxDate = Math.max(...allLoans.map(l => {
-    const lastMonth = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
-    const pd = new Date(l.purchaseDate + 'T00:00:00');
-    pd.setMonth(pd.getMonth() + lastMonth);
-    return pd.getTime();
-  }));
+  const monthToDate = ym => new Date(ym + '-01T00:00:00');
+  const monthOffset = (a, b) =>
+    (a.getFullYear() - b.getFullYear()) * 12 + (a.getMonth() - b.getMonth());
+
+  const prettyMonth = ym =>
+    monthToDate(ym).toLocaleDateString(undefined, {
+      month: 'short',
+      year: 'numeric'
+    });
+
+  const minDate = Math.min(
+    ...loansForSeries.map(l => monthToDate(l.purchaseDate).getTime())
+  );
+
+  const maxDate = Math.max(
+    ...loansForSeries.map(l => {
+      const lastIdx = l.amort.schedule[l.amort.schedule.length - 1].monthIndex;
+      const d = monthToDate(l.purchaseDate);
+      d.setMonth(d.getMonth() + lastIdx - 1);
+      return d.getTime();
+    })
+  );
 
   const months = [];
   const cursor = new Date(minDate);
@@ -2454,7 +2473,7 @@ function renderPaymentsDrawer() {
   }
 
   // --------------------------------------------------
-  // CURRENT MONTH INDEX (single source of truth)
+  // CURRENT MONTH INDEX
   // --------------------------------------------------
   const today = new Date();
   today.setDate(1);
@@ -2462,24 +2481,34 @@ function renderPaymentsDrawer() {
 
   let todayIndex = months.indexOf(todayStr);
   if (todayIndex === -1) {
-    todayIndex = today < new Date(months[0] + '-01') ? 0 : months.length - 1;
+    todayIndex =
+      today < monthToDate(months[0]) ? 0 : months.length - 1;
   }
 
   // --------------------------------------------------
-  // MONTHLY PAYMENTS SERIES
+  // MONTHLY PAYMENTS SERIES (per-loan aligned)
   // --------------------------------------------------
-  const paymentsByMonth = months.map((m, idx) =>
-    allLoans.reduce((sum, loan) => {
-      const sched = loan.amort.schedule[idx];
+  const paymentsByMonth = months.map(ym => {
+    const globalM = monthToDate(ym);
+
+    return loansForSeries.reduce((sum, loan) => {
+      const pd = monthToDate(loan.purchaseDate);
+      const off = monthOffset(globalM, pd);
+      if (off < 0) return sum;
+
+      const sched = loan.amort.schedule[off];
       return sum + (sched?.payment || 0);
-    }, 0)
-  );
+    }, 0);
+  });
 
   const currentMonthlyIncome = paymentsByMonth[todayIndex] || 0;
 
   drawerPrimaryTitle.textContent = 'Current Monthly Income';
   drawerPrimary.textContent =
-    `$${Math.round(currentMonthlyIncome).toLocaleString()}`;
+    `$${currentMonthlyIncome.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`;
 
   // --------------------------------------------------
   // DRAW CHART
@@ -2495,9 +2524,7 @@ function renderPaymentsDrawer() {
   const maxV = Math.max(...paymentsByMonth, 1);
   const stepX = (w - pad * 2) / Math.max(1, months.length - 1);
 
-  // --------------------------------------------------
-  // Y AXIS
-  // --------------------------------------------------
+  // Y axis
   const ticks = 5;
   for (let i = 0; i <= ticks; i++) {
     const v = (maxV / ticks) * i;
@@ -2508,8 +2535,7 @@ function renderPaymentsDrawer() {
     line.setAttribute('x2', w - pad);
     line.setAttribute('y1', y);
     line.setAttribute('y2', y);
-    line.setAttribute('stroke', 'var(--grid-light)');
-    line.setAttribute('stroke-width', '1');
+    line.setAttribute('stroke', '#e2e8f0');
     svg.appendChild(line);
 
     const label = document.createElementNS(svgNS, 'text');
@@ -2522,15 +2548,12 @@ function renderPaymentsDrawer() {
     svg.appendChild(label);
   }
 
-  // --------------------------------------------------
-  // LINE
-  // --------------------------------------------------
-  let points = '';
-  paymentsByMonth.forEach((v, i) => {
+  // Line
+  const points = paymentsByMonth.map((v, i) => {
     const x = pad + i * stepX;
     const y = pad + (h - pad * 2) * (1 - v / maxV);
-    points += `${x},${y} `;
-  });
+    return `${x},${y}`;
+  }).join(' ');
 
   const poly = document.createElementNS(svgNS, 'polyline');
   poly.setAttribute('points', points);
@@ -2539,32 +2562,21 @@ function renderPaymentsDrawer() {
   poly.setAttribute('stroke-width', '2');
   svg.appendChild(poly);
 
-  // --------------------------------------------------
-  // X AXIS LABELS
-  // --------------------------------------------------
-  const labelCount = 6;
-  const skip = Math.max(1, Math.floor(months.length / labelCount));
-
+  // X axis labels
+  const skip = Math.max(1, Math.floor(months.length / 6));
   for (let i = 0; i < months.length; i += skip) {
     const x = pad + i * stepX;
-    const d = new Date(months[i] + '-01');
-
     const text = document.createElementNS(svgNS, 'text');
     text.setAttribute('x', x);
     text.setAttribute('y', h - pad + 14);
     text.setAttribute('font-size', '11');
     text.setAttribute('text-anchor', 'middle');
     text.setAttribute('fill', '#475569');
-    text.textContent = d.toLocaleDateString(undefined, {
-      month: 'short',
-      year: 'numeric'
-    });
+    text.textContent = prettyMonth(months[i]);
     svg.appendChild(text);
   }
 
-  // --------------------------------------------------
-  // HOVER
-  // --------------------------------------------------
+  // Hover
   const hoverLine = document.createElementNS(svgNS, 'line');
   hoverLine.setAttribute('stroke', '#111827');
   hoverLine.setAttribute('stroke-dasharray', '3 4');
@@ -2581,21 +2593,21 @@ function renderPaymentsDrawer() {
 
   svg.addEventListener('mousemove', ev => {
     const rect = svg.getBoundingClientRect();
-    const x = Math.max(pad, Math.min(w - pad,
-      ((ev.clientX - rect.left) / rect.width) * w
+    const relX = Math.max(0, Math.min(rect.width, ev.clientX - rect.left));
+    const i = Math.max(0, Math.min(
+      months.length - 1,
+      Math.round(relX / rect.width * (months.length - 1))
     ));
 
-    const idx = Math.round((x - pad) / stepX);
-    const i = Math.max(0, Math.min(idx, months.length - 1));
-
     const val = paymentsByMonth[i];
+    const x = pad + i * stepX;
     const y = pad + (h - pad * 2) * (1 - val / maxV);
 
-    hoverLine.setAttribute('x1', pad + i * stepX);
-    hoverLine.setAttribute('x2', pad + i * stepX);
+    hoverLine.setAttribute('x1', x);
+    hoverLine.setAttribute('x2', x);
     hoverLine.style.opacity = '0.6';
 
-    hoverDot.setAttribute('cx', pad + i * stepX);
+    hoverDot.setAttribute('cx', x);
     hoverDot.setAttribute('cy', y);
     hoverDot.style.opacity = '1';
 
@@ -2603,11 +2615,10 @@ function renderPaymentsDrawer() {
     tooltip.style.left = ev.clientX + 'px';
     tooltip.style.top = (ev.clientY - 12) + 'px';
     tooltip.innerHTML =
-  `${new Date(row.year, row.month - 1).toLocaleDateString(undefined, {
-    month: "short",
-    year: "numeric"
-  })} · Monthly Income $${value.toLocaleString()}`;
-
+      `${prettyMonth(months[i])} · Monthly Income $${val.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
   });
 
   svg.addEventListener('mouseleave', () => {
@@ -2636,8 +2647,13 @@ function renderPaymentsDrawer() {
         <tbody>
           ${months.map((m, i) => `
             <tr>
-              <td>${m}</td>
-              <td style="text-align:right">$${Math.round(paymentsByMonth[i]).toLocaleString()}</td>
+              <td>${prettyMonth(m)}</td>
+              <td style="text-align:right">
+                $${paymentsByMonth[i].toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}
+              </td>
             </tr>
           `).join('')}
         </tbody>
@@ -2649,6 +2665,7 @@ function renderPaymentsDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
 
