@@ -734,26 +734,30 @@ html[data-theme="dark"] .legend .sw {
   display: none !important;
 }
 
-/* Make drawer behave like a static panel */
+/* ============================================================
+   EMBED MODE — EARNINGS
+   ============================================================ */
+
 .embed-mode .drawer {
   position: static !important;
+  inset: auto !important;
   transform: none !important;
-  opacity: 1 !important;
+  height: 100% !important;
+  max-height: none !important;
   width: 100% !important;
   max-width: none !important;
-  height: 100% !important;
   box-shadow: none !important;
-  border-left: none !important;
+  border-radius: 0 !important;
 }
 
-/* Remove close / export chrome */
-.embed-mode .close-btn,
+/* Remove modal chrome */
 .embed-mode .drawer-footer,
-.embed-mode #printBtn,
-.embed-mode #copyCsvBtn,
-.embed-mode #downloadCsvBtn {
+.embed-mode .drawer-close,
+.embed-mode .close-btn,
+.embed-mode button[aria-label="Close"] {
   display: none !important;
 }
+
 
 /* Ensure scroll works inside iframe */
 .embed-mode .drawer-body {
@@ -3031,22 +3035,26 @@ renderKpi3AvgLineChart(
 }
 
 // ===============================
-// Auto-open KPI in embed mode
+// AUTO-OPEN KPI IN EMBED MODE
 // ===============================
 if (isEmbed) {
-  const open = new URLSearchParams(location.search).get("open");
+  const params = new URLSearchParams(location.search);
+  const open = params.get("open");
 
-  if (open === "projectedNet") {
-    // Defer until module initialization is complete
+  // Force KPI context before anything else
+  currentLoan = null;
+  currentMode = 'kpi';
+
+  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document
-          .querySelector('[data-kpi="projected"]')
-          ?.click();
-      });
+      if (open === "projectedNet") {
+        // 🔥 OPEN KPI2 EXPLICITLY
+        openKpi2();
+      }
     });
-  }
+  });
 }
+
 
 
 
