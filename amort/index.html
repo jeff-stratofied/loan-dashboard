@@ -2427,9 +2427,6 @@ function renderPaymentsDrawer() {
   const loansForSeries =
     (currentLoans && currentLoans.length) ? currentLoans : allLoans;
 
-  // -----------------------------
-  // SAFETY: no usable loans
-  // -----------------------------
   if (!loansForSeries.length) {
     console.warn('Payments drawer: no loans');
     return;
@@ -2445,7 +2442,7 @@ function renderPaymentsDrawer() {
   drawerChartArea.innerHTML = '';
 
   // --------------------------------------------------
-  // MONTH RANGE (loanStartDate + amort length)
+  // MONTH RANGE
   // --------------------------------------------------
   const toMonthStart = d => {
     const x = new Date(d);
@@ -2478,12 +2475,12 @@ function renderPaymentsDrawer() {
   const months = [];
   const cursor = new Date(minDate);
   while (cursor <= maxDate) {
-    months.push(cursor.toISOString().slice(0, 7)); // YYYY-MM
+    months.push(cursor.toISOString().slice(0, 7));
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
   // --------------------------------------------------
-  // TODAY INDEX (calendar aligned)
+  // TODAY INDEX
   // --------------------------------------------------
   const today = toMonthStart(new Date());
   const todayStr = today.toISOString().slice(0, 7);
@@ -2494,10 +2491,9 @@ function renderPaymentsDrawer() {
   }
 
   // --------------------------------------------------
-  // MONTHLY PAYMENTS (calendar aligned)
+  // MONTHLY PAYMENTS
   // --------------------------------------------------
   const ymToDate = ym => new Date(ym + '-01T00:00:00');
-
   const monthOffset = (a, b) =>
     (a.getFullYear() - b.getFullYear()) * 12 +
     (a.getMonth() - b.getMonth());
@@ -2517,7 +2513,7 @@ function renderPaymentsDrawer() {
   });
 
   // --------------------------------------------------
-  // PRIMARY KPI (matches tile math)
+  // PRIMARY KPI
   // --------------------------------------------------
   const currentMonthlyIncome = paymentsByMonth[todayIndex] || 0;
 
@@ -2581,7 +2577,31 @@ function renderPaymentsDrawer() {
   poly.setAttribute('stroke-width', '2');
   svg.appendChild(poly);
 
-  // Hover
+  // --------------------------------------------------
+  // X AXIS LABELS — every 24 months (2 years)
+  // --------------------------------------------------
+  months.forEach((ym, i) => {
+    if (i % 24 !== 0) return;
+
+    const x = pad + i * stepX;
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', x);
+    text.setAttribute('y', h - pad + 14);
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('font-size', '11');
+    text.setAttribute('fill', '#475569');
+    text.textContent =
+      new Date(ym + '-01').toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric'
+      });
+
+    svg.appendChild(text);
+  });
+
+  // --------------------------------------------------
+  // HOVER (chart only)
+  // --------------------------------------------------
   const hoverLine = document.createElementNS(svgNS, 'line');
   hoverLine.setAttribute('stroke', '#111827');
   hoverLine.setAttribute('stroke-dasharray', '3 4');
@@ -2597,7 +2617,8 @@ function renderPaymentsDrawer() {
   svg.addEventListener('mousemove', ev => {
     const rect = svg.getBoundingClientRect();
     const x = ((ev.clientX - rect.left) / rect.width) * w;
-    const idx = Math.max(0, Math.min(months.length - 1,
+    const idx = Math.max(0, Math.min(
+      months.length - 1,
       Math.round((x - pad) / stepX)
     ));
 
@@ -2635,7 +2656,7 @@ function renderPaymentsDrawer() {
   drawerChartArea.appendChild(svg);
 
   // --------------------------------------------------
-  // TABLE (Dec 2025 format)
+  // TABLE (static, no hover)
   // --------------------------------------------------
   drawerExtra.innerHTML = `
     <strong class="small">Monthly expected payments</strong>
@@ -2670,6 +2691,7 @@ function renderPaymentsDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
 
