@@ -2912,71 +2912,53 @@ function openKpi3() {
 }
 
 
-
-function openKpi4(){
-  if (!Number.isFinite(kpis.projectedAvgMonthlyNet)) {
-    console.warn(
-      "KPI4 projectedAvgMonthlyNet missing; defaulting to 0"
-    );
-    kpis.projectedAvgMonthlyNet = 0;
-  }
-
+function openKpi4() {
   currentLoan = null;
 
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
-drawerSub.textContent =
-  "Actual average monthly earnings to date, projected through final loan maturity.";
+  drawerSub.textContent =
+    "Projected net earnings divided by total ownership months across all loans.";
+
+  // PRIMARY
   drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
-  drawerPrimary.textContent = formatCurrency(kpis.projectedAvgMonthlyNet);
+  drawerPrimary.textContent =
+    formatCurrency(kpis.projectedAvgMonthlyNet);
 
- const totalMonthsThroughMaturity = Math.max(
-  ...loansWithEarnings.map(l =>
-    Math.round((l.termYears + l.graceYears) * 12)
-  )
-    );
-    
-    drawerSecondaryTitle.textContent = "Months Through Maturity";
-    drawerSecondary.textContent = `${totalMonthsThroughMaturity}`;
-
+  // SECONDARY
+  drawerSecondaryTitle.textContent = "Projection Basis";
+  drawerSecondary.textContent = "Lifetime";
 
   resetDrawerContent();
 
-  // ✅ Render KPI4 chart (single source of truth)
- const rows = buildKpi4AvgMonthlyRows(loansWithEarnings);
-renderKpi3AvgLineChart(
-  document.getElementById("drawerChartArea"),
-  rows,
-  { xLabelEveryMonths: 24 }
-);
+  // ----------------------------------
+  // KPI4 HAS NO CHART (by design)
+  // ----------------------------------
+  document.getElementById("drawerChartArea").innerHTML = "";
+  document.getElementById("drawerLegend").style.display = "none";
 
-
-  // ✅ Render KPI4 table
-  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-  renderKPI4Table(loansWithEarnings, "drawerKpiTable");
-
-
-  // KPI4 table: swatch click toggles loan visibility
-  drawerExtra.querySelectorAll(".loan-swatch").forEach(el => {
-    const loanId = el.dataset.loanId;
-
-    el.style.cursor = "pointer";
-    el.title = hiddenLoans.has(loanId)
-      ? "Click to show loan"
-      : "Click to hide loan";
-
-    if (hiddenLoans.has(loanId)) {
-      el.style.opacity = "0.25";
-    }
-
-    el.addEventListener("click", (e) => {
-      e.stopPropagation();
-      toggleLoanVisibility(loanId);
-    });
-  });
+  // ----------------------------------
+  // KPI4 EXPLANATION (PLAIN, NO TABLE)
+  // ----------------------------------
+  drawerExtra.innerHTML = `
+    <div style="
+      font-size:13px;
+      line-height:1.4;
+      color:var(--muted);
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:12px;
+    ">
+      This metric represents the projected average monthly net earnings
+      across all loans, calculated using each loan’s full ownership
+      lifetime. It is not tied to calendar months and does not vary
+      over time.
+    </div>
+  `;
 
   openDrawer();
-  return; // 🚫 STOP — prevent legacy code from running
 }
+
 
 // ===============================
 // AUTO-OPEN KPI IN EMBED MODE
