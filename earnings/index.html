@@ -2860,6 +2860,8 @@ function openKpi1(){
   }
 
   openDrawer();
+
+  document.body.classList.add("drawer-open");
 }
 
 
@@ -3042,6 +3044,8 @@ const avgRows = chartMonths.map(m => {
   ?.classList.add("kpi3-table");
 
   openDrawer();
+
+  document.body.classList.add("drawer-open");
 }
 
 
@@ -3119,6 +3123,8 @@ renderKpi3AvgLineChart(
   });
 
   openDrawer();
+  document.body.classList.add("drawer-open");
+
   return; // 🚫 STOP — prevent legacy code from running
 }
 
