@@ -967,11 +967,13 @@ html[data-theme="dark"] .legend .sw {
     buildPortfolioViews
   } from "../js/loanEngine.js";
 
-  // ===============================
+// ===============================
 // GLOBAL STATE (must be first)
 // ===============================
 let currentLoan = null;
 let currentMode = 'portfolio';
+let kpis = null;               // ✅ ADD THIS (so openKpi1/openKpi2 can read it)
+
 
   // =====================================
 // EMBED MODE DETECTION (match ROI)
@@ -3204,147 +3206,142 @@ renderKpi3AvgLineChart(
      });   
     }
 
-    async function initPage() {
+async function initPage() {
   await loadLoansFromBackend();
   rebuildLoansWithEarnings();
 
-  let kpis = computeEarningsKPIs(loansWithEarnings);
+  // ✅ Compute KPIs ONCE, assign to GLOBAL (no local shadow)
+  kpis = computeEarningsKPIs(loansWithEarnings);
 
-/* -------------------------
-   Populate earnings filter dropdowns
-   ------------------------- */
-const nameSelect = document.getElementById("filterName");
-const schoolSelect = document.getElementById("filterSchool");
+  /* -------------------------
+     Populate earnings filter dropdowns
+     ------------------------- */
+  const nameSelect = document.getElementById("filterName");
+  const schoolSelect = document.getElementById("filterSchool");
 
-nameSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
-schoolSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+  nameSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+  schoolSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
 
-const uniqueNames = [...new Set(
-  loansWithEarnings.map(l => l.loanName).filter(Boolean)
-)];
+  const uniqueNames = [...new Set(
+    loansWithEarnings.map(l => l.loanName).filter(Boolean)
+  )];
 
-const uniqueSchools = [...new Set(
-  loansWithEarnings.map(l => l.school).filter(Boolean)
-)];
+  const uniqueSchools = [...new Set(
+    loansWithEarnings.map(l => l.school).filter(Boolean)
+  )];
 
-uniqueNames.forEach(name => {
-  const opt = document.createElement("option");
-  opt.value = name.toLowerCase();
-  opt.textContent = name;
-  nameSelect.appendChild(opt);
-});
+  uniqueNames.forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name.toLowerCase();
+    opt.textContent = name;
+    nameSelect.appendChild(opt);
+  });
 
-uniqueSchools.forEach(school => {
-  const opt = document.createElement("option");
-  opt.value = school.toLowerCase();
-  opt.textContent = school;
-  schoolSelect.appendChild(opt);
-});
+  uniqueSchools.forEach(school => {
+    const opt = document.createElement("option");
+    opt.value = school.toLowerCase();
+    opt.textContent = school;
+    schoolSelect.appendChild(opt);
+  });
 
-        /* ==================================================
-   UI wiring: filters, sort, compact toggle (EARNINGS)
-   ================================================== */
+  /* ==================================================
+     UI wiring: filters, sort, compact toggle (EARNINGS)
+     ================================================== */
+  const filterName   = document.getElementById("filterName");
+  const filterSchool = document.getElementById("filterSchool");
+  const filterRate   = document.getElementById("filterRate");
+  const sortLoans    = document.getElementById("sortLoans");
+  const resetBtn     = document.getElementById("resetFilters");
+  const compactToggle = document.getElementById("toggleCompact");
+  const loanGrid     = document.getElementById("loanGrid");
 
-const filterName   = document.getElementById("filterName");
-const filterSchool = document.getElementById("filterSchool");
-const filterRate   = document.getElementById("filterRate");
-const sortLoans    = document.getElementById("sortLoans");
-const resetBtn     = document.getElementById("resetFilters");
-const compactToggle = document.getElementById("toggleCompact");
-const loanGrid     = document.getElementById("loanGrid");
+  // ---- Filter events
+  filterName.addEventListener("change", applyLoanFilters);
+  filterSchool.addEventListener("change", applyLoanFilters);
+  filterRate.addEventListener("change", applyLoanFilters);
 
-// ---- Filter events
-filterName.addEventListener("change", applyLoanFilters);
-filterSchool.addEventListener("change", applyLoanFilters);
-filterRate.addEventListener("change", applyLoanFilters);
+  // ---- Sort event
+  sortLoans.addEventListener("change", applyLoanSort);
 
-// ---- Sort event
-sortLoans.addEventListener("change", applyLoanSort);
+  // ---- Reset filters
+  resetBtn.addEventListener("click", () => {
+    filterName.value = "";
+    filterSchool.value = "";
+    filterRate.value = "";
+    applyLoanFilters();
+  });
 
-// ---- Reset filters
-resetBtn.addEventListener("click", () => {
-  filterName.value = "";
-  filterSchool.value = "";
-  filterRate.value = "";
-  applyLoanFilters();
-});
+  /* -------------------------
+     Compact tile toggle (persisted)
+     ------------------------- */
+  const savedCompact = localStorage.getItem("loanGridCompact");
+  if (savedCompact !== null) {
+    compactToggle.checked = savedCompact === "true";
+  }
 
-/* -------------------------
-   Compact tile toggle (persisted)
-   ------------------------- */
-const savedCompact = localStorage.getItem("loanGridCompact");
-if (savedCompact !== null) {
-  compactToggle.checked = savedCompact === "true";
-}
-
-// Apply initial state
-loanGrid.classList.toggle("compact", compactToggle.checked);
-
-// Persist on change
-compactToggle.addEventListener("change", () => {
+  // Apply initial state
   loanGrid.classList.toggle("compact", compactToggle.checked);
-  localStorage.setItem("loanGridCompact", compactToggle.checked);
-});
 
-
+  // Persist on change
+  compactToggle.addEventListener("change", () => {
+    loanGrid.classList.toggle("compact", compactToggle.checked);
+    localStorage.setItem("loanGridCompact", compactToggle.checked);
+  });
 
   // build portfolio-wide earnings series for charts (mini + drawer + KPI)
   portfolioViews = buildPortfolioViews(loansWithEarnings);
+  buildLoanColorMap(loansWithEarnings);
 
-      buildLoanColorMap(loansWithEarnings);
-
-
+  // ✅ If computeEarningsKPIs depends on portfolioViews, recompute once here
+  // (Keeps global assignment, still no shadow)
   kpis = computeEarningsKPIs(loansWithEarnings);
 
-document.getElementById("kpiNetToDate").textContent =
- formatCurrency(kpis.totalNetToDate);
+  document.getElementById("kpiNetToDate").textContent =
+    formatCurrency(kpis.totalNetToDate);
 
-document.getElementById("kpiNetProj").textContent =
-  formatCurrency(kpis.totalNetProjected);
+  document.getElementById("kpiNetProj").textContent =
+    formatCurrency(kpis.totalNetProjected);
 
-document.getElementById("kpiAvgMonth").textContent =
-  formatCurrency(kpis.avgMonthlyNet);
+  document.getElementById("kpiAvgMonth").textContent =
+    formatCurrency(kpis.avgMonthlyNet);
 
-document.getElementById("kpiFees").textContent =
-  formatCurrency(kpis.projectedAvgMonthlyNet);
-
+  document.getElementById("kpiFees").textContent =
+    formatCurrency(kpis.projectedAvgMonthlyNet);
 
   renderLoanTiles();
 
-      // =====================================
-// EMBED MODE: honor ?open=projectedNet
-// =====================================
-if (IS_EMBED) {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("open") === "projectedNet") {
-    // Defer until drawer DOM is fully ready
-    requestAnimationFrame(() => {
+  // =====================================
+  // EMBED MODE: honor ?open=projectedNet
+  // =====================================
+  if (IS_EMBED) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("open") === "projectedNet") {
+      // Defer until drawer DOM is fully ready
       requestAnimationFrame(() => {
-        openKpi2();
+        requestAnimationFrame(() => {
+          openKpi2();
+        });
       });
-    });
+    }
+  }
+
+  // =====================================
+  // EMBED CLICK → OPEN FULL PAGE (SAFE)
+  // =====================================
+  if (IS_EMBED) {
+    const openFullPage = () => {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("embed");
+      window.open(url.toString(), "_top");
+    };
+
+    // Only allow click-through AFTER drawer is visible
+    setTimeout(() => {
+      document.addEventListener("click", openFullPage, { once: true });
+    }, 300);
   }
 }
 
-// =====================================
-// EMBED CLICK → OPEN FULL PAGE (SAFE)
-// =====================================
-if (IS_EMBED) {
-  const openFullPage = () => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete("embed");
-    window.open(url.toString(), "_top");
-  };
-
-  // Only allow click-through AFTER drawer is visible
-  setTimeout(() => {
-    document.addEventListener("click", openFullPage, { once: true });
-  }, 300);
-}
-
-
-      
-}
 
     function applyLoanFilters() {
   const nameVal = filterName.value;
