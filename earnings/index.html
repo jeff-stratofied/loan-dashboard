@@ -686,20 +686,6 @@ html[data-theme="dark"] .legend .sw {
       white-space: nowrap;
     }
 
-/* KPI3 ONLY: force neutral text */
-.kpi3-table td,
-.kpi3-table td *,
-.kpi3-table a {
-  color: var(--text) !important;
-}
-
-/* KPI4 ONLY: force neutral text like KPI3 */
-.kpi4-table td,
-.kpi4-table td *,
-.kpi4-table a {
-  color: var(--text) !important;
-}
-
     
 .kpi4-table tbody tr[data-loan-id] td {
   color: var(--loan-color) !important;
@@ -916,43 +902,6 @@ html[data-theme="dark"] .legend .sw {
   </aside>
   
 
-  <!-- KPI Drawers -->
-  <aside id="kpiDrawer1" class="drawer kpi-drawer" aria-hidden="true">
-    <div class="drawer-head">
-      <div>
-        <h2 id="kpi1Title">KPI 1</h2>
-        <div id="kpi1Sub" class="drawer-subtitle"></div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn" id="downloadCsvBtn">Download CSV</button>
-        <button class="close-btn kpi-close" data-kpi-close="kpiDrawer1" aria-label="Close KPI drawer">✕</button>
-      </div>
-    </div>
-    <div class="drawer-info-row">
-      <div class="info-card">
-        <div class="muted-small" id="kpi1PrimaryTitle"></div>
-        <div id="kpi1Primary" class="main-val"></div>
-      </div>
-      <div class="info-card small">
-        <div class="muted-small" id="kpi1SecondaryTitle"></div>
-        <div id="kpi1Secondary" class="main-val small"></div>
-      </div>
-    </div>
-    <div class="drawer-body">
-    </div>
-    <div class="drawer-actions">
-      <button class="btn" data-kpi-close="kpiDrawer1">Close</button>
-      <div class="spacer"></div>
-      <button class="btn primary">Export</button>
-    </div>
-    <div class="actions" style="padding-top:10px">
-      <button class="btn" id="printBtn">Print</button>
-      <button class="btn primary" id="copyCsvBtn">Copy CSV</button>
-    </div>
-  </aside>
-
-
-
 <script type="module">
   import {
     addMonths,
@@ -1012,17 +961,6 @@ if (isEmbed) {
   });
 }
 
-    
-    function OLD_addMonths(date, months) {
-      const d = new Date(date);
-      d.setMonth(d.getMonth() + months);
-      return d;
-    }
-
-    function OLD_monthDiff(d1, d2) {
-      return (d2.getFullYear() - d1.getFullYear()) * 12 +
-             (d2.getMonth() - d1.getMonth());
-    }
 
     let loans = [];
 
@@ -1482,8 +1420,6 @@ function computeEarningsKPIs(list) {
   const idx = Math.max(0, Math.min(diff - 1, lastIdx));
   return { row: sched[idx], idx };
 }
-    
-    let totalPrincipal = 0;
 
     let miniHtmlTooltip = null;
     function getMiniHtmlTooltip() {
@@ -2265,69 +2201,6 @@ if (firstDate && lastDate) {
   svg.addEventListener("mousemove", handleMove);
   svg.addEventListener("mouseleave", handleLeave);
 }
-
-function buildKpi4AvgMonthlyRows(loans) {
-  const TODAY = new Date();
-  TODAY.setHours(0, 0, 0, 0);
-
-  // KPI3 already sets this in computeEarningsKPIs
-  const start = window.__PORTFOLIO_START__
-    ? new Date(window.__PORTFOLIO_START__)
-    : TODAY;
-  start.setHours(0, 0, 0, 0);
-
-  // Use the REAL last maturity month = latest ownershipDate in any schedule
-  const lastMaturityMs = Math.max(
-    ...loans.map(l => {
-      const sched = l.earningsSchedule || [];
-      const last = sched[sched.length - 1];
-      const d = last?.ownershipDate ? new Date(last.ownershipDate) : null;
-      return d ? d.getTime() : 0;
-    })
-  );
-
-  const lastMaturity = lastMaturityMs ? new Date(lastMaturityMs) : new Date(TODAY);
-  // normalize to first-of-month
-  lastMaturity.setHours(0, 0, 0, 0);
-  const end = new Date(lastMaturity.getFullYear(), lastMaturity.getMonth(), 1);
-
-  const rows = [];
-  const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
-
-  while (cursor <= end) {
-    let netToDate = 0;
-
-    loans.forEach(l => {
-      const sched = l.earningsSchedule || [];
-      if (!sched.length) return;
-
-      const purchase = new Date(l.purchaseDate);
-      purchase.setHours(0, 0, 0, 0);
-
-      // before purchase month => not owned yet
-      const idxRaw = monthDiff(purchase, cursor);
-      if (!Number.isFinite(idxRaw) || idxRaw < 0) return;
-
-      const idx = Math.max(0, Math.min(idxRaw, sched.length - 1));
-      netToDate += Number(sched[idx]?.netEarnings || 0);
-    });
-
-    const monthsElapsed = Math.max(1, monthDiff(start, cursor) + 1);
-
-    rows.push({
-      date: new Date(cursor),
-      netToDate,
-      avg: netToDate / monthsElapsed
-    });
-
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
-
-  return rows;
-}
-
-
-
   
     
     // --------------------------
