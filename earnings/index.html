@@ -3347,10 +3347,46 @@ document.getElementById("kpiAvgMonth").textContent =
 document.getElementById("kpiFees").textContent =
   formatCurrency(kpis.projectedAvgMonthlyNet);
 
-
   renderLoanTiles();
-}
 
+  // === EMBED MODE HANDLING (for portfolio dashboard iframe) ===
+  const params = new URLSearchParams(window.location.search);
+  const isEmbed = params.get('embed') === 'true';
+  const openParam = params.get('open');
+  const userParam = params.get('user') || 'jeff';
+
+  if (isEmbed) {
+    // Hide header and reduce padding for clean iframe view
+    const header = document.querySelector('header');
+    if (header) header.style.display = 'none';
+
+    document.body.style.padding = '0';
+    document.body.style.margin = '0';
+    const app = document.querySelector('.app');
+    if (app) {
+      app.style.padding = '0';
+      app.style.margin = '0';
+      app.style.maxWidth = 'none';
+    }
+
+    // Automatically open the requested KPI drawer
+    if (openParam === 'kpi2') {
+      openKpi2();  // This opens "Avg Monthly Earnings To Date"
+    } else if (openParam === 'projected') {
+      openKpi4();  // Or whatever your projected function is named — adjust if needed
+    }
+
+    // Click anywhere in iframe → go to full earnings page with same drawer open
+    document.body.addEventListener('click', (e) => {
+      // Prevent navigation if clicking interactive elements like buttons
+      if (e.target.closest('button, a, input, select, textarea')) return;
+
+      window.top.location.href = `/loan-dashboard/earnings/index.html?user=${userParam}&open=${openParam || 'kpi2'}`;
+    }, true);
+  }
+  // === END EMBED MODE ===
+}
+  
     function applyLoanFilters() {
   const nameVal = filterName.value;
   const schoolVal = filterSchool.value;
