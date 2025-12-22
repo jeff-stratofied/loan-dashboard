@@ -216,8 +216,9 @@
   userSelect.value = user;
 
   function buildFrames(u) {
-  document.getElementById("roiFrame").src =
-    `/loan-dashboard/roi/index.html?user=${u}&embed=true&open=projectedROI`;
+document.getElementById("roiFrame").src =
+  `/loan-dashboard/roi/index.html?user=${u}&embed=true&open=kpi2`;
+
 
   document.getElementById("earningsFrame").src =
     `/loan-dashboard/earnings/index.html?user=${u}&embed=true&open=projectedNet`;
