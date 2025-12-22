@@ -2917,7 +2917,7 @@ function openKpi4() {
 
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent =
-    "Projected net earnings divided by total ownership months across all loans.";
+    "Average projected net earnings per month across the full lifetime of all loans.";
 
   // PRIMARY
   drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
@@ -2925,39 +2925,59 @@ function openKpi4() {
     formatCurrency(kpis.projectedAvgMonthlyNet);
 
   // SECONDARY
-  drawerSecondaryTitle.textContent = "Projection Basis";
+  drawerSecondaryTitle.innerHTML = `
+    Projection Basis
+    <span class="info-icon"
+      title="Calculated as total projected net earnings divided by total ownership months across all loans.">
+      ⓘ
+    </span>
+  `;
   drawerSecondary.textContent = "Lifetime";
 
   resetDrawerContent();
 
   // ----------------------------------
-  // KPI4 HAS NO CHART (by design)
+  // CHART — reuse KPI2 projected rows
   // ----------------------------------
-  document.getElementById("drawerChartArea").innerHTML = "";
-  document.getElementById("drawerLegend").style.display = "none";
+  const activeLoans = loansWithEarnings.filter(
+    l => !hiddenLoans.has(l.loanId)
+  );
+
+  const rows = buildPortfolioDrawerRows(activeLoans);
+
+  createKpiStackedChart(
+    document.getElementById("drawerChartArea"),
+    rows,
+    { projected: true }
+  );
+
+  document.getElementById("drawerLegend").style.display = "flex";
 
   // ----------------------------------
-  // KPI4 EXPLANATION (PLAIN, NO TABLE)
+  // TABLE — plain snapshot (NO swatches)
   // ----------------------------------
-  drawerExtra.innerHTML = `
-    <div style="
-      font-size:13px;
-      line-height:1.4;
-      color:var(--muted);
-      background:var(--surface);
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:12px;
-    ">
-      This metric represents the projected average monthly net earnings
-      across all loans, calculated using each loan’s full ownership
-      lifetime. It is not tied to calendar months and does not vary
-      over time.
-    </div>
-  `;
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+
+  renderKPI4Table(activeLoans, "drawerKpiTable");
+
+  const table = document.querySelector("#drawerKpiTable table");
+  if (table) {
+    // Ensure NO KPI1/2 hover styles leak in
+    table.classList.remove("kpi1-table", "kpi2-table");
+
+    // Remove swatches if renderer injected any
+    table.querySelectorAll(".loan-swatch").forEach(el => el.remove());
+
+    // Force plain black text
+    table.querySelectorAll("td, td *").forEach(el => {
+      el.style.color = "var(--text)";
+    });
+  }
 
   openDrawer();
 }
+
 
 
 // ===============================
@@ -4075,76 +4095,54 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 }
 
 
-function renderKPI4Table(data, containerId = "kpi4Table") {
-  const rows = data
-    .map(l => {
-      const sched = l.earningsSchedule || [];
-      if (!sched.length) return null;
+function renderKPI4Table(loans, containerId = "kpi4Table") {
+  const rows = loans.map(l => {
+    const sched = l.earningsSchedule || [];
+    const last = sched[sched.length - 1] || {};
 
-      const last = sched[sched.length - 1];
-      const months = sched.length;
+    return {
+      loanId: l.loanId,
+      cells: [
+        // Loan (plain text, no swatch, no color)
+        `<div style="line-height:1.15">
+          <div style="font-weight:600;color:var(--text)">
+            ${l.loanName}
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">
+            ${l.school || ""}
+          </div>
+        </div>`,
 
-      // Projected values
-      const projectedAvg =
-        months > 0 ? Number(last.netEarnings || 0) / months : 0;
-      const projectedNet = Number(last.netEarnings || 0);
+        // Net (projected to maturity)
+        `<span style="color:var(--text)">
+          ${formatCurrency(last.netEarnings || 0)}
+        </span>`,
 
-      // Maturity date = purchase + term + grace
-      let maturity = "";
-      try {
-        const d = new Date(l.purchaseDate);
-        const totalMonths = Math.round(
-          (Number(l.termYears || 0) + Number(l.graceYears || 0)) * 12
-        );
-        d.setMonth(d.getMonth() + totalMonths);
-        maturity = d.toISOString().slice(0, 10);
-      } catch {}
+        // Principal returned
+        `<span style="color:var(--text)">
+          ${formatCurrency(last.cumPrincipal || 0)}
+        </span>`,
 
-      return {
-        loanId: l.loanId,
-        cells: [
-          // Loan (name over school)
-          `<div style="line-height:1.15">
-            <div style="font-weight:600;color:var(--text)">
-              ${l.loanName}
-            </div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">
-              ${l.school || ""}
-            </div>
-          </div>`,
+        // Interest earned
+        `<span style="color:var(--text)">
+          ${formatCurrency(last.cumInterest || 0)}
+        </span>`,
 
-          `<span style="color:var(--text)">
-            ${formatCurrency(projectedAvg)}
-          </span>`,
-
-          `<span style="color:var(--text)">
-            ${formatCurrency(projectedNet)}
-          </span>`,
-
-          `<span style="color:var(--text)">
-            ${formatCurrency(l.purchasePrice || 0)}
-          </span>`,
-
-          `<span style="color:var(--text)">
-            ${maturity}
-          </span>`
-        ]
-      };
-    })
-    .filter(Boolean);
+        // Fees
+        `<span style="color:var(--text)">
+          -${formatCurrency(last.cumFees || 0)}
+        </span>`
+      ]
+    };
+  });
 
   renderKpiTable(
     containerId,
-    [
-      "Loan",
-      "Projected Avg Monthly Earnings",
-      "Projected Net",
-      "Purchase Price",
-      "Maturity Date"
-    ],
+    ["Loan", "Net (Projected)", "Principal", "Interest", "Fees"],
     rows
   );
 }
+
 
 
 
