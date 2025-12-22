@@ -3356,17 +3356,22 @@ async function initPage() {
 // =====================================
 // EMBED MODE: honor ?open=projected
 // =====================================
-if (IS_EMBED) {
-  // ⚠️ USE THE RESOLVED params OBJECT — NOT window.location.search
-  if (params.get("open") === "projected") {
-    // Defer until drawer DOM is fully ready
+if (IS_EMBED && params.get("open") === "projected") {
+  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        openKpi2();
-      });
+      openKpi2();
+
+      // 🔴 CRITICAL: force drawer visible in embed mode
+      const drawer = document.getElementById("drawer");
+      if (drawer) {
+        drawer.classList.add("open");
+        drawer.style.transform = "none";
+        drawer.style.opacity = "1";
+      }
     });
-  }
+  });
 }
+
 
 }
 
