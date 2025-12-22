@@ -3057,12 +3057,22 @@ function openKpi3() {
 
 
   
-  function openKpi4() {
+function openKpi4() {
+console.log("Loans loaded:", loans.length, "Active:", activeLoans.length, "With earningsSchedule:", loansWithEarnings.length);
+console.log("Sample loan:", loans[0]);
+  
   currentLoan = null;
   currentMode = "kpi";
-const activeLoans = loans.filter(l => !hiddenLoans.has(l.loanId));
-const loansWithEarnings = activeLoans.filter(l => l.earningsSchedule && l.earningsSchedule.length > 0);
-    
+
+  // Use the full loans array — assume loanEngine.js already computed earningsSchedule
+  // Only exclude truly hidden loans
+  const activeLoans = loans.filter(l => !hiddenLoans.has(l.loanId));
+
+  // Loans that have earningsSchedule (should be most or all if data is loaded correctly)
+  const loansWithEarnings = activeLoans.filter(l => 
+    l.earningsSchedule && Array.isArray(l.earningsSchedule) && l.earningsSchedule.length > 0
+  );
+
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent =
     "Average projected net earnings per month across the full lifetime of all loans.";
@@ -3072,42 +3082,35 @@ const loansWithEarnings = activeLoans.filter(l => l.earningsSchedule && l.earnin
   drawerPrimary.textContent =
     formatCurrency(window.kpis?.projectedAvgMonthlyNet ?? 0);
 
-  // SECONDARY
-  const totalMonthsThroughMaturity = Math.max(
-  ...activeLoans.map(l =>
-    Math.round((l.termYears + l.graceYears) * 12)
-  )
-);
+  // SECONDARY — use loansWithEarnings to match your previous correct value (~162)
+  const totalMonthsThroughMaturity = loansWithEarnings.length > 0
+    ? Math.max(...loansWithEarnings.map(l => l.earningsSchedule.length))
+    : 0;
 
-drawerSecondaryTitle.textContent = "Months Through Maturity";
-drawerSecondary.textContent = `${totalMonthsThroughMaturity}`;
+  drawerSecondaryTitle.textContent = "Months Through Maturity";
+  drawerSecondary.textContent = totalMonthsThroughMaturity;
 
   resetDrawerContent();
 
-// Build projected rows to final maturity
-const rows = buildKpi4AvgMonthlyRows(loansWithEarnings);
+  // Build rows for chart (only loans with schedules)
+  const rows = buildKpi4AvgMonthlyRows(loansWithEarnings);
 
-// Draw chart using SAME renderer as KPI3
-renderKpi3AvgLineChart(
-  document.getElementById("drawerChartArea"),
-  rows,
-  { xLabelEveryMonths: 24 }
-);
-
+  // Draw chart
+  renderKpi3AvgLineChart(
+    document.getElementById("drawerChartArea"),
+    rows,
+    { xLabelEveryMonths: 24 }
+  );
 
   document.getElementById("drawerLegend").style.display = "none";
 
-  // ----------------------------------
-  // TABLE
-  // ----------------------------------
-  drawerExtra.innerHTML =
-    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-
+  // TABLE — show all active loans (even if no schedule yet — will show blanks gracefully)
+  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI4Table(activeLoans, "drawerKpiTable");
 
-  document
-    .getElementById("drawerKpiTable")
-    ?.classList.add("kpi4-table");
+  // Optional: add class for styling
+  const tableEl = document.getElementById("drawerKpiTable");
+  if (tableEl) tableEl.classList.add("kpi4-table");
 
   openDrawer();
 }
