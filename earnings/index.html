@@ -3311,11 +3311,11 @@ async function initPage() {
   renderLoanTiles();
 
   // =====================================
-  // EMBED MODE: honor ?open=projectedNet
+  // EMBED MODE: honor ?open=projected
   // =====================================
   if (IS_EMBED) {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("open") === "projectedNet") {
+    if (params.get("open") === "projected") {
       // Defer until drawer DOM is fully ready
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
