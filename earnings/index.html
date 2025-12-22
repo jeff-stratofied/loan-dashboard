@@ -3357,21 +3357,35 @@ document.getElementById("kpiFees").textContent =
 
   renderLoanTiles();
 
-// === EMBED MODE HANDLING (for portfolio dashboard iframe) ===
+// === PARAM HANDLING (open drawer on load, embed or not) ===
 const params = new URLSearchParams(window.location.search);
 const isEmbed = params.get('embed') === 'true';
 const openParam = params.get('open');
 const userParam = params.get('user') || 'jeff';
 
+// Open drawer based on param (works on full page too, for redirect)
+if (openParam) {
+  currentLoan = null;
+  currentMode = 'kpi';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (openParam === 'kpi2') {
+        openKpi2();  // Opens "Projected Total Net Earnings"
+      }
+    });
+  });
+}
+
+// Embed-specific hides and overrides (prevents gray, allows slide animation)
 if (isEmbed) {
-  // Hide header and loan tiles for clean iframe view
+  // Hide header/tiles
   const header = document.querySelector('header');
   if (header) header.style.display = 'none';
 
   const loanGrid = document.getElementById('loanGrid');
   if (loanGrid) loanGrid.style.display = 'none';
 
-  // Reduce padding/margins and set full height (allows initial render for slide animation)
+  // Full height setup
   document.body.style.padding = '0';
   document.body.style.margin = '0';
   document.body.style.height = '100%';
@@ -3385,20 +3399,7 @@ if (isEmbed) {
     app.style.height = '100%';
   }
 
-  // Force KPI context
-  currentLoan = null;
-  currentMode = 'kpi';
-
-  // Automatically open the requested KPI drawer with animation timing
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (openParam === 'kpi2') {  // Match portfolio src param – opens "Projected Total Net Earnings"
-        openKpi2();
-      }
-    });
-  });
-
-  // Make drawer fill full height after open (matches ROI)
+  // Timed overrides after drawer open (fixes gray – unconditional reveal)
   setTimeout(() => {
     const drawer = document.querySelector('.drawer');
     if (drawer) {
@@ -3409,18 +3410,15 @@ if (isEmbed) {
       drawer.style.width = '100%';
       drawer.style.borderRadius = '0';
       drawer.style.boxShadow = 'none';
-      drawer.style.overflow = 'hidden';  // Prevent drawer-internal scroll issues
+      drawer.style.overflow = 'hidden';
     }
 
-    // Make drawer body scrollable and fill space
     const drawerBody = document.querySelector('.drawer-body');
     if (drawerBody) {
       drawerBody.style.flex = '1 1 auto';
       drawerBody.style.overflowY = 'auto';
-      drawerBody.style.height = 'auto';
     }
 
-    // Anchor footer to bottom (fixed, like ROI)
     const drawerFooter = document.querySelector('.drawer-footer');
     if (drawerFooter) {
       drawerFooter.style.position = 'fixed';
@@ -3430,19 +3428,21 @@ if (isEmbed) {
       drawerFooter.style.background = 'var(--drawer-bg)';
       drawerFooter.style.borderTop = '1px solid var(--border)';
       drawerFooter.style.padding = '8px 16px';
-      drawerFooter.style.boxSizing = 'border-box';
-      drawerFooter.style.zIndex = '10';  // Ensure above content
+      drawerFooter.style.zIndex = '10';
     }
-  }, 300);  // Timed after slide animation (300ms for smooth "load then slide" like ROI)
 
-  // Click anywhere → go to full page with drawer open
+    // Unconditional reveal (fixes gray if timing off)
+    document.documentElement.style.visibility = 'visible';
+  }, 500);  // 500ms for full slide animation + render (matches ROI load-then-slide feel)
+
+  // Click redirect with open param
   document.body.addEventListener('click', (e) => {
-    if (e.target.closest('button, a')) return;  // Skip buttons/links
+    if (e.target.closest('button, a')) return;
 
     window.top.location.href = `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
   }, true);
 }
-// === END EMBED MODE ===
+// === END PARAM HANDLING ===
 }
   
     function applyLoanFilters() {
