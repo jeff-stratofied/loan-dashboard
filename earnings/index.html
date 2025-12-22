@@ -3357,8 +3357,6 @@ document.getElementById("kpiFees").textContent =
 
   renderLoanTiles();
 
-  renderLoanTiles();
-
   // === EMBED MODE HANDLING (for portfolio dashboard iframe) ===
   const params = new URLSearchParams(window.location.search);
   const isEmbed = params.get('embed') === 'true';
@@ -3396,7 +3394,7 @@ document.getElementById("kpiFees").textContent =
   }
   // === END EMBED MODE ===
 }
-}
+
   
     function applyLoanFilters() {
   const nameVal = filterName.value;
