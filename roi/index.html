@@ -3093,22 +3093,20 @@ function renderCapitalRecoveryDrawer() {
 }
 
 // ----------------------------------
-// Embed auto-open handling
+// Embed auto-open handling (KPI2)
 // ----------------------------------
 const urlParams = new URLSearchParams(window.location.search);
 const EMBED_MODE = urlParams.get("embed") === "true";
 const OPEN_TARGET = urlParams.get("open");
 
-// Delay until KPI DOM + data exist
 requestAnimationFrame(() => {
-  if (!OPEN_TARGET) return;
-
-  // Normalize aliases
-  if (OPEN_TARGET === "projectedROI" || OPEN_TARGET === "kpi2") {
-    // KPI2 = Projected Weighted ROI
-    openKpi2(); // <-- existing function
+  if (OPEN_TARGET === "kpi2" || OPEN_TARGET === "projectedROI") {
+    if (typeof renderRatesDrawer === "function") {
+      renderRatesDrawer();
+    }
   }
 });
+
 
       // ----------------------------------
 // Embed click-through to full ROI
