@@ -2042,14 +2042,6 @@ function highlightLoanInKpiChart(container, loanId) {
 }
 
 
-function clearKpiChartHighlight(container) {
-  if (!container) return;
-
-  container.querySelectorAll("rect[data-loan-id]").forEach(el => {
-    el.style.opacity = "";
-  });
-}
-
 function highlightKpiRow(tableEl, loanId) {
   tableEl.querySelectorAll("tbody tr").forEach(tr => {
     tr.classList.toggle("dimmed", tr.dataset.loanId !== loanId);
