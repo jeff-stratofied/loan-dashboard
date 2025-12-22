@@ -724,55 +724,7 @@ html[data-theme="dark"] .legend .sw {
   padding: 8px;
 }
 
-    /* ============================================================
-   EMBED MODE (Dashboard iframe)
-   ============================================================ */
 
-.embed-mode header,
-.embed-mode .loan-filters,
-.embed-mode .kpis {
-  display: none !important;
-}
-
-/* ============================================================
-   EMBED MODE — EARNINGS
-   ============================================================ */
-
-.embed-mode .drawer {
-  position: static !important;
-  inset: auto !important;
-  transform: none !important;
-  height: 100% !important;
-  max-height: none !important;
-  width: 100% !important;
-  max-width: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-}
-
-/* Remove modal chrome */
-.embed-mode .drawer-footer,
-.embed-mode .drawer-close,
-.embed-mode .close-btn,
-.embed-mode button[aria-label="Close"] {
-  display: none !important;
-}
-
-
-/* Ensure scroll works inside iframe */
-.embed-mode .drawer-body {
-  overflow-y: auto;
-  max-height: none;
-}
-
-    // ===============================
-// EMBED MODE: Disable KPI tile re-clicks
-// ===============================
-if (isEmbed) {
-  document.querySelectorAll(".kpi").forEach(kpi => {
-    kpi.style.pointerEvents = "none";
-  });
-}
 
     
   </style>
@@ -978,25 +930,6 @@ let currentMode = 'portfolio';
     currentUserLabelEl.textContent =
       USER_LABELS[PAGE_USER] || PAGE_USER;
   }
-
-// ===============================
-// EMBED MODE (Portfolio Dashboard)
-// ===============================
-const isEmbed =
-  new URLSearchParams(window.location.search).get("embed") === "true";
-
-if (isEmbed) {
-  document.body.classList.add("embed-mode");
-
-  // Click anywhere → open full earnings page with KPI2 open
-  document.addEventListener("click", () => {
-    const u =
-      new URLSearchParams(window.location.search).get("user") || "jeff";
-
-    window.top.location.href =
-      `/loan-dashboard/earnings/index.html?user=${u}&open=projectedNet`;
-  });
-}
 
 
     
@@ -1459,19 +1392,6 @@ function computeEarningsKPIs(list) {
   return window.kpis;
 }
 
-// ===============================
-// AUTO-OPEN KPI2 IN EMBED MODE
-// ===============================
-const openParam =
-  new URLSearchParams(window.location.search).get("open");
-
-if (isEmbed && openParam === "projectedNet") {
-  // Simulate clicking KPI2
-  const kpi2 = document.querySelector('.kpi[data-kpi="projected"]');
-  if (kpi2) {
-    requestAnimationFrame(() => kpi2.click());
-  }
-}
 
 
     function getCurrentEarningsRow(loan) {
@@ -2839,49 +2759,52 @@ createKpiStackedChart(
 
 
 function openKpi2() {
-
   // ===============================
-  // EMBED MODE SAFETY
+  // KPI2: Projected Lifetime Earnings
   // ===============================
   currentLoan = null;
   currentMode = 'kpi';
 
-  
-  console.log("openKpi2 fired");
+  // Always reset first so nothing wipes content later
+  resetDrawerContent();
 
-  console.log("KPI values at openKpi2", {
-  totalNetProjected: kpis?.totalNetProjected,
-  totalFeesProjected: kpis?.totalFeesProjected
-});
-console.log("portfolioViews.kpis snapshot", portfolioViews?.kpis);
-
-  currentLoan = null;
-
-  resetDrawerContent(); // <-- MOVE THIS UP HERE
-
+  // -------------------------------
+  // Header
+  // -------------------------------
   drawerTitle.textContent = "Projected Total Net Earnings";
   drawerSub.textContent =
     "Projected lifetime earnings across all loans, assuming full term.";
 
-   // --- Chart ---
+  // -------------------------------
+  // Chart
+  // -------------------------------
   renderKPI2Chart(loansWithEarnings);
-  
+
+  // -------------------------------
+  // Table
+  // -------------------------------
   drawerExtra.innerHTML = `
     <div class="amort-wrap" id="kpi2Table"></div>
   `;
   renderKPI2Table(loansWithEarnings, "kpi2Table");
-  
-  // ✅ SET STATS LAST (nothing after this wipes them)
+
+  // -------------------------------
+  // Stats (set LAST)
+  // -------------------------------
   drawerPrimaryTitle.textContent = "Projected Net Earnings";
   drawerPrimary.textContent =
-    formatCurrency(kpis.totalNetProjected);
-  
+    formatCurrency(kpis?.totalNetProjected ?? 0);
+
   drawerSecondaryTitle.textContent = "Projected Total Fees";
   drawerSecondary.textContent =
-    formatCurrency(kpis.totalFeesProjected);
+    formatCurrency(kpis?.totalFeesProjected ?? 0);
 
+  // -------------------------------
+  // Open drawer
+  // -------------------------------
   openDrawer();
 }
+
 
 
 function openKpi3() {
