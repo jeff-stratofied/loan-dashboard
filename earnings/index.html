@@ -724,6 +724,53 @@ html[data-theme="dark"] .legend .sw {
   padding: 8px;
 }
 
+/* ============================================
+   EMBED MODE (MATCH ROI EXACTLY)
+   ============================================ */
+
+.embed-mode body {
+  overflow: hidden;
+}
+
+.embed-mode .app {
+  margin: 0;
+  padding: 0;
+  max-width: none;
+  height: 100vh;
+}
+
+/* Hide page chrome */
+.embed-mode header,
+.embed-mode .kpis,
+.embed-mode .loan-filters,
+.embed-mode #loanGrid {
+  display: none !important;
+}
+
+/* Drawer becomes full-page content */
+.embed-mode .drawer {
+  position: static !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100vh !important;
+  box-shadow: none !important;
+  border-left: none !important;
+  opacity: 1 !important;
+}
+
+/* Remove drawer chrome */
+.embed-mode .drawer-footer,
+.embed-mode .close-btn,
+.embed-mode .drawer-actions {
+  display: none !important;
+}
+
+/* Ensure scrolling works */
+.embed-mode .drawer-body {
+  overflow-y: auto;
+  max-height: none;
+}
 
 
     
@@ -911,6 +958,28 @@ html[data-theme="dark"] .legend .sw {
 // ===============================
 let currentLoan = null;
 let currentMode = 'portfolio';
+
+  // =====================================
+// EMBED MODE DETECTION (match ROI)
+// =====================================
+const IS_EMBED =
+  window.self !== window.top ||
+  new URLSearchParams(window.location.search).get("embed") === "1";
+
+if (IS_EMBED) {
+  document.documentElement.classList.add("embed-mode");
+}
+
+  // =====================================
+// EMBED CLICK → OPEN FULL PAGE
+// =====================================
+if (IS_EMBED) {
+  document.addEventListener("click", () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("embed");
+    window.open(url.toString(), "_top");
+  });
+}
 
   
   // ----------------------------------
