@@ -607,6 +607,20 @@ th:first-child {
   text-align: left;
 }
 
+/* ============================================
+   KPI1 / KPI2 TABLE ROW HOVER (RESTORE)
+   ============================================ */
+.drawer .amort-wrap tbody tr[data-loan-id]:hover {
+  background: var(--tile-hover-bg);
+}
+
+/* Dark mode */
+html[data-theme="dark"]
+.drawer .amort-wrap tbody tr[data-loan-id]:hover {
+  background: #243447;
+}
+
+    
 /* Footer */
 .drawer-footer {
   padding: 20px;
