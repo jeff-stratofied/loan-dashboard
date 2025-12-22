@@ -3061,13 +3061,13 @@ function openKpi4() {
   currentLoan = null;
   currentMode = "kpi";
 
-  // Declare variables FIRST to fix initialization error
-  const activeLoans = loans.filter(l => !hiddenLoans.has(l.loanId));
-  const loansWithEarnings = activeLoans.filter(l => 
+  // Use processed loansWithEarnings (which has schedules generated)
+  const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
+  const loansWithEarningsFiltered = activeLoans.filter(l => 
     l.earningsSchedule && Array.isArray(l.earningsSchedule) && l.earningsSchedule.length > 0
   );
 
-console.log('Active loans:', activeLoans.length, 'With schedules:', loansWithEarnings.length);
+  console.log('Active loans:', activeLoans.length, 'With schedules:', loansWithEarningsFiltered.length);
   
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent =
@@ -3079,8 +3079,8 @@ console.log('Active loans:', activeLoans.length, 'With schedules:', loansWithEar
     formatCurrency(window.kpis?.projectedAvgMonthlyNet ?? 0);
 
   // SECONDARY — calculate based on actual schedule lengths to match previous behavior
-  const totalMonthsThroughMaturity = loansWithEarnings.length > 0
-    ? Math.max(...loansWithEarnings.map(l => l.earningsSchedule.length))
+  const totalMonthsThroughMaturity = loansWithEarningsFiltered.length > 0
+    ? Math.max(...loansWithEarningsFiltered.map(l => l.earningsSchedule.length))
     : 0;
   drawerSecondaryTitle.textContent = "Months Through Maturity";
   drawerSecondary.textContent = `${totalMonthsThroughMaturity}`;
@@ -3088,7 +3088,7 @@ console.log('Active loans:', activeLoans.length, 'With schedules:', loansWithEar
   resetDrawerContent();
 
   // Build projected rows for chart
-  const rows = buildKpi4AvgMonthlyRows(loansWithEarnings);
+  const rows = buildKpi4AvgMonthlyRows(loansWithEarningsFiltered);
 
   // Draw chart
   renderKpi3AvgLineChart(
