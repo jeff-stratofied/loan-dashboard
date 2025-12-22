@@ -978,14 +978,33 @@ let currentMode = 'portfolio';
 let kpis = null;               // ✅ ADD THIS (so openKpi1/openKpi2 can read it)
 
 
-  // =====================================
-// EMBED MODE DETECTION (match ROI)
 // =====================================
-const embedParam = new URLSearchParams(window.location.search).get("embed");
+// EMBED MODE DETECTION (ROBUST — MATCH ROI)
+// =====================================
+
+// Prefer iframe context
+const isIframe = window.self !== window.top;
+
+// Read params from *this* window
+let params = new URLSearchParams(window.location.search);
+
+// 🔴 IMPORTANT: GitHub Pages iframe fix
+// If iframe lost query params, read them from parent
+if (isIframe && !params.toString()) {
+  try {
+    params = new URLSearchParams(window.parent.location.search);
+  } catch (e) {
+    // ignore cross-origin safety errors
+  }
+}
+
+// Final embed flag (single source of truth)
 const IS_EMBED =
-  window.self !== window.top ||
-  embedParam === "1" ||
-  embedParam === "true";
+  isIframe ||
+  params.get("embed") === "1" ||
+  params.get("embed") === "true";
+
+
 
 
 if (IS_EMBED) {
@@ -994,14 +1013,16 @@ if (IS_EMBED) {
 
   console.log("[EARNINGS] IS_EMBED =", IS_EMBED);
 console.log("[EARNINGS] URL =", window.location.href);
-console.log("[EARNINGS] open param =", new URLSearchParams(location.search).get("open"));
+console.log("[EARNINGS] open param =", params.get("open"));
+
 
   
   // ----------------------------------
   // Multi-user support (match ROI)
   // ----------------------------------
   const PAGE_USER =
-    new URLSearchParams(window.location.search).get("user") || "jeff";
+    const PAGE_USER = params.get("user") || "jeff";
+
 
   const USER_LABELS = {
     jeff: "Jeff Customer",
@@ -3335,20 +3356,21 @@ async function initPage() {
 
   renderLoanTiles();
 
-  // =====================================
-  // EMBED MODE: honor ?open=projected
-  // =====================================
-  if (IS_EMBED) {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("open") === "projected") {
-      // Defer until drawer DOM is fully ready
+// =====================================
+// EMBED MODE: honor ?open=projected
+// =====================================
+if (IS_EMBED) {
+  // ⚠️ USE THE RESOLVED params OBJECT — NOT window.location.search
+  if (params.get("open") === "projected") {
+    // Defer until drawer DOM is fully ready
+    requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          openKpi2();
-        });
+        openKpi2();
       });
-    }
+    });
   }
+}
+
 }
 
 
