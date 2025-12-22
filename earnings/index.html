@@ -1393,6 +1393,10 @@ function computeEarningsKPIs(list) {
   return window.kpis;
 }
 
+document.querySelectorAll(".kpi").forEach(...)
+
+
+  
 // ===============================
 // KPI tile click routing (AUTHORITATIVE)
 // ===============================
@@ -2907,6 +2911,59 @@ function openKpi3() {
       el.style.color = "var(--text)";
     });
   }
+
+  openDrawer();
+}
+
+  function openKpi4() {
+  currentLoan = null;
+  currentMode = "kpi";
+
+  drawerTitle.textContent = "Projected Avg Monthly Earnings";
+  drawerSub.textContent =
+    "Average projected net earnings per month across the full lifetime of all loans.";
+
+  // PRIMARY
+  drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
+  drawerPrimary.textContent =
+    formatCurrency(window.kpis?.projectedAvgMonthlyNet ?? 0);
+
+  // SECONDARY
+  drawerSecondaryTitle.innerHTML = `
+    Projection Basis
+    <span class="info-icon" title="Uses full loan lifetime earnings divided by total months.">ⓘ</span>
+  `;
+  drawerSecondary.textContent = "Lifetime";
+
+  resetDrawerContent();
+
+  // ----------------------------------
+  // KPI4 LINE CHART (portfolio-level)
+  // ----------------------------------
+  const activeLoans = loansWithEarnings.filter(
+    l => !hiddenLoans.has(l.loanId)
+  );
+
+  const series = buildKpi4AvgMonthlySeries(activeLoans);
+
+  renderKpi4AvgLineChart(
+    document.getElementById("drawerChartArea"),
+    series
+  );
+
+  document.getElementById("drawerLegend").style.display = "none";
+
+  // ----------------------------------
+  // TABLE
+  // ----------------------------------
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+
+  renderKPI4Table(activeLoans, "drawerKpiTable");
+
+  document
+    .getElementById("drawerKpiTable")
+    ?.classList.add("kpi4-table");
 
   openDrawer();
 }
