@@ -2912,71 +2912,22 @@ function openKpi3() {
 }
 
 
-function openKpi4() {
-  currentLoan = null;
+// ----------------------------------
+// KPI4 LINE CHART (Projected Avg)
+// ----------------------------------
+const activeLoans = loansWithEarnings.filter(
+  l => !hiddenLoans.has(l.loanId)
+);
 
-  drawerTitle.textContent = "Projected Avg Monthly Earnings";
-  drawerSub.textContent =
-    "Average projected net earnings per month across the full lifetime of all loans.";
+const series = buildKpi4AvgMonthlySeries(activeLoans);
 
-  // PRIMARY
-  drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
-  drawerPrimary.textContent =
-    formatCurrency(kpis.projectedAvgMonthlyNet);
+renderKpi4AvgLineChart(
+  document.getElementById("drawerChartArea"),
+  series
+);
 
-  // SECONDARY
-  drawerSecondaryTitle.innerHTML = `
-    Projection Basis
-    <span class="info-icon"
-      title="Calculated as total projected net earnings divided by total ownership months across all loans.">
-      ⓘ
-    </span>
-  `;
-  drawerSecondary.textContent = "Lifetime";
+document.getElementById("drawerLegend").style.display = "none";
 
-  resetDrawerContent();
-
-  // ----------------------------------
-  // CHART — reuse KPI2 projected rows
-  // ----------------------------------
-  const activeLoans = loansWithEarnings.filter(
-    l => !hiddenLoans.has(l.loanId)
-  );
-
-  const rows = buildPortfolioDrawerRows(activeLoans);
-
-  createKpiStackedChart(
-    document.getElementById("drawerChartArea"),
-    rows,
-    { projected: true }
-  );
-
-  document.getElementById("drawerLegend").style.display = "flex";
-
-  // ----------------------------------
-  // TABLE — plain snapshot (NO swatches)
-  // ----------------------------------
-  drawerExtra.innerHTML =
-    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-
-  renderKPI4Table(activeLoans, "drawerKpiTable");
-
-  const table = document.querySelector("#drawerKpiTable table");
-  if (table) {
-    // Ensure NO KPI1/2 hover styles leak in
-    table.classList.remove("kpi1-table", "kpi2-table");
-
-    // Remove swatches if renderer injected any
-    table.querySelectorAll(".loan-swatch").forEach(el => el.remove());
-
-    // Force plain black text
-    table.querySelectorAll("td, td *").forEach(el => {
-      el.style.color = "var(--text)";
-    });
-  }
-
-  openDrawer();
-}
 
 
 
@@ -3726,10 +3677,111 @@ function renderKPI2Chart(loans) {
         return month > 0 ? net / month : 0;
       }, true, "kpi3");
     }
-    
-    function renderKPI4Chart(data, containerId = "kpi4Chart"){
-      buildKpiStackedChart(containerId, data, row => -(row.cumFees || 0), true, "kpi4");
+
+
+function buildKpi4AvgMonthlySeries(loans) {
+  // Build full ownership calendar
+  const rows = buildPortfolioDrawerRows(loans);
+  if (!rows.length) return [];
+
+  const start = new Date(rows[0].date);
+  start.setDate(1);
+
+  const end = new Date();
+  end.setDate(1);
+
+  let cumulativeNet = 0;
+  let monthsElapsed = 0;
+
+  const series = [];
+
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const ym = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+
+    const row = rows.find(r => {
+      const d = new Date(r.date);
+      return d.getFullYear() === cursor.getFullYear() &&
+             d.getMonth() === cursor.getMonth();
+    });
+
+    if (row) {
+      const monthNet = row.contributions.reduce(
+        (s, c) => s + (Number(c.monthlyNet) || 0),
+        0
+      );
+      cumulativeNet += monthNet;
     }
+
+    monthsElapsed += 1;
+
+    series.push({
+      date: new Date(cursor),
+      avg: cumulativeNet / Math.max(1, monthsElapsed)
+    });
+
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  return series;
+}
+
+function renderKpi4AvgLineChart(container, rows) {
+  container.innerHTML = "";
+  if (!rows.length) return;
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const w = container.clientWidth || 720;
+  const h = 240;
+  const pad = 44;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+  svg.style.display = "block";
+
+  const values = rows.map(r => r.avg);
+  const minY = Math.min(...values);
+  const maxY = Math.max(...values);
+
+  const xScale = i =>
+    pad + (i / (rows.length - 1)) * (w - pad * 2);
+
+  const yScale = v =>
+    h - pad - ((v - minY) / (maxY - minY || 1)) * (h - pad * 2);
+
+  // Grid
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + i * ((h - pad * 2) / 4);
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", pad);
+    line.setAttribute("x2", w - pad);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "var(--grid-light)");
+    svg.appendChild(line);
+  }
+
+  // Line path
+  let d = "";
+  rows.forEach((r, i) => {
+    const x = xScale(i);
+    const y = yScale(r.avg);
+    d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+  });
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute("d", d);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "var(--brand)");
+  path.setAttribute("stroke-width", "2.5");
+  svg.appendChild(path);
+
+  container.appendChild(svg);
+}
+
+  
 
     // ======================
     // KPI TABLE RENDERERS
