@@ -2719,261 +2719,7 @@ drawer.scrollTop = 0;
 
 
 
-/*  DELETE if not needed
-function renderAvgRateDrawer() {
-  const drawerExtraEl = document.getElementById('drawerExtra');
-  if (!drawerExtraEl) return;
-  if (!drawerChartArea) return;
 
-  currentMode = 'kpi';
-  currentLoan = null;
-
-  drawer.classList.remove('loan-mode');
-
-
-  // --------------------------------
-  // Header
-  // --------------------------------
-  drawerTitle.textContent = 'Average Interest Rate';
-  drawerSub.textContent = 'Distribution of loan nominal rates';
-
-  drawerLegend.style.display = 'none';
-  drawerAmortContainer.innerHTML = '';
-  drawerChartArea.innerHTML = '';
-  drawerExtraEl.innerHTML = '';
-
-  if (!loansWithAmort.length) return;
-
-  // --------------------------------
-  // Primary / Secondary KPI numbers
-  // --------------------------------
-  drawerPrimaryTitle.textContent = 'Average Rate';
-  drawerPrimary.textContent = (kpis.avgRate * 100).toFixed(2) + '%';
-
-  drawerSecondaryTitle.textContent = 'Loan Count';
-  drawerSecondary.textContent = loansWithAmort.length;
-
-  // ==================================================
-  // STACKED BAR CHART — Avg Interest Rate
-  // ==================================================
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const rect = drawerChartArea.getBoundingClientRect();
-  const w = Math.max(360, rect.width || 700);
-  const h = 260;
-
-  const padL = 55, padR = 20, padT = 25, padB = 55;
-
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
-  svg.style.display = 'block';
-  drawerChartArea.appendChild(svg);
-
-  // --------------------------------
-  // Bucket loans by whole % rate
-  // --------------------------------
-  const rateBuckets = {};
-  loansWithAmort.forEach(l => {
-    const bucket = Math.floor(l.nominalRate * 100);
-    if (!rateBuckets[bucket]) rateBuckets[bucket] = [];
-    rateBuckets[bucket].push(l);
-  });
-
-  const bucketKeys = Object.keys(rateBuckets).sort((a, b) => a - b);
-  const maxStack = Math.max(
-    ...bucketKeys.map(k => rateBuckets[k].length),
-    1
-  );
-
-  const barW = (w - padL - padR) / bucketKeys.length * 0.7;
-  const stepX = (w - padL - padR) / bucketKeys.length;
-
-  // --------------------------------
-  // Grid lines + Y-axis counts
-  // --------------------------------
-  for (let i = 0; i <= 4; i++) {
-    const y = padT + (h - padT - padB) * (i / 4);
-
-    const line = document.createElementNS(svgNS, 'line');
-    line.setAttribute('x1', padL);
-    line.setAttribute('x2', w - padR);
-    line.setAttribute('y1', y);
-    line.setAttribute('y2', y);
-    line.setAttribute('stroke', 'var(--border)');
-    line.setAttribute('stroke-opacity', '0.35');
-    svg.appendChild(line);
-
-    const lbl = document.createElementNS(svgNS, 'text');
-    lbl.setAttribute('x', padL - 8);
-    lbl.setAttribute('y', y + 4);
-    lbl.setAttribute('font-size', '11');
-    lbl.setAttribute('fill', 'var(--muted)');
-    lbl.setAttribute('text-anchor', 'end');
-    lbl.textContent = Math.round(maxStack * (1 - i / 4));
-    svg.appendChild(lbl);
-  }
-
-  // --------------------------------
-  // Draw stacked bars
-  // --------------------------------
-  bucketKeys.forEach((bucket, i) => {
-    const loans = rateBuckets[bucket];
-    const x = padL + i * stepX + (stepX - barW) / 2;
-    const unitH = (h - padT - padB) / maxStack;
-    let yCursor = h - padB;
-
-    loans.forEach(loan => {
-      yCursor -= unitH;
-
-      const seg = document.createElementNS(svgNS, 'rect');
-      seg.setAttribute('x', x);
-      seg.setAttribute('y', yCursor);
-      seg.setAttribute('width', barW);
-      seg.setAttribute('height', unitH - 1);
-      seg.setAttribute('rx', 3);
-      seg.setAttribute('fill', window.KPI_COLOR_MAP[loan.id]);
-      seg.style.cursor = 'pointer';
-
-      seg.addEventListener('mousemove', ev => {
-        tooltip.style.display = 'block';
-        tooltip.style.left = ev.clientX + 'px';
-        tooltip.style.top = (ev.clientY - 12) + 'px';
-        tooltip.innerHTML =
-          `${loan.name}${loan.school ? ' (' + loan.school + ')' : ''}<br>` +
-          `${(loan.nominalRate * 100).toFixed(2)}%`;
-      });
-
-      seg.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
-      });
-    const id = loan.id ?? loan.loanId;
-    seg.dataset.loanId = String(id);
-    seg.dataset.type = "rate-seg";
-
-      svg.appendChild(seg);
-    });
-
-    const lbl = document.createElementNS(svgNS, 'text');
-    lbl.setAttribute('x', x + barW / 2);
-    lbl.setAttribute('y', h - padB + 20);
-    lbl.setAttribute('font-size', '11');
-    lbl.setAttribute('fill', 'var(--muted)');
-    lbl.setAttribute('text-anchor', 'middle');
-    lbl.textContent = `${bucket}.0–${bucket + 1}.0%`;
-    svg.appendChild(lbl);
-  });
-
-  // ==================================
-  // TABLE — matches Weighted ROI To Date
-  // ==================================
-drawerExtra.innerHTML = `
-  <div style="margin-top:12px">
-    <h3 style="margin:0 0 8px 0">Loans by Interest Rate</h3>
-    <div style="
-      max-height:300px;
-      overflow:auto;
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:6px;
-      background:var(--card);
-    ">
-      <table class="roi-table" style="width:100%;font-size:13px;">
-        <thead>
-          <tr>
-            <th style="text-align:left">Loan</th>
-            <th style="text-align:left">Purchased</th>
-            <th style="text-align:left">Matures</th>
-            <th style="text-align:right">Interest Rate</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${loansWithAmort.map(l => {
-            const id = l.id ?? l.loanId;
-            const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
-
-            let maturity = '';
-            try {
-              const d = new Date(l.purchaseDate);
-              const months = Math.round((l.termYears + l.graceYears) * 12);
-              d.setMonth(d.getMonth() + months);
-              maturity = formatMonthYear(d);
-            } catch {}
-
-            return `
-              <tr data-loan-id="${id}">
-                <td style="text-align:left;">
-                  <span style="
-                    display:inline-block;
-                    width:10px;
-                    height:10px;
-                    background:${color};
-                    border-radius:2px;
-                    margin-right:8px;
-                    vertical-align:middle;
-                  "></span>
-                  <strong>${l.name}</strong>
-                  <div style="font-size:12px;color:var(--muted)">
-                    ${l.school || ""}
-                  </div>
-                </td>
-                <td style="text-align:left;">
-                  ${l.purchaseDate || ""}
-                </td>
-                <td style="text-align:left;">
-                  ${maturity}
-                </td>
-                <td style="
-                  text-align:right;
-                  font-weight:700;
-                  color:${color};
-                ">
-                  ${(l.nominalRate * 100).toFixed(2)}%
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>
-`;
-
-// -----------------------------------------
-// Avg Rate table row → chart segment hover
-// -----------------------------------------
-const chartSvg = drawerChartArea.querySelector("svg");
-const table = drawerExtra.querySelector("table");
-
-if (chartSvg && table) {
-  const segs = Array.from(
-    chartSvg.querySelectorAll('rect[data-type="rate-seg"]')
-  );
-
-  table.querySelectorAll("tbody tr[data-loan-id]").forEach(row => {
-    const rowLoanId = row.dataset.loanId;
-
-    row.addEventListener("mouseenter", () => {
-      segs.forEach(s => {
-        s.setAttribute(
-          "opacity",
-          s.dataset.loanId === rowLoanId ? "1" : "0.15"
-        );
-      });
-    });
-
-    row.addEventListener("mouseleave", () => {
-      segs.forEach(s => s.setAttribute("opacity", "1"));
-    });
-  });
-}
-
-drawer.classList.add('open');
-drawer.setAttribute('aria-hidden', 'false');
-drawer.scrollTop = 0;
-
-}
-DELETE if not needed */
 
 // ============================================================
 // KPI4 — ROI SPREAD DRAWER
@@ -3346,10 +3092,37 @@ function renderCapitalRecoveryDrawer() {
   drawerExtra.innerHTML = html;
 }
 
+// ----------------------------------
+// Embed auto-open handling
+// ----------------------------------
+const urlParams = new URLSearchParams(window.location.search);
+const EMBED_MODE = urlParams.get("embed") === "true";
+const OPEN_TARGET = urlParams.get("open");
 
+// Delay until KPI DOM + data exist
+requestAnimationFrame(() => {
+  if (!OPEN_TARGET) return;
 
+  // Normalize aliases
+  if (OPEN_TARGET === "projectedROI" || OPEN_TARGET === "kpi2") {
+    // KPI2 = Projected Weighted ROI
+    openKpi2(); // <-- existing function
+  }
+});
 
+      // ----------------------------------
+// Embed click-through to full ROI
+// ----------------------------------
+if (EMBED_MODE) {
+  document.addEventListener("click", (e) => {
+    // Allow internal controls (scrollbars, selects, buttons)
+    if (e.target.closest("button, select, a, input, textarea")) return;
 
+    const user = PAGE_USER || "jeff";
+    const url = `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
+    window.top.location.href = url;
+  }, { passive: true });
+}
 
 
 
