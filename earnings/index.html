@@ -3004,26 +3004,6 @@ renderKpi3AvgLineChart(
   return; // 🚫 STOP — prevent legacy code from running
 }
 
-// ===============================
-// AUTO-OPEN KPI IN EMBED MODE
-// ===============================
-if (isEmbed) {
-  const params = new URLSearchParams(location.search);
-  const open = params.get("open");
-
-  // Force KPI context before anything else
-  currentLoan = null;
-  currentMode = 'kpi';
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (open === "projectedNet") {
-        // 🔥 OPEN KPI2 EXPLICITLY
-        openKpi2();
-      }
-    });
-  });
-}
 
     
     // --------------------------
