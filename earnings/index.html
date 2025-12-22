@@ -989,6 +989,10 @@ if (IS_EMBED) {
   document.documentElement.classList.add("embed-mode");
 }
 
+  console.log("[EARNINGS] IS_EMBED =", IS_EMBED);
+console.log("[EARNINGS] URL =", window.location.href);
+console.log("[EARNINGS] open param =", new URLSearchParams(location.search).get("open"));
+
   
   // ----------------------------------
   // Multi-user support (match ROI)
