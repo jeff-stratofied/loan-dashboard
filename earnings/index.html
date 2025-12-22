@@ -2226,7 +2226,151 @@ if (firstDate && lastDate) {
   svg.addEventListener("mousemove", handleMove);
   svg.addEventListener("mouseleave", handleLeave);
 }
-  
+
+  function renderKpi4AvgLineChart(container, rows) {
+  container.innerHTML = "";
+  if (!rows || !rows.length) return;
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const w = container.clientWidth || 700;
+  const h = container.clientHeight || 240;
+
+  const padL = 60, padR = 20, padT = 20, padB = 52;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+
+  const values = rows.map(r => Number(r.avg) || 0);
+  const maxVal = niceAxisMax(Math.max(...values));
+  const minVal = 0;
+
+  const usableH = h - padT - padB;
+  const usableW = w - padL - padR;
+  const scaleY = usableH / (maxVal - minVal || 1);
+  const stepX = usableW / Math.max(1, rows.length - 1);
+
+  // ----------------------------
+  // Y GRID + LABELS
+  // ----------------------------
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + i * (usableH / 4);
+    const val = maxVal - (maxVal * i / 4);
+
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", padL);
+    line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "var(--grid-light)");
+    svg.appendChild(line);
+
+    const txt = document.createElementNS(svgNS, "text");
+    txt.textContent = formatCurrency(val);
+    txt.setAttribute("x", padL - 8);
+    txt.setAttribute("y", y + 4);
+    txt.setAttribute("font-size", "11");
+    txt.setAttribute("text-anchor", "end");
+    txt.setAttribute("fill", "var(--text)");
+    svg.appendChild(txt);
+  }
+
+  // ----------------------------
+  // LINE PATH
+  // ----------------------------
+  let d = "";
+  rows.forEach((r, i) => {
+    const x = padL + i * stepX;
+    const y = padT + (maxVal - r.avg) * scaleY;
+    d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+  });
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute("d", d);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "var(--brand)");
+  path.setAttribute("stroke-width", "3");
+  svg.appendChild(path);
+
+  // ----------------------------
+  // X AXIS LABELS (YEARLY)
+  // ----------------------------
+  const xAxisY = h - padB + 18;
+  const labelEvery = Math.max(1, Math.floor(rows.length / 6));
+
+  for (let i = 0; i < rows.length; i += labelEvery) {
+    const x = padL + i * stepX;
+
+    const lbl = document.createElementNS(svgNS, "text");
+    lbl.textContent = formatMonthYear(rows[i].date);
+    lbl.setAttribute("x", x);
+    lbl.setAttribute("y", xAxisY);
+    lbl.setAttribute("font-size", "11");
+    lbl.setAttribute("fill", "var(--muted)");
+    lbl.setAttribute("text-anchor", "middle");
+    svg.appendChild(lbl);
+  }
+
+  // ----------------------------
+  // HOVER (MATCH KPI3)
+  // ----------------------------
+  const vLine = document.createElementNS(svgNS, "line");
+  vLine.setAttribute("y1", padT);
+  vLine.setAttribute("y2", h - padB);
+  vLine.setAttribute("stroke", "var(--text)");
+  vLine.setAttribute("stroke-dasharray", "3 4");
+  vLine.setAttribute("stroke-opacity", "0");
+  svg.appendChild(vLine);
+
+  const dot = document.createElementNS(svgNS, "circle");
+  dot.setAttribute("r", "5");
+  dot.setAttribute("fill", "var(--brand)");
+  dot.setAttribute("stroke", "white");
+  dot.setAttribute("stroke-width", "2");
+  dot.setAttribute("opacity", "0");
+  svg.appendChild(dot);
+
+  container.appendChild(svg);
+
+  function idxFromClientX(clientX) {
+    const rect = svg.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * w;
+    return Math.max(0, Math.min(rows.length - 1, Math.round((x - padL) / stepX)));
+  }
+
+  function handleMove(e) {
+    const idx = idxFromClientX(e.clientX);
+    const r = rows[idx];
+
+    const x = padL + idx * stepX;
+    const y = padT + (maxVal - r.avg) * scaleY;
+
+    vLine.setAttribute("x1", x);
+    vLine.setAttribute("x2", x);
+    vLine.setAttribute("stroke-opacity", "0.8");
+
+    dot.setAttribute("cx", x);
+    dot.setAttribute("cy", y);
+    dot.setAttribute("opacity", "1");
+
+    setMiniTooltipContent([
+      `Date: ${formatMonthYear(r.date)}`,
+      `Avg / Month (Projected): ${formatCurrency(r.avg)}`
+    ]);
+    positionMiniTooltip(e.clientX, e.clientY, 40);
+  }
+
+  function handleLeave() {
+    vLine.setAttribute("stroke-opacity", "0");
+    dot.setAttribute("opacity", "0");
+    hideMiniTooltip();
+  }
+
+  svg.addEventListener("mousemove", handleMove);
+  svg.addEventListener("mouseleave", handleLeave);
+}
+
     
     // --------------------------
     // Drawer stacked chart (larger)
