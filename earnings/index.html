@@ -2871,6 +2871,9 @@ function openKpi2() {
   currentLoan = null;
   currentMode = 'kpi';
 
+  // ✅ FORCE drawer visible immediately (critical for embed mode)
+  drawer.classList.add("open");
+  
   // Always reset first so nothing wipes content later
   resetDrawerContent();
 
