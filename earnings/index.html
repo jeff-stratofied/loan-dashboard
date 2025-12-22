@@ -3060,7 +3060,9 @@ function openKpi3() {
   function openKpi4() {
   currentLoan = null;
   currentMode = "kpi";
-
+const activeLoans = loans.filter(l => !hiddenLoans.has(l.loanId));
+const loansWithEarnings = activeLoans.filter(l => l.earningsSchedule && l.earningsSchedule.length > 0);
+    
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent =
     "Average projected net earnings per month across the full lifetime of all loans.";
@@ -3072,7 +3074,7 @@ function openKpi3() {
 
   // SECONDARY
   const totalMonthsThroughMaturity = Math.max(
-  ...loansWithEarnings.map(l =>
+  ...activeLoans.map(l =>
     Math.round((l.termYears + l.graceYears) * 12)
   )
 );
