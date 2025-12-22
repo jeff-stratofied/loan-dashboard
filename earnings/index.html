@@ -1016,13 +1016,10 @@ console.log("[EARNINGS] URL =", window.location.href);
 console.log("[EARNINGS] open param =", params.get("open"));
 
 
-  
-  // ----------------------------------
-  // Multi-user support (match ROI)
-  // ----------------------------------
-  const PAGE_USER =
-    const PAGE_USER = params.get("user") || "jeff";
-
+// ----------------------------------
+// Multi-user support (match ROI)
+// ----------------------------------
+const PAGE_USER = params.get("user") || "jeff";
 
   const USER_LABELS = {
     jeff: "Jeff Customer",
