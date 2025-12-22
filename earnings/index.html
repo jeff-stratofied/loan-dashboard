@@ -2810,24 +2810,53 @@ function openKpi1(){
 
   const rows = buildPortfolioDrawerRows(loansWithEarnings);
 
-  // ✅ KPI1 = MONTHLY bars, dense axis, NO projection semantics
-createKpiStackedChart(
-  document.getElementById("drawerChartArea"),
-  rows,
-  {
-    denseXAxis: true,
-    thinBars: false,
-    useMonthly: true,      // ✅ KPI1 bars use monthlyNet
-    projected: false       // ✅ KPI1 is not the projected/baseline-offset mode
-  }
-);
+  // ===============================
+  // KPI1 CHART
+  // ===============================
+  const chartEl = document.getElementById("drawerChartArea");
 
+  createKpiStackedChart(
+    chartEl,
+    rows,
+    {
+      denseXAxis: true,
+      thinBars: false,
+      useMonthly: true,   // KPI1 bars use monthlyNet
+      projected: false    // KPI1 is NOT projected mode
+    }
+  );
+
+  // ===============================
+  // KPI1 TABLE
+  // ===============================
   drawerExtra.innerHTML =
     `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI1Table(loansWithEarnings, "drawerKpiTable");
 
+  // ===============================
+  // TABLE → CHART HOVER WIRING
+  // ===============================
+  const table = document
+    .getElementById("drawerKpiTable")
+    ?.querySelector("table");
+
+  if (table && chartEl) {
+    table.querySelectorAll("tbody tr[data-loan-id]").forEach(row => {
+      const loanId = row.dataset.loanId;
+
+      row.addEventListener("mouseenter", () => {
+        highlightLoanInKpiChart(chartEl, loanId);
+      });
+
+      row.addEventListener("mouseleave", () => {
+        clearKpiChartHighlight(chartEl);
+      });
+    });
+  }
+
   openDrawer();
 }
+
 
 
 function openKpi2() {
