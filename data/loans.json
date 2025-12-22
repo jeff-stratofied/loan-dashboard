@@ -30,7 +30,7 @@
       "loanStartDate": "2024-02-01",
       "purchaseDate": "2024-02-01",
       "principal": 7500,
-      "purchasePrice": 7500,
+      "purchasePrice": 7000,
       "rate": 0.08,
       "termYears": 8,
       "graceYears": 0.5,
