@@ -3275,6 +3275,22 @@ document.getElementById("kpiFees").textContent =
 
 
   renderLoanTiles();
+
+      // =====================================
+// EMBED MODE: honor ?open=projectedNet
+// =====================================
+if (IS_EMBED) {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("open") === "projectedNet") {
+    // Defer until drawer DOM is fully ready
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        openKpi2();
+      });
+    });
+  }
+}
+
 }
 
     function applyLoanFilters() {
