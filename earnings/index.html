@@ -765,6 +765,15 @@ html[data-theme="dark"] .legend .sw {
   max-height: none;
 }
 
+    // ===============================
+// EMBED MODE: Disable KPI tile re-clicks
+// ===============================
+if (isEmbed) {
+  document.querySelectorAll(".kpi").forEach(kpi => {
+    kpi.style.pointerEvents = "none";
+  });
+}
+
     
   </style>
 </head>
@@ -978,7 +987,17 @@ const isEmbed =
 
 if (isEmbed) {
   document.body.classList.add("embed-mode");
+
+  // Click anywhere → open full earnings page with KPI2 open
+  document.addEventListener("click", () => {
+    const u =
+      new URLSearchParams(window.location.search).get("user") || "jeff";
+
+    window.top.location.href =
+      `/loan-dashboard/earnings/index.html?user=${u}&open=projectedNet`;
+  });
 }
+
 
     
     // --------------------------
@@ -1440,6 +1459,19 @@ function computeEarningsKPIs(list) {
   return window.kpis;
 }
 
+// ===============================
+// AUTO-OPEN KPI2 IN EMBED MODE
+// ===============================
+const openParam =
+  new URLSearchParams(window.location.search).get("open");
+
+if (isEmbed && openParam === "projectedNet") {
+  // Simulate clicking KPI2
+  const kpi2 = document.querySelector('.kpi[data-kpi="projected"]');
+  if (kpi2) {
+    requestAnimationFrame(() => kpi2.click());
+  }
+}
 
 
     function getCurrentEarningsRow(loan) {
