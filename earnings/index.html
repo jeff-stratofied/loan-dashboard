@@ -962,9 +962,12 @@ let currentMode = 'portfolio';
   // =====================================
 // EMBED MODE DETECTION (match ROI)
 // =====================================
+const embedParam = new URLSearchParams(window.location.search).get("embed");
 const IS_EMBED =
   window.self !== window.top ||
-  new URLSearchParams(window.location.search).get("embed") === "1";
+  embedParam === "1" ||
+  embedParam === "true";
+
 
 if (IS_EMBED) {
   document.documentElement.classList.add("embed-mode");
