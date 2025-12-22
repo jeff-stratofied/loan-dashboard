@@ -3108,22 +3108,24 @@ requestAnimationFrame(() => {
 });
 
 
-      // ----------------------------------
+// ----------------------------------
 // Embed click-through to full ROI
 // ----------------------------------
 if (EMBED_MODE) {
-  document.addEventListener("click", (e) => {
-    // Allow internal controls (scrollbars, selects, buttons)
-    if (e.target.closest("button, select, a, input, textarea")) return;
+  document.addEventListener(
+    "click",
+    (e) => {
+      // Allow normal interaction
+      if (e.target.closest("button, select, a, input, textarea")) return;
 
-    const user = PAGE_USER || "jeff";
-    const url = `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
-    window.top.location.href = url;
-  }, { passive: true });
+      const user = PAGE_USER || "jeff";
+      window.top.location.href =
+        `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
+    },
+    { passive: true }
+  );
 }
 
-// Expose for embed / URL open
-window.openKpi2 = openKpi2;
 
 
       
