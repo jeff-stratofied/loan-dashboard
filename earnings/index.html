@@ -973,17 +973,6 @@ if (IS_EMBED) {
   document.documentElement.classList.add("embed-mode");
 }
 
-  // =====================================
-// EMBED CLICK → OPEN FULL PAGE
-// =====================================
-if (IS_EMBED) {
-  document.addEventListener("click", () => {
-    const url = new URL(window.location.href);
-    url.searchParams.delete("embed");
-    window.open(url.toString(), "_top");
-  });
-}
-
   
   // ----------------------------------
   // Multi-user support (match ROI)
@@ -3323,6 +3312,24 @@ if (IS_EMBED) {
   }
 }
 
+// =====================================
+// EMBED CLICK → OPEN FULL PAGE (SAFE)
+// =====================================
+if (IS_EMBED) {
+  const openFullPage = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("embed");
+    window.open(url.toString(), "_top");
+  };
+
+  // Only allow click-through AFTER drawer is visible
+  setTimeout(() => {
+    document.addEventListener("click", openFullPage, { once: true });
+  }, 300);
+}
+
+
+      
 }
 
     function applyLoanFilters() {
