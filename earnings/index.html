@@ -3067,6 +3067,8 @@ function openKpi4() {
     l.earningsSchedule && Array.isArray(l.earningsSchedule) && l.earningsSchedule.length > 0
   );
 
+console.log('Active loans:', activeLoans.length, 'With schedules:', loansWithEarnings.length);
+  
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent =
     "Average projected net earnings per month across the full lifetime of all loans.";
