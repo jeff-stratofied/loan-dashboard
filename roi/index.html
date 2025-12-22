@@ -3163,6 +3163,56 @@ if (EMBED_MODE) {
       initROI();
     });
 
+// ----------------------------------
+// Embed overrides for drawer controls
+// ----------------------------------
+if (EMBED_MODE) {
+  const closeBtn = document.getElementById("closeBtn");
+
+  if (closeBtn) {
+    closeBtn.addEventListener(
+      "click",
+      (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const user = PAGE_USER || "jeff";
+        window.top.location.href =
+          `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
+      },
+      true // CAPTURE so we override existing handler
+    );
+  }
+}
+
+    if (EMBED_MODE) {
+  const csvBtn = document.getElementById("downloadCsvBtn");
+  if (csvBtn) {
+    csvBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const user = PAGE_USER || "jeff";
+      window.top.location.href =
+        `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
+    }, true);
+  }
+}
+
+    if (EMBED_MODE) {
+  const printBtn = document.getElementById("printBtn");
+  if (printBtn) {
+    printBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const user = PAGE_USER || "jeff";
+      window.top.location.href =
+        `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
+    }, true);
+  }
+}
+
+
+    
     // theme toggle
 window.addEventListener("DOMContentLoaded", () => {
   const toggle = document.getElementById("themeToggle");
