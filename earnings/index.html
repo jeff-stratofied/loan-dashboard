@@ -3085,7 +3085,7 @@ const rows = buildKpi4AvgMonthlyRows(loansWithEarnings);
 // Draw chart using SAME renderer as KPI3
 renderKpi3AvgLineChart(
   document.getElementById("drawerChartArea"),
-  rows
+  rows,
   { xLabelEveryMonths: 24 }
 );
 
