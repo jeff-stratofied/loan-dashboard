@@ -686,10 +686,6 @@ html[data-theme="dark"] .legend .sw {
       white-space: nowrap;
     }
 
-    
-.kpi4-table tbody tr[data-loan-id] td {
-  color: var(--loan-color) !important;
-}
 
     
     /* KPI4 table */
@@ -1397,6 +1393,35 @@ function computeEarningsKPIs(list) {
   return window.kpis;
 }
 
+// ===============================
+// KPI tile click routing (AUTHORITATIVE)
+// ===============================
+document.querySelectorAll(".kpi").forEach(tile => {
+  tile.addEventListener("click", () => {
+    const type = tile.dataset.kpi;
+
+    switch (type) {
+      case "net":
+        openKpi1();
+        break;
+
+      case "projected":
+        openKpi2();
+        break;
+
+      case "avgMonthly":
+        openKpi3();
+        break;
+
+      case "fees":
+        openKpi4();
+        break;
+
+      default:
+        console.warn("Unknown KPI tile:", type);
+    }
+  });
+});
 
 
     function getCurrentEarningsRow(loan) {
@@ -2767,20 +2792,24 @@ function openKpi3() {
 
   // SECONDARY = months counted
   drawerSecondaryTitle.innerHTML = `
-  Months Counted
-  <span class="info-icon" title="Months counted is the total months each loan has been owned.">ⓘ</span>
-`;
-  drawerSecondary.textContent = String(Math.max(0, Number(kpis?.monthsCounted ?? 0)));
+    Months Counted
+    <span class="info-icon" title="Months counted is the total months each loan has been owned.">ⓘ</span>
+  `;
+  drawerSecondary.textContent = String(
+    Math.max(0, Number(kpis?.monthsCounted ?? 0))
+  );
 
   resetDrawerContent();
 
   // Active loans only
-  const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
+  const activeLoans = loansWithEarnings.filter(
+    l => !hiddenLoans.has(l.loanId)
+  );
 
-  // rows from your existing portfolio aggregator (may skip empty months)
+  // rows from portfolio aggregator
   const rows = buildPortfolioDrawerRows(activeLoans);
 
-  // Use the SAME portfolio start KPI3 uses
+  // Portfolio start
   const portfolioStart = window.__PORTFOLIO_START__
     ? new Date(window.__PORTFOLIO_START__)
     : (rows.length ? new Date(rows[0].date) : new Date());
@@ -2790,7 +2819,7 @@ function openKpi3() {
   const TODAY = new Date();
   TODAY.setHours(0, 0, 0, 0);
 
-  // Map existing rows by YYYY-MM
+  // Map rows by YYYY-MM
   const rowByMonth = new Map();
   rows.forEach(r => {
     const d = new Date(r.date);
@@ -2798,9 +2827,13 @@ function openKpi3() {
     rowByMonth.set(key, r);
   });
 
-  // Build FULL calendar months from portfolioStart → TODAY
+  // Build full calendar months
   const fullMonths = [];
-  const cursor = new Date(portfolioStart.getFullYear(), portfolioStart.getMonth(), 1);
+  const cursor = new Date(
+    portfolioStart.getFullYear(),
+    portfolioStart.getMonth(),
+    1
+  );
   const end = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
 
   while (cursor <= end) {
@@ -2815,63 +2848,69 @@ function openKpi3() {
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
-// -----------------------------------
-// Trim leading zero months for chart
-// -----------------------------------
-const firstNonZeroIdx = fullMonths.findIndex(
-  m => (m.contributions || []).some(c => c.hasData)
-);
-
-const chartMonths =
-  firstNonZeroIdx >= 0
-    ? fullMonths.slice(firstNonZeroIdx)
-    : fullMonths;
-
-  
-  // Compute avg rows using CALENDAR months elapsed (NOT i+1)
-  let cumulativeNet = 0;
-
-const avgRows = chartMonths.map(m => {
-  const monthNet = (m.contributions || []).reduce(
-  (sum, c) => sum + (c.hasData ? (Number(c.monthlyNet) || 0) : 0),
-  0
-);
-
-
-  cumulativeNet += monthNet;
-
-    const monthsElapsed = Math.max(
-    1,
-    monthDiff(portfolioStart, m.date) + 1
+  // Trim leading zero months
+  const firstNonZeroIdx = fullMonths.findIndex(
+    m => (m.contributions || []).some(c => c.hasData)
   );
 
-  const avg = cumulativeNet / monthsElapsed;
+  const chartMonths =
+    firstNonZeroIdx >= 0
+      ? fullMonths.slice(firstNonZeroIdx)
+      : fullMonths;
 
+  // Compute averages
+  let cumulativeNet = 0;
 
-  return {
-    date: m.date,
-    avg,
-    netToDate: cumulativeNet,
-  };
-});
+  const avgRows = chartMonths.map(m => {
+    const monthNet = (m.contributions || []).reduce(
+      (sum, c) =>
+        sum + (c.hasData ? (Number(c.monthlyNet) || 0) : 0),
+      0
+    );
 
+    cumulativeNet += monthNet;
 
-  // Draw chart
+    const monthsElapsed = Math.max(
+      1,
+      monthDiff(portfolioStart, m.date) + 1
+    );
+
+    return {
+      date: m.date,
+      avg: cumulativeNet / monthsElapsed,
+      netToDate: cumulativeNet
+    };
+  });
+
+  // Chart
   renderKpi3AvgLineChart(
     document.getElementById("drawerChartArea"),
     avgRows
   );
 
   // Table
-  drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+
   renderKPI3Table(activeLoans, "drawerKpiTable");
 
-  document
-  .getElementById("drawerKpiTable")
-  ?.classList.add("kpi3-table");
+  const table = document.querySelector("#drawerKpiTable table");
+  if (table) {
+    // 🔒 FORCE KPI3 TABLE TO BE PLAIN
+    table.classList.remove("kpi1-table", "kpi2-table", "kpi4-table");
+
+    // Remove swatches if present
+    table.querySelectorAll(".loan-swatch").forEach(el => el.remove());
+
+    // Force black text
+    table.querySelectorAll("td, td *").forEach(el => {
+      el.style.color = "var(--text)";
+    });
+  }
 
   openDrawer();
 }
+
 
 
 function openKpi4(){
