@@ -3357,44 +3357,81 @@ document.getElementById("kpiFees").textContent =
 
   renderLoanTiles();
 
-  // === EMBED MODE HANDLING (for portfolio dashboard iframe) ===
-  const params = new URLSearchParams(window.location.search);
-  const isEmbed = params.get('embed') === 'true';
-  const openParam = params.get('open');
-  const userParam = params.get('user') || 'jeff';
+// === EMBED MODE HANDLING (for portfolio dashboard iframe) ===
+const params = new URLSearchParams(window.location.search);
+const isEmbed = params.get('embed') === 'true';
+const openParam = params.get('open');
+const userParam = params.get('user') || 'jeff';
 
-  if (isEmbed) {
-    // Hide header and loan tiles immediately for clean iframe view (prevents showing tiles in column)
-    const header = document.querySelector('header');
-    if (header) header.style.display = 'none';
+if (isEmbed) {
+  // Hide header and loan tiles immediately for clean iframe view (prevents showing tiles in column)
+  const header = document.querySelector('header');
+  if (header) header.style.display = 'none';
 
-    const loanGrid = document.getElementById('loanGrid');
-    if (loanGrid) loanGrid.style.display = 'none';
+  const loanGrid = document.getElementById('loanGrid');
+  if (loanGrid) loanGrid.style.display = 'none';
 
-    // Reduce padding/margins to fit iframe and bring drawer to top
-    document.body.style.padding = '0';
-    document.body.style.margin = '0';
-    const app = document.querySelector('.app');
-    if (app) {
-      app.style.padding = '0';
-      app.style.margin = '0';
-      app.style.maxWidth = 'none';
-    }
+  // Reduce padding/margins to fit iframe and bring drawer to top
+  document.body.style.padding = '0';
+  document.body.style.margin = '0';
+  document.body.style.height = '100%';
+  document.body.style.overflow = 'hidden'; // Prevent body scroll
 
-    // Automatically open the requested KPI drawer
-    if (openParam === 'kpi2') {
-      openKpi2();  // Opens "Projected Total Net Earnings"
-    }
-
-    // Click anywhere in iframe → go to full earnings page with same drawer open
-    document.body.addEventListener('click', (e) => {
-      // Skip if clicking buttons or links (prevents breaking CSV/Print)
-      if (e.target.closest('button, a')) return;
-
-      window.top.location.href = `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
-    }, true);
+  const app = document.querySelector('.app');
+  if (app) {
+    app.style.padding = '0';
+    app.style.margin = '0';
+    app.style.maxWidth = 'none';
+    app.style.height = '100%';
   }
-  // === END EMBED MODE ===
+
+  // Automatically open the requested KPI drawer
+  if (openParam === 'kpi2') {
+    openKpi2();  // Opens "Projected Total Net Earnings"
+  }
+
+  // Make drawer fill full height (matches ROI)
+  const drawer = document.querySelector('.drawer');
+  if (drawer) {
+    drawer.style.height = '100vh'; // Full viewport height
+    drawer.style.position = 'fixed';
+    drawer.style.top = '0';
+    drawer.style.left = '0';
+    drawer.style.width = '100%';
+    drawer.style.borderRadius = '0'; // No rounded corners in embed
+    drawer.style.boxShadow = 'none'; // No shadow in embed
+  }
+
+  // Make drawer body scrollable and fill space between head/footer
+  const drawerBody = document.querySelector('.drawer-body');
+  if (drawerBody) {
+    drawerBody.style.flex = '1';
+    drawerBody.style.overflowY = 'auto';
+    drawerBody.style.height = 'auto'; // Auto to fill flex
+  }
+
+  // Anchor footer persistently to bottom (fixed, matches ROI)
+  const drawerFooter = document.querySelector('.drawer-footer');
+  if (drawerFooter) {
+    drawerFooter.style.position = 'fixed';
+    drawerFooter.style.bottom = '0';
+    drawerFooter.style.left = '0';
+    drawerFooter.style.width = '100%';
+    drawerFooter.style.background = 'var(--drawer-bg)';
+    drawerFooter.style.borderTop = '1px solid var(--border)';
+    drawerFooter.style.padding = '8px 16px';
+    drawerFooter.style.boxSizing = 'border-box';
+  }
+
+  // Click anywhere in iframe → go to full earnings page with same drawer open
+  document.body.addEventListener('click', (e) => {
+    // Skip if clicking buttons or links (prevents breaking CSV/Print)
+    if (e.target.closest('button, a')) return;
+
+    window.top.location.href = `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
+  }, true);
+}
+// === END EMBED MODE ===
 }
   
     function applyLoanFilters() {
