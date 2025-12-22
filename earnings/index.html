@@ -765,6 +765,25 @@ html[data-theme="dark"] .legend .sw {
   max-height: none;
 }
 
+    /* =========================================
+   KPI1 + KPI2 table hover (ONLY)
+   ========================================= */
+.kpi1-table tbody tr,
+.kpi2-table tbody tr {
+  cursor: pointer;
+  transition: background-color .15s ease, opacity .15s ease;
+}
+
+.kpi1-table tbody tr:hover,
+.kpi2-table tbody tr:hover {
+  background: var(--tile-hover-bg);
+}
+
+.kpi1-table tbody tr.dimmed,
+.kpi2-table tbody tr.dimmed {
+  opacity: 0.25;
+}
+
     
   </style>
 </head>
@@ -2025,6 +2044,36 @@ function highlightLoanInKpiChart(container, loanId) {
   });
 }
 
+function highlightLoanInKpiChart(container, loanId) {
+  if (!container) return;
+
+  container.querySelectorAll("rect[data-loan-id]").forEach(el => {
+    el.style.opacity =
+      el.dataset.loanId === loanId ? "1" : "0.15";
+  });
+}
+
+function clearKpiChartHighlight(container) {
+  if (!container) return;
+
+  container.querySelectorAll("rect[data-loan-id]").forEach(el => {
+    el.style.opacity = "";
+  });
+}
+
+function highlightKpiRow(tableEl, loanId) {
+  tableEl.querySelectorAll("tbody tr").forEach(tr => {
+    tr.classList.toggle("dimmed", tr.dataset.loanId !== loanId);
+  });
+}
+
+function clearKpiRowHighlight(tableEl) {
+  tableEl.querySelectorAll("tbody tr").forEach(tr => {
+    tr.classList.remove("dimmed");
+  });
+}
+
+  
 function clearKpiChartHighlight(container) {
   if (!container) return;
 
@@ -3930,15 +3979,40 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
       }
 
       const rows = buildPortfolioDrawerRows(loansWithEarnings);
-     
 
-      /* WRONG — tables must not render charts -------
-      createKpiStackedChart(
-        document.getElementById("drawerChartArea"),
-        rows,
-        { denseXAxis: true, thinBars: false }
-      );
-      ----------- WRONG — tables must not render charts */
+  // ---------------------------------
+  // ROW HOVER → KPI1 CHART HIGHLIGHT
+  // ---------------------------------
+  const kpi1Chart = document.getElementById("drawerChartArea");
+
+  table.querySelectorAll("tbody tr").forEach(tr => {
+    const loanId =
+      tr.querySelector(".loan-swatch")?.dataset.loanId;
+
+    if (!loanId) return;
+
+    tr.addEventListener("mouseenter", () => {
+      // highlight chart
+      highlightLoanInKpiChart(kpi1Chart, loanId);
+
+      // dim other rows
+      table.querySelectorAll("tbody tr").forEach(r => {
+        r.style.opacity =
+          r === tr ? "1" : "0.25";
+      });
+    });
+
+    tr.addEventListener("mouseleave", () => {
+      // restore chart
+      clearKpiChartHighlight(kpi1Chart);
+
+      // restore rows
+      table.querySelectorAll("tbody tr").forEach(r => {
+        r.style.opacity = "";
+      });
+    });
+  });
+
       
     });
   });
