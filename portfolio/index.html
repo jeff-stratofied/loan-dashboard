@@ -226,6 +226,9 @@ document.getElementById("roiFrame").src =
   document.getElementById("amortFrame").src =
     `/loan-dashboard/amort/index.html?user=${u}&embed=true&openFirstLoan=true`;
 }
+const earningsFrame = document.getElementById("earningsFrame");
+
+console.log("[PORT] Earnings iframe src:", earningsFrame.src);
 
 
   buildFrames(user);
