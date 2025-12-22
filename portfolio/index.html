@@ -226,12 +226,34 @@ document.getElementById("roiFrame").src =
   document.getElementById("amortFrame").src =
     `/loan-dashboard/amort/index.html?user=${u}&embed=true&openFirstLoan=true`;
 }
-const earningsFrame = document.getElementById("earningsFrame");
-
-console.log("[PORT] Earnings iframe src:", earningsFrame.src);
-
 
   buildFrames(user);
+
+  // ===============================
+// DEBUG: Earnings iframe behavior
+// ===============================
+const earningsFrame = document.getElementById("earningsFrame");
+
+// Log initial src AFTER it is set
+console.log(
+  "[PORT] Earnings iframe src (after buildFrames):",
+  earningsFrame.src
+);
+
+// Detect every iframe load (critical)
+earningsFrame.addEventListener("load", () => {
+  console.log(
+    "[PORT] Earnings iframe LOADED:",
+    earningsFrame.contentWindow?.location?.href
+  );
+});
+
+// Check iframe size after render
+setTimeout(() => {
+  const rect = earningsFrame.getBoundingClientRect();
+  console.log("[PORT] Earnings iframe rect:", rect);
+}, 500);
+
 
   userSelect.addEventListener("change", () => {
     location.href = `index-portDash.html?user=${userSelect.value}`;
