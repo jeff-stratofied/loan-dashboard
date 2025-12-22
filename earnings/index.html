@@ -3357,43 +3357,45 @@ document.getElementById("kpiFees").textContent =
 
   renderLoanTiles();
 
-// === SIMPLE EMBED MODE (get drawer showing reliably first) ===
+// === SIMPLE EMBED MODE (get drawer visible, no gray, then build layout) ===
 const params = new URLSearchParams(window.location.search);
 const isEmbed = params.get('embed') === 'true';
 const openParam = params.get('open');
 const userParam = params.get('user') || 'jeff';
 
+// Open drawer based on param (works on full page too for redirect)
+if (openParam === 'kpi2') {
+  currentLoan = null;
+  currentMode = 'kpi';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      openKpi2();  // Opens "Projected Total Net Earnings"
+    });
+  });
+}
+
+// Embed-specific hides (no visibility logic to avoid gray)
 if (isEmbed) {
-  // Hide header and loan tiles only
+  // Hide header and loan tiles
   const header = document.querySelector('header');
   if (header) header.style.display = 'none';
 
   const loanGrid = document.getElementById('loanGrid');
   if (loanGrid) loanGrid.style.display = 'none';
 
-  // Remove any padding/margin that might cause issues
+  // Remove padding/margin for better fit (no height overrides yet)
   document.body.style.padding = '0';
   document.body.style.margin = '0';
   const app = document.querySelector('.app');
   if (app) {
-    app.style.padding = '0 16px';
+    app.style.padding = '0';
     app.style.margin = '0';
   }
-
-  // Force open the KPI2 drawer (Projected Total Net Earnings)
-  currentLoan = null;
-  currentMode = 'kpi';
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (openParam === 'kpi2') {
-        openKpi2();
-      }
-    });
-  });
 
   // Click anywhere → go to full page with drawer open
   document.body.addEventListener('click', (e) => {
     if (e.target.closest('button, a')) return;
+
     window.top.location.href = `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
   }, true);
 }
