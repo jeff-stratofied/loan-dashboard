@@ -2030,7 +2030,7 @@ const tooltipLines = [
 }
 
 // =======================================================
-// KPI table → chart hover helpers (shared)
+// KPI table → chart hover helpers (SHARED — SINGLE SOURCE)
 // =======================================================
 function highlightLoanInKpiChart(container, loanId) {
   if (!container) return;
@@ -2041,6 +2041,13 @@ function highlightLoanInKpiChart(container, loanId) {
   });
 }
 
+function clearKpiChartHighlight(container) {
+  if (!container) return;
+
+  container.querySelectorAll("rect[data-loan-id]").forEach(el => {
+    el.style.opacity = "";
+  });
+}
 
 function highlightKpiRow(tableEl, loanId) {
   tableEl.querySelectorAll("tbody tr").forEach(tr => {
@@ -2054,14 +2061,6 @@ function clearKpiRowHighlight(tableEl) {
   });
 }
 
-  
-function clearKpiChartHighlight(container) {
-  if (!container) return;
-
-  container.querySelectorAll("rect[data-loan-id]").forEach(el => {
-    el.style.opacity = "";
-  });
-}
 
 
     
