@@ -3342,22 +3342,6 @@ async function initPage() {
       });
     }
   }
-
-  // =====================================
-  // EMBED CLICK → OPEN FULL PAGE (SAFE)
-  // =====================================
-  if (IS_EMBED) {
-    const openFullPage = () => {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("embed");
-      window.open(url.toString(), "_top");
-    };
-
-    // Only allow click-through AFTER drawer is visible
-    setTimeout(() => {
-      document.addEventListener("click", openFullPage, { once: true });
-    }, 300);
-  }
 }
 
 
