@@ -3357,21 +3357,32 @@ document.getElementById("kpiFees").textContent =
 
   renderLoanTiles();
 
-// === SIMPLE EMBED MODE (drawer visible, no gray) ===
+// === PARAM HANDLING: Open drawer if &open=kpi2 (works on full page too) ===
 const params = new URLSearchParams(window.location.search);
-const isEmbed = params.get('embed') === 'true';
 const openParam = params.get('open');
+const isEmbed = params.get('embed') === 'true';
 const userParam = params.get('user') || 'jeff';
 
+if (openParam === 'kpi2') {
+  currentLoan = null;
+  currentMode = 'kpi';
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      openKpi2();  // Opens "Projected Total Net Earnings"
+    });
+  });
+}
+
+// === EMBED MODE: Hide stuff and add click redirect ===
 if (isEmbed) {
-  // Hide header and loan tiles only
+  // Hide header and loan tiles
   const header = document.querySelector('header');
   if (header) header.style.display = 'none';
 
   const loanGrid = document.getElementById('loanGrid');
   if (loanGrid) loanGrid.style.display = 'none';
 
-  // Minimal padding removal
+  // Clean padding
   document.body.style.padding = '0';
   document.body.style.margin = '0';
   const app = document.querySelector('.app');
@@ -3380,24 +3391,14 @@ if (isEmbed) {
     app.style.margin = '0';
   }
 
-  // Open KPI2 drawer
-  currentLoan = null;
-  currentMode = 'kpi';
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (openParam === 'kpi2') {
-        openKpi2();
-      }
-    });
-  });
-
-  // Click redirect with open param
+  // Click anywhere in iframe → full page with drawer open
   document.body.addEventListener('click', (e) => {
-    if (e.target.closest('button, a')) return;
+    if (e.target.closest('button, a')) return; // Don't break buttons
+
     window.top.location.href = `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
   }, true);
 }
-// === END SIMPLE EMBED ===
+// === END ===
 }
 
   
