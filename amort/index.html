@@ -1493,9 +1493,9 @@ resetBtn.addEventListener("click", () => {
         // EMBED MODE → redirect to full amort page with drawer open
   if (isEmbedMode() && allowEmbedRedirect) {
   const url =
-    `index.html?user=${encodeURIComponent(PAGE_USER)}` +
-    `&open=loan&id=${loan.loanId}`;
-  window.top.location.href = url;
+  `/loan-dashboard/amort/index.html?user=${encodeURIComponent(PAGE_USER)}` +
+  `&open=loan&id=${loan.loanId}`;
+
   return;
 }
 
@@ -2925,8 +2925,9 @@ function renderPaymentsDrawer() {
 
 
 if (isEmbed) {
-  document.body.classList.add("embed-mode");
+  document.documentElement.classList.add("embed-mode");
 }
+
 
 // =====================================================
 // EMBED MODE — CLICK-THROUGH TO FULL AMORT PAGE
