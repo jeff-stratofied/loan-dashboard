@@ -853,8 +853,7 @@ allLoans = allLoans.map(l => ({
 allLoans = allLoans.filter(l =>
   l.user === PAGE_USER && l.visible === true
 );
-// ✅ ensure UI renders filtered set
-currentLoans = [...allLoans];
+
   
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
@@ -1404,19 +1403,6 @@ resetBtn.addEventListener("click", () => {
     const drawerExtra = document.getElementById('drawerExtra');
     const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
-// =====================================================
-// EMBED MODE — AUTO-OPEN LOAN (FINAL, CORRECT LOCATION)
-// =====================================================
-if (isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
-  const loan = currentLoans.find(l =>
-    Number(l.loanId ?? l.id) === loanIdParam
-  );
-  if (loan) {
-    setCurrentLoan(loan);
-openDrawerForLoan(loan);
-
-  }
-}
 
   
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
@@ -2891,7 +2877,26 @@ if (isEmbed) {
   );
 }
 
+// --------------------------------------------------
+// USER + VISIBILITY FILTER (already done earlier)
+// --------------------------------------------------
 
+// ✅ ensure UI renders filtered set
+currentLoans = [...allLoans];
+
+// =====================================================
+// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN (CORRECT)
+// =====================================================
+if (isEmbed && openParam === "first" && currentLoans.length) {
+  const sorted = currentLoans
+    .slice()
+    .sort((a, b) =>
+      new Date(a.purchaseDate).getTime() -
+      new Date(b.purchaseDate).getTime()
+    );
+
+  openDrawerForLoan(sorted[0]);
+}
   
 }    ///<--- End of INIT()
     
