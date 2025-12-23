@@ -1491,13 +1491,15 @@ resetBtn.addEventListener("click", () => {
     /* ---------- Open drawer for loan ---------- */
     function openDrawerForLoan(loan) {
         // EMBED MODE → redirect to full amort page with drawer open
-  if (isEmbedMode() && allowEmbedRedirect) {
+if (isEmbedMode() && allowEmbedRedirect) {
   const url =
-  `/loan-dashboard/amort/index.html?user=${encodeURIComponent(PAGE_USER)}` +
-  `&open=loan&id=${loan.loanId}`;
+    `/loan-dashboard/amort/index.html?user=${encodeURIComponent(PAGE_USER)}` +
+    `&open=loan&id=${loan.loanId}`;
 
+  window.top.location.href = url;
   return;
 }
+
 
 
       drawerExtra.innerHTML = '';
