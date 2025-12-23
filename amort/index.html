@@ -477,6 +477,18 @@ html[data-theme="dark"] .close-btn {
   display: none !important;
 }
 
+    /* Remove top gray bar caused by .app spacing */
+.embed-mode .app {
+  margin: 0 !important;
+  padding: 0 !important;
+  max-width: none !important;
+}
+
+/* Ensure body background does not bleed */
+.embed-mode body {
+  background: var(--card) !important;
+}
+
 
 
     /* ============================================
@@ -2960,9 +2972,8 @@ if (isEmbed) {
 
 // ✅ ensure UI renders filtered set
 currentLoans = [...allLoans];
-
 // =====================================================
-// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN (CORRECT)
+// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN (DISPLAY ONLY)
 // =====================================================
 if (isEmbed && openParam === "first" && currentLoans.length) {
   const sorted = currentLoans
@@ -2972,8 +2983,29 @@ if (isEmbed && openParam === "first" && currentLoans.length) {
       new Date(b.purchaseDate).getTime()
     );
 
-  openDrawerForLoan(sorted[0]);
+  const loan = sorted[0];
+  currentLoan = loan;          // ensure state
+  allowEmbedRedirect = false;  // never navigate on auto-open
+
+  openDrawerForLoan(loan);
 }
+
+
+// =====================================================
+// FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL
+// =====================================================
+if (!isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
+  const loanToOpen = allLoans.find(
+    l => (l.loanId ?? l.id) === loanIdParam
+  );
+
+  if (loanToOpen) {
+    requestAnimationFrame(() => {
+      openDrawerForLoan(loanToOpen);
+    });
+  }
+}
+
   
 }    ///<--- End of INIT()
     
