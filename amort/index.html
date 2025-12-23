@@ -853,7 +853,7 @@ allLoans = allLoans.map(l => ({
 allLoans = allLoans.filter(l =>
   l.user === PAGE_USER && l.visible === true
 );
-
+currentLoans = [...allLoans];
   
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
@@ -1959,16 +1959,25 @@ drawer.classList.add('kpi-interactive');
 
 
 function renderTPVDrawer() {
-  if (!currentLoans.length) {
-  drawerTitle.textContent = 'Total Portfolio Value';
-  drawerSub.textContent = 'No loans for this user';
-  drawerPrimary.textContent = '$0';
-  drawerSecondary.textContent = '$0';
-  drawerChartArea.innerHTML = '<p class="small">No data available</p>';
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  return;
-}
+  // =====================================================
+  // SAFETY: TPV series may not exist yet (iframe / embed)
+  // =====================================================
+  if (!Array.isArray(tpvSeriesData) || !tpvSeriesData.length) {
+    drawerTitle.textContent = 'Total Portfolio Value';
+    drawerSub.textContent = 'No portfolio data available';
+    drawerPrimaryTitle.textContent = 'Current TPV';
+    drawerPrimary.textContent = '$0';
+    drawerSecondaryTitle.textContent = 'Total Invested';
+    drawerSecondary.textContent = '$0';
+    drawerChartArea.innerHTML = '<p class="small">No data available</p>';
+    drawerExtra.innerHTML = '';
+    drawerLegend.style.display = 'none';
+    drawerAmortContainer.style.display = 'none';
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+    return;
+  }
+
 
   currentMode = 'kpi';
   currentLoan = null;
