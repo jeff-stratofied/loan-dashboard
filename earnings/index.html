@@ -3357,37 +3357,35 @@ document.getElementById("kpiFees").textContent =
 
   renderLoanTiles();
 
-  // === EMBED MODE: Hide loan tiles completely, show only open drawer ===
+  // === EMBED MODE: Full-height drawer with fixed footer ===
 const params = new URLSearchParams(window.location.search);
 const isEmbed = params.get('embed') === 'true';
 const openParam = params.get('open');
 const userParam = params.get('user') || 'jeff';
 
 if (isEmbed) {
-  // Hide header
+  // Hide header and loan tiles
   const header = document.querySelector('header');
   if (header) header.style.display = 'none';
 
-  // COMPLETELY HIDE the loan grid (this is the key difference from ROI)
   const loanGrid = document.getElementById('loanGrid');
-  if (loanGrid) {
-    loanGrid.style.display = 'none';
-    loanGrid.style.visibility = 'hidden'; // Extra insurance
-    loanGrid.style.height = '0';
-    loanGrid.style.overflow = 'hidden';
-  }
+  if (loanGrid) loanGrid.style.display = 'none';
 
-  // Remove padding/margin to maximize drawer space
+  // Full height setup
   document.body.style.padding = '0';
   document.body.style.margin = '0';
+  document.body.style.height = '100vh';
+  document.body.style.overflow = 'hidden';
+
   const app = document.querySelector('.app');
   if (app) {
     app.style.padding = '0';
     app.style.margin = '0';
     app.style.maxWidth = 'none';
+    app.style.height = '100vh';
   }
 
-  // Open KPI2 drawer (Projected Total Net Earnings)
+  // Open KPI2 drawer
   currentLoan = null;
   currentMode = 'kpi';
   requestAnimationFrame(() => {
@@ -3398,9 +3396,42 @@ if (isEmbed) {
     });
   });
 
-  // Click anywhere → go to full earnings page with drawer open
+  // Apply full-height and fixed footer after drawer opens
+  setTimeout(() => {
+    const drawer = document.querySelector('.drawer');
+    if (drawer) {
+      drawer.style.height = '100vh';
+      drawer.style.position = 'fixed';
+      drawer.style.top = '0';
+      drawer.style.left = '0';
+      drawer.style.width = '100%';
+      drawer.style.borderRadius = '0';
+      drawer.style.boxShadow = 'none';
+      drawer.style.overflow = 'hidden';
+    }
+
+    const drawerBody = document.querySelector('.drawer-body');
+    if (drawerBody) {
+      drawerBody.style.height = 'calc(100vh - 120px)'; // Adjust if header/footer height changes
+      drawerBody.style.overflowY = 'auto';
+    }
+
+    const drawerFooter = document.querySelector('.drawer-footer');
+    if (drawerFooter) {
+      drawerFooter.style.position = 'fixed';
+      drawerFooter.style.bottom = '0';
+      drawerFooter.style.left = '0';
+      drawerFooter.style.width = '100%';
+      drawerFooter.style.background = 'var(--drawer-bg)';
+      drawerFooter.style.borderTop = '1px solid var(--border)';
+      drawerFooter.style.padding = '12px 16px';
+      drawerFooter.style.zIndex = '10';
+    }
+  }, 300); // Delay for drawer open animation
+
+  // Click redirect
   document.body.addEventListener('click', (e) => {
-    if (e.target.closest('button, a')) return; // Don't interfere with buttons
+    if (e.target.closest('button, a')) return;
 
     window.top.location.href = `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
   }, true);
