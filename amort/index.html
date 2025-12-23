@@ -1412,7 +1412,9 @@ if (isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
     Number(l.loanId ?? l.id) === loanIdParam
   );
   if (loan) {
-    openDrawerForLoan(loan);
+    setCurrentLoan(loan);
+openDrawerForLoan(loan);
+
   }
 }
 
