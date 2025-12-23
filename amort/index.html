@@ -439,6 +439,40 @@ html[data-theme="dark"] .close-btn {
 }
 
     svg text{ fill:var(--text); transition:fill .25s ease; }
+
+/* ============================================================
+   EMBED MODE (Portfolio Dashboard iframe)
+   ============================================================ */
+
+.embed-mode header,
+.embed-mode .loan-filters,
+.embed-mode .kpis {
+  display: none !important;
+}
+
+.embed-mode .drawer {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  height: 100% !important;
+  width: 100% !important;
+  max-width: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+/* Hide X button behavior stays consistent with ROI/Earnings */
+.embed-mode .close-btn {
+  display: inline-flex !important;
+}
+
+/* Ensure scrolling works inside iframe */
+.embed-mode .drawer-body {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+    
   </style>
 </head>
 
@@ -2803,7 +2837,49 @@ function renderPaymentsDrawer() {
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
 
+// =====================================================
+// PARAM + EMBED MODE HANDLING (Portfolio Dashboard)
+// =====================================================
+const params = new URLSearchParams(window.location.search);
+const isEmbed = params.get("embed") === "true";
+const openParam = params.get("open");
+const loanIdParam = Number(params.get("id"));
+const userParam = params.get("user") || "jeff";
+
+// Enable embed styling
+if (isEmbed) {
+  document.body.classList.add("embed-mode");
 }
+
+// Auto-open a specific loan drawer
+if (openParam === "loan" && Number.isFinite(loanIdParam)) {
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const loan = loansWithAmort.find(l => l.id === loanIdParam);
+      if (loan) {
+        openLoanDrawer(loan);
+      }
+    });
+  });
+}
+
+// In embed: click anywhere → full Amort page with same drawer open
+if (isEmbed) {
+  document.body.addEventListener(
+    "click",
+    (e) => {
+      if (e.target.closest("button, a")) return;
+
+      window.top.location.href =
+        `/loan-dashboard/amort/index.html?user=${userParam}&open=loan&id=${loanIdParam}`;
+    },
+    true
+  );
+}
+
+  
+}    ///<--- End of INIT()
+    
   // Set Current Date in header
 const currentDateEl = document.getElementById('currentDateLabel');
 if (currentDateEl) {
