@@ -958,6 +958,36 @@ if (isEmbed) {
   document.body.classList.add("embed-mode");
 }
 
+  // =====================================================
+// EMBED MODE — redirect drawer buttons to full page
+// =====================================================
+if (isEmbed) {
+  const userParam =
+    new URLSearchParams(window.location.search).get("user") || "jeff";
+
+  const targetUrl =
+    `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
+
+  function redirectToFull(e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    window.top.location.href = targetUrl;
+  }
+
+  // Wire AFTER DOM exists (drawer is already in markup)
+  const closeBtn = document.getElementById("closeBtn");
+  if (closeBtn) closeBtn.addEventListener("click", redirectToFull, true);
+
+  const downloadBtn = document.getElementById("downloadCsvBtn");
+  if (downloadBtn) downloadBtn.addEventListener("click", redirectToFull, true);
+
+  const printBtn = document.getElementById("printBtn");
+  if (printBtn) printBtn.addEventListener("click", redirectToFull, true);
+
+  const copyBtn = document.getElementById("copyCsvBtn");
+  if (copyBtn) copyBtn.addEventListener("click", redirectToFull, true);
+}
+
     
     // --------------------------
     // Settings & base data
