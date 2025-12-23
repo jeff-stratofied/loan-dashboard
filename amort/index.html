@@ -2860,12 +2860,9 @@ if (isEmbed) {
 }
 
 if (openParam === "loan" && Number.isFinite(loanIdParam)) {
-  // IMPORTANT:
-  // Amort finishes rendering AFTER init() resolves,
-  // so we must defer beyond init + paint.
   setTimeout(() => {
-    const loan = currentLoans.find(
-      l => (l.loanId ?? l.id) === loanIdParam
+    const loan = currentLoans.find(l =>
+      Number(l.loanId ?? l.id) === loanIdParam
     );
     if (loan) {
       openDrawerForLoan(loan);
@@ -2873,19 +2870,24 @@ if (openParam === "loan" && Number.isFinite(loanIdParam)) {
   }, 0);
 }
 
-
-
-// In embed: click anywhere → full Amort page with same drawer open
+  // =====================================================
+// EMBED MODE — CLICK-THROUGH TO FULL PAGE
+// =====================================================
 if (isEmbed) {
   document.body.addEventListener(
     "click",
     (e) => {
-      if (e.target.closest("button, a")) return;
+      // allow real controls to function
+      if (e.target.closest("button, a, input, select, textarea")) return;
+
+      const loan = currentLoan;
+      const loanId =
+        loan ? Number(loan.loanId ?? loan.id) : loanIdParam;
 
       window.top.location.href =
-        `/loan-dashboard/amort/index.html?user=${userParam}&open=loan&id=${loanIdParam}`;
+        `/loan-dashboard/amort/index.html?user=${userParam}&open=loan&id=${loanId}`;
     },
-    true
+    true // CAPTURE — must be true
   );
 }
 
