@@ -2838,30 +2838,30 @@ function renderPaymentsDrawer() {
     });
 
 // =====================================================
-// PARAM + EMBED MODE HANDLING (Portfolio Dashboard)
+// EMBED MODE + AUTO-OPEN LOAN (AMORT)
 // =====================================================
 const params = new URLSearchParams(window.location.search);
 const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("id"));
-const userParam = params.get("user") || "jeff";
 
-// Enable embed styling
 if (isEmbed) {
   document.body.classList.add("embed-mode");
 }
 
-// Auto-open a specific loan drawer
 if (openParam === "loan" && Number.isFinite(loanIdParam)) {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      const loan = loansWithAmort.find(l => l.id === loanIdParam);
+      const loan = currentLoans.find(
+        l => (l.loanId ?? l.id) === loanIdParam
+      );
       if (loan) {
-        openLoanDrawer(loan);
+        openDrawerForLoan(loan);
       }
     });
   });
 }
+
 
 // In embed: click anywhere → full Amort page with same drawer open
 if (isEmbed) {
