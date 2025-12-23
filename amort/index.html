@@ -1128,6 +1128,20 @@ svg.innerHTML = `
       });
     });
 
+// =====================================================
+// EMBED MODE — AUTO-OPEN LOAN (SAFE POINT)
+// =====================================================
+if (isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
+  const loan = currentLoans.find(l =>
+    Number(l.loanId ?? l.id) === loanIdParam
+  );
+  if (loan) {
+    openDrawerForLoan(loan);
+  }
+}
+
+
+  
 /* Populate amort filter dropdowns */
 const filterName = document.getElementById("filterName");
 const filterSchool = document.getElementById("filterSchool");
@@ -2857,17 +2871,6 @@ const loanIdParam = Number(params.get("id"));
 
 if (isEmbed) {
   document.body.classList.add("embed-mode");
-}
-
-if (openParam === "loan" && Number.isFinite(loanIdParam)) {
-  setTimeout(() => {
-    const loan = currentLoans.find(l =>
-      Number(l.loanId ?? l.id) === loanIdParam
-    );
-    if (loan) {
-      openDrawerForLoan(loan);
-    }
-  }, 0);
 }
 
   // =====================================================
