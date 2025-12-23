@@ -732,13 +732,22 @@ html[data-theme="dark"] .legend .sw {
   border-radius: 0 !important;
 }
 
-/* Remove modal chrome */
-.embed-mode .drawer-footer,
+/* Keep ROI-like chrome in embed:
+   show X + footer buttons */
 .embed-mode .drawer-close,
-.embed-mode .close-btn,
 .embed-mode button[aria-label="Close"] {
   display: none !important;
 }
+
+/* explicitly KEEP these visible */
+.embed-mode .close-btn,
+.embed-mode .drawer-footer {
+  display: inline-flex !important;
+}
+.embed-mode .drawer-footer {
+  display: block !important;
+}
+
 
 
 /* Ensure scroll works inside iframe */
