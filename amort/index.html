@@ -618,6 +618,15 @@ html[data-theme="dark"] .close-btn {
 import { attachSchedules } from "../js/loanEngine.js";
     import { normalizeLoan } from "../js/normalizeLoan.js";
 
+    // =====================================================
+// EMBED MODE + AUTO-OPEN LOAN (AMORT)
+// =====================================================
+const params = new URLSearchParams(window.location.search);
+const userParam = params.get("user") || "jeff";
+const isEmbed = params.get("embed") === "true";
+const openParam = params.get("open");
+const loanIdParam = Number(params.get("id"));
+
 
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
@@ -1128,18 +1137,6 @@ svg.innerHTML = `
       });
     });
 
-// =====================================================
-// EMBED MODE — AUTO-OPEN LOAN (SAFE POINT)
-// =====================================================
-if (isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
-  const loan = currentLoans.find(l =>
-    Number(l.loanId ?? l.id) === loanIdParam
-  );
-  if (loan) {
-    openDrawerForLoan(loan);
-  }
-}
-
 
   
 /* Populate amort filter dropdowns */
@@ -1411,6 +1408,19 @@ resetBtn.addEventListener("click", () => {
     const drawerExtra = document.getElementById('drawerExtra');
     const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
+// =====================================================
+// EMBED MODE — AUTO-OPEN LOAN (FINAL, CORRECT LOCATION)
+// =====================================================
+if (isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
+  const loan = currentLoans.find(l =>
+    Number(l.loanId ?? l.id) === loanIdParam
+  );
+  if (loan) {
+    openDrawerForLoan(loan);
+  }
+}
+
+  
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
@@ -2860,14 +2870,6 @@ function renderPaymentsDrawer() {
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
 
-// =====================================================
-// EMBED MODE + AUTO-OPEN LOAN (AMORT)
-// =====================================================
-const params = new URLSearchParams(window.location.search);
-const userParam = params.get("user") || "jeff";
-const isEmbed = params.get("embed") === "true";
-const openParam = params.get("open");
-const loanIdParam = Number(params.get("id"));
 
 if (isEmbed) {
   document.body.classList.add("embed-mode");
