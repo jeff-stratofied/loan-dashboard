@@ -635,8 +635,6 @@ const openParam = params.get("open");
 const loanIdParam = Number(params.get("id"));
 
 if (isEmbed) {
-  document.body.classList.add("embed-mode");
-
   document.addEventListener(
     "click",
     (e) => {
@@ -645,14 +643,15 @@ if (isEmbed) {
       e.preventDefault();
       e.stopImmediatePropagation();
 
-      window.top.location.href =
-        `/loan-dashboard/amort/index.html` +
-        `?user=${PAGE_USER}` +
-        `&open=loan&id=${currentLoan.loanId}`;
+      // 🔑 allow redirect ONLY after user interaction
+      allowEmbedRedirect = true;
+
+      openDrawerForLoan(currentLoan);
     },
     true
   );
 }
+
 
 
     
@@ -1446,6 +1445,8 @@ resetBtn.addEventListener("click", () => {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
     let currentLoan = null;
+  let allowEmbedRedirect = false;
+
     let currentMode = null; // 'loan' or 'kpi'
 
     function closeDrawer() {
@@ -1478,13 +1479,14 @@ resetBtn.addEventListener("click", () => {
     /* ---------- Open drawer for loan ---------- */
     function openDrawerForLoan(loan) {
         // EMBED MODE → redirect to full amort page with drawer open
-  if (isEmbedMode()) {
-    const url =
-      `index.html?user=${encodeURIComponent(PAGE_USER)}` +
-      `&open=loan&id=${loan.loanId}`;
-    window.top.location.href = url;
-    return;
-  }
+  if (isEmbedMode() && allowEmbedRedirect) {
+  const url =
+    `index.html?user=${encodeURIComponent(PAGE_USER)}` +
+    `&open=loan&id=${loan.loanId}`;
+  window.top.location.href = url;
+  return;
+}
+
 
       drawerExtra.innerHTML = '';
       currentMode = 'loan';
