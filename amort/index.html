@@ -2873,26 +2873,24 @@ if (isEmbed) {
   document.body.classList.add("embed-mode");
 }
 
-  // =====================================================
-// EMBED MODE — CLICK-THROUGH TO FULL PAGE
+// =====================================================
+// EMBED MODE — CLICK-THROUGH TO FULL AMORT PAGE
 // =====================================================
 if (isEmbed) {
   document.body.addEventListener(
     "click",
-    (e) => {
-      // allow real controls to function
-      if (e.target.closest("button, a, input, select, textarea")) return;
-
+    () => {
       const loan = currentLoan;
       const loanId =
         loan ? Number(loan.loanId ?? loan.id) : loanIdParam;
 
       window.top.location.href =
-        `/loan-dashboard/amort/index.html?user=${userParam}&open=loan&id=${loanId}`;
+        `/loan-dashboard/amort/index.html?user=${PAGE_USER}&open=loan&id=${loanId}`;
     },
-    true // CAPTURE — must be true
+    true // capture phase REQUIRED
   );
 }
+
 
   
 }    ///<--- End of INIT()
