@@ -2850,6 +2850,7 @@ function renderPaymentsDrawer() {
 // EMBED MODE + AUTO-OPEN LOAN (AMORT)
 // =====================================================
 const params = new URLSearchParams(window.location.search);
+const userParam = params.get("user") || "jeff";
 const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("id"));
@@ -2859,17 +2860,19 @@ if (isEmbed) {
 }
 
 if (openParam === "loan" && Number.isFinite(loanIdParam)) {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const loan = currentLoans.find(
-        l => (l.loanId ?? l.id) === loanIdParam
-      );
-      if (loan) {
-        openDrawerForLoan(loan);
-      }
-    });
-  });
+  // IMPORTANT:
+  // Amort finishes rendering AFTER init() resolves,
+  // so we must defer beyond init + paint.
+  setTimeout(() => {
+    const loan = currentLoans.find(
+      l => (l.loanId ?? l.id) === loanIdParam
+    );
+    if (loan) {
+      openDrawerForLoan(loan);
+    }
+  }, 0);
 }
+
 
 
 // In embed: click anywhere → full Amort page with same drawer open
