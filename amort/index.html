@@ -435,7 +435,7 @@ html[data-theme="dark"] .close-btn {
     svg text{ fill:var(--text); transition:fill .25s ease; }
 
 /* ============================================================
-   EMBED MODE (Portfolio Dashboard iframe)
+   EMBED MODE — AMORT (Portfolio iframe)
    ============================================================ */
 
 .embed-mode header,
@@ -445,12 +445,12 @@ html[data-theme="dark"] .close-btn {
   display: none !important;
 }
 
-/* Drawer fills iframe cleanly */
+/* Drawer should behave like earnings */
 .embed-mode .drawer {
   position: static !important;
   inset: auto !important;
   transform: none !important;
-  height: 100vh !important;
+  height: 100% !important;
   width: 100% !important;
   max-width: none !important;
   box-shadow: none !important;
@@ -458,22 +458,25 @@ html[data-theme="dark"] .close-btn {
   border-radius: 0 !important;
 }
 
-/* KEEP header visible */
+/* Explicitly RESTORE header chrome */
 .embed-mode .drawer-header {
   display: block !important;
-  border-bottom: 1px solid var(--border);
+  padding: 20px !important;
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--border) !important;
 }
 
-/* Remove gray spacer */
+/* Body scroll only */
 .embed-mode .drawer-body {
   padding-top: 0 !important;
-  overflow-y: auto;
+  overflow-y: auto !important;
 }
 
-/* Hide footer actions in iframe */
+/* Footer hidden in iframe */
 .embed-mode .drawer-footer {
   display: none !important;
 }
+
 
 
     /* ============================================
@@ -631,14 +634,28 @@ const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("id"));
 
-    if (isEmbed) {
-  document.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, true);
+if (isEmbed) {
+  document.body.classList.add("embed-mode");
+
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (!currentLoan) return;
+
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      window.top.location.href =
+        `/loan-dashboard/amort/index.html` +
+        `?user=${PAGE_USER}` +
+        `&open=loan&id=${currentLoan.loanId}`;
+    },
+    true
+  );
 }
 
 
+    
 function isEmbedMode() {
   return new URLSearchParams(window.location.search).get("embed") === "true";
 }
