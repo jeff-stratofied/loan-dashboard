@@ -440,44 +440,46 @@ html[data-theme="dark"] .close-btn {
 
 .embed-mode header,
 .embed-mode .loan-filters,
-.embed-mode .kpis {
+.embed-mode .kpis,
+.embed-mode #loanGrid {
   display: none !important;
 }
 
+/* Drawer fills iframe cleanly */
 .embed-mode .drawer {
   position: static !important;
   inset: auto !important;
   transform: none !important;
-  height: 100% !important;
+  height: 100vh !important;
   width: 100% !important;
   max-width: none !important;
   box-shadow: none !important;
+  border-left: none !important;
   border-radius: 0 !important;
 }
 
-/* Hide X button behavior stays consistent with ROI/Earnings */
-.embed-mode .close-btn {
-  display: inline-flex !important;
+/* KEEP header visible */
+.embed-mode .drawer-header {
+  display: block !important;
+  border-bottom: 1px solid var(--border);
 }
 
-/* Ensure scrolling works inside iframe */
+/* Remove gray spacer */
 .embed-mode .drawer-body {
+  padding-top: 0 !important;
   overflow-y: auto;
-  max-height: 100%;
 }
 
-    /* Hide loan tiles when embedded */
-.embed-mode #loanGrid {
+/* Hide footer actions in iframe */
+.embed-mode .drawer-footer {
   display: none !important;
 }
+
 
     /* ============================================
    EMBED MODE — AMORT (remove top chrome)
    ============================================ */
 
-.embed-mode .drawer-header {
-  display: none !important;
-}
 
 .embed-mode .drawer {
   padding-top: 0 !important;
@@ -629,7 +631,19 @@ const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("id"));
 
+    if (isEmbed) {
+  document.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, true);
+}
 
+
+function isEmbedMode() {
+  return new URLSearchParams(window.location.search).get("embed") === "true";
+}
+
+    
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
 
@@ -1446,6 +1460,15 @@ resetBtn.addEventListener("click", () => {
   
     /* ---------- Open drawer for loan ---------- */
     function openDrawerForLoan(loan) {
+        // EMBED MODE → redirect to full amort page with drawer open
+  if (isEmbedMode()) {
+    const url =
+      `index.html?user=${encodeURIComponent(PAGE_USER)}` +
+      `&open=loan&id=${loan.loanId}`;
+    window.top.location.href = url;
+    return;
+  }
+
       drawerExtra.innerHTML = '';
       currentMode = 'loan';
       currentLoan = loan;
