@@ -256,12 +256,6 @@
     }
     .drawer.open{ transform:translateX(0) }
 
-       .drawer-header {
-      padding:20px;
-      flex-shrink:0;
-      border-bottom:1px solid var(--border); /* ✅ match ROI */
-    }
-
     .drawer-head{ display:flex; align-items:start; justify-content:space-between; gap:8px }
     .close-btn{
       background:#f1f5f9;
@@ -475,6 +469,18 @@ html[data-theme="dark"] .close-btn {
     /* Hide loan tiles when embedded */
 .embed-mode #loanGrid {
   display: none !important;
+}
+
+    /* ============================================
+   EMBED MODE — AMORT (remove top chrome)
+   ============================================ */
+
+.embed-mode .drawer-header {
+  display: none !important;
+}
+
+.embed-mode .drawer {
+  padding-top: 0 !important;
 }
 
     
@@ -2871,20 +2877,40 @@ if (isEmbed) {
 // =====================================================
 // EMBED MODE — CLICK-THROUGH TO FULL AMORT PAGE
 // =====================================================
+// =====================================================
+// EMBED MODE — HARD REDIRECT (BLOCK ALL INTERACTION)
+// =====================================================
 if (isEmbed) {
-  document.body.addEventListener(
-    "click",
-    () => {
-      const loan = currentLoan;
-      const loanId =
-        loan ? Number(loan.loanId ?? loan.id) : loanIdParam;
+  function redirectToFull(e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
 
-      window.top.location.href =
-        `/loan-dashboard/amort/index.html?user=${PAGE_USER}&open=loan&id=${loanId}`;
-    },
-    true // capture phase REQUIRED
-  );
+    const loan = currentLoan;
+    const loanId =
+      loan ? Number(loan.loanId ?? loan.id) : loanIdParam;
+
+    window.top.location.href =
+      `/loan-dashboard/amort/index.html?user=${PAGE_USER}&open=loan&id=${loanId}`;
+  }
+
+  // Capture ALL clicks inside drawer
+  const drawerEl = document.getElementById("drawer");
+  if (drawerEl) {
+    drawerEl.addEventListener("click", redirectToFull, true);
+  }
+
+  // Explicitly block buttons (belt + suspenders)
+  [
+    "closeBtn",
+    "downloadCsvBtn",
+    "copyCsvBtn",
+    "printBtn"
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", redirectToFull, true);
+  });
 }
+
 
 // --------------------------------------------------
 // USER + VISIBILITY FILTER (already done earlier)
