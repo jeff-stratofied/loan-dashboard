@@ -696,15 +696,19 @@ if (isEmbed) {
         new URLSearchParams(window.location.search).get("user") || "jeff";
 
       window.top.location.href =
-  `/loan-dashboard/amort/index.html` +
-  `?user=${encodeURIComponent(user)}` +
-  `&open=loan&id=${loanId}`;
-// IMPORTANT: do NOT include embed=true
-
+        `/loan-dashboard/amort/index.html` +
+        `?user=${encodeURIComponent(user)}` +
+        `&open=loan&id=${loanId}`;
     },
     true // CAPTURE — must beat all drawer handlers
   );
 }
+
+
+
+
+
+
 
     
 function isEmbedMode() {
@@ -1601,6 +1605,11 @@ function openDrawerForLoan(loan) {
     amortBody.appendChild(tr);
   });
 
+drawerChartArea.innerHTML =
+  '<div class="small">Chart temporarily disabled</div>';
+drawerLegend.style.display = 'none';
+
+
   // =====================================================
   // FINALIZE DRAWER OPEN (ONE PLACE ONLY)
   // =====================================================
@@ -1608,6 +1617,8 @@ function openDrawerForLoan(loan) {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
+
 
     /* ============================
        KPI drawers: Distribution, TPV, Rates, Payments
@@ -2766,8 +2777,10 @@ function renderPaymentsDrawer() {
     });
 
 // --------------------------------------------------
-// USER + VISIBILITY FILTER
+// USER + VISIBILITY FILTER (already done earlier)
 // --------------------------------------------------
+
+// ensure UI renders filtered set
 currentLoans = [...allLoans];
 
 console.log("[AMORT] init complete");
@@ -2776,7 +2789,24 @@ console.log("[AMORT] loanIdParam =", loanIdParam);
 console.log("[AMORT] loans loaded =", currentLoans.length);
 
 // =====================================================
-// FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL (ONLY)
+// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN (DISPLAY ONLY)
+// =====================================================
+if (isEmbed && openParam === "first" && currentLoans.length) {
+  const sorted = currentLoans
+    .slice()
+    .sort((a, b) =>
+      new Date(a.purchaseDate).getTime() -
+      new Date(b.purchaseDate).getTime()
+    );
+
+  const loan = sorted[0];
+  currentLoan = loan; // set state only
+
+  openDrawerForLoan(loan);
+}
+
+// =====================================================
+// FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL (AUTHORITATIVE)
 // =====================================================
 if (!isEmbed && openParam === "loan" && loanIdParam != null) {
   const loanIdNum = Number(loanIdParam);
@@ -2786,17 +2816,17 @@ if (!isEmbed && openParam === "loan" && loanIdParam != null) {
   );
 
   console.log("[AMORT] attempting auto-open for loan", loanIdNum);
+  console.log(
+    "[AMORT] available loan ids",
+    allLoans.map(l => Number(l.loanId ?? l.id))
+  );
 
   if (loanToOpen) {
     requestAnimationFrame(() => {
       openDrawerForLoan(loanToOpen);
     });
   } else {
-    console.warn(
-      "[AMORT] loan not found for id",
-      loanIdNum,
-      allLoans.map(l => Number(l.loanId ?? l.id))
-    );
+    console.warn("[AMORT] loan not found for id", loanIdNum);
   }
 }
 
