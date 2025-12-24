@@ -1553,6 +1553,7 @@ function openDrawerForLoan(loan) {
     </div>
   `;
   drawerPrimaryTitle.textContent = 'Purchase Price';
+  drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
   drawerSecondaryTitle.textContent = 'Rate';
   drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
   drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
@@ -1812,8 +1813,11 @@ function openDrawerForLoan(loan) {
     if (copyCsvBtn) copyCsvBtn.addEventListener('click', redirectToFull, true);
     if (downloadCsvBtn) downloadCsvBtn.addEventListener('click', redirectToFull, true);
 
-    // NEW: Any click anywhere redirects to full page
-    document.addEventListener('click', redirectToFull, true);
+    // NEW: Click anywhere (except buttons/links) redirects to full page
+    document.body.addEventListener('click', (e) => {
+      if (e.target.closest('button, a')) return; // Exclude buttons/links (they already redirect)
+      window.top.location.href = fullUrl;
+    }, true);
 
     // Fix extra scrollbar in embed mode
     document.body.style.overflow = 'hidden';
