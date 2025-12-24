@@ -1601,11 +1601,6 @@ function openDrawerForLoan(loan) {
     amortBody.appendChild(tr);
   });
 
-drawerChartArea.innerHTML =
-  '<div class="small">Chart temporarily disabled</div>';
-drawerLegend.style.display = 'none';
-
-
   // =====================================================
   // FINALIZE DRAWER OPEN (ONE PLACE ONLY)
   // =====================================================
@@ -1613,8 +1608,6 @@ drawerLegend.style.display = 'none';
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
-
-
 
     /* ============================
        KPI drawers: Distribution, TPV, Rates, Payments
