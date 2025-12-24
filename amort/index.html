@@ -1520,16 +1520,6 @@ resetBtn.addEventListener("click", () => {
   
     /* ---------- Open drawer for loan ---------- */
     function openDrawerForLoan(loan) {
-        // EMBED MODE → redirect to full amort page with drawer open
-if (isEmbedMode() && allowEmbedRedirect) {
-  const url =
-    `/loan-dashboard/amort/index.html?user=${encodeURIComponent(PAGE_USER)}` +
-    `&open=loan&id=${loan.loanId}`;
-
-  window.top.location.href = url;
-  return;
-}
-
 
 
       drawerExtra.innerHTML = '';
@@ -3026,6 +3016,20 @@ if (isEmbed && openParam === "first" && currentLoans.length) {
 
 // =====================================================
 // FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL
+// =====================================================
+if (!isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
+  const loanToOpen = allLoans.find(
+    l => (l.loanId ?? l.id) === loanIdParam
+  );
+
+  if (loanToOpen) {
+    requestAnimationFrame(() => {
+      openDrawerForLoan(loanToOpen);
+    });
+  }
+}
+// =====================================================
+// AUTO-OPEN LOAN DRAWER (FULL PAGE ONLY)
 // =====================================================
 if (!isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
   const loanToOpen = allLoans.find(
