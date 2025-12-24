@@ -1790,26 +1790,27 @@ function openDrawerForLoan(loan) {
   // EMBED MODE SPECIFIC BEHAVIOR
   // ==============================================================
   if (isEmbed) {
-    // 1. Hide/disable interactive buttons
+    // Compute full URL for redirect
+    const params = new URLSearchParams(location.search);
+    const user = params.get('user') || 'jeff';
+    const fullUrl = `/loan-dashboard/amort/index.html?user=${user}&open=loan&loanId=${loan.loanId}`;
+
+    function redirectToFull(e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      window.top.location.href = fullUrl;
+    }
+
+    // Override button clicks (show buttons but redirect on click)
     const closeBtn = document.getElementById('closeBtn');
     const printBtn = document.getElementById('printBtn');
     const copyCsvBtn = document.getElementById('copyCsvBtn');
     const downloadCsvBtn = document.getElementById('downloadCsvBtn');
 
-    if (closeBtn) closeBtn.remove();
-    if (printBtn) printBtn.remove();
-    if (copyCsvBtn) copyCsvBtn.remove();
-    if (downloadCsvBtn) downloadCsvBtn.remove();
-
-    // 2. Any click inside the drawer → go to full amort page with this loan open
-    const params = new URLSearchParams(location.search);
-    const user = params.get('user') || 'jeff';
-    const fullUrl = `/loan-dashboard/amort/index.html?user=${user}&open=loan&loanId=${loan.loanId}`;
-
-    // Use capture phase to catch clicks early (before any internal handlers)
-    document.addEventListener('click', function redirectToFull(e) {
-      window.top.location.href = fullUrl;
-    }, true); // true = capture phase
+    if (closeBtn) closeBtn.addEventListener('click', redirectToFull, true);
+    if (printBtn) printBtn.addEventListener('click', redirectToFull, true);
+    if (copyCsvBtn) copyCsvBtn.addEventListener('click', redirectToFull, true);
+    if (downloadCsvBtn) downloadCsvBtn.addEventListener('click', redirectToFull, true);
   }
 
   // ==============================================================
