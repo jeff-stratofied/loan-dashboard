@@ -466,16 +466,31 @@ html[data-theme="dark"] .close-btn {
   border-bottom: 1px solid var(--border) !important;
 }
 
-/* Body scroll only */
-.embed-mode .drawer-body {
-  padding-top: 0 !important;
-  overflow-y: auto !important;
+/* ============================================
+   EMBED MODE — SCROLL BODY, PIN FOOTER
+   ============================================ */
+
+/* Drawer is a vertical flex container */
+.embed-mode .drawer {
+  display: flex !important;
+  flex-direction: column !important;
 }
 
-/* Footer hidden in iframe */
-.embed-mode .drawer-footer {
-  display: none !important;
+/* Only the body scrolls */
+.embed-mode .drawer-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  padding-top: 0 !important;
 }
+
+/* Footer stays pinned */
+.embed-mode .drawer-footer {
+  display: block !important;
+  flex-shrink: 0 !important;
+  background: var(--surface) !important;
+  border-top: 1px solid var(--border) !important;
+}
+
 
     /* Remove top gray bar caused by .app spacing */
 .embed-mode .app {
