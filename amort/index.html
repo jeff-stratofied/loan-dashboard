@@ -674,20 +674,23 @@ const loanIdParam = Number(params.get("id"));
 // EMBED MODE — CLICK → OPEN FULL AMORT PAGE WITH DRAWER
 // (match Earnings behavior exactly)
 // =====================================================
-// =====================================================
-// EMBED MODE — CLICK → OPEN FULL AMORT PAGE (MATCH ROI)
-// =====================================================
 if (isEmbed) {
   document.addEventListener(
     "click",
     (e) => {
-      if (!currentLoan) return;
-
       e.preventDefault();
       e.stopImmediatePropagation();
 
-      const loanId = currentLoan.loanId ?? currentLoan.id;
-      if (!loanId) return;
+      // Always resolve the loan deterministically
+      const loan =
+        currentLoan ||
+        currentLoans?.[0] ||
+        allLoans?.[0];
+
+      if (!loan) return;
+
+      const loanId = loan.loanId ?? loan.id;
+      if (!Number.isFinite(loanId)) return;
 
       const user =
         new URLSearchParams(window.location.search).get("user") || "jeff";
@@ -697,9 +700,11 @@ if (isEmbed) {
         `?user=${encodeURIComponent(user)}` +
         `&open=loan&id=${loanId}`;
     },
-    true // capture phase REQUIRED (same as ROI)
+    true // CAPTURE — must beat all drawer handlers
   );
 }
+
+
 
 
 
