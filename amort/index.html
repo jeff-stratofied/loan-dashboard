@@ -1605,18 +1605,10 @@ function openDrawerForLoan(loan) {
     amortBody.appendChild(tr);
   });
 
-  /* ------------------------------------
-     Render amort chart (unchanged logic)
-  ------------------------------------ */
-  drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'flex';
+drawerChartArea.innerHTML =
+  '<div class="small">Chart temporarily disabled</div>';
+drawerLegend.style.display = 'none';
 
-  // (chart code stays exactly as you have it)
-  // --------------------------------------------------
-  // DO NOT CHANGE ANYTHING BELOW THIS COMMENT
-  // --------------------------------------------------
-
-  // ... [your existing SVG/chart code here, unchanged] ...
 
   // =====================================================
   // FINALIZE DRAWER OPEN (ONE PLACE ONLY)
