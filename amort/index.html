@@ -3004,6 +3004,12 @@ if (isEmbed) {
 
 // ✅ ensure UI renders filtered set
 currentLoans = [...allLoans];
+
+  console.log("[AMORT] init complete");
+console.log("[AMORT] openParam =", openParam);
+console.log("[AMORT] loanIdParam =", loanIdParam);
+console.log("[AMORT] loans loaded =", currentLoans.length);
+
 // =====================================================
 // EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN (DISPLAY ONLY)
 // =====================================================
@@ -3050,6 +3056,9 @@ if (!isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
       openDrawerForLoan(loanToOpen);
     });
   }
+}
+if (!isEmbed && openParam === "loan" && Number.isFinite(loanIdParam)) {
+  console.log("[AMORT] attempting auto-open for loan", loanIdParam);
 }
 
   
