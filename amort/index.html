@@ -1811,6 +1811,12 @@ function openDrawerForLoan(loan) {
     if (printBtn) printBtn.addEventListener('click', redirectToFull, true);
     if (copyCsvBtn) copyCsvBtn.addEventListener('click', redirectToFull, true);
     if (downloadCsvBtn) downloadCsvBtn.addEventListener('click', redirectToFull, true);
+
+    // Fix extra scrollbar in embed mode
+    document.body.style.overflow = 'hidden';
+    const drawerBody = document.querySelector('.drawer-body');
+    if (drawerBody) drawerBody.style.overflowY = 'auto';  // Allow internal scroll if needed
+    document.documentElement.style.overflow = 'hidden';  // Hide root scrollbar
   }
 
   // ==============================================================
