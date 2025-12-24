@@ -665,6 +665,9 @@ const loanIdParam = Number(params.get("id"));
 // EMBED MODE — CLICK → OPEN FULL AMORT PAGE WITH DRAWER
 // (match Earnings behavior exactly)
 // =====================================================
+// =====================================================
+// EMBED MODE — CLICK → OPEN FULL AMORT PAGE (MATCH ROI)
+// =====================================================
 if (isEmbed) {
   document.addEventListener(
     "click",
@@ -685,9 +688,10 @@ if (isEmbed) {
         `?user=${encodeURIComponent(user)}` +
         `&open=loan&id=${loanId}`;
     },
-    true // capture phase REQUIRED
+    true // capture phase REQUIRED (same as ROI)
   );
 }
+
 
 
 
