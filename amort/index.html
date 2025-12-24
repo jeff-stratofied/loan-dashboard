@@ -1812,7 +1812,7 @@ function openDrawerForLoan(loan) {
     if (copyCsvBtn) copyCsvBtn.addEventListener('click', redirectToFull, true);
     if (downloadCsvBtn) downloadCsvBtn.addEventListener('click', redirectToFull, true);
 
-    // NEW: Any click anywhere redirects to full page (except on hover/tooltip elements if needed)
+    // NEW: Any click anywhere redirects to full page
     document.addEventListener('click', redirectToFull, true);
 
     // Fix extra scrollbar in embed mode
