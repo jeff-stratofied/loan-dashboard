@@ -661,6 +661,10 @@ const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("id"));
 
+// =====================================================
+// EMBED MODE — CLICK → OPEN FULL AMORT PAGE WITH DRAWER
+// (match Earnings behavior exactly)
+// =====================================================
 if (isEmbed) {
   document.addEventListener(
     "click",
@@ -670,14 +674,21 @@ if (isEmbed) {
       e.preventDefault();
       e.stopImmediatePropagation();
 
-      // 🔑 allow redirect ONLY after user interaction
-      allowEmbedRedirect = true;
+      const loanId = currentLoan.loanId ?? currentLoan.id;
+      if (!loanId) return;
 
-      openDrawerForLoan(currentLoan);
+      const user =
+        new URLSearchParams(window.location.search).get("user") || "jeff";
+
+      window.top.location.href =
+        `/loan-dashboard/amort/index.html` +
+        `?user=${encodeURIComponent(user)}` +
+        `&open=loan&id=${loanId}`;
     },
-    true
+    true // capture phase REQUIRED
   );
 }
+
 
 
 
