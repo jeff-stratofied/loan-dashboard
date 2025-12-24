@@ -3124,6 +3124,52 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 });
+
+// ======================================================
+// EMBED MODE — REDIRECT ON CLICKS (LIKE ROI/EARNINGS)
+// ======================================================
+const urlParams = new URLSearchParams(window.location.search);
+const isEmbed = urlParams.get('embed') === 'true';
+
+if (isEmbed) {
+  const user = PAGE_USER || "jeff";  // Assuming PAGE_USER is defined; fallback to 'jeff' like in ROI/Earnings
+  const targetUrl = `/loan-dashboard/amort/index.html?user=${user}&open=first`;  // Adjust path/user/open param as needed
+
+  // Function for redirects (like Earnings)
+  function redirectToFullAmort(e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    window.top.location.href = targetUrl;
+  }
+
+  // Override buttons (close, download, print, copy) to redirect instead
+  const closeBtn = document.getElementById("closeBtn");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", redirectToFullAmort, true);
+  }
+
+  const downloadBtn = document.getElementById("downloadCsvBtn");
+  if (downloadBtn) {
+    downloadBtn.addEventListener("click", redirectToFullAmort, true);
+  }
+
+  const printBtn = document.getElementById("printBtn");
+  if (printBtn) {
+    printBtn.addEventListener("click", redirectToFullAmort, true);
+  }
+
+  const copyBtn = document.getElementById("copyCsvBtn");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", redirectToFullAmort, true);
+  }
+
+  // General click redirect on non-interactive areas (like ROI/Earnings)
+  document.addEventListener("click", (e) => {
+    // Exclude interactive elements and tiles (to allow drawer interactions if needed)
+    if (e.target.closest("button, select, a, input, textarea, .tile")) return;
+    window.top.location.href = targetUrl;
+  }, { passive: true });
+}
     
   </script>
 </body>
