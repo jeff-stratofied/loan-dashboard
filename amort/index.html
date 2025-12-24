@@ -325,6 +325,23 @@
   cursor: pointer;
 }
 
+    /* ============================================
+   DRAWER HEADER — MATCH ROI / EARNINGS EXACTLY
+   ============================================ */
+
+.drawer-header {
+  padding: 0;              /* remove extra wrapper spacing */
+  background: transparent; /* let drawer-head control chrome */
+  border: none;
+}
+
+.drawer-head {
+  padding: 20px;                 /* EXACT match */
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+
     
     .legend { display:flex; gap:10px; font-size:12px; align-items:center; margin-top:6px; }
     .legend .item { display:flex; gap:6px; align-items:center; }
@@ -456,14 +473,6 @@ html[data-theme="dark"] .close-btn {
   box-shadow: none !important;
   border-left: none !important;
   border-radius: 0 !important;
-}
-
-/* Explicitly RESTORE header chrome */
-.embed-mode .drawer-header {
-  display: block !important;
-  padding: 20px !important;
-  background: var(--card) !important;
-  border-bottom: 1px solid var(--border) !important;
 }
 
 /* ============================================
