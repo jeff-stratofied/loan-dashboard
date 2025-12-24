@@ -696,19 +696,15 @@ if (isEmbed) {
         new URLSearchParams(window.location.search).get("user") || "jeff";
 
       window.top.location.href =
-        `/loan-dashboard/amort/index.html` +
-        `?user=${encodeURIComponent(user)}` +
-        `&open=loan&id=${loanId}`;
+  `/loan-dashboard/amort/index.html` +
+  `?user=${encodeURIComponent(user)}` +
+  `&open=loan&id=${loanId}`;
+// IMPORTANT: do NOT include embed=true
+
     },
     true // CAPTURE — must beat all drawer handlers
   );
 }
-
-
-
-
-
-
 
     
 function isEmbedMode() {
@@ -2777,10 +2773,8 @@ function renderPaymentsDrawer() {
     });
 
 // --------------------------------------------------
-// USER + VISIBILITY FILTER (already done earlier)
+// USER + VISIBILITY FILTER
 // --------------------------------------------------
-
-// ensure UI renders filtered set
 currentLoans = [...allLoans];
 
 console.log("[AMORT] init complete");
@@ -2789,24 +2783,7 @@ console.log("[AMORT] loanIdParam =", loanIdParam);
 console.log("[AMORT] loans loaded =", currentLoans.length);
 
 // =====================================================
-// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN (DISPLAY ONLY)
-// =====================================================
-if (isEmbed && openParam === "first" && currentLoans.length) {
-  const sorted = currentLoans
-    .slice()
-    .sort((a, b) =>
-      new Date(a.purchaseDate).getTime() -
-      new Date(b.purchaseDate).getTime()
-    );
-
-  const loan = sorted[0];
-  currentLoan = loan; // set state only
-
-  openDrawerForLoan(loan);
-}
-
-// =====================================================
-// FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL (AUTHORITATIVE)
+// FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL (ONLY)
 // =====================================================
 if (!isEmbed && openParam === "loan" && loanIdParam != null) {
   const loanIdNum = Number(loanIdParam);
@@ -2816,17 +2793,17 @@ if (!isEmbed && openParam === "loan" && loanIdParam != null) {
   );
 
   console.log("[AMORT] attempting auto-open for loan", loanIdNum);
-  console.log(
-    "[AMORT] available loan ids",
-    allLoans.map(l => Number(l.loanId ?? l.id))
-  );
 
   if (loanToOpen) {
     requestAnimationFrame(() => {
       openDrawerForLoan(loanToOpen);
     });
   } else {
-    console.warn("[AMORT] loan not found for id", loanIdNum);
+    console.warn(
+      "[AMORT] loan not found for id",
+      loanIdNum,
+      allLoans.map(l => Number(l.loanId ?? l.id))
+    );
   }
 }
 
