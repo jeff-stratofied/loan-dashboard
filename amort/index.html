@@ -3188,7 +3188,40 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ... existing code ...
   }
 
-  // ← PASTE THE ENTIRE REDIRECT BLOCK HERE
+  if (isEmbed) {
+  const user = PAGE_USER || "jeff";
+  const targetBase = `/loan-dashboard/amort/index.html?user=${user}`;
+
+  function redirectToFullAmort(e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    let url = targetBase + '&open=first';
+    if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
+      const loanId = currentLoan.loanId ?? currentLoan.id;
+      url = targetBase + '&open=loan&id=' + loanId;
+    }
+    window.top.location.href = url;
+  }
+
+  // Override action buttons to redirect
+  ['closeBtn', 'printBtn', 'copyCsvBtn', 'downloadCsvBtn'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener('click', redirectToFullAmort, true);
+  });
+
+  // Any click on non-interactive area redirects to full page (preserving open loan)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('button, select, a, input, textarea')) return;
+
+    let url = targetBase + '&open=first';
+    if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
+      const loanId = currentLoan.loanId ?? currentLoan.id;
+      url = targetBase + '&open=loan&id=' + loanId;
+    }
+    window.top.location.href = url;
+  }, true);
+}
 
 });
     
