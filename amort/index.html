@@ -3081,48 +3081,8 @@ if (isEmbed && openParam === "first" && currentLoans.length) {
   openDrawerForLoan(loan);
 }
 
-// =====================================================
-// FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL (AUTHORITATIVE)
-// =====================================================
-if (!isEmbed && openParam === "loan" && loanIdParam != null) {
-  const loanIdNum = Number(loanIdParam);
-
-  const loanToOpen = allLoans.find(
-    l => Number(l.loanId ?? l.id) === loanIdNum
-  );
-
-  console.log("[AMORT] attempting auto-open for loan", loanIdNum);
-  console.log(
-    "[AMORT] available loan ids",
-    allLoans.map(l => Number(l.loanId ?? l.id))
-  );
-
-  if (loanToOpen) {
-    requestAnimationFrame(() => {
-      openDrawerForLoan(loanToOpen);
-    });
-  } else {
-    console.warn("[AMORT] loan not found for id", loanIdNum);
-  }
-}
-
 } // <--- End of init()
-
-    
-  // Set Current Date in header
-const currentDateEl = document.getElementById('currentDateLabel');
-if (currentDateEl) {
-  const today = new Date();
-  const formatted = today.toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-  currentDateEl.textContent = `Current Date: ${formatted}`;
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-  // Set Current Date in header
+  // Set Current Date in header (runs immediately for non-embed cases)
   const currentDateEl = document.getElementById('currentDateLabel');
   if (currentDateEl) {
     const today = new Date();
@@ -3134,97 +3094,95 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentDateEl.textContent = `Current Date: ${formatted}`;
   }
 
-  // Wait for loan data to load
-  await loadLoans();
+  document.addEventListener("DOMContentLoaded", async () => {
+    // Set Current Date again (safe for late DOM)
+    const currentDateEl = document.getElementById('currentDateLabel');
+    if (currentDateEl) {
+      const today = new Date();
+      const formatted = today.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      currentDateEl.textContent = `Current Date: ${formatted}`;
+    }
 
-  // Now initialize the UI
-  init();
+    // Load loans and initialize UI
+    await loadLoans();
+    init();
 
-  console.log("[AMORT] init complete");
-  console.log("[AMORT] openParam =", openParam);
-  console.log("[AMORT] loanIdParam =", loanIdParam);
-  console.log("[AMORT] loans loaded =", currentLoans.length);
+    console.log("[AMORT] init complete");
+    console.log("[AMORT] openParam =", openParam);
+    console.log("[AMORT] loanIdParam =", loanIdParam);
+    console.log("[AMORT] loans loaded =", currentLoans.length);
 
-  // EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN
-  if (isEmbed && openParam === "first" && currentLoans.length) {
-    const sorted = currentLoans
-      .slice()
-      .sort((a, b) =>
-        new Date(a.purchaseDate).getTime() -
-        new Date(b.purchaseDate).getTime()
+    // EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN
+    if (isEmbed && openParam === "first" && currentLoans.length) {
+      const sorted = currentLoans
+        .slice()
+        .sort((a, b) =>
+          new Date(a.purchaseDate).getTime() - new Date(b.purchaseDate).getTime()
+        );
+      const loan = sorted[0];
+      currentLoan = loan;
+      openDrawerForLoan(loan);
+    }
+
+    // FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL
+    if (!isEmbed && openParam === "loan" && loanIdParam != null) {
+      const loanIdNum = Number(loanIdParam);
+      const loanToOpen = allLoans.find(
+        l => Number(l.loanId ?? l.id) === loanIdNum
       );
 
-    const loan = sorted[0];
-    currentLoan = loan;
-    openDrawerForLoan(loan);
-  }
+      console.log("[AMORT] attempting auto-open for loan", loanIdNum);
+      console.log("available loan ids", allLoans.map(l => Number(l.loanId ?? l.id)));
 
-  // FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL
-  if (!isEmbed && openParam === "loan" && loanIdParam != null) {
-    const loanIdNum = Number(loanIdParam);
+      if (loanToOpen) {
+        requestAnimationFrame(() => openDrawerForLoan(loanToOpen));
+      } else {
+        console.warn("[AMORT] loan not found for id", loanIdNum);
+      }
+    }
 
-    const loanToOpen = allLoans.find(
-      l => Number(l.loanId ?? l.id) === loanIdNum
-    );
+    // ======================================================
+    // EMBED MODE — REDIRECT ON CLICKS (LIKE ROI/EARNINGS)
+    // ======================================================
+    if (isEmbed) {
+      const user = PAGE_USER || "jeff";
+      const targetBase = `/loan-dashboard/amort/index.html?user=${user}`;
 
-    console.log("[AMORT] attempting auto-open for loan", loanIdNum);
-    console.log(
-      "[AMORT] available loan ids",
-      allLoans.map(l => Number(l.loanId ?? l.id))
-    );
+      function redirectToFullAmort(e) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
 
-    if (loanToOpen) {
-      requestAnimationFrame(() => {
-        openDrawerForLoan(loanToOpen);
+        let url = targetBase + '&open=first';
+        if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
+          const loanId = currentLoan.loanId ?? currentLoan.id;
+          url = targetBase + '&open=loan&id=' + loanId;
+        }
+        window.top.location.href = url;
+      }
+
+      // Override drawer buttons to redirect
+      ['closeBtn', 'printBtn', 'copyCsvBtn', 'downloadCsvBtn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', redirectToFullAmort, true);
       });
-    } else {
-      console.warn("[AMORT] loan not found for id", loanIdNum);
+
+      // Click anywhere non-interactive → go to full page
+      document.addEventListener('click', (e) => {
+        if (e.target.closest('button, select, a, input, textarea')) return;
+
+        let url = targetBase + '&open=first';
+        if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
+          const loanId = currentLoan.loanId ?? currentLoan.id;
+          url = targetBase + '&open=loan&id=' + loanId;
+        }
+        window.top.location.href = url;
+      }, true);
     }
-  }
-});
-
-  // FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL
-  if (!isEmbed && openParam === "loan" && loanIdParam != null) {
-    // ... existing code ...
-  }
-
-  if (isEmbed) {
-  const user = PAGE_USER || "jeff";
-  const targetBase = `/loan-dashboard/amort/index.html?user=${user}`;
-
-  function redirectToFullAmort(e) {
-    e.preventDefault();
-    e.stopImmediatePropagation();
-
-    let url = targetBase + '&open=first';
-    if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
-      const loanId = currentLoan.loanId ?? currentLoan.id;
-      url = targetBase + '&open=loan&id=' + loanId;
-    }
-    window.top.location.href = url;
-  }
-
-  // Override action buttons to redirect
-  ['closeBtn', 'printBtn', 'copyCsvBtn', 'downloadCsvBtn'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) btn.addEventListener('click', redirectToFullAmort, true);
   });
-
-  // Any click on non-interactive area redirects to full page (preserving open loan)
-  document.addEventListener('click', (e) => {
-    if (e.target.closest('button, select, a, input, textarea')) return;
-
-    let url = targetBase + '&open=first';
-    if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
-      const loanId = currentLoan.loanId ?? currentLoan.id;
-      url = targetBase + '&open=loan&id=' + loanId;
-    }
-    window.top.location.href = url;
-  }, true);
-}
-
-});
-    
-  </script>
+</script>
 </body>
 </html>
