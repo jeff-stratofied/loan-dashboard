@@ -724,6 +724,10 @@ const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("id"));
 
+    if (isEmbed) {
+  document.body.classList.add('embed-mode');
+}
+
 // =====================================================
 // EMBED MODE — CLICK → OPEN FULL AMORT PAGE WITH DRAWER
 // (match Earnings behavior exactly)
@@ -3179,43 +3183,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-    // ======================================================
-    // EMBED MODE — REDIRECT ON CLICKS (LIKE ROI/EARNINGS)
-    // ======================================================
-    if (isEmbed) {
-      const user = PAGE_USER || "jeff";
-      const targetBase = `/loan-dashboard/amort/index.html?user=${user}`;
+  // FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL
+  if (!isEmbed && openParam === "loan" && loanIdParam != null) {
+    // ... existing code ...
+  }
 
-      function redirectToFullAmort(e) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
+  // ← PASTE THE ENTIRE REDIRECT BLOCK HERE
 
-        let url = targetBase + '&open=first';
-        if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
-          const loanId = currentLoan.loanId ?? currentLoan.id;
-          url = targetBase + '&open=loan&id=' + loanId;
-        }
-        window.top.location.href = url;
-      }
-
-      // Override action buttons to redirect
-      ['closeBtn', 'printBtn', 'copyCsvBtn', 'downloadCsvBtn'].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.addEventListener('click', redirectToFullAmort, true);
-      });
-
-      // Any click on non-interactive area redirects to full page (preserving open loan)
-      document.addEventListener('click', (e) => {
-        if (e.target.closest('button, select, a, input, textarea')) return;
-
-        let url = targetBase + '&open=first';
-        if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
-          const loanId = currentLoan.loanId ?? currentLoan.id;
-          url = targetBase + '&open=loan&id=' + loanId;
-        }
-        window.top.location.href = url;
-      }, true);
-    }
+});
     
   </script>
 </body>
