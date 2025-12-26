@@ -1327,7 +1327,6 @@ function computeKPIs(list) {
     return d;
   }
 
-   // --- Multi-series chart (loan lines + weighted line) ---
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
    ============================================================ */
@@ -1365,9 +1364,18 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     return pad + ratio * (w - pad * 2);
   };
 
+  // -------------------------
+  // Y scale (shared)
+  // -------------------------
   let ys = [];
-  weightedSeries.forEach(p => ys.push(p.y));
-  loanSeriesList.forEach(ls => ls.data.forEach(p => ys.push(p.y)));
+
+  if (!opts.hideWeighted && Array.isArray(weightedSeries)) {
+    weightedSeries.forEach(p => ys.push(p.y));
+  }
+
+  loanSeriesList.forEach(ls =>
+    ls.data.forEach(p => ys.push(p.y))
+  );
 
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
@@ -1417,7 +1425,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   }
 
   // -----------------------------------
-  // Draw loan lines
+  // Loan lines (ALWAYS draw)
   // -----------------------------------
   loanSeriesList.forEach(ls => {
     const pts = ls.data
@@ -1432,17 +1440,15 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     path.setAttribute("stroke", ls.color || "#888");
     path.setAttribute("stroke-width", "1.2");
     path.setAttribute("stroke-opacity", "0.9");
-
     path.dataset.type = "loan";
     path.dataset.loanId = String(ls.id);
-
     svg.appendChild(path);
   });
 
   // -----------------------------------
-  // Weighted line
+  // Weighted line (OPTIONAL)
   // -----------------------------------
-  if (weightedSeries.length) {
+  if (!opts.hideWeighted && Array.isArray(weightedSeries) && weightedSeries.length) {
     const pts = weightedSeries.map(p => [dateToX(p.date), yScale(p.y)]);
     const path = document.createElementNS(svgNS, "path");
     path.setAttribute("d", smoothPathFromPointsCubic(pts));
@@ -1457,7 +1463,6 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   // TODAY vertical reference line
   // -----------------------------------
   const today = new Date();
-
   let todayIdx = -1;
   globalDates.forEach((d, i) => {
     if (d <= today) todayIdx = i;
@@ -1465,7 +1470,6 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
 
   if (todayIdx >= 0) {
     const todayX = dateToX(globalDates[todayIdx]);
-
     const todayLine = document.createElementNS(svgNS, "line");
     todayLine.setAttribute("x1", todayX);
     todayLine.setAttribute("x2", todayX);
@@ -1474,19 +1478,16 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     todayLine.setAttribute("stroke", "#111827");
     todayLine.setAttribute("stroke-dasharray", "4 4");
     todayLine.setAttribute("stroke-opacity", "0.55");
-    todayLine.dataset.type = "today";
-
     svg.appendChild(todayLine);
   }
 
-  
   // -----------------------------------
   // X-axis
   // -----------------------------------
   const axis = document.createElementNS(svgNS, "g");
   const tickSpacing = opts.tickSpacingX || 24;
 
-  globalDates.forEach((d,i) => {
+  globalDates.forEach((d, i) => {
     if (i % tickSpacing !== 0) return;
     const t = document.createElementNS(svgNS, "text");
     t.setAttribute("x", dateToX(d));
@@ -1498,68 +1499,10 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     axis.appendChild(t);
   });
 
-  // -----------------------------------
-  // HOVER (restore KPI chart hover)
-  // -----------------------------------
-  const vLine = document.createElementNS(svgNS, 'line');
-  vLine.setAttribute('stroke', '#111827');
-  vLine.setAttribute('stroke-dasharray', '3 4');
-  vLine.setAttribute('stroke-opacity', '0.6');
-  svg.appendChild(vLine);
-
-  const hoverG = document.createElementNS(svgNS, 'g');
-  hoverG.setAttribute('class', 'hover');
-  svg.appendChild(hoverG);
-
-  svg.addEventListener('mousemove', (ev) => {
-    const rectSvg = svg.getBoundingClientRect();
-    const mouseX = ev.clientX - rectSvg.left;
-
-    let t = (mouseX - pad) / (w - pad * 2);
-    t = Math.max(0, Math.min(1, t));
-    let idx = Math.round(t * (globalDates.length - 1));
-    idx = Math.max(0, Math.min(globalDates.length - 1, idx));
-
-    const d = globalDates[idx];
-    const wp = weightedSeries[idx];
-    if (!wp) return;
-
-    const cx = dateToX(d);
-    const cy = yScale(wp.y);
-
-    vLine.setAttribute('x1', cx);
-    vLine.setAttribute('x2', cx);
-    vLine.setAttribute('y1', pad);
-    vLine.setAttribute('y2', h - pad);
-
-    hoverG.innerHTML = '';
-    const c = document.createElementNS(svgNS, 'circle');
-    c.setAttribute('cx', cx);
-    c.setAttribute('cy', cy);
-    c.setAttribute('r', 4);
-    c.setAttribute('fill', opts.weightedColor || '#111827');
-    c.setAttribute('stroke', 'var(--card)');
-    c.setAttribute('stroke-width', '1');
-    hoverG.appendChild(c);
-
-    tooltip.style.display = 'block';
-    tooltip.style.left = ev.clientX + 'px';
-    tooltip.style.top = (ev.clientY - 14) + 'px';
-    tooltip.innerHTML =
-      `${formatMonthYear(d)} • ${(wp.y * 100).toFixed(2)}%`;
-  });
-
-  svg.addEventListener('mouseleave', () => {
-    hoverG.innerHTML = '';
-    tooltip.style.display = 'none';
-    vLine.setAttribute('x1', -9999);
-    vLine.setAttribute('x2', -9999);
-  });
-
-  
   svg.appendChild(axis);
   containerEl.appendChild(svg);
 }
+
 
       function smoothMonotonic(points) {
   if (points.length < 2) return "";
@@ -2919,14 +2862,17 @@ function renderROISpreadDrawer() {
   // -------------------------------
  const timeline = buildHistoricalRoiTimeline(loansWithAmort);
 
-createROISpreadChart(
+createMultiSeriesChart(
   drawerChartArea,
   timeline.perLoanSeries,
+  null, // ⛔ NO weighted line
   {
     dates: timeline.dates,
-    tickSpacingX: 24
+    tickSpacingX: 3,     // SAME as Weighted ROI to Date
+    hideWeighted: true
   }
 );
+
 
   // -------------------------------
   // Table
