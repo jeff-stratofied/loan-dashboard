@@ -706,7 +706,7 @@ html[data-theme="dark"] .legend .sw {
   padding: 8px;
 }
 
-    /* ============================================================
+/* ============================================================
    EMBED MODE (Dashboard iframe)
    ============================================================ */
 
@@ -717,7 +717,7 @@ html[data-theme="dark"] .legend .sw {
 }
 
 /* ============================================================
-   EMBED MODE — EARNINGS
+   EMBED MODE — EARNINGS LAYOUT
    ============================================================ */
 
 .embed-mode .drawer {
@@ -732,21 +732,9 @@ html[data-theme="dark"] .legend .sw {
   border-radius: 0 !important;
 }
 
-    /* =========================================
-   FIX: remove horizontal scrollbar in iframe
-   ========================================= */
-
-.embed-mode html,
-.embed-mode body,
-.embed-mode .app,
-.embed-mode .drawer,
-.embed-mode .drawer-body {
-  overflow-x: hidden !important;
-}
-
-    /* =========================================
-   EMBED MODE — HARD WIDTH CLAMP (FIX)
-   ========================================= */
+/* ============================================================
+   EMBED MODE — HARD WIDTH CLAMP (ROOT CAUSE FIX)
+   ============================================================ */
 
 .embed-mode .app {
   max-width: 100% !important;
@@ -756,30 +744,46 @@ html[data-theme="dark"] .legend .sw {
   padding-right: 12px !important;
 }
 
+/* ============================================================
+   EMBED MODE — KILL HORIZONTAL SCROLL
+   ============================================================ */
 
-/* Keep ROI-like chrome in embed:
-   show X + footer buttons */
+.embed-mode html,
+.embed-mode body,
+.embed-mode .app,
+.embed-mode .drawer,
+.embed-mode .drawer-body {
+  overflow-x: hidden !important;
+}
+
+/* ============================================================
+   EMBED MODE — BUTTON VISIBILITY (MATCH ROI)
+   ============================================================ */
+
+/* Hide legacy close targets */
 .embed-mode .drawer-close,
 .embed-mode button[aria-label="Close"] {
   display: none !important;
 }
 
-/* explicitly KEEP these visible */
-.embed-mode .close-btn,
-.embed-mode .drawer-footer {
+/* Explicitly KEEP these visible */
+.embed-mode .close-btn {
   display: inline-flex !important;
 }
+
 .embed-mode .drawer-footer {
   display: block !important;
 }
 
+/* ============================================================
+   EMBED MODE — SCROLL BEHAVIOR
+   ============================================================ */
 
-
-/* Ensure scroll works inside iframe */
 .embed-mode .drawer-body {
   overflow-y: auto;
   max-height: none;
 }
+
 
     /* =========================================
    KPI1 + KPI2 table hover (ONLY)
