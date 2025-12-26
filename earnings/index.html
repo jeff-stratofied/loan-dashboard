@@ -792,6 +792,26 @@ html[data-theme="dark"] .legend .sw {
   display: contents !important;
 }
 
+    /* ============================================================
+   EMBED MODE — REMOVE UNDERLYING GRID WIDTH (FINAL FIX)
+   ============================================================ */
+
+/* Grid exists but must not contribute width */
+.embed-mode .grid {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
+  width: 100% !important;
+}
+
+/* Safety: kill any remaining page-level overflow */
+.embed-mode {
+  overflow-x: hidden !important;
+}
+
+.embed-mode body {
+  overflow-x: hidden !important;
+}
+
 
     /* =========================================
    KPI1 + KPI2 table hover (ONLY)
