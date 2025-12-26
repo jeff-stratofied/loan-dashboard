@@ -1561,6 +1561,20 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   containerEl.appendChild(svg);
 }
 
+      function smoothMonotonic(points) {
+  if (points.length < 2) return "";
+
+  let d = `M ${points[0][0]} ${points[0][1]}`;
+  for (let i = 1; i < points.length; i++) {
+    const [x0, y0] = points[i - 1];
+    const [x1, y1] = points[i];
+    const cx = (x0 + x1) / 2;
+    d += ` Q ${cx} ${y0}, ${x1} ${y1}`;
+  }
+  return d;
+}
+
+
 // ============================================================
 // ROI SPREAD CHART (loan lines ONLY — no weighted line)
 // ============================================================
@@ -1652,14 +1666,29 @@ function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
   }
 
   loanSeriesList.forEach(ls => {
-    const pts = ls.data
-      .filter(p => p.y != null)
-      .map(p => [dateToX(p.date), yScale(p.y)]);
+    const raw = ls.data.filter(p => p.y != null);
+if (!raw.length) return;
+
+// Anchor at purchase date to prevent spikes
+const anchored = [
+  {
+    date: raw[0].date,
+    y: raw[0].y
+  },
+  ...raw
+];
+
+// Build points
+const pts = anchored.map(p => [
+  dateToX(p.date),
+  yScale(p.y)
+]);
 
     if (!pts.length) return;
 
     // *** SMOOTH PATH GENERATION ***
-    const pathD = smoothPathFromPoints(pts, 0.4); // 0.4 = moderate curve tension
+    const pathD = smoothMonotonic(pts);
+ 
 
     // visible line
     const path = document.createElementNS(svgNS, "path");
