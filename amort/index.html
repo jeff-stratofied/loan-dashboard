@@ -477,9 +477,6 @@ display: flex !important;
 flex-direction: column !important;
 gap: 20px !important;
 }
-.embed-mode #drawerLegend {
-display:none !important;
-}
 .embed-mode body {
 background:var(--bg);
 }
@@ -487,7 +484,7 @@ background:var(--bg);
 margin:0;
 padding:0;
 }
-.embed-mode .muted {
+.embed-mode .drawer-body .muted {
 display: none !important;
 }
 /* ============================================================
@@ -548,7 +545,7 @@ background: var(--card);
 }
 / Chart: same height everywhere /
 .embed-mode .drawer-chart {
-height: 240px !important;
+height: 220px !important;
 margin-bottom: 0 !important;
 }
 / Stat boxes row /
@@ -582,9 +579,9 @@ margin-top: 0 !important;
 / Remove legend completely from flow /
 .embed-mode .legend,
 .embed-mode #drawerLegend {
-display: none !important;
-height: 0 !important;
-margin: 0 !important;
+display: block !important;
+height: auto !important;
+margin: 8px 0 0 !important;
 }
 / Chart must behave like earnings /
 .embed-mode .drawer-chart {
@@ -601,7 +598,6 @@ order: 0;
 .embed-mode #drawerExtra {
 order: 1;
 }
-
     
   </style>
 </head>
