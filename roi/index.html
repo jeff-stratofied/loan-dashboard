@@ -1338,8 +1338,8 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
 
   const rect = containerEl.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
-  const h = opts.h || 260;
-  const pad = opts.pad || 48;
+  const h = opts.h || (isEmbed ? 240 : 260);
+  const pad = opts.pad || (isEmbed ? 20 : 48);
 
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
