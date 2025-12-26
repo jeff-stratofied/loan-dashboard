@@ -723,6 +723,16 @@ function isEmbedMode() {
   return new URLSearchParams(window.location.search).get("embed") === "true";
 }
 
+    const params = new URLSearchParams(window.location.search);
+const userParam = params.get("user") || "jeff";
+const isEmbed = params.get("embed") === "true";
+const openParam = params.get("open");
+const loanIdParam = Number(params.get("id"));
+
+if (isEmbed) {
+  document.body.classList.add('embed-mode');
+  console.log('Is embed mode?', isEmbed);
+}
     
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
@@ -3063,9 +3073,10 @@ if (isEmbed && openParam === "first" && currentLoans.length) {
       const targetBase = `/loan-dashboard/amort/index.html?user=${user}`;
 
       function redirectToFullAmort(e) {
+        console.log('Redirect triggered by button');
         e.preventDefault();
         e.stopImmediatePropagation();
-
+      
         let url = targetBase + '&open=first';
         if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
           const loanId = currentLoan.loanId ?? currentLoan.id;
@@ -3082,8 +3093,12 @@ if (isEmbed && openParam === "first" && currentLoans.length) {
 
       // Click anywhere non-interactive → go to full page
       document.addEventListener('click', (e) => {
-        if (e.target.closest('button, select, a, input, textarea')) return;
-
+        console.log('General click detected in embed mode');
+        if (e.target.closest('button, select, a, input, textarea')) {
+          console.log('Click on interactive element - ignoring');
+          return;
+        }
+      
         let url = targetBase + '&open=first';
         if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
           const loanId = currentLoan.loanId ?? currentLoan.id;
