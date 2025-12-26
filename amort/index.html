@@ -730,16 +730,6 @@ if (isEmbed) {
   console.log('Is embed mode?', isEmbed);
 }
 
-    const params = new URLSearchParams(window.location.search);
-const userParam = params.get("user") || "jeff";
-const isEmbed = params.get("embed") === "true";
-const openParam = params.get("open");
-const loanIdParam = Number(params.get("id"));
-
-if (isEmbed) {
-  document.body.classList.add('embed-mode');
-  console.log('Is embed mode?', isEmbed);
-}
     
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
