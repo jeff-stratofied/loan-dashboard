@@ -949,6 +949,13 @@ allLoans = allLoans.filter(l =>
   l.user === PAGE_USER && l.visible === true
 );
 
+  // =====================================================
+// FINALIZE CURRENT LOANS — SINGLE SOURCE OF TRUTH
+// =====================================================
+currentLoans = [...allLoans];
+
+console.log("[AMORT] currentLoans finalized:", currentLoans.length);
+
   
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
@@ -2977,13 +2984,6 @@ function renderPaymentsDrawer() {
       const current = root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
-
-// --------------------------------------------------
-// USER + VISIBILITY FILTER (already done earlier)
-// --------------------------------------------------
-
-// ensure UI renders filtered set
-currentLoans = [...allLoans];
 
   // =====================================================
 // URL-DRIVEN AUTO OPEN (FULL PAGE + EMBED)
