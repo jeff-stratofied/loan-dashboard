@@ -948,27 +948,6 @@ allLoans = allLoans.map(l => ({
 allLoans = allLoans.filter(l =>
   l.user === PAGE_USER && l.visible === true
 );
-currentLoans = [...allLoans];
-
-  // =====================================================
-// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN
-// =====================================================
-if (isEmbed && openParam === "first" && currentLoans.length) {
-  const sorted = currentLoans
-    .slice()
-    .sort((a, b) =>
-      new Date(a.purchaseDate).getTime() -
-      new Date(b.purchaseDate).getTime()
-    );
-
-  const loan = sorted[0];
-  currentLoan = loan;
-
-  // defer until DOM + drawer are ready
-  requestAnimationFrame(() => {
-    openDrawerForLoan(loan);
-  });
-}
 
   
     // -------------------------------------------
@@ -3005,6 +2984,35 @@ function renderPaymentsDrawer() {
 
 // ensure UI renders filtered set
 currentLoans = [...allLoans];
+
+  // =====================================================
+// URL-DRIVEN AUTO OPEN (FULL PAGE + EMBED)
+// =====================================================
+if (openParam === "first" && currentLoans.length) {
+  const sorted = currentLoans
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(a.purchaseDate).getTime() -
+        new Date(b.purchaseDate).getTime()
+    );
+
+  const loan = sorted[0];
+  currentLoan = loan;
+  requestAnimationFrame(() => openDrawerForLoan(loan));
+}
+
+if (openParam === "loan" && loanIdParam) {
+  const loan = currentLoans.find(
+    l => (l.loanId ?? l.id) === loanIdParam
+  );
+
+  if (loan) {
+    currentLoan = loan;
+    requestAnimationFrame(() => openDrawerForLoan(loan));
+  }
+}
+
 
 console.log("[AMORT] init complete");
 console.log("[AMORT] openParam =", openParam);
