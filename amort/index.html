@@ -453,163 +453,46 @@ html[data-theme="dark"] .close-btn {
 }
     svg text{ fill:var(--text); transition:fill .25s ease; }
 
-    
-   /* Embed mode — hide header/filters/kpis/grid */
-.embed-mode header,
-.embed-mode .loan-filters,
-.embed-mode .kpis,
-.embed-mode .grid,
-.embed-mode .header-controls > *:not(#themeToggle),
-.embed-mode .drawer-footer {
-display:none !important;
-}
-.embed-mode .drawer.open {
-transform:none;
-}
-.embed-mode .drawer-head {
-padding:20px !important;
-background:var(--card);
-border-bottom:1px solid var(--border);
-}
-.embed-mode .drawer-body {
-padding:0 20px 20px !important;
-display: flex !important;
-flex-direction: column !important;
-gap: 20px !important;
-}
-.embed-mode body {
-background:var(--bg);
-}
-.embed-mode .app {
-margin:0;
-padding:0;
-}
-.embed-mode .drawer-body .muted {
-display: none !important;
-}
 /* ============================================================
-EMBED MODE — AMORT (Portfolio iframe)
-============================================================ /
-.embed-mode header,
-.embed-mode .loan-filters,
-.embed-mode .kpis,
-.embed-mode #loanGrid {
-display: none !important;
-}
-/ =====================================================
-EMBED MODE — AMORT DRAWER (layout only, hidden by JS)
-===================================================== */
-.embed-mode .drawer {
-position: static;
-inset: auto;
-width: 100%;
-height: 100%;
-max-width: none;
-box-shadow: none;
-border: none;
-border-radius: 0;
-background: var(--card);
-padding-top: 0;
-}
-/* Only the body scrolls /
-.embed-mode .drawer-body {
-flex: 1 1 auto !important;
-overflow-y: auto !important;
-padding-top: 0 !important;
-}
-/ Footer stays pinned /
-.embed-mode .drawer-footer {
-display: block !important;
-flex-shrink: 0 !important;
-background: var(--surface) !important;
-border-top: 1px solid var(--border) !important;
-}
-/ Remove top gray bar caused by .app spacing /
-.embed-mode .app {
-margin: 0 !important;
-padding: 0 !important;
-max-width: none !important;
-}
-/ Ensure body background does not bleed /
-.embed-mode body {
-background: var(--card) !important;
-}
-/ ============================================================
-EMBED MODE — UNIFIED DRAWER LAYOUT (ALIGN ALL IFRAMES)
-============================================================ /
-.embed-mode .drawer-head {
-padding: 20px !important;
-min-height: 64px;
-border-bottom: 1px solid var(--border);
-background: var(--card);
-}
-/ Chart: same height everywhere /
-.embed-mode .drawer-chart {
-height: 220px !important;
-margin-bottom: 0 !important;
-}
-/ Stat boxes row /
-.embed-mode .stat-boxes,
-.embed-mode .drawer-info-row {
-margin: 0 !important;
-min-height: 56px;
-}
-/ Drawer body spacing /
-.embed-mode .drawer-body {
-gap: 20px !important;
-padding-left: 20px !important;
-padding-right: 20px !important;
-}
-/ Table container /
-.embed-mode .amort-wrap {
-flex: 1 !important;
-overflow-y: auto !important;
-}
-/ ============================================================
-EMBED MODE — ALIGN CHART START TO EARNINGS
-============================================================ /
-/ Remove any spacer before the chart /
-.embed-mode .drawer-body {
-padding-top: 0 !important;
-}
-/ Kill gap stacking before first block /
-.embed-mode .drawer-body > * {
-margin-top: 0 !important;
-}
-/ Remove legend completely from flow /
-.embed-mode .legend,
-.embed-mode #drawerLegend {
-display: block !important;
-height: auto !important;
-margin: 8px 0 0 !important;
-}
-/ Chart must behave like earnings /
-.embed-mode .drawer-chart {
-display: block !important;
-padding: 8px !important;
-margin-top: 0 !important;
-}
-/ Ensure chart is always first */
-.embed-mode .drawer-chart {
-order: 0;
-}
-.embed-mode .drawer-info-row,
-.embed-mode .stat-boxes,
-.embed-mode #drawerExtra {
-order: 1;
-}
-
-/* ============================================================
-   EMBED MODE — RESTORE DRAWER FOOTER (MATCH ROI + EARNINGS)
+   EMBED MODE — AMORT (iframe)
    ============================================================ */
 
-.embed-mode .drawer-footer {
-  display: block !important;
-  flex-shrink: 0 !important;
-  padding: 20px !important;
-  background: var(--surface) !important;
-  border-top: 1px solid var(--border) !important;
+.embed-mode body {
+  background: var(--bg);
 }
+
+.embed-mode .app {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Drawer container must be a column flex layout so footer anchors */
+.embed-mode .drawer {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+
+  background: var(--card) !important;
+  padding-top: 0 !important;
+}
+
+/* Header */
+.embed-mode .drawer-head {
+  padding: 20px !important;
+  background: var(--card) !important;
+  border-bottom: 1px solid var
+
 
     
   </style>
