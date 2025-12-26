@@ -719,8 +719,15 @@ import { attachSchedules } from "../js/loanEngine.js";
 
 
     
-function isEmbedMode() {
-  return new URLSearchParams(window.location.search).get("embed") === "true";
+const params = new URLSearchParams(window.location.search);
+const userParam = params.get("user") || "jeff";
+const isEmbed = params.get("embed") === "true";
+const openParam = params.get("open");
+const loanIdParam = Number(params.get("id")) || null;
+
+if (isEmbed) {
+  document.body.classList.add('embed-mode');
+  console.log('Is embed mode?', isEmbed);
 }
 
     const params = new URLSearchParams(window.location.search);
@@ -2984,22 +2991,7 @@ console.log("[AMORT] openParam =", openParam);
 console.log("[AMORT] loanIdParam =", loanIdParam);
 console.log("[AMORT] loans loaded =", currentLoans.length);
 
-// =====================================================
-// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN (DISPLAY ONLY)
-// =====================================================
-if (isEmbed && openParam === "first" && currentLoans.length) {
-  const sorted = currentLoans
-    .slice()
-    .sort((a, b) =>
-      new Date(a.purchaseDate).getTime() -
-      new Date(b.purchaseDate).getTime()
-    );
 
-  const loan = sorted[0];
-  currentLoan = loan; // set state only
-
-  openDrawerForLoan(loan);
-}
 
 } // <--- End of init()
   // Set Current Date in header (runs immediately for non-embed cases)
@@ -3036,34 +3028,18 @@ if (isEmbed && openParam === "first" && currentLoans.length) {
     console.log("[AMORT] loanIdParam =", loanIdParam);
     console.log("[AMORT] loans loaded =", currentLoans.length);
 
-    // EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN
-    if (isEmbed && openParam === "first" && currentLoans.length) {
-      const sorted = currentLoans
-        .slice()
-        .sort((a, b) =>
-          new Date(a.purchaseDate).getTime() - new Date(b.purchaseDate).getTime()
-        );
-      const loan = sorted[0];
-      currentLoan = loan;
-      openDrawerForLoan(loan);
-    }
 
-    // FULL PAGE — AUTO OPEN LOAN DRAWER FROM URL
-    if (!isEmbed && openParam === "loan" && loanIdParam != null) {
-      const loanIdNum = Number(loanIdParam);
-      const loanToOpen = allLoans.find(
-        l => Number(l.loanId ?? l.id) === loanIdNum
-      );
-
-      console.log("[AMORT] attempting auto-open for loan", loanIdNum);
-      console.log("available loan ids", allLoans.map(l => Number(l.loanId ?? l.id)));
-
-      if (loanToOpen) {
-        requestAnimationFrame(() => openDrawerForLoan(loanToOpen));
-      } else {
-        console.warn("[AMORT] loan not found for id", loanIdNum);
-      }
-    }
+// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN
+if (isEmbed && openParam === "first" && currentLoans.length) {
+  const sorted = currentLoans
+    .slice()
+    .sort((a, b) =>
+      new Date(a.purchaseDate).getTime() - new Date(b.purchaseDate).getTime()
+    );
+  const loan = sorted[0];
+  currentLoan = loan;
+  openDrawerForLoan(loan);
+}
 
     // ======================================================
     // EMBED MODE — REDIRECT ON CLICKS (LIKE ROI/EARNINGS)
