@@ -754,6 +754,12 @@ let currentLoans = [];
     let cachedKPIs = null;
     let apiLoans = [];   // <-- REQUIRED so init() can assign to it
 
+
+    let currentLoan = null;
+  let allowEmbedRedirect = false;
+
+    let currentMode = null; // 'loan' or 'kpi'
+
    
     /* ============================
        Loan data (dates spread across ~6 months)
@@ -1538,10 +1544,6 @@ resetBtn.addEventListener("click", () => {
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
-    let currentLoan = null;
-  let allowEmbedRedirect = false;
-
-    let currentMode = null; // 'loan' or 'kpi'
 
     function closeDrawer() {
       drawer.classList.remove('open');
