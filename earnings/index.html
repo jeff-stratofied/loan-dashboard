@@ -733,14 +733,13 @@ html[data-theme="dark"] .legend .sw {
 }
 
 /* ============================================================
-   EMBED MODE — REMOVE GRID WIDTH CONTRIBUTION (REAL FIX)
+   EMBED MODE — REMOVE LOAN GRID ENTIRELY (AUTHORITATIVE FIX)
    ============================================================ */
 
 .embed-mode .grid {
-  padding-right: 0 !important;
-  margin-right: 0 !important;
-  width: 100% !important;
+  display: none !important;
 }
+
 
 /* ============================================================
    EMBED MODE — SCROLL BEHAVIOR
@@ -750,6 +749,13 @@ html[data-theme="dark"] .legend .sw {
   overflow-y: auto;
   max-height: none;
 }
+
+    /* Embed page itself must never scroll */
+.embed-mode html,
+.embed-mode body {
+  overflow: hidden !important;
+}
+
 
 /* ============================================================
    EMBED MODE — BUTTON VISIBILITY
