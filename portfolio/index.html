@@ -231,6 +231,9 @@ document.getElementById("roiFrame").src =
 
   buildFrames(user);
 
+  wireAmortRedirect();
+
+
   // ===============================
 // DEBUG: Earnings iframe behavior
 // ===============================
@@ -275,6 +278,37 @@ setTimeout(() => {
     const t = document.documentElement.getAttribute("data-theme");
     applyTheme(t === "dark" ? "light" : "dark");
   };
+
+function wireAmortRedirect() {
+  const amortFrame = document.getElementById("amortFrame");
+
+  // Safety guard
+  if (!amortFrame) return;
+
+  amortFrame.addEventListener("load", () => {
+    try {
+      const doc = amortFrame.contentWindow.document;
+
+      // Capture any click inside the iframe
+      doc.addEventListener(
+        "click",
+        () => {
+          const u =
+            new URLSearchParams(location.search).get("user") || "jeff";
+
+          // Redirect PARENT to full amort page
+          window.location.href =
+            `/loan-dashboard/amort/index.html?user=${u}&open=first`;
+        },
+        { once: true } // prevent double redirects
+      );
+    } catch (e) {
+      console.warn("[PORT] Amort iframe click hook failed", e);
+    }
+  });
+}
+
+  
 </script>
 
 </body>
