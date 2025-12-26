@@ -602,6 +602,72 @@ html[data-theme="dark"] .drawer-chart{
   order: 1;
 }
 
+    /* ============================================================
+   EMBED MODE — UNIFIED LAYOUT (ALIGN WITH EARNINGS & AMORT)
+   ============================================================ */
+.embed-mode body,
+.embed-mode .app,
+.embed-mode .drawer {
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: var(--card) !important;
+}
+
+.embed-mode .drawer {
+  position: static !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.embed-mode .drawer-head {
+  padding: 20px !important;
+  min-height: 64px !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--card) !important;
+  flex-shrink: 0 !important;
+}
+
+.embed-mode .drawer-body {
+  padding: 0 20px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+}
+
+.embed-mode .drawer-chart {
+  height: 240px !important;
+  margin: 0 !important;
+  padding: 8px !important;
+  order: 0 !important;
+  background: var(--chart-bg) !important;
+}
+
+.embed-mode .drawer-info-row {
+  margin: 0 !important;
+  min-height: 56px !important;
+  order: 1 !important;
+}
+
+.embed-mode .legend {
+  display: none !important;
+}
+
+.embed-mode .drawer-footer {
+  display: none !important;
+}
+
+.embed-mode .drawer-body > * {
+  margin-top: 0 !important;
+}
 
   </style>
 </head>
