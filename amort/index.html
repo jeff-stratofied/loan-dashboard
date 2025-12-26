@@ -1554,11 +1554,21 @@ resetBtn.addEventListener("click", () => {
   
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
+
+  // =====================================================
+  // HARD RESET KPI-ONLY STATE (restore loan mode)
+  // =====================================================
+  drawer.classList.remove('kpi-interactive');
+  drawerExtra.innerHTML = '';
+  drawerChartArea.innerHTML = '';
+  drawerLegend.style.display = 'none';
+
   // =====================================================
   // FORCE STATE FOR PROGRAMMATIC OPEN (URL / embed)
   // =====================================================
   currentMode = "loan";
   currentLoan = loan;
+
 
   // ------------------------------------
   // ROI / Earnings–style amort header
