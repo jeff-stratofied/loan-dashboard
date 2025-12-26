@@ -118,14 +118,17 @@
     }
 
     .frame-body {
-      flex:1;
-      position:relative;
+      flex: 1;
+      position: relative;
+      overflow: hidden;   /* ← CRITICAL: kills iframe rounding overflow */
     }
+
 
     iframe {
       width:100%;
       height:100%;
       border:none;
+      display:block;
     }
 
     @media(max-width:1100px) {
