@@ -725,9 +725,11 @@ const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("id")) || null;
 
+console.log('URL params:', params.toString());
+console.log('Is embed mode?', isEmbed);
 if (isEmbed) {
   document.body.classList.add('embed-mode');
-  console.log('Is embed mode?', isEmbed);
+  console.log('Embed class added');
 }
 
     
@@ -3020,21 +3022,28 @@ console.log("[AMORT] loans loaded =", currentLoans.length);
 
 
 // EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN
+console.log('Checking auto-open: isEmbed?', isEmbed, 'openParam?', openParam, 'loans?', currentLoans.length);
 if (isEmbed && openParam === "first" && currentLoans.length) {
+  console.log('Auto-open triggered');
   const sorted = currentLoans
     .slice()
     .sort((a, b) =>
       new Date(a.purchaseDate).getTime() - new Date(b.purchaseDate).getTime()
     );
   const loan = sorted[0];
-  currentLoan = loan;
-  openDrawerForLoan(loan);
+  if (loan) {
+    currentLoan = loan;
+    openDrawerForLoan(loan);
+    console.log('Opened drawer for loan ID', loan.loanId || loan.id);
+  } else {
+    console.log('No loan found for auto-open');
+  }
 }
 
     // ======================================================
     // EMBED MODE — REDIRECT ON CLICKS (LIKE ROI/EARNINGS)
     // ======================================================
-    if (isEmbed) {
+    if (isEmbed) { console.log('Embed mode activated - setting up redirects');
       const user = PAGE_USER || "jeff";
       const targetBase = `/loan-dashboard/amort/index.html?user=${user}`;
 
