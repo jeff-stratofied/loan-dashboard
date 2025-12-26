@@ -732,6 +732,19 @@ html[data-theme="dark"] .legend .sw {
   border-radius: 0 !important;
 }
 
+    /* =========================================
+   FIX: remove horizontal scrollbar in iframe
+   ========================================= */
+
+.embed-mode html,
+.embed-mode body,
+.embed-mode .app,
+.embed-mode .drawer,
+.embed-mode .drawer-body {
+  overflow-x: hidden !important;
+}
+
+
 /* Keep ROI-like chrome in embed:
    show X + footer buttons */
 .embed-mode .drawer-close,
