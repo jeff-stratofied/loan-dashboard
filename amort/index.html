@@ -686,11 +686,17 @@ const openParam = params.get("open");
 const loanIdParam = Number(params.get("loanId")) || null;
 
 // =====================================================
-// EMBED MODE — HIDE DRAWER UNTIL READY
+// EMBED MODE — AUTO OPEN FIRST LOAN (AMORT)
 // =====================================================
-if (isEmbed && drawer) {
-  drawer.style.display = "none";
+if (isEmbed && currentLoans.length) {
+  const loan = currentLoans[0];
+
+  // force drawer visible
+  drawer.style.display = "flex";
+
+  openDrawerForLoan(loan);
 }
+
 
     
 console.log('URL params:', params.toString());
