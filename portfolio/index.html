@@ -36,12 +36,13 @@
       background:linear-gradient(180deg,var(--surface),var(--bg));
     }
 
-    .app {
+       .app {
       max-width:1400px;
       margin:0 auto;
       padding:16px;
       height:100%;
-      overflow:auto;
+      overflow-y: auto;
+      overflow-x: hidden;   /* ✅ CRITICAL */
     }
 
     header {
