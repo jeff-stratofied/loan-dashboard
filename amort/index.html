@@ -963,6 +963,27 @@ allLoans = allLoans.filter(l =>
   l.user === PAGE_USER && l.visible === true
 );
 currentLoans = [...allLoans];
+
+  // =====================================================
+// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN
+// =====================================================
+if (isEmbed && openParam === "first" && currentLoans.length) {
+  const sorted = currentLoans
+    .slice()
+    .sort((a, b) =>
+      new Date(a.purchaseDate).getTime() -
+      new Date(b.purchaseDate).getTime()
+    );
+
+  const loan = sorted[0];
+  currentLoan = loan;
+
+  // defer until DOM + drawer are ready
+  requestAnimationFrame(() => {
+    openDrawerForLoan(loan);
+  });
+}
+
   
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
@@ -1813,7 +1834,24 @@ function openDrawerForLoan(loan) {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
- 
+
+  // =====================================================
+// EMBED MODE — CLICK → FULL AMORT PAGE
+// =====================================================
+if (isEmbed) {
+  document.addEventListener("click", () => {
+    if (!currentLoan) return;
+
+    const base = location.pathname.replace(/\/amort\/.*$/, "/amort/index.html");
+
+    const url =
+      `${base}?user=${PAGE_USER}` +
+      `&loanId=${currentLoan.loanId || currentLoan.id}`;
+
+    window.location.href = url;
+  });
+}
+
 
     /* ============================
        KPI drawers: Distribution, TPV, Rates, Payments
