@@ -33,6 +33,7 @@
     --tooltip-bg:#0f172a;     /* solid black tooltip */
     --tooltip-text:#f8fafc;   /* white text */
     --table-header: var(--surface);
+      --chart-bg: linear-gradient(180deg, #ffffff, #fcfeff);
   }
     
     html { color-scheme:light; }
@@ -65,6 +66,7 @@
 
       --tooltip-bg:#0f172a;
       --tooltip-text:#f8fafc;
+        --tooltip-text:#f8fafc;
     }
 
 
@@ -714,58 +716,6 @@ html[data-theme="dark"] .close-btn {
     import { loadLoans } from "../js/loadLoans.js";
 import { attachSchedules } from "../js/loanEngine.js";
     import { normalizeLoan } from "../js/normalizeLoan.js";
-
-    // =====================================================
-// EMBED MODE + AUTO-OPEN LOAN (AMORT)
-// =====================================================
-const params = new URLSearchParams(window.location.search);
-const userParam = params.get("user") || "jeff";
-const isEmbed = params.get("embed") === "true";
-const openParam = params.get("open");
-const loanIdParam = Number(params.get("id"));
-
-    if (isEmbed) {
-  document.body.classList.add('embed-mode');
-}
-
-// =====================================================
-// EMBED MODE — CLICK → OPEN FULL AMORT PAGE WITH DRAWER
-// (match Earnings behavior exactly)
-// =====================================================
-if (isEmbed) {
-  document.addEventListener(
-    "click",
-    (e) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-
-      // Always resolve the loan deterministically
-      const loan =
-        currentLoan ||
-        currentLoans?.[0] ||
-        allLoans?.[0];
-
-      if (!loan) return;
-
-      const loanId = loan.loanId ?? loan.id;
-      if (!Number.isFinite(loanId)) return;
-
-      const user =
-        new URLSearchParams(window.location.search).get("user") || "jeff";
-
-      window.top.location.href =
-        `/loan-dashboard/amort/index.html` +
-        `?user=${encodeURIComponent(user)}` +
-        `&open=loan&id=${loanId}`;
-    },
-    true // CAPTURE — must beat all drawer handlers
-  );
-}
-
-
-
-
-
 
 
     
@@ -1845,47 +1795,7 @@ function openDrawerForLoan(loan) {
 
   drawerChartArea.appendChild(svg);
 
-  // ==============================================================
-  // EMBED MODE SPECIFIC BEHAVIOR
-  // ==============================================================
-  if (isEmbed) {
-    // Compute full URL for redirect
-    const params = new URLSearchParams(location.search);
-    const user = params.get('user') || 'jeff';
-    const fullUrl = `/loan-dashboard/amort/index.html?user=${user}&open=loan&loanId=${loan.loanId}`;
 
-    function redirectToFull(e) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      window.top.location.href = fullUrl;
-    }
-
-    // Override button clicks (show buttons but redirect on click)
-    const closeBtn = document.getElementById('closeBtn');
-    const printBtn = document.getElementById('printBtn');
-    const copyCsvBtn = document.getElementById('copyCsvBtn');
-    const downloadCsvBtn = document.getElementById('downloadCsvBtn');
-
-    if (closeBtn) closeBtn.addEventListener('click', redirectToFull, true);
-    if (printBtn) printBtn.addEventListener('click', redirectToFull, true);
-    if (copyCsvBtn) copyCsvBtn.addEventListener('click', redirectToFull, true);
-    if (downloadCsvBtn) downloadCsvBtn.addEventListener('click', redirectToFull, true);
-
-    // NEW: Click anywhere (except buttons/links) redirects to full page
-    document.body.addEventListener('click', (e) => {
-      if (e.target.closest('button, a')) return; // Exclude buttons/links (they already redirect)
-      window.top.location.href = fullUrl;
-    }, true);
-
-    // Fix extra scrollbar in embed mode
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    const drawerBody = document.querySelector('.drawer-body');
-    if (drawerBody) {
-      drawerBody.style.overflowY = 'auto';  // Internal scroll for table
-      drawerBody.style.maxHeight = '100%';  // Prevent overgrowth
-    }
-  }
 
   // ==============================================================
   // FINAL DRAWER OPEN
