@@ -710,7 +710,7 @@ const params = new URLSearchParams(window.location.search);
 const userParam = params.get("user") || "jeff";
 const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
-const loanIdParam = Number(params.get("id")) || null;
+const loanIdParam = Number(params.get("loanId")) || null;
 
 // =====================================================
 // EMBED MODE — HIDE DRAWER UNTIL READY
@@ -3014,103 +3014,66 @@ console.log("[AMORT] loans loaded =", currentLoans.length);
 
 
 } // <--- End of init()
-  // Set Current Date in header (runs immediately for non-embed cases)
+// =====================================================
+// DOM READY — INIT + EMBED REDIRECT HANDLING
+// =====================================================
+document.addEventListener("DOMContentLoaded", async () => {
+  // Set Current Date
   const currentDateEl = document.getElementById('currentDateLabel');
   if (currentDateEl) {
     const today = new Date();
-    const formatted = today.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    currentDateEl.textContent = `Current Date: ${formatted}`;
-  }
-
-  document.addEventListener("DOMContentLoaded", async () => {
-    // Set Current Date again (safe for late DOM)
-    const currentDateEl = document.getElementById('currentDateLabel');
-    if (currentDateEl) {
-      const today = new Date();
-      const formatted = today.toLocaleDateString(undefined, {
+    currentDateEl.textContent =
+      `Current Date: ${today.toLocaleDateString(undefined, {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
-      });
-      currentDateEl.textContent = `Current Date: ${formatted}`;
-    }
-
-    // Load loans and initialize UI
-    await loadLoans();
-    init();
-
-    console.log("[AMORT] init complete");
-    console.log("[AMORT] openParam =", openParam);
-    console.log("[AMORT] loanIdParam =", loanIdParam);
-    console.log("[AMORT] loans loaded =", currentLoans.length);
-
-
-// EMBED MODE — AUTO OPEN FIRST PURCHASED LOAN
-console.log('Checking auto-open: isEmbed?', isEmbed, 'openParam?', openParam, 'loans?', currentLoans.length);
-if (isEmbed && openParam === "first" && currentLoans.length) {
-  console.log('Auto-open triggered');
-  const sorted = currentLoans
-    .slice()
-    .sort((a, b) =>
-      new Date(a.purchaseDate).getTime() - new Date(b.purchaseDate).getTime()
-    );
-  const loan = sorted[0];
-  if (loan) {
-    currentLoan = loan;
-    openDrawerForLoan(loan);
-    console.log('Opened drawer for loan ID', loan.loanId || loan.id);
-  } else {
-    console.log('No loan found for auto-open');
+      })}`;
   }
-}
 
-    // ======================================================
-    // EMBED MODE — REDIRECT ON CLICKS (LIKE ROI/EARNINGS)
-    // ======================================================
-    if (isEmbed) { console.log('Embed mode activated - setting up redirects');
-      const user = PAGE_USER || "jeff";
-      const targetBase = `/loan-dashboard/amort/index.html?user=${user}`;
+  // Initialize page (loads loans internally)
+  await init();
 
-      function redirectToFullAmort(e) {
-        console.log('Redirect triggered by button');
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      
-        let url = targetBase + '&open=first';
-        if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
-          const loanId = currentLoan.loanId ?? currentLoan.id;
-          url = targetBase + '&open=loan&id=' + loanId;
-        }
-        window.top.location.href = url;
-      }
+  console.log("[AMORT] init complete");
+  console.log("[AMORT] openParam =", openParam);
+  console.log("[AMORT] loanIdParam =", loanIdParam);
+  console.log("[AMORT] loans loaded =", currentLoans.length);
 
-      // Override drawer buttons to redirect
-      ['closeBtn', 'printBtn', 'copyCsvBtn', 'downloadCsvBtn'].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) btn.addEventListener('click', redirectToFullAmort, true);
-      });
+  // =====================================================
+  // EMBED MODE — REDIRECT TO FULL PAGE (SINGLE CONTRACT)
+  // =====================================================
+  if (!isEmbed) return;
 
-      // Click anywhere non-interactive → go to full page
-      document.addEventListener('click', (e) => {
-        console.log('General click detected in embed mode');
-        if (e.target.closest('button, select, a, input, textarea')) {
-          console.log('Click on interactive element - ignoring');
-          return;
-        }
-      
-        let url = targetBase + '&open=first';
-        if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
-          const loanId = currentLoan.loanId ?? currentLoan.id;
-          url = targetBase + '&open=loan&id=' + loanId;
-        }
-        window.top.location.href = url;
-      }, true);
+  const user = PAGE_USER || "jeff";
+  const baseUrl = `/loan-dashboard/amort/index.html?user=${user}`;
+
+  function redirectToFullPage() {
+    let url = baseUrl;
+
+    if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
+      url += `&open=loan&id=${currentLoan.loanId ?? currentLoan.id}`;
+    } else {
+      url += `&open=first`;
     }
+
+    window.top.location.href = url;
+  }
+
+  // Redirect on any non-interactive click
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (e.target.closest("button, select, a, input, textarea")) return;
+      redirectToFullPage();
+    },
+    true
+  );
+
+  // Redirect on drawer buttons
+  ["closeBtn", "printBtn", "copyCsvBtn", "downloadCsvBtn"].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", redirectToFullPage, true);
   });
+});
 </script>
 </body>
 </html>
