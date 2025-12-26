@@ -466,14 +466,13 @@ html[data-theme="dark"] .close-btn {
   padding: 0 !important;
 }
 
-/* Drawer container must be a column flex layout so footer anchors */
+/* Drawer container */
 .embed-mode .drawer {
   position: static !important;
   inset: auto !important;
   transform: none !important;
 
   width: 100% !important;
-  height: 100% !important;
   max-width: none !important;
 
   display: flex !important;
@@ -494,14 +493,9 @@ html[data-theme="dark"] .close-btn {
   border-bottom: 1px solid var(--border) !important;
 }
 
-/* Body */
+/* Body scrolls */
 .embed-mode .drawer-body {
   padding: 0 20px 20px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 20px !important;
-
-  /* body should scroll, footer should not */
   overflow-y: auto !important;
   flex: 1 1 auto !important;
 }
@@ -521,16 +515,16 @@ html[data-theme="dark"] .close-btn {
   order: 1 !important;
 }
 
-/* Footer (must be visible + anchored) */
+/* Footer (anchored + visible) */
 .embed-mode .drawer-footer {
   display: block !important;
   flex: 0 0 auto !important;
-  flex-shrink: 0 !important;
 
   padding: 20px !important;
   background: var(--surface) !important;
   border-top: 1px solid var(--border) !important;
 }
+
 
     
   </style>
