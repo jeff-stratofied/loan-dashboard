@@ -733,46 +733,13 @@ html[data-theme="dark"] .legend .sw {
 }
 
 /* ============================================================
-   EMBED MODE — HARD WIDTH CLAMP (ROOT CAUSE FIX)
+   EMBED MODE — REMOVE GRID WIDTH CONTRIBUTION (REAL FIX)
    ============================================================ */
 
-.embed-mode .app {
-  max-width: 100% !important;
+.embed-mode .grid {
+  padding-right: 0 !important;
+  margin-right: 0 !important;
   width: 100% !important;
-  margin: 0 !important;
-  padding-left: 12px !important;
-  padding-right: 12px !important;
-}
-
-/* ============================================================
-   EMBED MODE — KILL HORIZONTAL SCROLL
-   ============================================================ */
-
-.embed-mode html,
-.embed-mode body,
-.embed-mode .app,
-.embed-mode .drawer,
-.embed-mode .drawer-body {
-  overflow-x: hidden !important;
-}
-
-/* ============================================================
-   EMBED MODE — BUTTON VISIBILITY (MATCH ROI)
-   ============================================================ */
-
-/* Hide legacy close targets */
-.embed-mode .drawer-close,
-.embed-mode button[aria-label="Close"] {
-  display: none !important;
-}
-
-/* Explicitly KEEP these visible */
-.embed-mode .close-btn {
-  display: inline-flex !important;
-}
-
-.embed-mode .drawer-footer {
-  display: block !important;
 }
 
 /* ============================================================
@@ -784,33 +751,23 @@ html[data-theme="dark"] .legend .sw {
   max-height: none;
 }
 
-    /* ============================================================
-   EMBED MODE — REMOVE BASE APP LAYER (REAL FIX)
+/* ============================================================
+   EMBED MODE — BUTTON VISIBILITY
    ============================================================ */
 
-.embed-mode .app {
-  display: contents !important;
+.embed-mode .drawer-close,
+.embed-mode button[aria-label="Close"] {
+  display: none !important;
 }
 
-    /* ============================================================
-   EMBED MODE — REMOVE UNDERLYING GRID WIDTH (FINAL FIX)
-   ============================================================ */
-
-/* Grid exists but must not contribute width */
-.embed-mode .grid {
-  padding-right: 0 !important;
-  margin-right: 0 !important;
-  width: 100% !important;
+.embed-mode .close-btn {
+  display: inline-flex !important;
 }
 
-/* Safety: kill any remaining page-level overflow */
-.embed-mode {
-  overflow-x: hidden !important;
+.embed-mode .drawer-footer {
+  display: block !important;
 }
 
-.embed-mode body {
-  overflow-x: hidden !important;
-}
 
 
     /* =========================================
