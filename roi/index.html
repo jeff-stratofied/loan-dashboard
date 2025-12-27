@@ -1534,7 +1534,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   });
 
 // -----------------------------------
-// Hover interaction (RESTORED)
+// Hover interaction (REFINED)
 // -----------------------------------
 const tooltip = document.getElementById("tooltip");
 
@@ -1548,7 +1548,7 @@ svg.addEventListener("mousemove", ev => {
   const rect = svg.getBoundingClientRect();
   const svgX = ev.clientX - rect.left;
 
-  // snap to nearest date
+  // snap to nearest date index
   let idx = Math.round(
     ((svgX - pad) / (w - pad * 2)) * (globalDates.length - 1)
   );
@@ -1557,15 +1557,17 @@ svg.addEventListener("mousemove", ev => {
   const date = globalDates[idx];
   const x = dateToX(date);
 
-  // vertical line
+  // vertical hover line
   vLine.setAttribute("x1", x);
   vLine.setAttribute("x2", x);
   vLine.setAttribute("y1", pad);
   vLine.setAttribute("y2", h - pad);
 
-  // build tooltip
+  // -------------------------
+  // Build tooltip content
+  // -------------------------
   let html = `
-    <div style="font-weight:700;margin-bottom:4px">
+    <div style="font-weight:700;margin-bottom:6px">
       ${formatMonthYear(date)}
     </div>
   `;
@@ -1575,7 +1577,7 @@ svg.addEventListener("mousemove", ev => {
     const wPt = weightedSeries[idx];
     if (wPt && wPt.y != null) {
       html += `
-        <div style="margin-bottom:4px">
+        <div style="margin-bottom:6px">
           <span style="font-weight:600">Weighted:</span>
           ${(wPt.y * 100).toFixed(2)}%
         </div>
@@ -1583,29 +1585,49 @@ svg.addEventListener("mousemove", ev => {
     }
   }
 
-  // per-loan series
+  // per-loan series (SQUARE swatches)
   loanSeriesList.forEach(ls => {
     const pt = ls.data[idx];
     if (!pt || pt.y == null) return;
 
     html += `
-      <div style="display:flex;gap:6px;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px">
         <span style="
           width:10px;
           height:10px;
-          border-radius:50%;
           background:${ls.color || "#888"};
-          display:inline-block
+          display:inline-block;
+          flex-shrink:0;
         "></span>
         <span>${(pt.y * 100).toFixed(2)}%</span>
       </div>
     `;
   });
 
-  tooltip.style.display = "block";
-  tooltip.style.left = (rect.left + x) + "px";
-  tooltip.style.top = (rect.top + pad - 8) + "px";
   tooltip.innerHTML = html;
+  tooltip.style.display = "block";
+
+  // -------------------------
+  // Smart positioning
+  // -------------------------
+  const ttRect = tooltip.getBoundingClientRect();
+  const margin = 12;
+
+  let left = rect.left + x + margin;
+  let top = rect.top + pad + 24;
+
+  // flip left if overflowing right edge
+  if (left + ttRect.width > window.innerWidth - margin) {
+    left = rect.left + x - ttRect.width - margin;
+  }
+
+  // clamp vertically
+  if (top + ttRect.height > window.innerHeight - margin) {
+    top = window.innerHeight - ttRect.height - margin;
+  }
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
 });
 
 svg.addEventListener("mouseleave", () => {
@@ -1613,6 +1635,7 @@ svg.addEventListener("mouseleave", () => {
   vLine.setAttribute("x1", -9999);
   vLine.setAttribute("x2", -9999);
 });
+
 
 
   
