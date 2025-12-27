@@ -2941,7 +2941,7 @@ function renderPaymentsDrawer() {
 // =====================================================
 // URL-DRIVEN AUTO OPEN (FULL PAGE + EMBED)
 // =====================================================
-if (isEmbed && currentLoans.length && !drawer.classList.contains("open") && !openParam) {
+if (openParam === "first" && currentLoans.length) {
   const sorted = currentLoans
     .slice()
     .sort(
@@ -2953,6 +2953,13 @@ if (isEmbed && currentLoans.length && !drawer.classList.contains("open") && !ope
   const loan = sorted[0];
   currentLoan = loan;
   requestAnimationFrame(() => openDrawerForLoan(loan));
+
+  // Only force drawer visibility in embed mode
+  if (isEmbed) {
+    drawer.style.display = "flex";
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  }
 }
 
 if (openParam === "loan" && loanIdParam) {
@@ -2963,14 +2970,30 @@ if (openParam === "loan" && loanIdParam) {
   if (loan) {
     currentLoan = loan;
     requestAnimationFrame(() => openDrawerForLoan(loan));
+
+    // Only force drawer visibility in embed mode
+    if (isEmbed) {
+      drawer.style.display = "flex";
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    }
   }
 }
 
 // =====================================================
-// EMBED MODE — AUTO OPEN FIRST LOAN (AMORT FALLBACK)
+// EMBED MODE — AUTO OPEN FIRST LOAN (FALLBACK ONLY)
 // =====================================================
-if (isEmbed && currentLoans.length && !drawer.classList.contains("open")) {
-  const loan = currentLoans[0];
+if (isEmbed && currentLoans.length && !drawer.classList.contains("open") && !openParam) {
+  const sorted = currentLoans
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(a.purchaseDate).getTime() -
+        new Date(b.purchaseDate).getTime()
+    );
+
+  const loan = sorted[0];
+  currentLoan = loan;
 
   drawer.style.display = "flex";
   drawer.classList.add("open");
