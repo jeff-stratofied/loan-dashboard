@@ -701,7 +701,7 @@ document.getElementById("currentUserLabel").textContent =
 
 async function init() {
   apiLoans = await loadLoans();
-  allLoans = apiLoans
+  allLoans = (apiLoans.loans || [])
     .map(normalizeLoan)
     .filter(l => l.user === PAGE_USER);
 
