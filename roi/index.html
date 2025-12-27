@@ -1152,6 +1152,7 @@ function computeKPIs(list) {
 
     const kpis = computeKPIs(currentLoans);
 
+/* delete
 function attachKpiHover(svg, opts) {
   const tooltip = document.getElementById("tooltip");
   const vLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
@@ -1183,7 +1184,7 @@ function attachKpiHover(svg, opts) {
     vLine.setAttribute("x1", -9999);
   });
 }
-
+delete */
       
     /* -------------------------
        Small chart utilities (line & bar with hover)
@@ -2657,8 +2658,14 @@ function smoothPath(points) {
     /* -------------------------
        KPI drawer renderers
        ------------------------- */
-    function getMonthlyTotals(list){ const totals={}; list.forEach(l=>{ const d=new Date(l.purchaseDate); const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; totals[key]=(totals[key]||0)+l.purchasePrice; }); return totals; }
 
+/* delete
+    function getMonthlyTotals(list){ const totals={}; list.forEach(l=>{ 
+      const d=new Date(l.purchaseDate); 
+       const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; totals[key]=(totals[key]||0)+l.purchasePrice; }); 
+     return totals; }
+delete */
+      
 /* ============================================================
    TPV Drawer — Weighted ROI To Date
    Using the same stable timeline engine as Projected ROI
@@ -3489,6 +3496,7 @@ window.addEventListener("DOMContentLoaded", () => {
 </html>
 
 <!-- Added customTooltip function -->
+<!--
 <script>
 
 const loanColors = [
@@ -3525,3 +3533,4 @@ function customTooltip(context) {
     tooltipEl.style.top = offsetTop + tooltip.caretY + 'px';
 }
 </script>
+-->
