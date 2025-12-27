@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Portfolio Dashboard</title>
+
+  <style>
+    :root {
+      --bg:#f8fafc;
+      --surface:#f1f5f9;
+      --card:#ffffff;
+      --border:#e2e8f0;
+      --text:#0f172a;
+      --muted:#64748b;
+      --brand:#0ea5e9;
+      --shadow:0 12px 30px rgba(15,23,42,0.06);
+    }
+
+    html[data-theme="dark"] {
+      --bg:#0f172a;
+      --surface:#1e293b;
+      --card:#1e293b;
+      --border:#334155;
+      --text:#f1f5f9;
+      --muted:#94a3b8;
+      --brand:#38bdf8;
+      --shadow:rgba(0,0,0,0.45);
+    }
+
+    html, body {
+      height:100%;
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      color:var(--text);
+      background:linear-gradient(180deg,var(--surface),var(--bg));
+    }
+
+       .app {
+      max-width:1400px;
+      margin:0 auto;
+      padding:16px;
+      height:100%;
+      overflow-y: auto;
+      overflow-x: hidden;   /* ✅ CRITICAL */
+    }
+
+    header {
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:16px;
+    }
+
+    h1 {
+      font-size:20px;
+      margin:0;
+    }
+
+    .lead {
+      font-size:13px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
+    .controls {
+      display:flex;
+      gap:10px;
+      align-items:center;
+    }
+
+    select, button {
+      border:1px solid var(--border);
+      background:var(--card);
+      color:var(--text);
+      border-radius:6px;
+      padding:6px 8px;
+      font-weight:600;
+      cursor:pointer;
+    }
+
+    /* ===============================
+       DASHBOARD GRID
+       =============================== */
+
+    .dashboard-grid {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+      margin-top:16px;
+    }
+
+    .frame-tile {
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:800px;
+    }
+
+    .frame-header {
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+    }
+
+    .frame-title {
+      font-weight:700;
+      font-size:14px;
+    }
+
+    .frame-sub {
+      font-size:12px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+
+    .frame-body {
+      flex: 1;
+      position: relative;
+      overflow: hidden;   /* ← CRITICAL: kills iframe rounding overflow */
+    }
+
+
+    iframe {
+      width:100%;
+      height:100%;
+      border:none;
+      display:block;
+    }
+
+    @media(max-width:1100px) {
+      .dashboard-grid {
+        grid-template-columns:1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app">
+
+  <!-- ===============================
+       HEADER
+       =============================== -->
+  <header>
+    <div>
+      <h1>Portfolio Dashboard</h1>
+      <p class="lead">
+        Performance, earnings, and loan schedules at a glance.  Click in the frames to go to the full pages.
+      </p>
+    </div>
+
+    <div class="controls">
+      <label>
+        User:
+        <select id="userSelect">
+          <option value="jeff">Jeff Customer</option>
+          <option value="nick">Nick Lender</option>
+          <option value="john">John Investor</option>
+        </select>
+      </label>
+
+      <button id="themeToggle">🌙</button>
+    </div>
+  </header>
+
+  <!-- ===============================
+       DASHBOARD FRAMES
+       =============================== -->
+  <section class="dashboard-grid">
+
+    <!-- ROI -->
+    <div class="frame-tile">
+      <div class="frame-header">
+        <div class="frame-title">Return on Investment</div>
+        <div class="frame-sub">Portfolio ROI and projections</div>
+      </div>
+      <div class="frame-body">
+        <iframe id="roiFrame"></iframe>
+      </div>
+    </div>
+
+    <!-- Earnings -->
+    <div class="frame-tile">
+      <div class="frame-header">
+        <div class="frame-title">Earnings</div>
+        <div class="frame-sub">Cash flow and projected returns</div>
+      </div>
+      <div class="frame-body">
+        <iframe id="earningsFrame"></iframe>
+      </div>
+    </div>
+
+    <!-- Amort -->
+    <div class="frame-tile">
+      <div class="frame-header">
+        <div class="frame-title">Loan Amortization</div>
+        <div class="frame-sub">Schedules and balances</div>
+      </div>
+      <div class="frame-body">
+        <iframe id="amortFrame"></iframe>
+      </div>
+    </div>
+
+  </section>
+
+</div>
+
+<!-- ===============================
+     SCRIPT
+     =============================== -->
+<script>
+  const params = new URLSearchParams(location.search);
+  const user = params.get("user") || "jeff";
+
+  const userSelect = document.getElementById("userSelect");
+  userSelect.value = user;
+
+  function buildFrames(u) {
+document.getElementById("roiFrame").src =
+  `/loan-dashboard/roi/index.html?user=${u}&embed=true&open=kpi2`;
+
+
+  document.getElementById("earningsFrame").src =
+    `/loan-dashboard/earnings/index.html?user=${u}&embed=true&open=kpi2`;
+
+  document.getElementById("amortFrame").src =
+  `/loan-dashboard/amort/index.html?user=${u}&embed=true&open=first`;
+
+
+}
+
+  buildFrames(user);
+
+  wireAmortRedirect();
+
+
+  // ===============================
+// DEBUG: Earnings iframe behavior
+// ===============================
+const earningsFrame = document.getElementById("earningsFrame");
+
+// Log initial src AFTER it is set
+console.log(
+  "[PORT] Earnings iframe src (after buildFrames):",
+  earningsFrame.src
+);
+
+// Detect every iframe load (critical)
+earningsFrame.addEventListener("load", () => {
+  console.log(
+    "[PORT] Earnings iframe LOADED:",
+    earningsFrame.contentWindow?.location?.href
+  );
+});
+
+// Check iframe size after render
+setTimeout(() => {
+  const rect = earningsFrame.getBoundingClientRect();
+  console.log("[PORT] Earnings iframe rect:", rect);
+}, 500);
+
+
+  userSelect.addEventListener("change", () => {
+    location.href = `index-portDash.html?user=${userSelect.value}`;
+  });
+
+  // Theme
+  const themeToggle = document.getElementById("themeToggle");
+  function applyTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    localStorage.setItem("theme", t);
+    themeToggle.textContent = t === "dark" ? "☀️" : "🌙";
+  }
+
+  applyTheme(localStorage.getItem("theme") || "light");
+
+  themeToggle.onclick = () => {
+    const t = document.documentElement.getAttribute("data-theme");
+    applyTheme(t === "dark" ? "light" : "dark");
+  };
+
+function wireAmortRedirect() {
+  const amortFrame = document.getElementById("amortFrame");
+
+  // Safety guard
+  if (!amortFrame) return;
+
+  amortFrame.addEventListener("load", () => {
+    try {
+      const doc = amortFrame.contentWindow.document;
+
+      // Capture any click inside the iframe
+      doc.addEventListener(
+        "click",
+        () => {
+          const u =
+            new URLSearchParams(location.search).get("user") || "jeff";
+
+          // Redirect PARENT to full amort page
+          window.location.href =
+            `/loan-dashboard/amort/index.html?user=${u}&open=first`;
+        },
+        { once: true } // prevent double redirects
+      );
+    } catch (e) {
+      console.warn("[PORT] Amort iframe click hook failed", e);
+    }
+  });
+}
+
+  
+</script>
+
+</body>
+</html>
