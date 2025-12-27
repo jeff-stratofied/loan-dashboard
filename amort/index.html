@@ -685,18 +685,6 @@ const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("loanId")) || null;
 
-// =====================================================
-// EMBED MODE — AUTO OPEN FIRST LOAN (AMORT)
-// =====================================================
-if (isEmbed && currentLoans.length) {
-  const loan = currentLoans[0];
-
-  // force drawer visible
-  drawer.style.display = "flex";
-
-  openDrawerForLoan(loan);
-}
-
 
     
 console.log('URL params:', params.toString());
@@ -2964,7 +2952,7 @@ function renderPaymentsDrawer() {
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
 
-  // =====================================================
+// =====================================================
 // URL-DRIVEN AUTO OPEN (FULL PAGE + EMBED)
 // =====================================================
 if (openParam === "first" && currentLoans.length) {
@@ -2992,13 +2980,23 @@ if (openParam === "loan" && loanIdParam) {
   }
 }
 
+// =====================================================
+// EMBED MODE — AUTO OPEN FIRST LOAN (AMORT FALLBACK)
+// =====================================================
+if (isEmbed && currentLoans.length && !drawer.classList.contains("open")) {
+  const loan = currentLoans[0];
+
+  drawer.style.display = "flex";
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+
+  requestAnimationFrame(() => openDrawerForLoan(loan));
+}
 
 console.log("[AMORT] init complete");
 console.log("[AMORT] openParam =", openParam);
 console.log("[AMORT] loanIdParam =", loanIdParam);
 console.log("[AMORT] loans loaded =", currentLoans.length);
-
-
 
 } // <--- End of init()
 // =====================================================
