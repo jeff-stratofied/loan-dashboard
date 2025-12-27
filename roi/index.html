@@ -863,6 +863,7 @@ html[data-theme="dark"] .drawer-chart{
       return d;
     }
 
+/*delete
     function formatDate(date) {
       return date.toLocaleDateString("en-US", {
         year: "numeric",
@@ -870,6 +871,7 @@ html[data-theme="dark"] .drawer-chart{
         day: "numeric"
       });
     }
+delete */
 
     function formatMonthYear(date) {
       return date.toLocaleDateString("en-US", {
@@ -878,10 +880,12 @@ html[data-theme="dark"] .drawer-chart{
       });
     }
 
+/*delete
     function monthDiff(d1, d2) {
       return (d2.getFullYear() - d1.getFullYear()) * 12 +
              (d2.getMonth() - d1.getMonth());
     }
+delete */
 
     // ----------------------------
     // Bind current user label
@@ -916,6 +920,7 @@ html[data-theme="dark"] .drawer-chart{
     /* -------------------------
        Amortization logic
        ------------------------- */
+ /*  delete
     function calcAmort(principal, annualRate, termYears, graceYears){
       const monthlyRate = annualRate/12;
       const totalMonths = Math.round(termYears*12);
@@ -927,7 +932,8 @@ html[data-theme="dark"] .drawer-chart{
       for(let m=1;m<=repayMonths;m++){ const interest = +(balance*monthlyRate).toFixed(2); const principalPaid = +Math.min(balance, +(payment - interest).toFixed(2)); balance = +(Math.max(0, balance - principalPaid).toFixed(2)); schedule.push({ monthIndex: graceMonths + m, payment:+payment.toFixed(2), principalPaid, interest, balance }); }
       return { payment, schedule };
     }
-
+delete */
+  
     async function initROI() {
       const TODAY = new Date();
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
@@ -1082,10 +1088,12 @@ const formattedLoans = userLoans.map(l => ({
       return ownedEntries[ownedEntries.length - 1];
     }
 
+/* delete
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
+  delete */
 
 function computeKPIs(list) {
   const total = list.reduce((s, l) => s + l.purchasePrice, 0);
@@ -1303,7 +1311,8 @@ function computeKPIs(list) {
 
       containerEl.appendChild(svg); return svg;
     }
-      
+
+      /* delete
     function smoothPathFromPoints(points) {
       if (points.length < 3) {
       return points.map((p,i) => 
@@ -1326,7 +1335,8 @@ function computeKPIs(list) {
     }
     return d;
   }
-
+delete */
+      
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
    ============================================================ */
@@ -1503,7 +1513,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   containerEl.appendChild(svg);
 }
 
-
+/* delete
       function smoothMonotonic(points) {
   if (points.length < 2) return "";
 
@@ -1516,7 +1526,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   }
   return d;
 }
-
+delete */
 
 // ============================================================
 // ROI SPREAD CHART (loan lines ONLY — no weighted line)
@@ -1710,7 +1720,7 @@ const pts = anchored.map(p => [
  
    
 
-
+/* delete
 function createBarChart(containerEl, keys, values, opts = {}) {
   containerEl.innerHTML = '';
 
@@ -1838,9 +1848,16 @@ function createBarChart(containerEl, keys, values, opts = {}) {
   containerEl.appendChild(svg);
   return svg;
 }
-
+delete */
+      
+/* delete
 function createHistogram(containerEl, values, bins=6, opts={}) {
-      containerEl.innerHTML=''; const minV=Math.min(...values); const maxV=Math.max(...values); const range=Math.max(1e-6,maxV-minV); const binSize=range/bins; const counts=new Array(bins).fill(0); values.forEach(v=>{ let idx=Math.floor((v-minV)/binSize); if(idx===bins) idx=bins-1; counts[idx]++; }); const labels=counts.map((_,i)=>{ const a=minV+i*binSize; const b=a+binSize; return `${(a*100).toFixed(1)}–${(b*100).toFixed(1)}%`; }); return createBarChart(containerEl, labels, counts, opts); }
+      containerEl.innerHTML=''; const minV=Math.min(...values); const maxV=Math.max(...values); 
+  const range=Math.max(1e-6,maxV-minV); const binSize=range/bins; 
+  const counts=new Array(bins).fill(0); values.forEach(v=>{ let idx=Math.floor((v-minV)/binSize); if(idx===bins) idx=bins-1; counts[idx]++; }); 
+  const labels=counts.map((_,i)=>{ const a=minV+i*binSize; const b=a+binSize; return `${(a*100).toFixed(1)}–${(b*100).toFixed(1)}%`; }); 
+  return createBarChart(containerEl, labels, counts, opts); }
+delete */
 
     /* -------------------------
        UI: Render KPI tiles
