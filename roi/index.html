@@ -1503,6 +1503,33 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
     axis.appendChild(t);
   });
 
+const tooltip = document.getElementById("tooltip");
+const vLine = document.createElementNS(svgNS, "line");
+vLine.setAttribute("stroke", "#111827");
+vLine.setAttribute("stroke-dasharray", "3 4");
+vLine.setAttribute("stroke-opacity", "0.6");
+svg.appendChild(vLine);
+
+svg.addEventListener("mousemove", ev => {
+  const r = svg.getBoundingClientRect();
+  const x = ev.clientX - r.left;
+  vLine.setAttribute("x1", x);
+  vLine.setAttribute("x2", x);
+  vLine.setAttribute("y1", 0);
+  vLine.setAttribute("y2", h);
+
+  tooltip.style.display = "block";
+  tooltip.style.left = ev.clientX + "px";
+  tooltip.style.top = (ev.clientY - 12) + "px";
+  tooltip.innerHTML = "ROI chart";
+});
+
+svg.addEventListener("mouseleave", () => {
+  tooltip.style.display = "none";
+  vLine.setAttribute("x1", -9999);
+});
+
+  
   svg.appendChild(axis);
   containerEl.appendChild(svg);
 }
@@ -1654,7 +1681,7 @@ const pts = anchored.map(p => [
     hit.setAttribute("stroke", "transparent");
     hit.setAttribute("stroke-width", "12");
     hit.setAttribute("stroke-linecap", "round");
-    hit.setAttribute("pointer-events", "stroke");
+    hit.style.pointerEvents = "stroke";
     hit.dataset.loanId = String(ls.id);
     hit.addEventListener("mouseenter", () => setActiveLoan(ls.id));
     hit.addEventListener("mousemove", (ev) => {
