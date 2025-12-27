@@ -1654,7 +1654,7 @@ const pts = anchored.map(p => [
     hit.setAttribute("stroke", "transparent");
     hit.setAttribute("stroke-width", "12");
     hit.setAttribute("stroke-linecap", "round");
-    hit.style.pointerEvents = "stroke";
+    hit.setAttribute("pointer-events", "stroke");
     hit.dataset.loanId = String(ls.id);
     hit.addEventListener("mouseenter", () => setActiveLoan(ls.id));
     hit.addEventListener("mousemove", (ev) => {
