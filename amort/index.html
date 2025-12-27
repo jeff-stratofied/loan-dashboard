@@ -525,6 +525,9 @@ html[data-theme="dark"] .close-btn {
   border-top: 1px solid var(--border) !important;
 }
 
+    .embed-mode .app {
+  display: none !important;
+}
 
     
   </style>
@@ -1778,23 +1781,6 @@ drawerBody.scrollTop = 0;
 
 }
 
-  // =====================================================
-// EMBED MODE — CLICK → FULL AMORT PAGE
-// =====================================================
-if (isEmbed) {
-  document.addEventListener("click", () => {
-    if (!currentLoan) return;
-
-    const base = location.pathname.replace(/\/amort\/.*$/, "/amort/index.html");
-
-    const url =
-      `${base}?user=${PAGE_USER}` +
-      `&loanId=${currentLoan.loanId || currentLoan.id}`;
-
-    window.location.href = url;
-  });
-}
-
 
     /* ============================
        KPI drawers: Distribution, TPV, Rates, Payments
@@ -2955,7 +2941,7 @@ function renderPaymentsDrawer() {
 // =====================================================
 // URL-DRIVEN AUTO OPEN (FULL PAGE + EMBED)
 // =====================================================
-if (openParam === "first" && currentLoans.length) {
+if (isEmbed && currentLoans.length && !drawer.classList.contains("open") && !openParam) {
   const sorted = currentLoans
     .slice()
     .sort(
