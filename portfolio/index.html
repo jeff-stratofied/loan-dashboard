@@ -220,55 +220,57 @@
   userSelect.value = user;
 
   function buildFrames(u) {
-document.getElementById("roiFrame").src =
-  `/loan-dashboard/roi/index.html?user=${u}&embed=true&open=kpi2`;
+    // ROI and Earnings: show focused KPI view in embed mode
+    document.getElementById("roiFrame").src =
+      `/loan-dashboard/roi/index.html?user=${u}&embed=true&open=kpi2`;
 
+    document.getElementById("earningsFrame").src =
+      `/loan-dashboard/earnings/index.html?user=${u}&embed=true&open=kpi2`;
 
-  document.getElementById("earningsFrame").src =
-    `/loan-dashboard/earnings/index.html?user=${u}&embed=true&open=kpi2`;
-
-  document.getElementById("amortFrame").src =
-  `/loan-dashboard/amort/index.html?user=${u}&embed=true&open=first`;
-
-
-}
+    // Amort: show single loan drawer (first purchased) in embed mode
+    document.getElementById("amortFrame").src =
+      `/loan-dashboard/amort/index.html?user=${u}&embed=true&open=first`;
+  }
 
   buildFrames(user);
 
-  wireAmortRedirect();
-
-
   // ===============================
-// DEBUG: Earnings iframe behavior
-// ===============================
-const earningsFrame = document.getElementById("earningsFrame");
+  // Click-to-full-page for ALL frames
+  // ===============================
+  function wireFrameRedirect(frameId, fullPathBase) {
+    const frame = document.getElementById(frameId);
+    if (!frame) return;
 
-// Log initial src AFTER it is set
-console.log(
-  "[PORT] Earnings iframe src (after buildFrames):",
-  earningsFrame.src
-);
+    frame.addEventListener("load", () => {
+      try {
+        const contentDoc = frame.contentWindow.document;
 
-// Detect every iframe load (critical)
-earningsFrame.addEventListener("load", () => {
-  console.log(
-    "[PORT] Earnings iframe LOADED:",
-    earningsFrame.contentWindow?.location?.href
-  );
-});
+        // Only redirect on clicks that are NOT on interactive elements
+        // (buttons, selects, inputs, links, etc.)
+        contentDoc.addEventListener("click", (e) => {
+          const interactive = e.target.closest("button, select, a, input, textarea, label");
+          if (interactive) return; // allow normal interaction inside iframe
 
-// Check iframe size after render
-setTimeout(() => {
-  const rect = earningsFrame.getBoundingClientRect();
-  console.log("[PORT] Earnings iframe rect:", rect);
-}, 500);
+          const u = new URLSearchParams(location.search).get("user") || "jeff";
+          window.location.href = `${fullPathBase}?user=${u}`;
+        });
+      } catch (err) {
+        console.warn(`[${frameId}] Redirect hook failed (cross-origin?)`, err);
+      }
+    });
+  }
 
+  // Apply to all three frames
+  wireFrameRedirect("roiFrame", "/loan-dashboard/roi/index.html");
+  wireFrameRedirect("earningsFrame", "/loan-dashboard/earnings/index.html");
+  wireFrameRedirect("amortFrame", "/loan-dashboard/amort/index.html?open=first");
 
+  // User switch
   userSelect.addEventListener("change", () => {
     location.href = `index-portDash.html?user=${userSelect.value}`;
   });
 
-  // Theme
+  // Theme toggle
   const themeToggle = document.getElementById("themeToggle");
   function applyTheme(t) {
     document.documentElement.setAttribute("data-theme", t);
@@ -276,43 +278,13 @@ setTimeout(() => {
     themeToggle.textContent = t === "dark" ? "☀️" : "🌙";
   }
 
-  applyTheme(localStorage.getItem("theme") || "light");
+  const storedTheme = localStorage.getItem("theme");
+  applyTheme(storedTheme || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 
   themeToggle.onclick = () => {
-    const t = document.documentElement.getAttribute("data-theme");
-    applyTheme(t === "dark" ? "light" : "dark");
+    const current = document.documentElement.getAttribute("data-theme");
+    applyTheme(current === "dark" ? "light" : "dark");
   };
-
-function wireAmortRedirect() {
-  const amortFrame = document.getElementById("amortFrame");
-
-  // Safety guard
-  if (!amortFrame) return;
-
-  amortFrame.addEventListener("load", () => {
-    try {
-      const doc = amortFrame.contentWindow.document;
-
-      // Capture any click inside the iframe
-      doc.addEventListener(
-        "click",
-        () => {
-          const u =
-            new URLSearchParams(location.search).get("user") || "jeff";
-
-          // Redirect PARENT to full amort page
-          window.location.href =
-            `/loan-dashboard/amort/index.html?user=${u}&open=first`;
-        },
-        { once: true } // prevent double redirects
-      );
-    } catch (e) {
-      console.warn("[PORT] Amort iframe click hook failed", e);
-    }
-  });
-}
-
-  
 </script>
 
 </body>
