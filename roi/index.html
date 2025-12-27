@@ -1086,12 +1086,10 @@ const formattedLoans = userLoans.map(l => ({
       return ownedEntries[ownedEntries.length - 1];
     }
 
-/* delete
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
-  delete */
 
 function computeKPIs(list) {
   const total = list.reduce((s, l) => s + l.purchasePrice, 0);
