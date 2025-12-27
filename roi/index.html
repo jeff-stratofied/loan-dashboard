@@ -1608,27 +1608,31 @@ svg.addEventListener("mousemove", ev => {
   tooltip.style.display = "block";
 
   // -------------------------
-  // Smart positioning
+  // Smart positioning (cursor-aware)
   // -------------------------
   const ttRect = tooltip.getBoundingClientRect();
   const margin = 12;
 
+  // Horizontal: prefer right, flip left if needed
   let left = rect.left + x + margin;
-  let top = rect.top + pad + 24;
-
-  // flip left if overflowing right edge
   if (left + ttRect.width > window.innerWidth - margin) {
     left = rect.left + x - ttRect.width - margin;
   }
 
-  // clamp vertically
+  // Vertical: follow cursor, prefer below
+  let top = ev.clientY + margin;
+
+  // If overflowing bottom, flip above cursor
   if (top + ttRect.height > window.innerHeight - margin) {
-    top = window.innerHeight - ttRect.height - margin;
+    top = ev.clientY - ttRect.height - margin;
   }
+
+  // Final clamp (safety)
+  top = Math.max(margin, Math.min(top, window.innerHeight - ttRect.height - margin));
 
   tooltip.style.left = `${left}px`;
   tooltip.style.top = `${top}px`;
-});
+
 
 svg.addEventListener("mouseleave", () => {
   tooltip.style.display = "none";
