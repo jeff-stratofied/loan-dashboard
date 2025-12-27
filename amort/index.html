@@ -714,6 +714,7 @@ if (isEmbed) {
     /* ============================
        Loan data (dates spread across ~6 months)
        ============================ */
+/* delete    
     const loans = [
       { id:1, purchaseDate:'2025-01-15', purchasePrice:10000, termYears:10, graceYears:4.5, nominalRate:0.08 },
       { id:2, purchaseDate:'2025-02-01', purchasePrice:7500, termYears:8, graceYears:2, nominalRate:0.075 },
@@ -726,10 +727,11 @@ if (isEmbed) {
       { id:9, purchaseDate:'2025-06-10', purchasePrice:10000, termYears:7, graceYears:0.25, nominalRate:0.10 },
       { id:10,purchaseDate:'2025-06-30', purchasePrice:8000, termYears:3, graceYears:0, nominalRate:0.06 }
     ];
-
+delete */
     /* ============================
        Amortization (grace interest capitalized)
        ============================ */
+/* delete
     function calcAmort(principal, annualRate, termYears, graceYears) {
       const monthlyRate = annualRate / 12;
       const totalMonths = Math.round(termYears * 12);
@@ -761,10 +763,14 @@ if (isEmbed) {
 
       return { payment, schedule };
     }
+delete */
 
+    
     /* ============================
        Build loans with amort + cumulative metrics + mini points
        ============================ */
+
+/* delete
 function buildStaticLoans() {
   return loans.map(l => {
     const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
@@ -803,7 +809,8 @@ function buildStaticLoans() {
     };
   });
 }
-
+delete */
+    
 async function init() {
 if (USE_DYNAMIC_DATA) {
  const apiResult = await loadLoans();
@@ -962,9 +969,12 @@ console.log("[AMORT] currentLoans finalized:", currentLoans.length);
     
     }
 
+/* delete
    else {
     allLoans = buildStaticLoans();
   }
+delete */
+  
      /* ============================
        Render KPI tiles
        ============================ */
@@ -1497,6 +1507,7 @@ resetBtn.addEventListener("click", () => {
       })}`;
     }
 
+ /* delete
   function highlightLoanInDistributionChart(loanId) {
   document
     .querySelectorAll('#drawerChartArea [data-loan-id]')
@@ -1507,7 +1518,8 @@ resetBtn.addEventListener("click", () => {
         el.dataset.loanId === loanId ? '3' : '1';
     });
 }
-  
+delete */
+
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
 
