@@ -1586,23 +1586,29 @@ svg.addEventListener("mousemove", ev => {
   }
 
   // per-loan series (SQUARE swatches)
-  loanSeriesList.forEach(ls => {
-    const pt = ls.data[idx];
-    if (!pt || pt.y == null) return;
+loanSeriesList.forEach(ls => {
+  // find last owned point at or before hovered date
+  const pt = ls.data
+    .filter(p => p.date && p.date <= date && p.y != null)
+    .slice(-1)[0];
 
-    html += `
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px">
-        <span style="
-          width:10px;
-          height:10px;
-          background:${ls.color || "#888"};
-          display:inline-block;
-          flex-shrink:0;
-        "></span>
-        <span>${(pt.y * 100).toFixed(2)}%</span>
-      </div>
-    `;
-  });
+  // 🚫 not owned yet → do not show
+  if (!pt) return;
+
+  html += `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px">
+      <span style="
+        width:10px;
+        height:10px;
+        background:${ls.color || "#888"};
+        display:inline-block;
+        flex-shrink:0;
+      "></span>
+      <span>${(pt.y * 100).toFixed(2)}%</span>
+    </div>
+  `;
+});
+
 
   tooltip.innerHTML = html;
   tooltip.style.display = "block";
