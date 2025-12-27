@@ -1640,12 +1640,10 @@ svg.addEventListener("mouseleave", () => {
   vLine.setAttribute("x2", -9999);
 });
 
-
-
   
   svg.appendChild(axis);
   containerEl.appendChild(svg);
-}
+});
 
       function smoothMonotonic(points) {
   if (points.length < 2) return "";
