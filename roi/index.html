@@ -912,23 +912,6 @@ html[data-theme="dark"] .drawer-chart{
         monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
       }));
     }
-
-    /* -------------------------
-       Amortization logic
-       ------------------------- */
- /*  delete
-    function calcAmort(principal, annualRate, termYears, graceYears){
-      const monthlyRate = annualRate/12;
-      const totalMonths = Math.round(termYears*12);
-      const graceMonths = Math.round(graceYears*12);
-      const repayMonths = Math.max(1, totalMonths - graceMonths);
-      let balance = principal; const schedule=[];
-      for(let m=1;m<=graceMonths;m++){ const interest = +(balance*monthlyRate).toFixed(2); balance = +(balance + interest).toFixed(2); schedule.push({ monthIndex:m, payment:0, principalPaid:0, interest, balance }); }
-      const payment = monthlyRate===0 ? +(balance/repayMonths).toFixed(2) : +((balance*monthlyRate)/(1-Math.pow(1+monthlyRate,-repayMonths))).toFixed(2);
-      for(let m=1;m<=repayMonths;m++){ const interest = +(balance*monthlyRate).toFixed(2); const principalPaid = +Math.min(balance, +(payment - interest).toFixed(2)); balance = +(Math.max(0, balance - principalPaid).toFixed(2)); schedule.push({ monthIndex: graceMonths + m, payment:+payment.toFixed(2), principalPaid, interest, balance }); }
-      return { payment, schedule };
-    }
-delete */
   
     async function initROI() {
       const TODAY = new Date();
@@ -1151,40 +1134,6 @@ function computeKPIs(list) {
 }
 
     const kpis = computeKPIs(currentLoans);
-
-/* delete
-function attachKpiHover(svg, opts) {
-  const tooltip = document.getElementById("tooltip");
-  const vLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-
-  vLine.setAttribute("stroke", "#111827");
-  vLine.setAttribute("stroke-dasharray", "3 4");
-  vLine.setAttribute("stroke-opacity", "0.6");
-  svg.appendChild(vLine);
-
-  svg.addEventListener("mousemove", ev => {
-    const rect = svg.getBoundingClientRect();
-    const x = ev.clientX - rect.left;
-
-    vLine.setAttribute("x1", x);
-    vLine.setAttribute("x2", x);
-    vLine.setAttribute("y1", 0);
-    vLine.setAttribute("y2", rect.height);
-
-    if (opts?.labelFn) {
-      tooltip.style.display = "block";
-      tooltip.style.left = ev.clientX + "px";
-      tooltip.style.top = (ev.clientY - 12) + "px";
-      tooltip.innerHTML = opts.labelFn(x);
-    }
-  });
-
-  svg.addEventListener("mouseleave", () => {
-    tooltip.style.display = "none";
-    vLine.setAttribute("x1", -9999);
-  });
-}
-delete */
       
     /* -------------------------
        Small chart utilities (line & bar with hover)
@@ -1336,31 +1285,6 @@ delete */
 
       containerEl.appendChild(svg); return svg;
     }
-
-      /* delete
-    function smoothPathFromPoints(points) {
-      if (points.length < 3) {
-      return points.map((p,i) => 
-        (i===0 ? `M ${p[0]} ${p[1]}` : `L ${p[0]} ${p[1]}`)
-        ).join(' ');
-    }
-
-    let d = `M ${points[0][0]} ${points[0][1]}`;
-    for (let i = 1; i < points.length - 1; i++) {
-      const p0 = points[i - 1];
-     const p1 = points[i];
-      const p2 = points[i + 1];
-
-      const c1x = (p0[0] + p1[0]) / 2;
-      const c1y = (p0[1] + p1[1]) / 2;
-      const c2x = (p1[0] + p2[0]) / 2;
-      const c2y = (p1[1] + p2[1]) / 2;
-
-      d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
-    }
-    return d;
-  }
-delete */
       
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
@@ -1858,147 +1782,6 @@ const pts = anchored.map(p => [
 
   containerEl.appendChild(svg);
 }
- 
-   
-
-/* delete
-function createBarChart(containerEl, keys, values, opts = {}) {
-  containerEl.innerHTML = '';
-
-  const svgNS = "http://www.w3.org/2000/svg";
-  const rect = containerEl.getBoundingClientRect();
-  const w = Math.max(360, rect.width || 600);
-  const h = opts.h || 260;
-
-  const padL = opts.padL || 55;
-  const padR = opts.padR || 20;
-  const padT = opts.padT || 25;
-  const padB = opts.padB || 55;
-
-  const svg = document.createElementNS(svgNS, "svg");
-  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.setAttribute("width", "100%");
-  svg.setAttribute("height", "100%");
-  svg.style.display = "block";
-
-  const maxValue = Math.max(...values, 1);
-  const barW = (w - padL - padR) / Math.max(1, keys.length);
-
-  const yIsCount = !!opts.yIsCount;
-  const colors = opts.colors || null;
-
-  // --- GRID LINES + Y LABELS ---
-  for (let i = 0; i <= 5; i++) {
-    const y = padT + (h - padT - padB) * (i / 5);
-
-    const line = document.createElementNS(svgNS, "line");
-    line.setAttribute("x1", padL);
-    line.setAttribute("x2", w - padR);
-    line.setAttribute("y1", y);
-    line.setAttribute("y2", y);
-    line.setAttribute("stroke", "var(--border)");
-    line.setAttribute("stroke-opacity", "0.35");
-    svg.appendChild(line);
-
-    const value = maxValue * (1 - i / 5);
-    const lbl = document.createElementNS(svgNS, "text");
-    lbl.textContent = yIsCount ? String(Math.round(value)) : ("$" + Math.round(value).toLocaleString());
-    lbl.setAttribute("x", padL - 10);
-    lbl.setAttribute("y", y + 4);
-    lbl.setAttribute("font-size", "11");
-    lbl.setAttribute("fill", "var(--text)");
-    lbl.setAttribute("text-anchor", "end");
-    svg.appendChild(lbl);
-  }
-
-  // --- HOVER GROUP (created now, appended later so it stays on TOP) ---
-  const hoverG = document.createElementNS(svgNS, "g");
-  hoverG.setAttribute("class", "hover");
-
-  // --- DRAW BARS ---
-  keys.forEach((k, i) => {
-    const amount = values[i];
-
-    const x = padL + i * barW;
-    const barH = (amount / maxValue) * (h - padT - padB);
-    const y = h - padB - barH;
-
-    const bar = document.createElementNS(svgNS, "rect");
-    bar.setAttribute("x", x + 6);
-    bar.setAttribute("y", y);
-    bar.setAttribute("width", barW - 12);
-    bar.setAttribute("height", barH);
-    bar.setAttribute("rx", 4);
-    const fillColor = colors ? colors[i % colors.length] : (opts.color || "#0ea5e9");
-    bar.setAttribute("fill", fillColor);
-    bar.setAttribute("data-idx", i);
-    bar.classList.add(opts.barClass || "bar");
-    bar.style.cursor = "pointer";
-
-    // --- UNIFIED HOVER TOOLTIP ---
-    bar.addEventListener("mousemove", (ev) => {
-      const rectSvg = svg.getBoundingClientRect();
-      const cx = ev.clientX - rectSvg.left;
-      const cy = ev.clientY - rectSvg.top;
-
-      hoverG.innerHTML = "";
-
-      // black floating tooltip box above bar
-      const tipBg = document.createElementNS(svgNS, "rect");
-      tipBg.setAttribute("x", cx - 45);
-      tipBg.setAttribute("y", cy - 38);
-      tipBg.setAttribute("width", 90);
-      tipBg.setAttribute("height", 26);
-      tipBg.setAttribute("rx", 6);
-      tipBg.setAttribute("fill", "black");
-      tipBg.setAttribute("opacity", "0.85");
-
-      const tipTxt = document.createElementNS(svgNS, "text");
-      tipTxt.textContent = yIsCount ? (amount + " loans") : ("$" + amount.toLocaleString());
-      tipTxt.setAttribute("x", cx);
-      tipTxt.setAttribute("y", cy - 21);
-      tipTxt.setAttribute("font-size", "12");
-      tipTxt.setAttribute("font-weight", "600");
-      tipTxt.setAttribute("fill", "white");
-      tipTxt.setAttribute("text-anchor", "middle");
-
-      hoverG.appendChild(tipBg);
-      hoverG.appendChild(tipTxt);
-    });
-
-    bar.addEventListener("mouseleave", () => {
-      hoverG.innerHTML = "";
-    });
-
-    svg.appendChild(bar);
-
-    // X axis labels
-    const lbl = document.createElementNS(svgNS, "text");
-    lbl.textContent = k;
-    lbl.setAttribute("x", x + barW / 2);
-    lbl.setAttribute("y", h - padB + 22);
-    lbl.setAttribute("font-size", "11");
-    lbl.setAttribute("fill", "var(--text)");
-    lbl.setAttribute("text-anchor", "middle");
-    svg.appendChild(lbl);
-  });
-
-  // --- ADD HOVER GROUP LAST (IMPORTANT: fixes tooltip behind bars) ---
-  svg.appendChild(hoverG);
-
-  containerEl.appendChild(svg);
-  return svg;
-}
-delete */
-      
-/* delete
-function createHistogram(containerEl, values, bins=6, opts={}) {
-      containerEl.innerHTML=''; const minV=Math.min(...values); const maxV=Math.max(...values); 
-  const range=Math.max(1e-6,maxV-minV); const binSize=range/bins; 
-  const counts=new Array(bins).fill(0); values.forEach(v=>{ let idx=Math.floor((v-minV)/binSize); if(idx===bins) idx=bins-1; counts[idx]++; }); 
-  const labels=counts.map((_,i)=>{ const a=minV+i*binSize; const b=a+binSize; return `${(a*100).toFixed(1)}–${(b*100).toFixed(1)}%`; }); 
-  return createBarChart(containerEl, labels, counts, opts); }
-delete */
 
     /* -------------------------
        UI: Render KPI tiles
@@ -2658,13 +2441,6 @@ function smoothPath(points) {
     /* -------------------------
        KPI drawer renderers
        ------------------------- */
-
-/* delete
-    function getMonthlyTotals(list){ const totals={}; list.forEach(l=>{ 
-      const d=new Date(l.purchaseDate); 
-       const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; totals[key]=(totals[key]||0)+l.purchasePrice; }); 
-     return totals; }
-delete */
       
 /* ============================================================
    TPV Drawer — Weighted ROI To Date
