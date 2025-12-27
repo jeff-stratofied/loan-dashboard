@@ -3495,6 +3495,12 @@ window.addEventListener("DOMContentLoaded", () => {
 </body>
 </html>
 
+<script>
+
+const isEmbed = new URLSearchParams(window.location.search).get('embed') === 'true';
+
+</script>
+
 <!-- Added customTooltip function -->
 <!--
 <script>
@@ -3504,7 +3510,6 @@ const loanColors = [
   "#3b82f6", "#6366f1", "#a855f7", "#ec4899", "#14b8a6"
 ];
 
-const isEmbed = new URLSearchParams(window.location.search).get('embed') === 'true';
   
 function customTooltip(context) {
     let tooltipEl = document.getElementById('chartjs-tooltip');
