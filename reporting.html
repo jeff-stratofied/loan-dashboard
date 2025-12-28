@@ -36,39 +36,28 @@
             flex-direction: column;
         }
 
-        /* Top header bar */
+        /* Top header bar - exactly as in your screenshot */
         .top-header {
             height: 60px;
             background-color: #ffffff;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
+            justify-content: flex-start;
+            padding: 0 30px;
             box-shadow: var(--shadow);
-            position: relative;
-        }
-
-        .left-section {
-            display: flex;
-            align-items: center;
-        }
-
-        .hamburger {
-            font-size: 24px;
-            color: var(--text);
-            cursor: pointer;
-            margin-right: 20px;
         }
 
         .logo-large {
-            height: 38px;
+            height: 40px;
         }
 
+        /* Right side: user, connected, logout */
         .right-section {
+            margin-left: auto;
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 24px;
         }
 
         .user-info {
@@ -111,87 +100,10 @@
             color: var(--text);
         }
 
-        /* Sidebar drawer */
-        .sidebar-drawer {
-            position: fixed;
-            left: -280px;
-            top: 0;
-            width: 280px;
-            height: 100%;
-            background-color: var(--card);
-            border-right: 1px solid var(--border);
-            box-shadow: var(--shadow);
-            transition: left 0.3s ease;
-            z-index: 99;
-            display: flex;
-            flex-direction: column;
-            padding-top: 80px;
-        }
-
-        .sidebar-drawer.open {
-            left: 0;
-        }
-
-        .drawer-logo {
-            width: 48px;
-            height: auto;
-            margin: 0 auto 50px auto;
-            display: block;
-        }
-
-        .drawer-menu {
-            flex: 1;
-            padding: 0 16px;
-        }
-
-        .drawer-item {
-            display: flex;
-            align-items: center;
-            padding: 16px 20px;
-            font-size: 15px;
-            color: var(--text);
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        .drawer-item:hover {
-            background: var(--surface);
-        }
-
-        .drawer-item.active {
-            background: var(--surface);
-            color: var(--brand);
-            font-weight: 600;
-        }
-
-        .drawer-item i {
-            font-size: 22px;
-            margin-right: 16px;
-            width: 28px;
-            text-align: center;
-        }
-
-        /* Overlay */
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.3);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-            z-index: 98;
-        }
-
-        .overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
         /* Main content */
         .content {
             flex: 1;
-            padding: 30px 40px;
+            padding: 40px 60px;
             overflow-y: auto;
             background: var(--bg);
         }
@@ -199,17 +111,17 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
+            gap: 32px;
             max-width: 1600px;
             margin: 0 auto;
         }
 
         .tile {
             background: var(--card);
-            border-radius: 16px;
-            padding: 32px;
+            border-radius: 20px;
+            padding: 40px;
             box-shadow: var(--shadow);
-            min-height: 400px;
+            min-height: 420px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -219,26 +131,23 @@
 
         .placeholder {
             color: var(--muted);
-            font-size: 17px;
-            line-height: 1.6;
+            font-size: 18px;
+            line-height: 1.7;
         }
 
         .placeholder small {
             display: block;
-            font-size: 14px;
-            margin-top: 8px;
+            font-size: 15px;
+            margin-top: 10px;
             color: #94a3b8;
         }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- Top header -->
+        <!-- Top header - matches screenshot exactly -->
         <header class="top-header">
-            <div class="left-section">
-                <i class="dx-icon dx-icon-menu hamburger" id="hamburger"></i>
-                <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="logo-large">
-            </div>
+            <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="logo-large">
 
             <div class="right-section">
                 <div class="user-info">
@@ -249,21 +158,6 @@
                 <div class="logout"><i class="fas fa-sign-out-alt"></i></div>
             </div>
         </header>
-
-        <!-- Sidebar drawer -->
-        <nav class="sidebar-drawer" id="sidebar">
-            <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="drawer-logo">
-            <div class="drawer-menu">
-                <div class="drawer-item"><i class="dx-icon dx-icon-home"></i> Home</div>
-                <div class="drawer-item active"><i class="dx-icon dx-icon-dataarea"></i> Reporting</div>
-                <div class="drawer-item"><i class="dx-icon dx-icon-chart"></i> Marketplace</div>
-                <div class="drawer-item"><i class="dx-icon dx-icon-box"></i> Wallet</div>
-                <div class="drawer-item"><i class="dx-icon dx-icon-detailslayout"></i> History</div>
-            </div>
-        </nav>
-
-        <!-- Overlay -->
-        <div class="overlay" id="overlay"></div>
 
         <!-- Main content with 6 large tiles -->
         <main class="content">
@@ -311,24 +205,5 @@
             </div>
         </main>
     </div>
-
-    <script>
-        const hamburger = document.getElementById('hamburger');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-
-        function openDrawer() {
-            sidebar.classList.add('open');
-            overlay.classList.add('active');
-        }
-
-        function closeDrawer() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        }
-
-        hamburger.addEventListener('click', openDrawer);
-        overlay.addEventListener('click', closeDrawer);
-    </script>
 </body>
 </html>
