@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STRATOFIED Reporting Test</title>
+    <title>STRATOFIED Reporting</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/24.2.3/css/dx.icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
@@ -35,6 +34,7 @@
             flex-direction: column;
         }
 
+        /* Top header */
         .top-header {
             height: 60px;
             background-color: #ffffff;
@@ -54,10 +54,10 @@
         }
 
         .hamburger {
-            font-size: 28px;
-            color: red; /* Obvious red */
+            font-size: 24px;
+            color: var(--text);
             cursor: pointer;
-            margin-right: 20px;
+            margin-right: 28px;
         }
 
         .logo-large {
@@ -105,13 +105,18 @@
             cursor: pointer;
         }
 
+        .logout:hover {
+            color: var(--text);
+        }
+
+        /* Sidebar drawer */
         .sidebar-drawer {
             position: fixed;
             left: -300px;
             top: 0;
             width: 300px;
             height: 100%;
-            background-color: yellow; /* Bright test color */
+            background-color: var(--card);
             border-right: 1px solid var(--border);
             box-shadow: var(--shadow);
             transition: left 0.35s ease;
@@ -125,32 +130,53 @@
         }
 
         .drawer-header {
-            padding: 30px;
+            padding: 30px 24px 20px;
             text-align: center;
-            background: green; /* Test */
+            border-bottom: 1px solid var(--border);
         }
 
         .drawer-logo {
-            width: 60px;
+            width: 50px;
+            height: auto;
         }
 
         .drawer-menu {
-            padding: 20px;
-            background: blue; /* Test */
+            flex: 1;
+            padding: 20px 0;
         }
 
         .drawer-item {
-            padding: 20px;
-            font-size: 18px;
-            color: white;
-            background: purple;
-            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            padding: 16px 28px;
+            font-size: 16px;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 0.2s;
         }
 
+        .drawer-item:hover {
+            background: var(--surface);
+        }
+
+        .drawer-item.active {
+            background: var(--surface);
+            color: var(--brand);
+            font-weight: 600;
+        }
+
+        .drawer-item i {
+            font-size: 24px;
+            margin-right: 20px;
+            width: 32px;
+            text-align: center;
+        }
+
+        /* Overlay */
         .overlay {
             position: fixed;
             inset: 0;
-            background: rgba(255,0,0,0.5); /* Red test overlay */
+            background: rgba(0,0,0,0.4);
             opacity: 0;
             visibility: hidden;
             transition: opacity 0.35s;
@@ -162,6 +188,7 @@
             visibility: visible;
         }
 
+        /* Main content */
         .content {
             flex: 1;
             padding: 30px 50px;
@@ -172,7 +199,9 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 12px; /* smaller gap */
+            max-width: 1600px;
+            margin: 0 auto;
         }
 
         .tile {
@@ -184,27 +213,36 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
             border: 1px solid var(--border);
+            text-align: center;
         }
 
         .placeholder {
             color: var(--muted);
             font-size: 18px;
+            line-height: 1.7;
+        }
+
+        .placeholder small {
+            display: block;
+            font-size: 15px;
+            margin-top: 10px;
+            color: #94a3b8;
         }
     </style>
 </head>
 <body>
     <div class="app">
+        <!-- Top header -->
         <header class="top-header">
             <div class="left-section">
-                <i class="dx-icon dx-icon-menu hamburger" id="hamburger"></i>
+                <i class="fas fa-bars hamburger" id="hamburger"></i>
                 <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="logo-large">
             </div>
 
             <div class="right-section">
                 <div class="user-info">
-                    <div class="user-image"><i class="dx-icon dx-icon-user"></i></div>
+                    <div class="user-image"><i class="fas fa-user"></i></div>
                     <span>jefftest1</span>
                 </div>
                 <div class="connected">✓ Connected</div>
@@ -212,29 +250,66 @@
             </div>
         </header>
 
+        <!-- Sidebar drawer -->
         <nav class="sidebar-drawer" id="sidebar">
             <div class="drawer-header">
                 <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="drawer-logo">
             </div>
             <div class="drawer-menu">
-                <div class="drawer-item"><i class="dx-icon dx-icon-home"></i> Home</div>
-                <div class="drawer-item"><i class="dx-icon dx-icon-dataarea"></i> Reporting (Active)</div>
-                <div class="drawer-item"><i class="dx-icon dx-icon-chart"></i> Marketplace</div>
-                <div class="drawer-item"><i class="dx-icon dx-icon-box"></i> Wallet</div>
-                <div class="drawer-item"><i class="dx-icon dx-icon-detailslayout"></i> History</div>
+                <div class="drawer-item"><i class="fas fa-home"></i> Home</div>
+                <div class="drawer-item active"><i class="fas fa-chart-bar"></i> Reporting</div>
+                <div class="drawer-item"><i class="fas fa-shopping-cart"></i> Marketplace</div>
+                <div class="drawer-item"><i class="fas fa-wallet"></i> Wallet</div>
+                <div class="drawer-item"><i class="fas fa-history"></i> History</div>
             </div>
         </nav>
 
+        <!-- Overlay -->
         <div class="overlay" id="overlay"></div>
 
+        <!-- Main content with 6 large tiles -->
         <main class="content">
             <div class="grid">
-                <div class="tile"><div class="placeholder">Test Tile 1</div></div>
-                <div class="tile"><div class="placeholder">Test Tile 2</div></div>
-                <div class="tile"><div class="placeholder">Test Tile 3</div></div>
-                <div class="tile"><div class="placeholder">Test Tile 4</div></div>
-                <div class="tile"><div class="placeholder">Test Tile 5</div></div>
-                <div class="tile"><div class="placeholder">Test Tile 6</div></div>
+                <!-- Top row -->
+                <div class="tile">
+                    <div class="placeholder">
+                        Port Page Iframe 1<br>
+                        <small>(will be embedded here)</small>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="placeholder">
+                        Port Page Iframe 2<br>
+                        <small>(will be embedded here)</small>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="placeholder">
+                        Port Page Iframe 3<br>
+                        <small>(will be embedded here)</small>
+                    </div>
+                </div>
+
+                <!-- Bottom row -->
+                <div class="tile">
+                    <div class="placeholder">
+                        Sum of Initial Loan Amount by University<br>
+                        <small>(Bar Chart)</small>
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="placeholder">
+                        Loan Value by Status (Stacked Bar)<br>
+                        Remaining Loan Amount (Gauge)
+                    </div>
+                </div>
+                <div class="tile">
+                    <div class="placeholder">
+                        Map of Loan Distribution<br>
+                        Loan Value by Interest Rate Group<br>
+                        Outstanding Principal by Status
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -244,15 +319,18 @@
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
 
-        hamburger.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('active');
-        });
+        function openDrawer() {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+        }
 
-        overlay.addEventListener('click', () => {
+        function closeDrawer() {
             sidebar.classList.remove('open');
             overlay.classList.remove('active');
-        });
+        }
+
+        hamburger.addEventListener('click', openDrawer);
+        overlay.addEventListener('click', closeDrawer);
     </script>
 </body>
 </html>
