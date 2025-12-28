@@ -265,9 +265,14 @@ input:focus, select:focus {
 
   <div class="header-right">
     <!-- NAVIGATION BUTTON -->
-<button onclick="window.open('https://jeff-stratofied.github.io/loan-dashboard/portfolio/index.html', '_blank')">
+<button id="port-btn">
   📊 Portfolio Dashboard
 </button>
+<select id="admin-user-select" style="padding: 0.35rem 0.7rem; border-radius: 999px; border: 1px solid var(--button-border); background: var(--button-bg); color: var(--text); font-size: 0.8rem;">
+  <option value="jeff" selected>Jeff Customer</option>
+  <option value="nick">Nick Lender</option>
+  <option value="john">John Investor</option>
+</select>
 
 
 
@@ -753,6 +758,16 @@ async function saveToBackend() {
   applyTheme(savedTheme);
 
   loadFromBackend();
+
+  // Add Port Dashboard link logic
+  const portBtn = document.getElementById('port-btn');
+  const userSelect = document.getElementById('admin-user-select');
+
+  portBtn.onclick = () => {
+    const user = userSelect.value;
+    window.open(`reporting.html?user=${user}`, '_blank');
+  };
+
 </script>
 
 </body>
