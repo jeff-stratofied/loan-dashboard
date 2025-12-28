@@ -36,7 +36,7 @@
             flex-direction: column;
         }
 
-        /* Top header bar - matches screenshot exactly */
+        /* Top header bar */
         .top-header {
             height: 60px;
             background-color: #ffffff;
@@ -45,158 +45,209 @@
             align-items: center;
             padding: 0 20px;
             box-shadow: var(--shadow);
+            position: relative;
         }
 
-        .menu-icon {
+        .hamburger {
             font-size: 24px;
             color: var(--text);
             cursor: pointer;
-            margin-right: 20px;
+            z-index: 100;
         }
 
         .logo-large {
-            height: 36px; /* larger as requested */
-            margin-left: 10px;
+            height: 38px;
+            position: absolute;
+            left: 60px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
-        .title {
-            flex: 1;
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text);
-            margin-left: 20px;
-        }
-
-        /* Sidebar + Main content row */
-        .main-row {
-            flex: 1;
-            display: flex;
-        }
-
-        /* Narrow icon-only sidebar */
-        .sidebar {
-            width: 60px;
-            background-color: var(--surface);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 30px;
+        /* Sidebar drawer (hidden by default, slides in on hamburger click) */
+        .sidebar-drawer {
+            position: fixed;
+            left: -250px;
+            top: 0;
+            width: 250px;
+            height: 100%;
+            background-color: var(--card);
             border-right: 1px solid var(--border);
-        }
-
-        .menu-item {
-            width: 100%;
-            text-align: center;
-            padding: 18px 0;
-            cursor: pointer;
-        }
-
-        .menu-item i {
-            font-size: 24px;
-            color: var(--muted);
-        }
-
-        .menu-item:hover i,
-        .menu-item.active i {
-            color: var(--brand);
-        }
-
-        /* Make Reporting icon highlighted (current page) */
-        .menu-item:nth-child(2) i {
-            color: var(--brand);
-        }
-
-        /* Main content area */
-        .content {
-            flex: 1;
-            background: var(--bg);
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        /* Asset dropdown in screenshot */
-        .asset-dropdown {
+            box-shadow: var(--shadow);
+            transition: left 0.3s ease;
+            z-index: 99;
             display: flex;
             flex-direction: column;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            width: 200px;
-            box-shadow: var(--shadow);
+            padding-top: 80px;
         }
 
-        .asset-header {
-            padding: 12px 16px;
-            font-size: 14px;
-            color: var(--muted);
-            border-bottom: 1px solid var(--border);
+        .sidebar-drawer.open {
+            left: 0;
         }
 
-        .asset-item {
+        .drawer-logo {
+            width: 40px;
+            height: auto;
+            margin: 0 auto 40px auto;
+            display: block;
+        }
+
+        .drawer-menu {
+            flex: 1;
+        }
+
+        .drawer-item {
             display: flex;
             align-items: center;
-            padding: 12px 16px;
+            padding: 16px 24px;
             font-size: 15px;
+            color: var(--text);
+            cursor: pointer;
+            transition: background 0.2s;
         }
 
-        .asset-item:hover {
+        .drawer-item:hover {
             background: var(--surface);
         }
 
-        .asset-flag {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            margin-right: 12px;
+        .drawer-item.active {
+            background: var(--surface);
+            color: var(--brand);
+            font-weight: 500;
         }
 
-        .asset-symbol {
-            font-weight: 500;
+        .drawer-item i {
+            font-size: 20px;
+            margin-right: 16px;
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Overlay when drawer is open */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 98;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Main content */
+        .content {
+            flex: 1;
+            padding: 30px 40px;
+            overflow-y: auto;
+            background: var(--bg);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .tile {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            min-height: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            text-align: center;
+            font-size: 17px;
+            color: var(--muted);
+        }
+
+        .placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 12px;
         }
     </style>
 </head>
 <body>
     <div class="app">
-        <!-- Top header with logo on the right of menu icon -->
+        <!-- Top header -->
         <header class="top-header">
-            <i class="dx-icon dx-icon-menu menu-icon"></i>
+            <i class="dx-icon dx-icon-menu hamburger" id="hamburger"></i>
             <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="logo-large">
-            <div class="title">STRATOFIED</div>
         </header>
 
-        <!-- Sidebar + Content -->
-        <div class="main-row">
-            <!-- Icon sidebar -->
-            <nav class="sidebar">
-                <div class="menu-item"><i class="dx-icon dx-icon-home"></i></div>
-                <div class="menu-item active"><i class="dx-icon dx-icon-dataarea"></i></div>
-                <div class="menu-item"><i class="dx-icon dx-icon-chart"></i></div>
-                <div class="menu-item"><i class="dx-icon dx-icon-box"></i></div>
-                <div class="menu-item"><i class="dx-icon dx-icon-detailslayout"></i></div>
-            </nav>
+        <!-- Sidebar drawer -->
+        <nav class="sidebar-drawer" id="sidebar">
+            <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="drawer-logo">
+            <div class="drawer-menu">
+                <div class="drawer-item"><i class="dx-icon dx-icon-home"></i> Home</div>
+                <div class="drawer-item active"><i class="dx-icon dx-icon-dataarea"></i> Reporting</div>
+                <div class="drawer-item"><i class="dx-icon dx-icon-chart"></i> Marketplace</div>
+                <div class="drawer-item"><i class="dx-icon dx-icon-box"></i> Wallet</div>
+                <div class="drawer-item"><i class="dx-icon dx-icon-detailslayout"></i> History</div>
+            </div>
+        </nav>
 
-            <!-- Main content - replicating the screenshot -->
-            <div class="content">
-                <div style="max-width: 800px; margin: 0 auto; padding-top: 40px;">
-                    <!-- Asset selector dropdown from screenshot -->
-                    <div class="asset-dropdown">
-                        <div class="asset-header">Asset</div>
-                        <div class="asset-item">
-                            <img src="https://flagcdn.com/48x36/us.png" alt="USA" class="asset-flag">
-                            <span class="asset-symbol">USD</span>
-                        </div>
-                        <div class="asset-item">
-                            <img src="https://cryptologos.cc/logos/usd-coin-usdc-logo.png?v=026" width="24" height="24" style="border-radius:50%;" alt="USDC" class="asset-flag">
-                            <span class="asset-symbol">USDC</span>
-                        </div>
-                    </div>
+        <!-- Overlay -->
+        <div class="overlay" id="overlay"></div>
 
-                    <p style="text-align: center; margin-top: 100px; color: var(--muted); font-size: 18px;">
-                        (Reporting content will go here)
-                    </p>
+        <!-- Main content with 6 large tiles -->
+        <main class="content">
+            <div class="grid">
+                <!-- Top row -->
+                <div class="tile">
+                    <div class="placeholder">Port Page Iframe 1<br><small>(will be embedded here)</small></div>
+                </div>
+                <div class="tile">
+                    <div class="placeholder">Port Page Iframe 2<br><small>(will be embedded here)</small></div>
+                </div>
+                <div class="tile">
+                    <div class="placeholder">Port Page Iframe 3<br><small>(will be embedded here)</small></div>
+                </div>
+
+                <!-- Bottom row -->
+                <div class="tile">
+                    <div class="placeholder">Sum of Initial Loan Amount by University<br><small>(Bar Chart)</small></div>
+                </div>
+                <div class="tile">
+                    <div class="placeholder">Loan Value by Status (Stacked Bar)<br>Remaining Loan Amount (Gauge)</div>
+                </div>
+                <div class="tile">
+                    <div class="placeholder">Map of Loan Distribution<br>Loan Value by Interest Rate Group<br>Outstanding Principal by Status</div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
+
+    <script>
+        const hamburger = document.getElementById('hamburger');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+
+        function openDrawer() {
+            sidebar.classList.add('open');
+            overlay.classList.add('active');
+        }
+
+        function closeDrawer() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('active');
+        }
+
+        hamburger.addEventListener('click', openDrawer);
+        overlay.addEventListener('click', closeDrawer);
+    </script>
 </body>
 </html>
