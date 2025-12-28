@@ -154,14 +154,9 @@
     </div>
 
     <div class="controls">
-      <label>
-        User:
-        <select id="userSelect">
-          <option value="jeff">Jeff Customer</option>
-          <option value="nick">Nick Lender</option>
-          <option value="john">John Investor</option>
-        </select>
-      </label>
+      <div id="userLabel" style="font-weight:600;">
+  User: <span id="activeUserName"></span>
+</div>
 
       <button id="themeToggle">🌙</button>
     </div>
@@ -227,40 +222,34 @@ function setActiveUser(user) {
 }
 
 // =====================================================
-// CANONICAL USER STATE (PORTFOLIO = SOURCE OF TRUTH)
+// USER LABELS (match other front-end pages)
 // =====================================================
-function getActiveUser() {
-  return new URLSearchParams(location.search).get("user") || "jeff";
-}
-
-function setActiveUser(user) {
-  const url = new URL(location.href);
-  url.searchParams.set("user", user);
-  history.replaceState({}, "", url);
-}
+const USER_LABELS = {
+  jeff: "Jeff Customer",
+  nick: "Nick Lender",
+  john: "John Investor"
+};
 
 // =====================================================
-// USER → URL → FRAMES (single direction)
+// USER → URL → FRAMES (single direction, no UI control)
 // =====================================================
-const userSelect = document.getElementById("userSelect");
 const activeUser = getActiveUser();
-
-// initialize selector
-userSelect.value = activeUser;
 
 // apply user everywhere
 function applyUser(user) {
   setActiveUser(user);
   buildFrames(user);
+
+  // update static header label
+  const nameEl = document.getElementById("activeUserName");
+  if (nameEl) {
+    nameEl.textContent = USER_LABELS[user] || user;
+  }
 }
 
-// initial load
+// initial load (authoritative)
 applyUser(activeUser);
 
-// user changes
-userSelect.addEventListener("change", () => {
-  applyUser(userSelect.value);
-});
 
   
   function buildFrames(u) {
