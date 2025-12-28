@@ -29,14 +29,13 @@
             overflow: hidden;
         }
 
-        /* Main layout */
         .app {
             height: 100%;
             display: flex;
             flex-direction: column;
         }
 
-        /* Top header bar */
+        /* Top header */
         .top-header {
             height: 60px;
             background-color: #ffffff;
@@ -59,11 +58,11 @@
             font-size: 24px;
             color: var(--text);
             cursor: pointer;
-            margin-right: 24px;
+            margin-right: 28px;
         }
 
         .logo-large {
-            height: 40px;
+            height: 42px;
         }
 
         .right-section {
@@ -105,7 +104,6 @@
             color: var(--muted);
             font-size: 20px;
             cursor: pointer;
-            transition: color 0.2s;
         }
 
         .logout:hover {
@@ -115,45 +113,47 @@
         /* Sidebar drawer - slides in from left */
         .sidebar-drawer {
             position: fixed;
-            left: -280px;
+            left: -300px;
             top: 0;
-            width: 280px;
+            width: 300px;
             height: 100%;
             background-color: var(--card);
             border-right: 1px solid var(--border);
             box-shadow: var(--shadow);
-            transition: left 0.3s ease;
+            transition: left 0.35s ease;
             z-index: 99;
             display: flex;
             flex-direction: column;
-            padding-top: 80px;
         }
 
         .sidebar-drawer.open {
             left: 0;
         }
 
+        .drawer-header {
+            padding: 30px 24px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+
         .drawer-logo {
-            width: 48px;
+            width: 50px;
             height: auto;
-            margin: 0 auto 50px auto;
-            display: block;
         }
 
         .drawer-menu {
             flex: 1;
-            padding: 0 16px;
+            padding: 20px 0;
         }
 
         .drawer-item {
             display: flex;
             align-items: center;
-            padding: 18px 24px;
+            padding: 16px 28px;
             font-size: 16px;
             color: var(--text);
             cursor: pointer;
-            border-radius: 12px;
-            transition: background 0.2s, color 0.2s;
+            transition: background 0.2s;
         }
 
         .drawer-item:hover {
@@ -168,20 +168,19 @@
 
         .drawer-item i {
             font-size: 24px;
-            margin-right: 18px;
-            width: 30px;
+            margin-right: 20px;
+            width: 32px;
             text-align: center;
-            color: inherit;
         }
 
         /* Overlay */
         .overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.35);
+            background: rgba(0,0,0,0.4);
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
+            transition: opacity 0.35s;
             z-index: 98;
         }
 
@@ -193,7 +192,7 @@
         /* Main content */
         .content {
             flex: 1;
-            padding: 40px 60px;
+            padding: 30px 50px;
             overflow-y: auto;
             background: var(--bg);
         }
@@ -201,7 +200,7 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 32px;
+            gap: 18px; /* smaller gap between tiles */
             max-width: 1600px;
             margin: 0 auto;
         }
@@ -254,7 +253,9 @@
 
         <!-- Sidebar drawer -->
         <nav class="sidebar-drawer" id="sidebar">
-            <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="drawer-logo">
+            <div class="drawer-header">
+                <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="drawer-logo">
+            </div>
             <div class="drawer-menu">
                 <div class="drawer-item"><i class="dx-icon dx-icon-home"></i> Home</div>
                 <div class="drawer-item active"><i class="dx-icon dx-icon-dataarea"></i> Reporting</div>
@@ -270,7 +271,7 @@
         <!-- Main content with 6 large tiles -->
         <main class="content">
             <div class="grid">
-                <!-- Top row - Port Pages -->
+                <!-- Top row -->
                 <div class="tile">
                     <div class="placeholder">
                         Port Page Iframe 1<br>
@@ -290,7 +291,7 @@
                     </div>
                 </div>
 
-                <!-- Bottom row - Reports -->
+                <!-- Bottom row -->
                 <div class="tile">
                     <div class="placeholder">
                         Sum of Initial Loan Amount by University<br>
