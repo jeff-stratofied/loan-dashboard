@@ -191,6 +191,14 @@ th {
   white-space: nowrap;
 }
 
+th.sortable {
+  cursor: pointer;
+}
+
+th.sortable:hover {
+  color: var(--text);
+}
+
 tbody tr:hover {
   background: color-mix(in srgb, var(--card) 90%, var(--text) 10%);
 }
@@ -298,18 +306,18 @@ input:focus, select:focus {
 <table id="loan-table">
   <thead>
     <tr>
-      <th>ID</th>
-      <th>Loan Name</th>
-      <th>User</th>
-      <th>Show</th>
-      <th>School</th>
-      <th>Loan Start Date</th>
-      <th>Purchase Date</th>
-      <th class="col-money">Orig Loan Amt</th>
-      <th class="col-money">Purchase Price</th>
-      <th class="col-rate">Rate</th>
-      <th class="col-years">Term (yrs)</th>
-      <th class="col-years">Grace (yrs)</th>
+      <th data-field="loanId" class="sortable">ID</th>
+      <th data-field="loanName" class="sortable">Loan Name</th>
+      <th data-field="user" class="sortable">User</th>
+      <th data-field="visible" class="sortable">Show</th>
+      <th data-field="school" class="sortable">School</th>
+      <th data-field="loanStartDate" class="sortable">Loan Start Date</th>
+      <th data-field="purchaseDate" class="sortable">Purchase Date</th>
+      <th data-field="principal" class="sortable col-money">Orig Loan Amt</th>
+      <th data-field="purchasePrice" class="sortable col-money">Purchase Price</th>
+      <th data-field="rate" class="sortable col-rate">Rate</th>
+      <th data-field="termYears" class="sortable col-years">Term (yrs)</th>
+      <th data-field="graceYears" class="sortable col-years">Grace (yrs)</th>
       <th class="col-actions">Actions</th>
     </tr>
   </thead>
@@ -330,6 +338,9 @@ input:focus, select:focus {
 
   let currentLoans = [];
   let currentSha = null;
+
+let sortColumn = null;
+let sortDirection = 1; // 1 for ascending, -1 for descending
 
 function generateLoanId() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -497,8 +508,39 @@ function normalizeLoan(l, idx) {
   };
 }
 
+/* Sort loans */
+function sortLoans() {
+  if (!sortColumn) return;
+
+  currentLoans.sort((a, b) => {
+    let va = a[sortColumn];
+    let vb = b[sortColumn];
+
+    if (sortColumn === 'visible') {
+      va = a.visible ? 1 : 0;
+      vb = b.visible ? 1 : 0;
+    } else if (['loanStartDate', 'purchaseDate'].includes(sortColumn)) {
+      va = va ? new Date(va) : new Date(0);
+      vb = vb ? new Date(vb) : new Date(0);
+    } else if (typeof va === 'string') {
+      va = va.toLowerCase();
+      vb = vb.toLowerCase();
+    } else if (isNaN(va)) {
+      va = 0;
+    } else if (isNaN(vb)) {
+      vb = 0;
+    }
+
+    if (va < vb) return -sortDirection;
+    if (va > vb) return sortDirection;
+    return 0;
+  });
+}
+
 /* Render table */
 function renderTable() {
+  sortLoans(); // Sort before rendering
+
   const tbody = document.getElementById("loan-table-body");
   tbody.innerHTML = "";
 
@@ -756,6 +798,29 @@ async function saveToBackend() {
 
   const savedTheme = localStorage.getItem("admin-theme") || "dark";
   applyTheme(savedTheme);
+
+  // Sorting setup
+  document.querySelectorAll('#loan-table thead th.sortable').forEach(th => {
+    th.onclick = () => {
+      const field = th.dataset.field;
+      if (sortColumn === field) {
+        sortDirection = -sortDirection;
+      } else {
+        sortColumn = field;
+        sortDirection = 1;
+      }
+
+      // Clear arrows from all headers
+      document.querySelectorAll('#loan-table thead th').forEach(t => {
+        t.innerHTML = t.innerHTML.replace(/ [↑↓]$/, '');
+      });
+
+      // Add arrow to current header
+      th.innerHTML += ` ${sortDirection === 1 ? '↑' : '↓'}`;
+
+      renderTable();
+    };
+  });
 
   loadFromBackend();
 
