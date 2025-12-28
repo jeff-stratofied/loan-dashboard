@@ -213,12 +213,56 @@
      SCRIPT
      =============================== -->
 <script>
-  const params = new URLSearchParams(location.search);
-  const user = params.get("user") || "jeff";
+// =====================================================
+// CANONICAL USER STATE (PORTFOLIO = SOURCE OF TRUTH)
+// =====================================================
+function getActiveUser() {
+  return new URLSearchParams(location.search).get("user") || "jeff";
+}
 
-  const userSelect = document.getElementById("userSelect");
-  userSelect.value = user;
+function setActiveUser(user) {
+  const url = new URL(location.href);
+  url.searchParams.set("user", user);
+  history.replaceState({}, "", url);
+}
 
+// =====================================================
+// CANONICAL USER STATE (PORTFOLIO = SOURCE OF TRUTH)
+// =====================================================
+function getActiveUser() {
+  return new URLSearchParams(location.search).get("user") || "jeff";
+}
+
+function setActiveUser(user) {
+  const url = new URL(location.href);
+  url.searchParams.set("user", user);
+  history.replaceState({}, "", url);
+}
+
+// =====================================================
+// USER → URL → FRAMES (single direction)
+// =====================================================
+const userSelect = document.getElementById("userSelect");
+const activeUser = getActiveUser();
+
+// initialize selector
+userSelect.value = activeUser;
+
+// apply user everywhere
+function applyUser(user) {
+  setActiveUser(user);
+  buildFrames(user);
+}
+
+// initial load
+applyUser(activeUser);
+
+// user changes
+userSelect.addEventListener("change", () => {
+  applyUser(userSelect.value);
+});
+
+  
   function buildFrames(u) {
 document.getElementById("roiFrame").src =
   `/loan-dashboard/roi/index.html?user=${u}&embed=true&open=kpi2`;
@@ -232,8 +276,6 @@ document.getElementById("roiFrame").src =
 
 
 }
-
-  buildFrames(user);
 
   wireAmortRedirect();
 
@@ -262,11 +304,6 @@ setTimeout(() => {
   const rect = earningsFrame.getBoundingClientRect();
   console.log("[PORT] Earnings iframe rect:", rect);
 }, 500);
-
-
-  userSelect.addEventListener("change", () => {
-    location.href = `index-portDash.html?user=${userSelect.value}`;
-  });
 
   // Theme
   const themeToggle = document.getElementById("themeToggle");
