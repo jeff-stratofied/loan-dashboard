@@ -43,32 +43,80 @@
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
+            justify-content: space-between;
             padding: 0 20px;
             box-shadow: var(--shadow);
             position: relative;
+        }
+
+        .left-section {
+            display: flex;
+            align-items: center;
         }
 
         .hamburger {
             font-size: 24px;
             color: var(--text);
             cursor: pointer;
-            z-index: 100;
+            margin-right: 20px;
         }
 
         .logo-large {
             height: 38px;
-            position: absolute;
-            left: 60px;
-            top: 50%;
-            transform: translateY(-50%);
         }
 
-        /* Sidebar drawer (hidden by default, slides in on hamburger click) */
+        .right-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .user-image {
+            width: 36px;
+            height: 36px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-image i {
+            font-size: 20px;
+            color: #64748b;
+        }
+
+        .connected {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .logout {
+            color: var(--muted);
+            font-size: 20px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .logout:hover {
+            color: var(--text);
+        }
+
+        /* Sidebar drawer */
         .sidebar-drawer {
             position: fixed;
-            left: -250px;
+            left: -280px;
             top: 0;
-            width: 250px;
+            width: 280px;
             height: 100%;
             background-color: var(--card);
             border-right: 1px solid var(--border);
@@ -85,23 +133,25 @@
         }
 
         .drawer-logo {
-            width: 40px;
+            width: 48px;
             height: auto;
-            margin: 0 auto 40px auto;
+            margin: 0 auto 50px auto;
             display: block;
         }
 
         .drawer-menu {
             flex: 1;
+            padding: 0 16px;
         }
 
         .drawer-item {
             display: flex;
             align-items: center;
-            padding: 16px 24px;
+            padding: 16px 20px;
             font-size: 15px;
             color: var(--text);
             cursor: pointer;
+            border-radius: 8px;
             transition: background 0.2s;
         }
 
@@ -112,17 +162,17 @@
         .drawer-item.active {
             background: var(--surface);
             color: var(--brand);
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .drawer-item i {
-            font-size: 20px;
+            font-size: 22px;
             margin-right: 16px;
-            width: 24px;
+            width: 28px;
             text-align: center;
         }
 
-        /* Overlay when drawer is open */
+        /* Overlay */
         .overlay {
             position: fixed;
             inset: 0;
@@ -149,34 +199,35 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            max-width: 1400px;
+            gap: 24px;
+            max-width: 1600px;
             margin: 0 auto;
         }
 
         .tile {
             background: var(--card);
-            border-radius: 12px;
-            padding: 24px;
+            border-radius: 16px;
+            padding: 32px;
             box-shadow: var(--shadow);
-            min-height: 380px;
+            min-height: 400px;
             display: flex;
             align-items: center;
             justify-content: center;
             border: 1px solid var(--border);
             text-align: center;
-            font-size: 17px;
-            color: var(--muted);
         }
 
         .placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 12px;
+            color: var(--muted);
+            font-size: 17px;
+            line-height: 1.6;
+        }
+
+        .placeholder small {
+            display: block;
+            font-size: 14px;
+            margin-top: 8px;
+            color: #94a3b8;
         }
     </style>
 </head>
@@ -184,8 +235,19 @@
     <div class="app">
         <!-- Top header -->
         <header class="top-header">
-            <i class="dx-icon dx-icon-menu hamburger" id="hamburger"></i>
-            <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="logo-large">
+            <div class="left-section">
+                <i class="dx-icon dx-icon-menu hamburger" id="hamburger"></i>
+                <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="logo-large">
+            </div>
+
+            <div class="right-section">
+                <div class="user-info">
+                    <div class="user-image"><i class="dx-icon dx-icon-user"></i></div>
+                    <span>jefftest1</span>
+                </div>
+                <div class="connected">✓ Connected</div>
+                <div class="logout"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
         </header>
 
         <!-- Sidebar drawer -->
@@ -206,26 +268,45 @@
         <!-- Main content with 6 large tiles -->
         <main class="content">
             <div class="grid">
-                <!-- Top row -->
+                <!-- Top row - Port Pages -->
                 <div class="tile">
-                    <div class="placeholder">Port Page Iframe 1<br><small>(will be embedded here)</small></div>
+                    <div class="placeholder">
+                        Port Page Iframe 1<br>
+                        <small>(will be embedded here)</small>
+                    </div>
                 </div>
                 <div class="tile">
-                    <div class="placeholder">Port Page Iframe 2<br><small>(will be embedded here)</small></div>
+                    <div class="placeholder">
+                        Port Page Iframe 2<br>
+                        <small>(will be embedded here)</small>
+                    </div>
                 </div>
                 <div class="tile">
-                    <div class="placeholder">Port Page Iframe 3<br><small>(will be embedded here)</small></div>
+                    <div class="placeholder">
+                        Port Page Iframe 3<br>
+                        <small>(will be embedded here)</small>
+                    </div>
                 </div>
 
-                <!-- Bottom row -->
+                <!-- Bottom row - Reports -->
                 <div class="tile">
-                    <div class="placeholder">Sum of Initial Loan Amount by University<br><small>(Bar Chart)</small></div>
+                    <div class="placeholder">
+                        Sum of Initial Loan Amount by University<br>
+                        <small>(Bar Chart)</small>
+                    </div>
                 </div>
                 <div class="tile">
-                    <div class="placeholder">Loan Value by Status (Stacked Bar)<br>Remaining Loan Amount (Gauge)</div>
+                    <div class="placeholder">
+                        Loan Value by Status (Stacked Bar)<br>
+                        Remaining Loan Amount (Gauge)
+                    </div>
                 </div>
                 <div class="tile">
-                    <div class="placeholder">Map of Loan Distribution<br>Loan Value by Interest Rate Group<br>Outstanding Principal by Status</div>
+                    <div class="placeholder">
+                        Map of Loan Distribution<br>
+                        Loan Value by Interest Rate Group<br>
+                        Outstanding Principal by Status
+                    </div>
                 </div>
             </div>
         </main>
