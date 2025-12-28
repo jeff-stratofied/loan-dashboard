@@ -33,7 +33,7 @@
             display: flex;
         }
 
-        /* Persistent sidebar - fixed, expands over content */
+        /* Sidebar (unchanged) */
         .sidebar {
             position: fixed;
             left: 0;
@@ -81,7 +81,7 @@
 
         .drawer-logo {
             display: none;
-            height: 26px; /* Larger logo */
+            height: 30px;
             transition: display 0.35s ease;
         }
 
@@ -134,16 +134,15 @@
             display: inline;
         }
 
-        /* Main container - fixed margin for narrow sidebar */
+        /* Main container */
         .main-container {
             flex: 1;
             display: flex;
             flex-direction: column;
             margin-left: 70px;
-            transition: none; /* No transition to avoid pushing */
         }
 
-        /* Header */
+        /* Header (unchanged) */
         .top-header {
             height: 60px;
             background-color: #ffffff;
@@ -216,29 +215,66 @@
         .grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2px; /* 2px apart */
+            gap: 2px;
             max-width: 1600px;
             margin: 0 auto;
         }
 
-        .tile {
+        /* Reusable iframe tile style (adapted from index-port.html) */
+        .iframe-tile {
             background: var(--card);
             border-radius: 20px;
-            padding: 40px;
             box-shadow: var(--shadow);
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
             border: 1px solid var(--border);
-            text-align: center;
+            overflow: hidden;
+        }
+
+        .iframe-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--card);
+        }
+
+        .iframe-title {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .iframe-sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .iframe-body {
+            flex: 1;
+            position: relative;
+        }
+
+        .iframe-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
         }
 
         .top-tile {
-            height: 800px; /* 800px height for top tiles */
+            height: 800px;
         }
 
         .bottom-tile {
             min-height: 420px;
+            background: var(--card);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
         }
 
         .placeholder {
@@ -257,7 +293,7 @@
 </head>
 <body>
     <div class="app">
-        <!-- Persistent sidebar -->
+        <!-- Sidebar (unchanged) -->
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-bars hamburger" id="hamburger"></i>
@@ -272,7 +308,7 @@
 
         <!-- Main container -->
         <div class="main-container">
-            <!-- Header -->
+            <!-- Header (unchanged) -->
             <header class="top-header">
                 <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="header-logo">
                 <div class="right-section">
@@ -288,27 +324,38 @@
             <!-- Content -->
             <main class="content">
                 <div class="grid">
-                    <!-- Top row - Port Pages -->
-                    <div class="tile top-tile">
-                        <div class="placeholder">
-                            Port Page Iframe 1<br>
-                            <small>(will be embedded here)</small>
+                    <!-- Top row – Portfolio iframes -->
+                    <div class="iframe-tile top-tile">
+                        <div class="iframe-header">
+                            <div class="iframe-title">Return on Investment</div>
+                            <div class="iframe-sub">Portfolio ROI and projections</div>
                         </div>
-                    </div>
-                    <div class="tile top-tile">
-                        <div class="placeholder">
-                            Port Page Iframe 2<br>
-                            <small>(will be embedded here)</small>
-                        </div>
-                    </div>
-                    <div class="tile top-tile">
-                        <div class="placeholder">
-                            Port Page Iframe 3<br>
-                            <small>(will be embedded here)</small>
+                        <div class="iframe-body">
+                            <iframe id="roiFrame" src=""></iframe>
                         </div>
                     </div>
 
-                    <!-- Bottom row - Reports -->
+                    <div class="iframe-tile top-tile">
+                        <div class="iframe-header">
+                            <div class="iframe-title">Earnings</div>
+                            <div class="iframe-sub">Cash flow and projected returns</div>
+                        </div>
+                        <div class="iframe-body">
+                            <iframe id="earningsFrame" src=""></iframe>
+                        </div>
+                    </div>
+
+                    <div class="iframe-tile top-tile">
+                        <div class="iframe-header">
+                            <div class="iframe-title">Loan Amortization</div>
+                            <div class="iframe-sub">Schedules and balances</div>
+                        </div>
+                        <div class="iframe-body">
+                            <iframe id="amortFrame" src=""></iframe>
+                        </div>
+                    </div>
+
+                    <!-- Bottom row – Reports (unchanged placeholders) -->
                     <div class="tile bottom-tile">
                         <div class="placeholder">
                             Sum of Initial Loan Amount by University<br>
@@ -334,12 +381,36 @@
     </div>
 
     <script>
+        // Hamburger menu toggle (unchanged)
         const hamburger = document.getElementById('hamburger');
         const sidebar = document.getElementById('sidebar');
-
         hamburger.addEventListener('click', () => {
             sidebar.classList.toggle('expanded');
         });
+
+        // Determine current user (default to jefftest1 if not present)
+        function getActiveUser() {
+            const params = new URLSearchParams(location.search);
+            return params.get("user") || "jefftest1";
+        }
+
+        // Build iframe sources based on user
+        function buildFrames(user) {
+            document.getElementById("roiFrame").src =
+                `/loan-dashboard/roi/index.html?user=${user}&embed=true&open=kpi2`;
+
+            document.getElementById("earningsFrame").src =
+                `/loan-dashboard/earnings/index.html?user=${user}&embed=true&open=kpi2`;
+
+            document.getElementById("amortFrame").src =
+                `/loan-dashboard/amort/index.html?user=${user}&embed=true&open=first`;
+        }
+
+        // Initial load
+        const activeUser = getActiveUser();
+        buildFrames(activeUser);
+
+        // Optional: if you later add a user switcher on this page, you can call buildFrames(newUser)
     </script>
 </body>
 </html>
