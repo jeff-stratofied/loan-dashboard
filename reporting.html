@@ -3,18 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STRATOFIED</title>
+    <title>STRATOFIED Dashboard</title>
+    <!-- Google Fonts for a clean sans-serif look (similar to Material) -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- DevExtreme icons (open CDN) -->
     <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/24.2.3/css/dx.icons.css">
+    <!-- Font Awesome for logout icon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
+        /* Light mode variables from ROI HTML */
+        :root {
+            --bg: #f8fafc;
+            --surface: #f1f5f9;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --brand: #0ea5e9;
+            --accent: #7c3aed;
+            --shadow: 0 12px 30px rgba(15,23,42,0.06);
+            --page-gradient: linear-gradient(180deg, var(--surface), var(--bg));
+            --chart-bg: linear-gradient(180deg, #ffffff, #fcfeff);
+            --grad-top: #f1f5f9;
+            --grad-bottom: #ffffff;
+            --tooltip-bg: #0f172a;
+            --tooltip-text: #f8fafc;
+            --table-header: var(--surface);
+            --table-border: rgba(148,163,184,0.35);
+        }
+
         body, html {
             margin: 0;
             padding: 0;
             height: 100%;
             font-family: 'Roboto', sans-serif;
-            background-color: #121212;
-            color: #e0e0e0;
+            background-color: var(--bg);
+            color: var(--text);
             overflow: hidden;
         }
         .dx-viewport {
@@ -22,14 +46,15 @@
             display: flex;
             flex-direction: row;
         }
+        /* Sidebar */
         .sidebar {
             width: 60px;
-            background-color: #1e1e1e;
+            background-color: var(--surface);
             display: flex;
             flex-direction: column;
             align-items: center;
             padding-top: 10px;
-            border-right: 1px solid #333;
+            border-right: 1px solid var(--border);
         }
         .logo {
             width: 48px;
@@ -45,26 +70,30 @@
         }
         .menu-item i {
             font-size: 24px;
-            color: #aaa;
+            color: var(--muted);
         }
         .menu-item:hover i {
-            color: #fff;
+            color: var(--text);
         }
         .menu-item span {
             display: none;
             position: absolute;
             left: 60px;
-            background: #333;
+            background: var(--card);
             padding: 5px 10px;
             border-radius: 4px;
             white-space: nowrap;
             top: 50%;
             transform: translateY(-50%);
             z-index: 10;
+            border: 1px solid var(--border);
+            color: var(--text);
         }
         .menu-item:hover span {
             display: block;
         }
+
+        /* Main content */
         .main {
             flex: 1;
             display: flex;
@@ -72,12 +101,12 @@
         }
         header {
             height: 60px;
-            background-color: #1e1e1e;
+            background-color: var(--surface);
             display: flex;
             align-items: center;
             justify-content: flex-end;
             padding: 0 20px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid var(--border);
         }
         .user-info {
             display: flex;
@@ -87,7 +116,7 @@
         .user-image {
             width: 36px;
             height: 36px;
-            background: #888 center/cover no-repeat;
+            background: #888 url('') center/cover no-repeat;
             border-radius: 50%;
             margin-right: 10px;
             display: flex;
@@ -104,52 +133,46 @@
             margin-right: 20px;
         }
         .logout {
-            color: #aaa;
+            color: var(--muted);
             font-size: 20px;
             cursor: pointer;
         }
         .logout:hover {
-            color: #fff;
+            color: var(--text);
         }
+
+        /* Content area */
         .content {
             flex: 1;
             padding: 20px;
             overflow-y: auto;
+            background: var(--bg);
         }
-        .card {
-            background: #1e1e1e;
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .tile {
+            background: var(--card);
             border-radius: 8px;
             padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: var(--shadow);
+            min-height: 300px; /* Large tiles */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            text-align: center;
+            font-size: 16px;
+            color: var(--muted);
         }
-        table {
+        .iframe-placeholder, .report-placeholder {
             width: 100%;
-            border-collapse: collapse;
-            color: #e0e0e0;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #333;
-        }
-        th {
-            background: #272727;
-            text-align: right;
-        }
-        th:first-child, td:first-child {
-            text-align: left;
-        }
-        .asset-icon {
-            width: 24px;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-        .allocation-pie {
-            width: 30px;
-            height: 30px;
-            transform: rotate(-90deg);
-            vertical-align: middle;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -177,57 +200,28 @@
             </header>
 
             <div class="content">
-                <!-- Available Balance Widget -->
-                <div class="card">
-                    <h2>Available Balance</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Asset</th>
-                                <th>Price</th>
-                                <th>Available Balance</th>
-                                <th>Total Balance</th>
-                                <th>USD Value</th>
-                                <th>Allocation</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><img src="https://via.placeholder.com/24?text=USD" alt="USD" class="asset-icon"> USD</td>
-                                <td style="text-align: right;">$1</td>
-                                <td style="text-align: right;">1,000,000</td>
-                                <td style="text-align: right;">2,000,000</td>
-                                <td style="text-align: right;">$2,000,000</td>
-                                <td>
-                                    <svg class="allocation-pie" viewBox="0 0 30 30">
-                                        <circle cx="15" cy="15" r="13" fill="none" stroke="#444" stroke-width="4"/>
-                                        <circle cx="15" cy="15" r="13" fill="none" stroke="#6476a6" stroke-width="4" stroke-dasharray="81.68" stroke-dashoffset="81.68"/>
-                                    </svg>
-                                    <span>0.00%</span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><img src="https://via.placeholder.com/24?text=USDC" alt="USDC" class="asset-icon"> USDC</td>
-                                <td style="text-align: right;">$1</td>
-                                <td style="text-align: right;">1,000,000</td>
-                                <td style="text-align: right;">2,000,000</td>
-                                <td style="text-align: right;">$2,000,000</td>
-                                <td>
-                                    <svg class="allocation-pie" viewBox="0 0 30 30">
-                                        <circle cx="15" cy="15" r="13" fill="none" stroke="#444" stroke-width="4"/>
-                                        <circle cx="15" cy="15" r="13" fill="none" stroke="#6476a6" stroke-width="4" stroke-dasharray="81.68" stroke-dashoffset="81.68"/>
-                                    </svg>
-                                    <span>0.00%</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                <div class="grid">
+                    <!-- Top Row: Iframe Placeholders -->
+                    <div class="tile">
+                        <div class="iframe-placeholder">Iframe Placeholder for Port Page 1</div>
+                    </div>
+                    <div class="tile">
+                        <div class="iframe-placeholder">Iframe Placeholder for Port Page 2</div>
+                    </div>
+                    <div class="tile">
+                        <div class="iframe-placeholder">Iframe Placeholder for Port Page 3</div>
+                    </div>
 
-                <!-- History Widget -->
-                <div class="card">
-                    <h2>Trade History</h2>
-                    <p style="text-align: center; color: #888; padding: 40px 0;">No data</p>
+                    <!-- Bottom Row: Report Placeholders -->
+                    <div class="tile">
+                        <div class="report-placeholder">Placeholder for Sum of Initial Loan Amount by University (Bar Chart)</div>
+                    </div>
+                    <div class="tile">
+                        <div class="report-placeholder">Placeholder for Loan Value by Status (Stacked Bar) and Remaining Loan Amount (Gauge)</div>
+                    </div>
+                    <div class="tile">
+                        <div class="report-placeholder">Placeholder for Map of Loan Distribution, Loan Value by Interest Rate Group (Bar Chart), and Sum of Outstanding Principal by Loan Status (Bar Chart)</div>
+                    </div>
                 </div>
             </div>
         </div>
