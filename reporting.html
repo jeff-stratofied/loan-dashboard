@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRATOFIED</title>
+    <!-- Google Fonts for a clean sans-serif look (similar to Material) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- DevExtreme icons (open CDN) -->
+    <link rel="stylesheet" href="https://cdn3.devexpress.com/jslib/24.2.3/css/dx.icons.css">
+    <!-- Font Awesome for logout icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Roboto', sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+        .dx-viewport {
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+        }
+        /* Sidebar */
+        .sidebar {
+            width: 60px;
+            background-color: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 10px;
+            border-right: 1px solid #333;
+        }
+        .logo {
+            width: 40px;
+            height: 40px;
+            background-color: #6476a6; /* Placeholder color - replace with actual logo */
+            border-radius: 4px;
+            margin-bottom: 30px;
+        }
+        .menu-item {
+            width: 100%;
+            text-align: center;
+            padding: 15px 0;
+            cursor: pointer;
+            position: relative;
+        }
+        .menu-item i {
+            font-size: 24px;
+            color: #aaa;
+        }
+        .menu-item:hover i {
+            color: #fff;
+        }
+        .menu-item span {
+            display: none;
+            position: absolute;
+            left: 60px;
+            background: #333;
+            padding: 5px 10px;
+            border-radius: 4px;
+            white-space: nowrap;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .menu-item:hover span {
+            display: block;
+        }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            height: 60px;
+            background-color: #1e1e1e;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 20px;
+            border-bottom: 1px solid #333;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        .user-image {
+            width: 36px;
+            height: 36px;
+            background: #888 url('') center/cover no-repeat;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .user-image i {
+            font-size: 24px;
+            color: #333;
+        }
+        .connected {
+            color: #4caf50;
+            font-weight: bold;
+            margin-right: 20px;
+        }
+        .logout {
+            color: #aaa;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .logout:hover {
+            color: #fff;
+        }
+
+        /* Content area */
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .card {
+            background: #1e1e1e;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #e0e0e0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        th {
+            background: #272727;
+            text-align: right;
+        }
+        th:first-child, td:first-child {
+            text-align: left;
+        }
+        .asset-icon {
+            width: 24px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        .allocation-pie {
+            width: 30px;
+            height: 30px;
+            transform: rotate(-90deg);
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body class="dx-viewport">
+    <div class="dx-viewport">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo"></div> <!-- Replace background with actual logo URL if you have it -->
+            <div class="menu-item"><i class="dx-icon dx-icon-home"></i><span>Home</span></div>
+            <div class="menu-item"><i class="dx-icon dx-icon-dataarea"></i><span>Reporting</span></div>
+            <div class="menu-item"><i class="dx-icon dx-icon-chart"></i><span>Marketplace</span></div>
+            <div class="menu-item"><i class="dx-icon dx-icon-box"></i><span>Wallet</span></div>
+            <div class="menu-item"><i class="dx-icon dx-icon-detailslayout"></i><span>History</span></div>
+        </div>
+
+        <!-- Main -->
+        <div class="main">
+            <header>
+                <div class="user-info">
+                    <div class="user-image"><i class="dx-icon dx-icon-user"></i></div>
+                    <span>jefftest1</span>
+                </div>
+                <div class="connected">✓ Connected</div>
+                <div class="logout"><i class="fas fa-sign-out-alt"></i></div>
+            </header>
+
+            <div class="content">
+                <!-- Available Balance Widget -->
+                <div class="card">
+                    <h2>Available Balance</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Asset</th>
+                                <th>Price</th>
+                                <th>Available Balance</th>
+                                <th>Total Balance</th>
+                                <th>USD Value</th>
+                                <th>Allocation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><img src="https://via.placeholder.com/24?text=USD" alt="USD" class="asset-icon"> USD</td>
+                                <td style="text-align: right;">$1</td>
+                                <td style="text-align: right;">1,000,000</td>
+                                <td style="text-align: right;">2,000,000</td>
+                                <td style="text-align: right;">$2,000,000</td>
+                                <td>
+                                    <svg class="allocation-pie" viewBox="0 0 30 30">
+                                        <circle cx="15" cy="15" r="13" fill="none" stroke="#444" stroke-width="4"/>
+                                        <circle cx="15" cy="15" r="13" fill="none" stroke="#6476a6" stroke-width="4" stroke-dasharray="81.68" stroke-dashoffset="81.68"/>
+                                    </svg>
+                                    <span>0.00%</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><img src="https://via.placeholder.com/24?text=USDC" alt="USDC" class="asset-icon"> USDC</td>
+                                <td style="text-align: right;">$1</td>
+                                <td style="text-align: right;">1,000,000</td>
+                                <td style="text-align: right;">2,000,000</td>
+                                <td style="text-align: right;">$2,000,000</td>
+                                <td>
+                                    <svg class="allocation-pie" viewBox="0 0 30 30">
+                                        <circle cx="15" cy="15" r="13" fill="none" stroke="#444" stroke-width="4"/>
+                                        <circle cx="15" cy="15" r="13" fill="none" stroke="#6476a6" stroke-width="4" stroke-dasharray="81.68" stroke-dashoffset="81.68"/>
+                                    </svg>
+                                    <span>0.00%</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- History Widget -->
+                <div class="card">
+                    <h2>Trade History</h2>
+                    <p style="text-align: center; color: #888; padding: 40px 0;">No data</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
