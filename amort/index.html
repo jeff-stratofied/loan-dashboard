@@ -976,7 +976,7 @@ function renderLoanTiles(loans) {
   loans.forEach(loan => {
     const hasSchedule = loan.amort && loan.amort.schedule && loan.amort.schedule.length > 0;
     const lastIdx = hasSchedule ? loan.amort.schedule.length - 1 : 0;
-    const fallbackRow = { balance: loan.purchasePrice, monthIndex: 0 };
+    const fallbackRow = { balance: loan.purchasePrice || 0, monthIndex: 0 };
     const currentIdx = Math.max(0, Math.min(loan.monthsSinceStart - 1, lastIdx));
     const atCurrent = hasSchedule
       ? loan.amort.schedule[currentIdx] || loan.amort.schedule[lastIdx]
@@ -1068,14 +1068,14 @@ function openDrawerForLoan(loan) {
 
   createDrawerStackedChart(
     drawerChartArea,
-    loan.amort.schedule,
+    loan.amort?.schedule || [],
     loan
   );
 
   drawerAmortContainer.style.display = "block";
 
   let rowsHtml = "";
-  loan.amort.schedule.forEach(r => {
+  (loan.amort?.schedule || []).forEach(r => {
     rowsHtml += `
       <tr ${r.monthIndex === loan.monthsSinceStart ? 'style="border-top:2px solid #22c55e"' : ''}>
         <td>${r.monthIndex}</td>
@@ -1269,7 +1269,7 @@ function createMiniAmortChart(containerEl, loan) {
   const h = 48;
   const padL = 4, padR = 4, padT = 4, padB = 4;
 
-  const data = loan.amort.schedule || [];
+  const data = loan.amort && loan.amort.schedule || [];
 
   let maxAbs = 0;
   data.forEach(d => {
@@ -2133,10 +2133,13 @@ function renderPaymentsDrawer() {
   drawerTitle.textContent = 'Total Expected Payments (monthly)';
   drawerSub.textContent = 'Sum of scheduled payments across loans';
 
-  const loansForSeries = currentLoans.length ? currentLoans : allLoans;
+  let loansForSeries = currentLoans.length ? currentLoans : allLoans;
+
+  loansForSeries = loansForSeries.filter(l => l.loanStartDate && l.amort && l.amort.schedule && l.amort.schedule.length > 0);
 
   if (!loansForSeries.length) {
-    console.warn('Payments drawer: no loans');
+    console.warn('Payments drawer: no valid loans with schedules');
+    drawerChartArea.innerHTML = `<div style="color:var(--muted);font-size:13px">No valid loan data available</div>`;
     return;
   }
 
@@ -2162,7 +2165,6 @@ function renderPaymentsDrawer() {
     .map(d => toMonthStart(d));
 
   const ends = loansForSeries
-    .filter(l => l.loanStartDate && l.amort?.schedule?.length)
     .map(l => {
       const d = toMonthStart(l.loanStartDate);
       d.setMonth(d.getMonth() + l.amort.schedule.length - 1);
@@ -2171,6 +2173,7 @@ function renderPaymentsDrawer() {
 
   if (!starts.length || !ends.length) {
     console.warn('Payments drawer: no month range computed', loansForSeries);
+    drawerChartArea.innerHTML = `<div style="color:var(--muted);font-size:13px">No month range data available</div>`;
     return;
   }
 
@@ -2201,8 +2204,6 @@ function renderPaymentsDrawer() {
     const globalMonth = ymToDate(ym);
 
     return loansForSeries.reduce((sum, loan) => {
-      if (!loan.loanStartDate || !loan.amort?.schedule?.length) return sum;
-
       const start = toMonthStart(loan.loanStartDate);
       const off = monthOffset(globalMonth, start);
       if (off < 0 || off >= loan.amort.schedule.length) return sum;
@@ -2387,7 +2388,7 @@ function renderPaymentsDrawer() {
 
 function amortToCSV(loan) {
   const rows = [['Month', 'Payment', 'Principal', 'Interest', 'Balance']];
-  loan.amort.schedule.forEach(r =>
+  (loan.amort.schedule || []).forEach(r =>
     rows.push([r.monthIndex, r.payment.toFixed(2), r.principalPaid.toFixed(2), r.interest.toFixed(2), r.balance.toFixed(2)])
   );
   return rows.map(r => r.join(',')).join('\n');
@@ -2509,7 +2510,9 @@ function buildPortfolioAmortRows(loans) {
   const monthly = new Map();
 
   loans.forEach(loan => {
-    (loan.amort.schedule || []).forEach(r => {
+    if (!loan.loanStartDate || !loan.amort || !loan.amort.schedule) return;
+
+    loan.amort.schedule.forEach(r => {
       const d = addMonths(new Date(loan.loanStartDate), r.monthIndex - 1);
       d.setHours(0, 0, 0, 0);
 
