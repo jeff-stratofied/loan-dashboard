@@ -699,6 +699,82 @@ const USER_LABELS = {
 document.getElementById("currentUserLabel").textContent =
   USER_LABELS[PAGE_USER] || "Unknown User";
 
+const hiddenLoans = new Set();
+
+const drawer = document.getElementById("drawer");
+const drawerTitle = document.getElementById("drawerTitle");
+const drawerSub = document.getElementById("drawerSub");
+const drawerPrimaryTitle = document.getElementById("drawerPrimaryTitle");
+const drawerPrimary = document.getElementById("drawerPrimary");
+const drawerSecondaryTitle = document.getElementById("drawerSecondaryTitle");
+const drawerSecondary = document.getElementById("drawerSecondary");
+const drawerChartArea = document.getElementById("drawerChartArea");
+const drawerLegend = document.getElementById("drawerLegend");
+const drawerAmortContainer = document.getElementById("drawerAmortContainer");
+const amortBody = document.getElementById("amortBody");
+const drawerExtra = document.getElementById("drawerExtra");
+const drawerBody = document.getElementById("drawerBody");
+const tooltip = document.querySelector(".tooltip");
+
+let stackedBarGroupCounter = 0;
+
+function prepareStackedBar(bar, groupId, index, isPositive = true){
+  bar.setAttribute("data-stack-group", groupId);
+  bar.setAttribute("data-stack-index", index);
+}
+
+let miniHtmlTooltip = null;
+function getMiniHtmlTooltip() {
+  if (!miniHtmlTooltip) {
+    miniHtmlTooltip = document.createElement("div");
+    miniHtmlTooltip.className = "lens-tooltip-html";
+    miniHtmlTooltip.style.display = "none";
+    document.body.appendChild(miniHtmlTooltip);
+  }
+  return miniHtmlTooltip;
+}
+
+function setMiniTooltipContent(lines) {
+  const el = getMiniHtmlTooltip();
+  el.innerHTML = lines.join("<br>");
+}
+
+function positionMiniTooltip(clientX, clientY, radius) {
+  const el = getMiniHtmlTooltip();
+  const rect = el.getBoundingClientRect();
+
+  const padding = 12;
+
+  let x = clientX - rect.width / 2;
+  let y = clientY - radius - rect.height - 8;
+
+  if (x < padding) {
+    x = padding;
+  } else if (x + rect.width > window.innerWidth - padding) {
+    x = window.innerWidth - rect.width - padding;
+  }
+
+  if (y < padding) {
+    y = clientY + radius + 8;
+  }
+
+  el.style.left = `${x}px`;
+  el.style.top  = `${y}px`;
+  el.style.display = "block";
+}
+
+function hideMiniTooltip() {
+  if (miniHtmlTooltip) miniHtmlTooltip.style.display = "none";
+}
+
+function formatDate(date) {
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+
 async function init() {
   apiLoans = await loadLoans();
   allLoans = (apiLoans.loans || [])
@@ -898,7 +974,7 @@ function renderLoanTiles(loans) {
   grid.innerHTML = "";
 
   loans.forEach(loan => {
-    const hasSchedule = loan.amort.schedule.length > 0;
+    const hasSchedule = loan.amort && loan.amort.schedule && loan.amort.schedule.length > 0;
     const lastIdx = hasSchedule ? loan.amort.schedule.length - 1 : 0;
     const fallbackRow = { balance: loan.purchasePrice, monthIndex: 0 };
     const currentIdx = Math.max(0, Math.min(loan.monthsSinceStart - 1, lastIdx));
@@ -1015,9 +1091,7 @@ function openDrawerForLoan(loan) {
 
   drawerExtra.innerHTML = "";
 
-  drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
-  drawerBody.scrollTop = 0;
+  openDrawer();
 }
 
 function closeDrawer() {
@@ -1107,9 +1181,9 @@ function computeKPIs(loans) {
   loans.forEach(l => {
     totalPurchase += Number(l.purchasePrice || 0);
 
-    const hasSchedule = l.amort.schedule.length > 0;
+    const hasSchedule = l.amort && l.amort.schedule && l.amort.schedule.length > 0;
     const lastIdx = hasSchedule ? l.amort.schedule.length - 1 : 0;
-    const fallbackRow = { balance: l.purchasePrice };
+    const fallbackRow = { balance: l.purchasePrice || 0 };
     const currentIdx = Math.max(0, Math.min(l.monthsSinceStart - 1, lastIdx));
     const atCurrent = hasSchedule
       ? l.amort.schedule[currentIdx] || l.amort.schedule[lastIdx]
@@ -1195,7 +1269,7 @@ function createMiniAmortChart(containerEl, loan) {
   const h = 48;
   const padL = 4, padR = 4, padT = 4, padB = 4;
 
-  const data = loan.amort.schedule;
+  const data = loan.amort.schedule || [];
 
   let maxAbs = 0;
   data.forEach(d => {
@@ -2412,6 +2486,306 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
+
+function getCurrentAmortRow(loan) {
+  const sched = loan.amort?.schedule || [];
+
+  if (!sched.length || !loan.loanStartDate) {
+    return { row: { balance: loan.purchasePrice || 0 }, idx: 0 };
+  }
+
+  const lastIdx = sched.length - 1;
+
+  const loanStart = new Date(loan.loanStartDate);
+  const TODAY = new Date();
+  const diffRaw = monthDiff(loanStart, TODAY);
+  const diff = Number.isFinite(diffRaw) ? Math.max(1, diffRaw) : 1;
+
+  const idx = Math.max(0, Math.min(diff - 1, lastIdx));
+  return { row: sched[idx], idx };
+}
+
+function buildPortfolioAmortRows(loans) {
+  const monthly = new Map();
+
+  loans.forEach(loan => {
+    (loan.amort.schedule || []).forEach(r => {
+      const d = addMonths(new Date(loan.loanStartDate), r.monthIndex - 1);
+      d.setHours(0, 0, 0, 0);
+
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+
+      if (!monthly.has(key)) {
+        monthly.set(key, {
+          date: d,
+          contributions: []
+        });
+      }
+
+      monthly.get(key).contributions.push({
+        loanId: loan.loanId,
+        monthlyBalance: r.balance,
+        hasData: true
+      });
+    });
+  });
+
+  const sorted = [...monthly.values()].sort((a, b) => a.date - b.date);
+
+  const allLoanIds = loans.map(l => l.loanId);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const row = sorted[i];
+    const present = new Set(row.contributions.map(c => c.loanId));
+
+    allLoanIds.forEach(id => {
+      if (present.has(id)) return;
+
+      let last = { monthlyBalance: 0 };
+
+      for (let j = i - 1; j >= 0; j--) {
+        const prev = sorted[j].contributions.find(c => c.loanId === id);
+        if (prev) {
+          last = prev;
+          break;
+        }
+      }
+
+      row.contributions.push({
+        loanId: id,
+        monthlyBalance: last.monthlyBalance,
+        hasData: false
+      });
+    });
+  }
+
+  return sorted;
+}
+
+function niceAxisMax(v) {
+  const x = Math.max(0, Number(v) || 0);
+  if (x <= 0) return 1;
+
+  const exp = Math.floor(Math.log10(x));
+  const base = Math.pow(10, exp);
+  const f = x / base;
+
+  let nf;
+  if (f <= 1) nf = 1;
+  else if (f <= 2) nf = 2;
+  else if (f <= 5) nf = 5;
+  else nf = 10;
+
+  return nf * base;
+}
+
+function renderKpiTable(containerId, headers, rows) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const colors = window.KPI_COLOR_MAP || {};
+
+  let html = `<table><thead><tr>`;
+  headers.forEach(h => html += `<th>${h}</th>`);
+  html += `</tr></thead><tbody>`;
+
+  rows.forEach(r => {
+    const color = colors[r.loanId] || "var(--text)";
+
+    html += `
+      <tr
+        data-loan-id="${r.loanId}"
+        style="--loan-color:${color}; color:var(--loan-color)"
+      >
+    `;
+
+    r.cells.forEach(c => {
+      html += `<td>${c}</td>`;
+    });
+
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+function openDrawer() {
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+  drawerBody.scrollTop = 0;
+}
+
+function createLens(svg, radius = 40, scale = 1.5, borderColor = "#94a3b8", borderWidth = 1.5, bgFill = "rgba(255,255,255,0.7)"){
+  const svgNS = "http://www.w3.org/2000/svg";
+  const defs = svg.querySelector("defs") || (()=>{ const d = document.createElementNS(svgNS,"defs"); svg.insertBefore(d, svg.firstChild); return d; })();
+  const clipId = `lens-clip-${Math.random().toString(36).slice(2)}`;
+  const clipPath = document.createElementNS(svgNS,"clipPath");
+  clipPath.setAttribute("id", clipId);
+  const clipCircle = document.createElementNS(svgNS,"circle");
+  clipCircle.setAttribute("r", radius);
+  clipPath.appendChild(clipCircle);
+  defs.appendChild(clipPath);
+
+  const group = document.createElementNS(svgNS,"g");
+  group.setAttribute("pointer-events","none");
+
+  const bgCircle = document.createElementNS(svgNS,"circle");
+  bgCircle.setAttribute("r", radius);
+  bgCircle.setAttribute("fill", bgFill);
+  bgCircle.setAttribute("stroke", borderColor);
+  bgCircle.setAttribute("stroke-width", borderWidth);
+  bgCircle.setAttribute("opacity","0.95");
+
+  const content = document.createElementNS(svgNS,"g");
+  content.setAttribute("clip-path", `url(#${clipId})`);
+
+  const outline = document.createElementNS(svgNS,"circle");
+  outline.setAttribute("r", radius);
+  outline.setAttribute("fill","none");
+  outline.setAttribute("stroke", borderColor);
+  outline.setAttribute("stroke-width", borderWidth);
+
+  group.appendChild(bgCircle);
+  group.appendChild(content);
+  group.appendChild(outline);
+
+  return { group, content, outline, bgCircle, clipCircle, clipPath, scale, radius };
+}
+
+function updateLens(lens, x, y){
+  if(!lens) return;
+  const tx = x - x * lens.scale;
+  const ty = y - y * lens.scale;
+  lens.clipCircle.setAttribute("cx", x);
+  lens.clipCircle.setAttribute("cy", y);
+  lens.bgCircle.setAttribute("cx", x);
+  lens.bgCircle.setAttribute("cy", y);
+  lens.outline.setAttribute("cx", x);
+  lens.outline.setAttribute("cy", y);
+  lens.content.setAttribute("transform", `translate(${tx}, ${ty}) scale(${lens.scale})`);
+}
+
+function removeLens(svg, lens){
+  if(!lens) return;
+  if(lens.group && lens.group.parentNode === svg) svg.removeChild(lens.group);
+  if(lens.clipPath && lens.clipPath.parentNode) lens.clipPath.parentNode.removeChild(lens.clipPath);
+}
+
+function createTooltip(svg, large = false){
+  const svgNS = "http://www.w3.org/2000/svg";
+  const group = document.createElementNS(svgNS,"g");
+  group.setAttribute("pointer-events","none");
+  group.setAttribute("opacity","0.95");
+
+  const rect = document.createElementNS(svgNS,"rect");
+  rect.setAttribute("rx", large ? 8 : 6);
+  rect.setAttribute("ry", large ? 8 : 6);
+  rect.setAttribute("fill","rgba(15,23,42,0.92)");
+  rect.setAttribute("stroke","#0ea5e9");
+  rect.setAttribute("stroke-width","0.6");
+
+  const textGroup = document.createElementNS(svgNS,"g");
+  textGroup.setAttribute("fill","#fff");
+  textGroup.setAttribute("font-size", large ? "12" : "11");
+  textGroup.setAttribute("font-weight","600");
+
+  group.appendChild(rect);
+  group.appendChild(textGroup);
+  svg.appendChild(group);
+
+  return { group, rect, textGroup, lines: [], large, width:0, height:0 };
+}
+
+function updateTooltipContent(tooltip, lines, large = false){
+  if(!tooltip) return;
+  tooltip.large = large;
+  tooltip.rect.setAttribute("rx", large ? 8 : 6);
+  tooltip.rect.setAttribute("ry", large ? 8 : 6);
+  tooltip.textGroup.setAttribute("font-size", large ? "12" : "11");
+  while(tooltip.lines.length < lines.length){
+    const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+    tooltip.textGroup.appendChild(t);
+    tooltip.lines.push(t);
+  }
+  while(tooltip.lines.length > lines.length){
+    const t = tooltip.lines.pop();
+    t.remove();
+  }
+
+  const lineHeight = large ? 15 : 14;
+  let maxWidth = 0;
+  tooltip.lines.forEach((t, idx) => {
+    t.textContent = lines[idx];
+    t.setAttribute("x", 6);
+    t.setAttribute("y", 12 + idx * lineHeight);
+    maxWidth = Math.max(maxWidth, t.getBBox().width);
+  });
+
+  const paddingX = 10;
+  const paddingY = 8;
+  const width = maxWidth + paddingX * 2;
+  const height = lines.length * lineHeight + paddingY;
+
+  tooltip.rect.setAttribute("width", width);
+  tooltip.rect.setAttribute("height", height);
+  tooltip.rect.setAttribute("x", 0);
+  tooltip.rect.setAttribute("y", 0);
+  tooltip.width = width;
+  tooltip.height = height;
+}
+
+function updateTooltipPosition(tooltip, cx, cy, radius){
+  if(!tooltip) return;
+  const width = tooltip.width || 0;
+  const height = tooltip.height || 0;
+
+  let dx = radius * 0.45;
+  let dy = -radius * 0.85;
+
+  let tooltipX = cx + dx;
+  let tooltipY = cy + dy;
+  const minX = cx + 2;
+  const maxX = cx + radius - width - 2;
+  const maxY = cy - height - 2;
+  const circleLimit = radius - 3;
+
+  tooltipX = Math.min(Math.max(tooltipX, minX), maxX);
+  tooltipY = Math.min(tooltipY, maxY);
+
+  for(let i = 0; i < 10; i++){
+    const corners = [
+      {x: tooltipX, y: tooltipY},
+      {x: tooltipX + width, y: tooltipY},
+      {x: tooltipX, y: tooltipY + height},
+      {x: tooltipX + width, y: tooltipY + height}
+    ];
+
+    let adjusted = false;
+
+    for(const corner of corners){
+      const distance = Math.hypot(corner.x - cx, corner.y - cy);
+      if(distance >= circleLimit){
+        const push = distance - circleLimit + 0.5;
+        const nx = (cx - corner.x) / distance;
+        const ny = (cy - corner.y) / distance;
+        tooltipX += nx * push;
+        tooltipY += ny * push;
+        adjusted = true;
+      }
+    }
+
+    tooltipX = Math.min(Math.max(tooltipX, minX), maxX);
+    tooltipY = Math.min(tooltipY, maxY);
+
+    if(!adjusted) break;
+  }
+
+  tooltipX = Math.max(tooltipX, cx + 2);
+  tooltipY = Math.min(tooltipY, cy - height - 2);
+
+  tooltip.group.setAttribute("transform", `translate(${tooltipX}, ${tooltipY})`);
+}
 </script>
 </body>
 </html>
