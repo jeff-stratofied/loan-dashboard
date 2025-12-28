@@ -311,47 +311,6 @@ function wireAmortRedirect() {
     }
   });
 }
-
-  // Add redirect for ROI iframe
-function wireRoiRedirect() {
-  const roiFrame = document.getElementById("roiFrame");
-  if (!roiFrame) return;
-
-  roiFrame.addEventListener("load", () => {
-    try {
-      const doc = roiFrame.contentWindow.document;
-      doc.addEventListener("click", () => {
-        const u = new URLSearchParams(location.search).get("user") || "jeff";
-        window.location.href = `/loan-dashboard/roi/index.html?user=${u}&open=kpi2`;
-      }, { once: true });
-    } catch (e) {
-      console.warn("[PORT] ROI iframe click hook failed", e);
-    }
-  });
-}
-
-// Add redirect for Earnings iframe
-function wireEarningsRedirect() {
-  const earningsFrame = document.getElementById("earningsFrame");
-  if (!earningsFrame) return;
-
-  earningsFrame.addEventListener("load", () => {
-    try {
-      const doc = earningsFrame.contentWindow.document;
-      doc.addEventListener("click", () => {
-        const u = new URLSearchParams(location.search).get("user") || "jeff";
-        window.location.href = `/loan-dashboard/earnings/index.html?user=${u}&open=kpi2`;
-      }, { once: true });
-    } catch (e) {
-      console.warn("[PORT] Earnings iframe click hook failed", e);
-    }
-  });
-}
-
-// Call all redirect wirings after buildFrames
-wireRoiRedirect();
-wireEarningsRedirect();
-wireAmortRedirect();  // Already exists, keep it
   
 </script>
 
