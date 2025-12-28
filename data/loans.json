@@ -24,7 +24,7 @@
     },
     {
       "loanName": "OSU 2024 8.00",
-      "user": "jeff",
+      "user": "john",
       "visible": true,
       "school": "Ohio State",
       "loanStartDate": "2024-02-01",
@@ -39,7 +39,7 @@
     },
     {
       "loanName": "PIT 2024 8.25",
-      "user": "jeff",
+      "user": "john",
       "visible": true,
       "school": "Pitt",
       "loanStartDate": "2024-03-15",
@@ -69,7 +69,7 @@
     },
     {
       "loanName": "MICH 2024 9.00",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Michigan",
       "loanStartDate": "2024-07-31",
@@ -129,7 +129,7 @@
     },
     {
       "loanName": "MICH 2025 8.50",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Michigan",
       "loanStartDate": "2025-03-20",
@@ -219,7 +219,7 @@
     },
     {
       "loanName": "NYU 2025 8.70",
-      "user": "jeff",
+      "user": "john",
       "visible": true,
       "school": "NYU",
       "loanStartDate": "2025-04-05",
