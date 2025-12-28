@@ -33,9 +33,104 @@
             display: flex;
         }
 
-        /* Sidebar styles unchanged */
-        .sidebar { /* ... same as before ... */ }
-        /* (omitted for brevity — keep all your existing sidebar styles) */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 70px;
+            background-color: var(--surface);
+            display: flex;
+            flex-direction: column;
+            padding-top: 20px;
+            border-right: 1px solid var(--border);
+            transition: width 0.35s ease;
+            z-index: 20;
+            overflow: hidden;
+        }
+
+        .sidebar.expanded {
+            width: 260px;
+            padding: 20px 20px 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            width: 100%;
+            transition: justify-content 0.35s ease;
+            justify-content: center;
+        }
+
+        .sidebar.expanded .sidebar-header {
+            justify-content: flex-start;
+        }
+
+        .hamburger {
+            font-size: 24px;
+            color: var(--text);
+            cursor: pointer;
+            transition: margin-right 0.35s ease;
+        }
+
+        .sidebar.expanded .hamburger {
+            margin-right: 16px;
+        }
+
+        .drawer-logo {
+            display: none;
+            height: 30px;
+        }
+
+        .sidebar.expanded .drawer-logo {
+            display: block;
+        }
+
+        .menu-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            padding: 16px 0;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text);
+        }
+
+        .sidebar:not(.expanded) .menu-item {
+            justify-content: center;
+        }
+
+        .sidebar.expanded .menu-item {
+            padding: 16px 24px;
+            border-radius: 8px;
+        }
+
+        .menu-item:hover {
+            background: var(--bg);
+        }
+
+        .menu-item.active {
+            color: var(--brand);
+            font-weight: 600;
+        }
+
+        .menu-item i {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .menu-label {
+            display: none;
+            margin-left: 20px;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        .sidebar.expanded .menu-label {
+            display: inline;
+        }
 
         .main-container {
             flex: 1;
@@ -67,7 +162,6 @@
             gap: 24px;
         }
 
-        /* New: User selector */
         .user-selector {
             display: flex;
             align-items: center;
@@ -84,23 +178,133 @@
             font-weight: 500;
         }
 
-        /* Rest of styles unchanged */
-        .content { /* ... */ }
-        .grid { /* ... */ }
-        .iframe-tile { /* ... */ }
-        .iframe-header { /* ... */ }
-        .iframe-title { /* ... */ }
-        .iframe-sub { /* ... */ }
-        .iframe-body { /* ... */ }
-        .top-tile { height: 800px; }
-        .bottom-tile { /* ... */ }
-        /* (keep all other styles from previous version) */
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .user-image {
+            width: 36px;
+            height: 36px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-image i {
+            font-size: 20px;
+            color: #64748b;
+        }
+
+        .connected {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .logout {
+            color: var(--muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .logout:hover {
+            color: var(--text);
+        }
+
+        .content {
+            flex: 1;
+            padding: 30px 50px;
+            overflow-y: auto;
+            background: var(--bg);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .iframe-tile {
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .iframe-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--card);
+        }
+
+        .iframe-title {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .iframe-sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .iframe-body {
+            flex: 1;
+            position: relative;
+        }
+
+        .iframe-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        .top-tile {
+            height: 800px;
+        }
+
+        .bottom-tile {
+            min-height: 420px;
+            background: var(--card);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .placeholder {
+            color: var(--muted);
+            font-size: 18px;
+            line-height: 1.7;
+        }
+
+        .placeholder small {
+            display: block;
+            font-size: 15px;
+            margin-top: 10px;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
     <div class="app">
         <nav class="sidebar" id="sidebar">
-            <!-- Sidebar content unchanged -->
             <div class="sidebar-header">
                 <i class="fas fa-bars hamburger" id="hamburger"></i>
                 <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="drawer-logo">
@@ -116,12 +320,11 @@
             <header class="top-header">
                 <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="header-logo">
                 <div class="right-section">
-                    <!-- User selector -->
                     <div class="user-selector">
                         <span>User:</span>
                         <select id="userSelect">
                             <option value="jefftest1">jefftest1</option>
-                            <option value="jeff">Jeff Customer</option>
+                            <option value="jeff" selected>Jeff Customer</option>
                             <option value="nick">Nick Lender</option>
                             <option value="john">John Investor</option>
                         </select>
@@ -129,7 +332,7 @@
 
                     <div class="user-info">
                         <div class="user-image"><i class="fas fa-user"></i></div>
-                        <span id="currentUserDisplay">jefftest1</span>
+                        <span id="currentUserDisplay">Jeff Customer</span>
                     </div>
                     <div class="connected">✓ Connected</div>
                     <div class="logout"><i class="fas fa-sign-out-alt"></i></div>
@@ -168,10 +371,25 @@
                         </div>
                     </div>
 
-                    <!-- Bottom row placeholders unchanged -->
-                    <div class="tile bottom-tile"> <!-- ... --> </div>
-                    <div class="tile bottom-tile"> <!-- ... --> </div>
-                    <div class="tile bottom-tile"> <!-- ... --> </div>
+                    <div class="tile bottom-tile">
+                        <div class="placeholder">
+                            Sum of Initial Loan Amount by University<br>
+                            <small>(Bar Chart)</small>
+                        </div>
+                    </div>
+                    <div class="tile bottom-tile">
+                        <div class="placeholder">
+                            Loan Value by Status (Stacked Bar)<br>
+                            Remaining Loan Amount (Gauge)
+                        </div>
+                    </div>
+                    <div class="tile bottom-tile">
+                        <div class="placeholder">
+                            Map of Loan Distribution<br>
+                            Loan Value by Interest Rate Group<br>
+                            Outstanding Principal by Status
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -187,18 +405,17 @@
             sidebar.classList.toggle('expanded');
         });
 
-        // Users mapping (display name → param value)
-        const userMap = {
+        const displayNames = {
             "jefftest1": "jefftest1",
-            "jeff": "jeff",
-            "nick": "nick",
-            "john": "john"
+            "jeff": "Jeff Customer",
+            "nick": "Nick Lender",
+            "john": "John Investor"
         };
 
         function getActiveUser() {
             const params = new URLSearchParams(location.search);
             let user = params.get("user");
-            if (!user || !userMap[user]) user = "jefftest1";
+            if (!user || !displayNames.hasOwnProperty(user)) user = "jeff"; // Default to Jeff Customer
             return user;
         }
 
@@ -209,7 +426,7 @@
         }
 
         function updateDisplay(user) {
-            currentUserDisplay.textContent = user;
+            currentUserDisplay.textContent = displayNames[user];
             userSelect.value = user;
         }
 
@@ -226,6 +443,7 @@
 
         function wireClickRedirect(iframeId, fullPath) {
             const iframe = document.getElementById(iframeId);
+            if (!iframe) return;
             iframe.addEventListener("load", () => {
                 try {
                     const doc = iframe.contentWindow.document;
@@ -239,12 +457,12 @@
             });
         }
 
-        // Initial load
+        // Initial load - now defaults to Jeff Customer
         let activeUser = getActiveUser();
         updateDisplay(activeUser);
         buildFrames(activeUser);
 
-        // Wire click-to-full-page for each frame
+        // Wire redirects
         wireClickRedirect("roiFrame", "/loan-dashboard/roi/index.html");
         wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html");
         wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html");
@@ -256,12 +474,12 @@
             updateDisplay(activeUser);
             buildFrames(activeUser);
 
-            // Re-wire redirects after reload
+            // Re-wire after iframe reloads
             setTimeout(() => {
                 wireClickRedirect("roiFrame", "/loan-dashboard/roi/index.html");
                 wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html");
                 wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html");
-            }, 1000);
+            }, 1500);
         });
     </script>
 </body>
