@@ -896,21 +896,22 @@ html[data-theme="dark"] .drawer-chart{
              (d2.getMonth() - d1.getMonth());
     }
 
-    function buildGlobalDatesFromLoans(loans) {
+function buildGlobalDatesFromLoans(loans) {
   const set = new Set();
 
   loans.forEach(l => {
     if (!l.scheduleWithOwnership) return;
 
     l.scheduleWithOwnership
-      .filter(r => r.isOwned && r.loanDate)
-      .forEach(r => set.add(+r.loanDate));
+      .filter(r => r.isOwned && r.displayDate)
+      .forEach(r => set.add(+r.displayDate));
   });
 
   return Array.from(set)
     .sort((a, b) => a - b)
     .map(ms => new Date(ms));
 }
+
 
 
     // ----------------------------
@@ -1007,22 +1008,23 @@ const formattedLoans = userLoans.map(l => ({
     const purchasePrice = Number(l.purchasePrice ?? 0);
     const roiSeries = cumSchedule
       .filter(r => r.isOwned)
-      .map(r => {
-      const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-      const unrealized = r.balance * 0.95;
-      const loanValue = realized + unrealized;
-      const roi = (loanValue - purchasePrice) / purchasePrice;
-      return {
-      month: r.ownershipMonthIndex,
-      ownershipDate: r.loanDate,
-      roi,
-      loanValue,
-      cumFees: r.cumFees,
-      realized,
-      remainingBalance: r.balance,
-      unrealized
-    };
-  });
+.map(r => {
+  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
+  const unrealized = r.balance * 0.95;
+  const loanValue = realized + unrealized;
+  const roi = (loanValue - purchasePrice) / purchasePrice;
+  return {
+    month: r.ownershipMonthIndex,
+    date: r.displayDate,        // 🔑 canonical date
+    roi,
+    loanValue,
+    cumFees: r.cumFees,
+    realized,
+    remainingBalance: r.balance,
+    unrealized
+  };
+});
+
 
     // Return updated loan object
     return {
@@ -1292,9 +1294,10 @@ function computeKPIs(list) {
       lbl.setAttribute('text-anchor', 'middle');
       lbl.setAttribute('font-size', '10');
       lbl.setAttribute('fill', 'var(--muted)');
-      lbl.textContent = p.ownershipDate
-        ? formatMonthYear(p.ownershipDate)
-        : `M${i + 1}`;
+      lbl.textContent = p.date
+  ? formatMonthYear(p.date)
+  : `M${i + 1}`;
+
   
       xAxis.appendChild(lbl);
     });
@@ -1963,7 +1966,10 @@ const pts = anchored.map(p => [
       line.setAttribute('stroke-dasharray', '3 3');
       line.setAttribute('stroke-opacity', '0.6');
       svg.appendChild(line);
-      svg.addEventListener('mousemove', ev=>{ const rect=svg.getBoundingClientRect(); const relX=ev.clientX-rect.left; const step = (w-pad*2)/Math.max(1,pts.length-1); let idxNearest=Math.round((relX-pad)/step); idxNearest=Math.max(0,Math.min(pts.length-1,idxNearest)); const p = loan.roiSeries[idxNearest]; tooltip.style.left=ev.clientX+'px'; tooltip.style.top=(ev.clientY-10)+'px'; tooltip.style.display='block'; tooltip.innerHTML = 'Date: '+formatDate(p.ownershipDate)+' • ROI '+(p.roi*100).toFixed(2)+'%'; const hoverG = svg.querySelector('g.mini-hover'); hoverG.innerHTML=''; const cx = pad + idxNearest*step; const cy = pad + (h - pad*2) - ((p.roi - minY)/rangeY)*(h - pad*2); const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',3.6); c.setAttribute('fill','#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); });
+      svg.addEventListener('mousemove', ev=>{ const rect=svg.getBoundingClientRect(); const relX=ev.clientX-rect.left; const step = (w-pad*2)/Math.max(1,pts.length-1); let idxNearest=Math.round((relX-pad)/step); idxNearest=Math.max(0,Math.min(pts.length-1,idxNearest)); const p = loan.roiSeries[idxNearest]; tooltip.style.left=ev.clientX+'px'; tooltip.style.top=(ev.clientY-10)+'px'; tooltip.style.display='block'; tooltip.innerHTML =
+  'Date: ' + formatDate(p.date) +
+  ' • ROI ' + (p.roi * 100).toFixed(2) + '%';
+ const hoverG = svg.querySelector('g.mini-hover'); hoverG.innerHTML=''; const cx = pad + idxNearest*step; const cy = pad + (h - pad*2) - ((p.roi - minY)/rangeY)*(h - pad*2); const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',3.6); c.setAttribute('fill','#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); });
       svg.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; const hoverG = svg.querySelector('g.mini-hover'); if(hoverG) hoverG.innerHTML=''; });
     });
 
