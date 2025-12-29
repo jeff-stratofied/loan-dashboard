@@ -161,74 +161,162 @@ export function buildAmortSchedule(loan) {
     graceYears,
     loanStartDate,
     purchaseDate,
-    events = []          // ✅ NEW (safe default)
+    events = []
   } = loan;
 
   const monthlyRate = nominalRate / 12;
+
+  // Contractual months (do NOT include deferrals)
   const totalMonths = (graceYears + termYears) * 12;
   const graceMonths = graceYears * 12;
 
   const start = new Date(loanStartDate);
   const purchase = new Date(purchaseDate);
 
-  // Normalize + index events by month (prepayment only for now)
-  const eventMap = {};
+  // -------------------------------
+  // Helpers
+  // -------------------------------
+  const monthKey = (d) => `${d.getFullYear()}-${d.getMonth()}`;
+
+  // -------------------------------
+  // Index PREPAYMENT events by month
+  // -------------------------------
+  const prepayMap = {};
   events
     .filter(e => e.type === "prepayment" && e.date)
     .forEach(e => {
       const d = new Date(e.date);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      if (!eventMap[key]) eventMap[key] = [];
-      eventMap[key].push(e);
+      const key = monthKey(d);
+      if (!prepayMap[key]) prepayMap[key] = [];
+      prepayMap[key].push(e);
+    });
+
+  // -------------------------------
+  // Index DEFERRAL events by start month
+  // If multiple deferrals start same month, we SUM them.
+  // -------------------------------
+  const deferralStartMap = {};
+  events
+    .filter(e => e.type === "deferral" && e.startDate && Number(e.months) > 0)
+    .forEach(e => {
+      const d = new Date(e.startDate);
+      const key = monthKey(d);
+      const m = Math.max(0, Math.floor(Number(e.months) || 0));
+      deferralStartMap[key] = (deferralStartMap[key] || 0) + m;
     });
 
   const schedule = [];
 
-  // ----------------------------------------------
-  // Compute balance after grace period
-  // ----------------------------------------------
-  let adjustedBalance = principal;
-  for (let g = 0; g < graceMonths; g++) {
-    adjustedBalance += adjustedBalance * monthlyRate;
-  }
+  // -------------------------------
+  // State
+  // -------------------------------
+  let balance = Number(principal || 0);
 
-  // ----------------------------------------------
-  // Monthly payment based on adjusted balance
-  // ----------------------------------------------
-  const r = monthlyRate;
-  const N = totalMonths;
-  const P = adjustedBalance;
+  // We walk "contractual months" with i, but "calendar months" can expand
+  // due to inserted deferral rows.
+  let calendarDate = new Date(start);
 
-  const payment =
-    r === 0 ? P / N : (P * r) / (1 - Math.pow(1 + r, -N));
+  // Track deferral inserts (so we can insert N months without advancing i)
+  let deferralRemaining = 0;
 
-  let balance = P;
+  // Contractual month loop
+  for (let i = 0; i < totalMonths; ) {
+    // BEFORE processing the next contractual month at this calendarDate,
+    // check if a deferral starts here. If so, insert N deferral months.
+    const startKey = monthKey(calendarDate);
+    if (deferralRemaining === 0 && deferralStartMap[startKey]) {
+      deferralRemaining = deferralStartMap[startKey];
+    }
 
-  for (let i = 0; i < totalMonths; i++) {
-    const monthIndex = i + 1;
-    const loanDate = addMonths(start, i);
+    // ----------------------------------------------
+    // DEFERRAL INSERTION MONTHS (do NOT advance i)
+    // ----------------------------------------------
+    if (deferralRemaining > 0) {
+      const loanDate = new Date(calendarDate);
 
-    let interest = balance * r;
+      // interest accrues and is capitalized
+      const accruedInterest = balance * monthlyRate;
+      balance += accruedInterest;
+
+      // Apply any prepayments in this deferred month (allowed)
+      const key = monthKey(loanDate);
+      const monthEvents = prepayMap[key] || [];
+      let prepaymentThisMonth = 0;
+
+      monthEvents.forEach(e => {
+        const amt = Number(e.amount || 0);
+        if (amt <= 0) return;
+        const applied = Math.min(balance, amt);
+        prepaymentThisMonth += applied;
+        balance -= applied;
+      });
+
+      const isOwned = loanDate >= purchase;
+
+      schedule.push({
+        monthIndex: schedule.length + 1,
+        loanDate,
+
+        // Deferral month: no scheduled payment, no scheduled principal/interest
+        payment: 0,
+        principalPaid: +(prepaymentThisMonth.toFixed(2)), // only prepayment counts as principal
+        interest: 0,
+        balance: +(balance.toFixed(2)),
+
+        prepayment: +(prepaymentThisMonth.toFixed(2)),
+        deferral: true,
+        accruedInterest: +(accruedInterest.toFixed(2)),
+
+        isOwned,
+        ownershipDate: isOwned ? loanDate : null,
+
+        // Optional: keep contractual month context (helpful for debugging)
+        contractualMonth: i + 1
+      });
+
+      deferralRemaining -= 1;
+      calendarDate = addMonths(calendarDate, 1);
+      continue; // still same contractual i
+    }
+
+    // ----------------------------------------------
+    // NORMAL CONTRACTUAL MONTH (advance i at end)
+    // ----------------------------------------------
+    const loanDate = new Date(calendarDate);
+
+    let interest = balance * monthlyRate;
     let principalPaid = 0;
     let paymentAmt = 0;
 
     if (i < graceMonths) {
-      // Grace period: interest accrues, no scheduled payment
+      // Grace: interest accrues, no payment
       paymentAmt = 0;
       principalPaid = 0;
       balance += interest;
     } else {
-      // Normal amortization
-      paymentAmt = payment;
-      principalPaid = payment - interest;
+      // Payment month: compute payment dynamically so deferral-capitalized interest
+      // still amortizes by the end of the remaining payment months.
+      const paymentMonthsTotal = totalMonths - graceMonths;
+      const paymentMonthNumber = (i - graceMonths); // 0-based within payment months
+      const remainingPaymentMonths = Math.max(1, paymentMonthsTotal - paymentMonthNumber);
+
+      const r = monthlyRate;
+      const P = balance;
+
+      const dynPayment =
+        r === 0 ? (P / remainingPaymentMonths) : (P * r) / (1 - Math.pow(1 + r, -remainingPaymentMonths));
+
+      paymentAmt = dynPayment;
+
+      principalPaid = paymentAmt - interest;
+      if (principalPaid < 0) principalPaid = 0; // safety (very high rates edge)
+
       balance = Math.max(0, balance - principalPaid);
     }
 
-    // ----------------------------------------------
-    // ✅ APPLY PREPAYMENT EVENTS (Phase 2)
-    // ----------------------------------------------
-    const eventKey = `${loanDate.getFullYear()}-${loanDate.getMonth()}`;
-    const monthEvents = eventMap[eventKey] || [];
+    // Apply prepayments for this calendar month
+    const eventKey = monthKey(loanDate);
+    const monthEvents = prepayMap[eventKey] || [];
 
     let prepaymentThisMonth = 0;
 
@@ -241,14 +329,12 @@ export function buildAmortSchedule(loan) {
       balance -= applied;
     });
 
-    // Treat prepayment as extra principal paid
     principalPaid += prepaymentThisMonth;
 
     const isOwned = loanDate >= purchase;
-    const ownershipDate = isOwned ? loanDate : null;
 
     schedule.push({
-      monthIndex,
+      monthIndex: schedule.length + 1,
       loanDate,
 
       payment: +(paymentAmt.toFixed(2)),
@@ -256,16 +342,32 @@ export function buildAmortSchedule(loan) {
       interest: +(interest.toFixed(2)),
       balance: +(balance.toFixed(2)),
 
-      // NEW (harmless if unused)
       prepayment: +(prepaymentThisMonth.toFixed(2)),
+      deferral: false,
+      accruedInterest: 0,
 
       isOwned,
-      ownershipDate
+      ownershipDate: isOwned ? loanDate : null,
+
+      contractualMonth: i + 1
     });
+
+    // advance both calendars: 1 month forward, and 1 contractual month forward
+    calendarDate = addMonths(calendarDate, 1);
+    i += 1;
+
+    // Optional early stop if paid off AND no future deferrals scheduled
+    // (keeps your schedule shorter when loans prepay to zero).
+    if (balance <= 0) {
+      // If there’s a deferral later, we'd still need to show it, but that case
+      // is weird (deferral on a paid-off loan). We'll stop here.
+      break;
+    }
   }
 
   return schedule;
 }
+
 
 
 // -------------------------------
@@ -309,22 +411,15 @@ export function buildPortfolioViews(loansWithAmort) {
     return loansWithAmort.reduce((sum, loan) => {
       const purchaseDate = new Date(loan.purchaseDate);
 
-      const sched =
-  loan.amortSchedule ||
-  loan.amort?.schedule ||
-  [];
-
-if (!sched.length) return sum;
-
-return sum + sched
-  .filter(r => {
-    const payDate = r.loanDate;
-    const sameMonth = sameMonthYear(payDate, targetMonthDate);
-    const owned = payDate >= purchaseDate;
-    return sameMonth && owned;
-  })
-  .reduce((s, r) => s + r.payment, 0);
-
+      return sum + loan.amort.schedule
+        .filter(r => {
+          const payDate = r.loanDate;
+          const sameMonth = sameMonthYear(payDate, targetMonthDate);
+          const owned = payDate >= purchaseDate;
+          return sameMonth && owned;
+        })
+        .reduce((s, r) => s + r.payment, 0);
+    }, 0);
   }
 
   // Default: 24-month forward projection
@@ -370,15 +465,38 @@ return sum + sched
     let cumPrincipal = 0;
     let cumFees      = 0;
 
-const sched =
-  loan.amortSchedule ||
-  loan.amort?.schedule ||
-  [];
+    roiSeries[loan.id] = loan.amort.schedule
+      .filter(r => r.loanDate >= purchase)
+.map(r => {
+  // accumulate realized components
+  cumInterest  += r.interest;
+  cumPrincipal += r.principalPaid;
 
-roiSeries[loan.id] = sched
-  .filter(r => r.loanDate >= purchase)
-  .map(r => { ... });
+  const feeThisMonth = Number(r.feeThisMonth ?? 0);
+  cumFees += feeThisMonth;
 
+  const realized   = cumPrincipal + cumInterest - cumFees;
+  const unrealized = r.balance * 0.95;
+  const loanValue  = realized + unrealized;
+
+  const roi = purchasePrice
+    ? (loanValue - purchasePrice) / purchasePrice
+    : 0;
+
+  return {
+    date: r.loanDate,
+    month: r.monthIndex,
+    roi,
+    loanValue,
+    realized,
+    unrealized,
+    balance: r.balance,
+    cumInterest,
+    cumPrincipal,
+    cumFees,
+    ownershipDate: r.ownershipDate
+  };
+});
 
 
 
@@ -410,15 +528,30 @@ loansWithAmort.forEach(loan => {
   let cumFees      = 0;
 
   // --- build earned-to-date series first
-const sched =
-  loan.amortSchedule ||
-  loan.amort?.schedule ||
-  [];
+  const earnedSeries = loan.amort.schedule
+    .filter(r => r.loanDate >= purchase)
+    .map(r => {
+      cumPrincipal += r.principalPaid;
+      cumInterest  += r.interest;
 
-const earnedSeries = sched
-  .filter(r => r.loanDate >= purchase)
-  .map(r => { ... });
+      const feeThisMonth = Number(r.feeThisMonth ?? 0);
+      cumFees += feeThisMonth;
 
+      return {
+        loanDate: r.loanDate,
+        ownershipDate: r.loanDate,
+        monthIndex: r.monthIndex,
+        payment: r.payment,
+        principalPaid: r.principalPaid,
+        interest: r.interest,
+        balance: r.balance,
+
+        cumPrincipal,
+        cumInterest,
+        cumFees,
+        netEarnings: cumPrincipal + cumInterest - cumFees
+      };
+    });
 
   if (!earnedSeries.length) {
     earningsSeries[loan.id] = [];
@@ -483,14 +616,8 @@ Object.keys(earningsSeries).forEach(loanId => {
   }, 0);
 
   const portfolioValue = loansWithAmort.reduce((sum, loan) => {
-    const sched =
-  loan.amortSchedule ||
-  loan.amort?.schedule ||
-  [];
-
-const last = sched[sched.length - 1];
-return sum + (last ? last.balance : 0);
-
+    const last = loan.amort.schedule[loan.amort.schedule.length - 1];
+    return sum + last.balance;
   }, 0);
 
   const amortKpis = {
