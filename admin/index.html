@@ -488,10 +488,7 @@ function openEventsDrawer(loan) {
                   : `⚠️ Default — ${e.date} — Recovery $${Number(e.recoveryAmount).toLocaleString()}`
                 }
               </div>
-              <button
-                data-event-id="${e.id}"
-                style="font-size:11px;padding:2px 6px"
-              >
+              <button data-event-id="${e.id}" style="font-size:11px;padding:2px 6px">
                 Delete
               </button>
             </div>
@@ -513,7 +510,6 @@ function openEventsDrawer(loan) {
   <input type="number" id="def-months" placeholder="Months" min="1" style="margin-bottom:8px;width:100%">
   <button id="add-deferral-btn">Add Deferral</button>
 
-
   <hr style="border-color:var(--border);margin:14px 0">
 
   <h4 style="color:#f87171">Add Default</h4>
@@ -530,18 +526,14 @@ function openEventsDrawer(loan) {
     Add Default
   </button>
 
-
   <button id="close-event-btn">Close</button>
 `;
 
-  // ----------------------------------
-  // Append drawer BEFORE wiring events
-  // ----------------------------------
   document.body.appendChild(drawer);
-  
-  // ----------------------------------
-  // Delete event handlers
-  // ----------------------------------
+
+  // -------------------------------
+  // Delete event
+  // -------------------------------
   drawer.querySelectorAll("button[data-event-id]").forEach(btn => {
     btn.onclick = () => {
       if (!confirm("Delete this event?")) return;
@@ -550,22 +542,19 @@ function openEventsDrawer(loan) {
       loan.events = loan.events.filter(e => e.id !== id);
       markDirty();
 
-
       drawer.remove();
       openEventsDrawer(loan);
+      renderTable(); // ✅ UPDATE TABLE
     };
   });
 
-  // ----------------------------------
-  // Close drawer
-  // ----------------------------------
   drawer.querySelector("#close-event-btn").onclick = () => {
     drawer.remove();
   };
 
-  // ----------------------------------
+  // -------------------------------
   // Add prepayment
-  // ----------------------------------
+  // -------------------------------
   drawer.querySelector("#add-prepay-btn").onclick = () => {
     const date = drawer.querySelector("#evt-date").value;
     const amount = Number(drawer.querySelector("#evt-amount").value);
@@ -581,86 +570,85 @@ function openEventsDrawer(loan) {
       date,
       amount
     });
-  markDirty();
 
-    
     loan.events.sort((a, b) => new Date(a.date) - new Date(b.date));
+    markDirty();
 
     drawer.remove();
     openEventsDrawer(loan);
+    renderTable(); // ✅ UPDATE TABLE
   };
 
-// ----------------------------------
-// Add deferral
-// ----------------------------------
-drawer.querySelector("#add-deferral-btn").onclick = () => {
-  const startDate = drawer.querySelector("#def-start").value;
-  const months = Number(drawer.querySelector("#def-months").value);
+  // -------------------------------
+  // Add deferral
+  // -------------------------------
+  drawer.querySelector("#add-deferral-btn").onclick = () => {
+    const startDate = drawer.querySelector("#def-start").value;
+    const months = Number(drawer.querySelector("#def-months").value);
 
-  if (!startDate || !months || months <= 0) {
-    alert("Enter a valid start date and number of months");
-    return;
-  }
+    if (!startDate || !months || months <= 0) {
+      alert("Enter a valid start date and number of months");
+      return;
+    }
 
-  loan.events.push({
-    id: crypto.randomUUID(),
-    type: "deferral",
-    startDate,
-    months
-  });
+    loan.events.push({
+      id: crypto.randomUUID(),
+      type: "deferral",
+      startDate,
+      months
+    });
 
-  markDirty();
+    loan.events.sort((a, b) => {
+      const da = new Date(a.startDate || a.date);
+      const db = new Date(b.startDate || b.date);
+      return da - db;
+    });
 
+    markDirty();
 
-  // Keep events ordered by start date / date
-  loan.events.sort((a, b) => {
-    const da = new Date(a.startDate || a.date);
-    const db = new Date(b.startDate || b.date);
-    return da - db;
-  });
+    drawer.remove();
+    openEventsDrawer(loan);
+    renderTable(); // ✅ UPDATE TABLE
+  };
 
-  drawer.remove();
-  openEventsDrawer(loan);
-};
-
-  // ----------------------------------
+  // -------------------------------
   // Add default
-  // ----------------------------------
+  // -------------------------------
   drawer.querySelector("#add-default-btn").onclick = () => {
     const date = drawer.querySelector("#def-date").value;
     const recoveryAmount = Number(drawer.querySelector("#def-recovery").value);
-  
+
     if (!date || recoveryAmount < 0 || Number.isNaN(recoveryAmount)) {
       alert("Enter a valid default date and recovery amount (≥ $0)");
       return;
     }
-  
-    // Enforce only ONE default
+
     if (loan.events.some(e => e.type === "default")) {
       alert("This loan already has a Default event.");
       return;
     }
-  
+
     loan.events.push({
       id: crypto.randomUUID(),
       type: "default",
       date,
       recoveryAmount
     });
-  
-    markDirty();
-  
-    // Sort by effective date
+
     loan.events.sort((a, b) => {
       const da = new Date(a.startDate || a.date);
       const db = new Date(b.startDate || b.date);
       return da - db;
     });
-  
+
+    markDirty();
+
     drawer.remove();
     openEventsDrawer(loan);
+    renderTable(); // ✅ UPDATE TABLE
   };
 }
+
 
 
 
