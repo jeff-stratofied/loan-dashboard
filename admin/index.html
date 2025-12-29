@@ -300,6 +300,19 @@ input:focus, select:focus {
   <button id="save-btn">💾 Save Changes</button>
 </div>
 
+<div
+  id="unsaved-warning"
+  style="
+    display:none;
+    margin-top:6px;
+    font-size:0.8rem;
+    color:#fbbf24;
+  "
+>
+  ⚠️ You have unsaved changes — click <strong>Save Changes</strong> to apply them
+</div>
+
+  
 <!-- =========================================================
      TABLE
      ========================================================= -->
@@ -338,6 +351,30 @@ input:focus, select:focus {
 
   let currentLoans = [];
   let currentSha = null;
+
+  // ===========================
+// UNSAVED CHANGES TRACKING
+// ===========================
+let hasUnsavedChanges = false;
+
+const unsavedWarning = document.getElementById("unsaved-warning");
+const saveBtn = document.getElementById("save-btn");
+
+function markDirty() {
+  if (hasUnsavedChanges) return;
+  hasUnsavedChanges = true;
+
+  if (unsavedWarning) unsavedWarning.style.display = "block";
+  if (saveBtn) saveBtn.style.borderColor = "#fbbf24";
+}
+
+function clearDirty() {
+  hasUnsavedChanges = false;
+
+  if (unsavedWarning) unsavedWarning.style.display = "none";
+  if (saveBtn) saveBtn.style.borderColor = "";
+}
+
 
 let sortColumn = null;
 let sortDirection = 1; // 1 for ascending, -1 for descending
@@ -440,6 +477,15 @@ function openEventsDrawer(loan) {
   // ----------------------------------
   document.body.appendChild(drawer);
 
+document
+  .getElementById("loan-table")
+  .addEventListener("input", (e) => {
+    if (e.target.matches("[data-field]")) {
+      markDirty();
+    }
+  });
+
+  
   // ----------------------------------
   // Delete event handlers
   // ----------------------------------
@@ -449,6 +495,8 @@ function openEventsDrawer(loan) {
 
       const id = btn.dataset.eventId;
       loan.events = loan.events.filter(e => e.id !== id);
+      markDirty();
+
 
       drawer.remove();
       openEventsDrawer(loan);
@@ -480,7 +528,9 @@ function openEventsDrawer(loan) {
       date,
       amount
     });
+  markDirty();
 
+    
     loan.events.sort((a, b) => new Date(a.date) - new Date(b.date));
 
     drawer.remove();
@@ -505,6 +555,9 @@ drawer.querySelector("#add-deferral-btn").onclick = () => {
     startDate,
     months
   });
+
+  markDirty();
+
 
   // Keep events ordered by start date / date
   loan.events.sort((a, b) => {
@@ -769,6 +822,8 @@ async function saveToBackend() {
 
   currentSha = data.content.sha;
   status.textContent = "Saved ✔";
+   clearDirty();
+
 
 } catch (err) {
   console.error(err);
