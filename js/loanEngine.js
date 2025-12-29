@@ -375,8 +375,10 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
 if (
   defaultDate &&
   loanDate.getFullYear() === defaultDate.getFullYear() &&
-  loanDate.getMonth() === defaultDate.getMonth()
+  loanDate.getMonth() === defaultDate.getMonth() &&
+  schedule.length > 0   // ⬅ ensures prior month already posted
 ) {
+
   const applied = Math.min(balance, defaultRecovery);
   const isOwned = loanDate >= purchase;
 
