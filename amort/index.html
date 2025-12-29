@@ -1563,31 +1563,52 @@ function openDrawerForLoan(loan) {
   // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
   const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
 
-  // walk full amort schedule (from loan start),
-  // but mark purchase row and dim pre-purchase rows
-  loan.amort.schedule.forEach((r) => {
-    const rowDate = new Date(loan.loanStartDate + "T00:00:00");
-    rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
-    const isBeforePurchase = rowDate < purchaseDate;
-    const isPurchaseRow = rowDate.getTime() === purchaseDate.getTime();
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td style="text-align:left">${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}</td>
-      <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
-    `;
-    if (isBeforePurchase) {
-      tr.style.opacity = "0.45";
-    }
-    if (isPurchaseRow) {
-      tr.querySelectorAll('td').forEach(td => {
-        td.style.borderTop = "2px solid #22c55e";
-      });
-    }
-    amortBody.appendChild(tr);
-  });
+// walk amort schedule — ONE ROW PER CALENDAR MONTH
+const seenMonths = new Set();
+
+loan.amort.schedule.forEach((r) => {
+  const rowDate = new Date(loan.loanStartDate + "T00:00:00");
+  rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
+
+  // month key = YYYY-MM
+  const monthKey =
+    rowDate.getFullYear() + "-" + rowDate.getMonth();
+
+  // 🚫 skip duplicate rows within the same month
+  if (seenMonths.has(monthKey)) return;
+  seenMonths.add(monthKey);
+
+  const isBeforePurchase = rowDate < purchaseDate;
+
+  // purchase month = same calendar month as purchaseDate
+  const isPurchaseMonth =
+    rowDate.getFullYear() === purchaseDate.getFullYear() &&
+    rowDate.getMonth() === purchaseDate.getMonth();
+
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align:left">
+      ${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}
+    </td>
+    <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
+    <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
+    <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
+    <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
+  `;
+
+  if (isBeforePurchase) {
+    tr.style.opacity = "0.45";
+  }
+
+  if (isPurchaseMonth) {
+    tr.querySelectorAll('td').forEach(td => {
+      td.style.borderTop = "2px solid #22c55e";
+    });
+  }
+
+  amortBody.appendChild(tr);
+});
+
 
   /* build drawer chart (multi-line with legend & current date marker) */
   drawerChartArea.innerHTML = '';
