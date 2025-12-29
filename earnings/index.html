@@ -3185,8 +3185,6 @@ loanGrid.classList.toggle("compact", compactToggle.checked);
 localStorage.setItem("loanGridCompact", compactToggle.checked);
 });
 
-portfolioViews = buildPortfolioViews(loansWithEarnings);
-
 buildLoanColorMap(loansWithEarnings);
 
 kpis = computeEarningsKPIs(loansWithEarnings);
