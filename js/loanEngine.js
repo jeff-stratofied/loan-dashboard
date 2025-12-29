@@ -205,20 +205,20 @@ export function buildAmortSchedule(loan) {
       deferralStartMap[key] = (deferralStartMap[key] || 0) + m;
     });
  
-  let deferralRemaining = 0;
   const schedule = [];
 
-  // -------------------------------
-  // State
-  // -------------------------------
-  let balance = Number(principal || 0);
+// -------------------------------
+// State
+// -------------------------------
+let balance = Number(principal || 0);
 
-  // We walk "contractual months" with i, but "calendar months" can expand
-  // due to inserted deferral rows.
-  let calendarDate = new Date(start);
+// We walk "contractual months" with i, but "calendar months" can expand
+// due to inserted deferral rows.
+let calendarDate = new Date(start);
 
-  // Track deferral inserts (so we can insert N months without advancing i)
-  let deferralRemaining = 0;
+// Track deferral inserts (so we can insert N months without advancing i)
+let deferralRemaining = 0;
+
 
   // Contractual month loop
   for (let i = 0; i < totalMonths; ) {
@@ -286,11 +286,6 @@ export function buildAmortSchedule(loan) {
     // NORMAL CONTRACTUAL MONTH (advance i at end)
     // ----------------------------------------------
     const loanDate = new Date(calendarDate);
-
-      const key = monthKey(loanDate);
-  if (deferralStartMap[key]) {
-    deferralRemaining += deferralStartMap[key];
-  }
 
     let interest = balance * monthlyRate;
     let principalPaid = 0;
