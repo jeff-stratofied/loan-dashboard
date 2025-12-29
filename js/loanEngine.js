@@ -309,15 +309,22 @@ export function buildPortfolioViews(loansWithAmort) {
     return loansWithAmort.reduce((sum, loan) => {
       const purchaseDate = new Date(loan.purchaseDate);
 
-      return sum + loan.amort.schedule
-        .filter(r => {
-          const payDate = r.loanDate;
-          const sameMonth = sameMonthYear(payDate, targetMonthDate);
-          const owned = payDate >= purchaseDate;
-          return sameMonth && owned;
-        })
-        .reduce((s, r) => s + r.payment, 0);
-    }, 0);
+      const sched =
+  loan.amortSchedule ||
+  loan.amort?.schedule ||
+  [];
+
+if (!sched.length) return sum;
+
+return sum + sched
+  .filter(r => {
+    const payDate = r.loanDate;
+    const sameMonth = sameMonthYear(payDate, targetMonthDate);
+    const owned = payDate >= purchaseDate;
+    return sameMonth && owned;
+  })
+  .reduce((s, r) => s + r.payment, 0);
+
   }
 
   // Default: 24-month forward projection
@@ -363,38 +370,15 @@ export function buildPortfolioViews(loansWithAmort) {
     let cumPrincipal = 0;
     let cumFees      = 0;
 
-    roiSeries[loan.id] = loan.amort.schedule
-      .filter(r => r.loanDate >= purchase)
-.map(r => {
-  // accumulate realized components
-  cumInterest  += r.interest;
-  cumPrincipal += r.principalPaid;
+const sched =
+  loan.amortSchedule ||
+  loan.amort?.schedule ||
+  [];
 
-  const feeThisMonth = Number(r.feeThisMonth ?? 0);
-  cumFees += feeThisMonth;
+roiSeries[loan.id] = sched
+  .filter(r => r.loanDate >= purchase)
+  .map(r => { ... });
 
-  const realized   = cumPrincipal + cumInterest - cumFees;
-  const unrealized = r.balance * 0.95;
-  const loanValue  = realized + unrealized;
-
-  const roi = purchasePrice
-    ? (loanValue - purchasePrice) / purchasePrice
-    : 0;
-
-  return {
-    date: r.loanDate,
-    month: r.monthIndex,
-    roi,
-    loanValue,
-    realized,
-    unrealized,
-    balance: r.balance,
-    cumInterest,
-    cumPrincipal,
-    cumFees,
-    ownershipDate: r.ownershipDate
-  };
-});
 
 
 
@@ -426,30 +410,15 @@ loansWithAmort.forEach(loan => {
   let cumFees      = 0;
 
   // --- build earned-to-date series first
-  const earnedSeries = loan.amort.schedule
-    .filter(r => r.loanDate >= purchase)
-    .map(r => {
-      cumPrincipal += r.principalPaid;
-      cumInterest  += r.interest;
+const sched =
+  loan.amortSchedule ||
+  loan.amort?.schedule ||
+  [];
 
-      const feeThisMonth = Number(r.feeThisMonth ?? 0);
-      cumFees += feeThisMonth;
+const earnedSeries = sched
+  .filter(r => r.loanDate >= purchase)
+  .map(r => { ... });
 
-      return {
-        loanDate: r.loanDate,
-        ownershipDate: r.loanDate,
-        monthIndex: r.monthIndex,
-        payment: r.payment,
-        principalPaid: r.principalPaid,
-        interest: r.interest,
-        balance: r.balance,
-
-        cumPrincipal,
-        cumInterest,
-        cumFees,
-        netEarnings: cumPrincipal + cumInterest - cumFees
-      };
-    });
 
   if (!earnedSeries.length) {
     earningsSeries[loan.id] = [];
@@ -514,8 +483,14 @@ Object.keys(earningsSeries).forEach(loanId => {
   }, 0);
 
   const portfolioValue = loansWithAmort.reduce((sum, loan) => {
-    const last = loan.amort.schedule[loan.amort.schedule.length - 1];
-    return sum + last.balance;
+    const sched =
+  loan.amortSchedule ||
+  loan.amort?.schedule ||
+  [];
+
+const last = sched[sched.length - 1];
+return sum + (last ? last.balance : 0);
+
   }, 0);
 
   const amortKpis = {
