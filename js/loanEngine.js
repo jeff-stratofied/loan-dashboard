@@ -282,7 +282,13 @@ let balance = Number(principal || 0);
 
 // We walk "contractual months" with i, but "calendar months" can expand
 // due to inserted deferral rows.
-let calendarDate = new Date(start);
+// Canonicalize calendarDate to first of month to avoid rollover bugs
+let calendarDate = new Date(
+  start.getFullYear(),
+  start.getMonth(),
+  1
+);
+
 
 // Track deferral inserts (so we can insert N months without advancing i)
 let deferralRemaining = 0;
