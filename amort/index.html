@@ -1662,11 +1662,13 @@ const monthAnchor = new Date(
   1
 );
 
-  function monthIndexFromDate(dateStr, schedule, anchor) {
+  function monthIndexFromDate(dateStr, schedule) {
+
   const d = new Date(dateStr + "T00:00:00");
 
   for (let i = 0; i < schedule.length; i++) {
-    const rowDate = new Date(anchor);
+    const rowDate = new Date(monthAnchor);
+
     rowDate.setMonth(rowDate.getMonth() + (schedule[i].monthIndex - 1));
 
     if (
@@ -1718,22 +1720,15 @@ if (e.type === "deferral" && e.startDate && e.months) {
 const idx = monthIndexFromDate(
   e.date || e.startDate,
   loan.amort.schedule,
-  anchor
 );
 
 if (idx) eventByMonth[idx] = e.type;
 
 });
 
-
-
-// walk amort schedule — SHOW EVERY MONTH
-// Standardize display date = 1st of each month, anchored to PURCHASE month.
-
-const anchor = new Date(purchaseDate.getFullYear(), purchaseDate.getMonth(), 1);
-
 function displayDateForMonthIndex(monthIndex) {
-  const d = new Date(anchor);
+  const d = new Date(monthAnchor);
+
   d.setMonth(d.getMonth() + (monthIndex - 1));
   return d;
 }
