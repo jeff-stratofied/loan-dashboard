@@ -259,7 +259,20 @@ export function buildAmortSchedule(loan) {
       const m = Math.max(0, Math.floor(Number(e.months) || 0));
       deferralStartMap[key] = (deferralStartMap[key] || 0) + m;
     });
- 
+
+  // -------------------------------
+  // Index DEFAULT event (at most one)
+  // -------------------------------
+  const defaultEvent = events.find(e => e.type === "default" && e.date);
+  
+  const defaultDate = defaultEvent
+    ? new Date(defaultEvent.date)
+    : null;
+  
+  const defaultRecovery =
+    defaultEvent ? Number(defaultEvent.recoveryAmount || 0) : 0;
+
+  
   const schedule = [];
 
 // -------------------------------
@@ -287,6 +300,10 @@ let deferralRemaining = 0;
     // ----------------------------------------------
     // DEFERRAL INSERTION MONTHS (do NOT advance i)
     // ----------------------------------------------
+    if (defaultDate && calendarDate >= defaultDate) {
+  break;
+}
+    
     if (deferralRemaining > 0) {
       const loanDate = new Date(calendarDate);
 
@@ -343,6 +360,41 @@ let deferralRemaining = 0;
     // NORMAL CONTRACTUAL MONTH (advance i at end)
     // ----------------------------------------------
     const loanDate = new Date(calendarDate);
+
+    // ----------------------------------------------
+// DEFAULT — stop schedule and apply recovery
+// ----------------------------------------------
+if (defaultDate && loanDate >= defaultDate) {
+  const applied = Math.min(balance, defaultRecovery);
+
+  const isOwned = loanDate >= purchase;
+
+  schedule.push({
+    monthIndex: schedule.length + 1,
+    loanDate,
+    displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
+
+    payment: +(applied.toFixed(2)),
+    principalPaid: +(applied.toFixed(2)),
+    interest: 0,
+    balance: +((balance - applied).toFixed(2)),
+
+    prepayment: 0,
+    deferral: false,
+    accruedInterest: 0,
+
+    isOwned,
+    ownershipDate: isOwned ? loanDate : null,
+
+    defaulted: true,
+    recovery: +(applied.toFixed(2)),
+    contractualMonth: i + 1
+  });
+
+  // End the amort schedule permanently
+  break;
+}
+
 
     let interest = balance * monthlyRate;
     let principalPaid = 0;
