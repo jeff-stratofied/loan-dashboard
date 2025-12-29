@@ -439,21 +439,30 @@
                 `/loan-dashboard/amort/index.html?user=${user}&embed=true&open=first`;
         }
 
-        function wireClickRedirect(iframeId, fullPath) {
-            const iframe = document.getElementById(iframeId);
-            if (!iframe) return;
-            iframe.addEventListener("load", () => {
+            function wireClickRedirect(iframeId, fullPath, openParam) {
+              const iframe = document.getElementById(iframeId);
+              if (!iframe) return;
+            
+              iframe.addEventListener("load", () => {
                 try {
-                    const doc = iframe.contentWindow.document;
-                    doc.addEventListener("click", () => {
-                        const user = getActiveUser();
-                        window.location.href = `${fullPath}?user=${user}`;
-                    }, { once: true });
+                  const doc = iframe.contentWindow.document;
+                  doc.addEventListener(
+                    "click",
+                    () => {
+                      const user = getActiveUser();
+                      const url = new URL(fullPath, window.location.origin);
+                      url.searchParams.set("user", user);
+                      if (openParam) url.searchParams.set("open", openParam);
+                      window.location.href = url.toString();
+                    },
+                    { once: true }
+                  );
                 } catch (e) {
-                    console.warn(`Click redirect failed for ${iframeId}`, e);
+                  console.warn(`Click redirect failed for ${iframeId}`, e);
                 }
-            });
-        }
+              });
+            }
+
 
         // Initial load - now defaults to Jeff Customer
         let activeUser = getActiveUser();
