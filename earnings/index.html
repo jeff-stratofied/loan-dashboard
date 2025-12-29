@@ -1002,6 +1002,9 @@ import {
 let currentLoan = null;
 let currentMode = 'portfolio';
 
+let PORTFOLIO_START = null;
+
+
 const earlyParams = new URLSearchParams(window.location.search);
 if (earlyParams.get('embed') === 'true') {
 document.documentElement.style.visibility = 'hidden';
@@ -1349,6 +1352,12 @@ window.LoanMap = Object.fromEntries(
 loansWithEarnings.map(l => [l.loanName, l])
 );
 }
+
+  // =====================================================
+// STANDARD PORTFOLIO START (AFTER LOANS LOAD)
+// =====================================================
+PORTFOLIO_START = getPortfolioStartDate(loansWithEarnings);
+
 
 const KPI_PALETTE = [
 "#2563eb",
