@@ -980,7 +980,7 @@ const formattedLoans = userLoans.map(l => ({
       const loansWithAmort = formattedLoans.map(l => {
         // compute amortization schedule for this loan
     // -------------------------------------
-    // USE REAL AMORT ENGINE FROM loanEngine.js
+    // USE REAL AMORT ENGINE FROM loanEngine
     // -------------------------------------
       const amortSchedule = buildAmortSchedule(l);
 
