@@ -141,6 +141,41 @@ button:hover {
 }
 
 /* ===========================================
+   Events button highlight
+   =========================================== */
+.events-btn {
+  position: relative;
+}
+
+.events-btn.has-events {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent);
+}
+
+.events-btn.has-default {
+  border-color: #ef4444;
+  color: #fecaca;
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.45);
+}
+
+/* small dot indicator */
+.events-btn.has-events::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+}
+
+.events-btn.has-default::after {
+  background: #ef4444;
+}
+
+  
+/* ===========================================
    STATUS PILL (matches ROI)
    =========================================== */
 
@@ -771,7 +806,15 @@ function renderTable() {
       </td>
 
       <td class="col-actions">
-        <button class="delete-btn" data-action="events">Events</button>
+        <button
+  class="delete-btn events-btn
+    ${loan.events?.length ? "has-events" : ""}
+    ${loan.events?.some(e => e.type === "default") ? "has-default" : ""}"
+  data-action="events"
+>
+  Events
+</button>
+
         <button class="delete-btn" data-action="duplicate" style="margin-left:6px;">Duplicate</button>
         <button class="delete-btn" data-action="delete" style="margin-left:6px;">Delete</button>
       </td>
