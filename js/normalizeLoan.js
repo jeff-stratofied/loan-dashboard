@@ -3,6 +3,7 @@
 export function normalizeLoan(l) {
   return {
     ...l,
+    events: Array.isArray(l.events) ? l.events : [],
 
     // -------------------------
     // Identity
