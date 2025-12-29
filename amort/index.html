@@ -1563,24 +1563,27 @@ function openDrawerForLoan(loan) {
   // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
   const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
 
-// walk amort schedule — ONE ROW PER CALENDAR MONTH
-const seenMonths = new Set();
+// walk amort schedule — SHOW EVERY MONTH
+// Standardize display date = 1st of each month, anchored to PURCHASE month.
+const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
+const anchor = new Date(purchaseDate.getFullYear(), purchaseDate.getMonth(), 1);
+
+function displayDateForMonthIndex(monthIndex) {
+  const d = new Date(anchor);
+  d.setMonth(d.getMonth() + (monthIndex - 1));
+  return d;
+}
+
+function fmtDate(d) {
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
 
 loan.amort.schedule.forEach((r) => {
-  // Normalize start date to 1st of month to avoid rollover (Jan 31 → Mar 2 bug)
-const start = new Date(loan.loanStartDate + "T00:00:00");
-const safeStart = new Date(start.getFullYear(), start.getMonth(), 1);
-
-const rowDate = new Date(safeStart);
-rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
-
-  // month key = YYYY-MM
-  const monthKey =
-    rowDate.getFullYear() + "-" + rowDate.getMonth();
-
-  // 🚫 skip duplicate rows within the same month
-  if (seenMonths.has(monthKey)) return;
-  seenMonths.add(monthKey);
+  const rowDate = displayDateForMonthIndex(r.monthIndex);
 
   const isBeforePurchase = rowDate < purchaseDate;
 
@@ -1589,29 +1592,26 @@ rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
     rowDate.getFullYear() === purchaseDate.getFullYear() &&
     rowDate.getMonth() === purchaseDate.getMonth();
 
-  const tr = document.createElement('tr');
+  const tr = document.createElement("tr");
   tr.innerHTML = `
-    <td style="text-align:left">
-      ${offsetDateByMonths(loan.loanStartDate, r.monthIndex - 1)}
-    </td>
+    <td style="text-align:left">${fmtDate(rowDate)}</td>
     <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
     <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
     <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
     <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
   `;
 
-  if (isBeforePurchase) {
-    tr.style.opacity = "0.45";
-  }
+  if (isBeforePurchase) tr.style.opacity = "0.45";
 
   if (isPurchaseMonth) {
-    tr.querySelectorAll('td').forEach(td => {
+    tr.querySelectorAll("td").forEach((td) => {
       td.style.borderTop = "2px solid #22c55e";
     });
   }
 
   amortBody.appendChild(tr);
 });
+
 
 
   /* build drawer chart (multi-line with legend & current date marker) */
@@ -1788,7 +1788,8 @@ rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
       circles.appendChild(dot);
     });
     // Calendar date label
-    const dateLabel = chartDateLabel(loan.loanStartDate, row.monthIndex);
+    const dateLabel = fmtDate(displayDateForMonthIndex(row.monthIndex));
+
     // Tooltip
     tooltip.style.display = 'block';
     tooltip.style.left = ev.clientX + 'px';
