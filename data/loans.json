@@ -116,7 +116,14 @@
       "termYears": 7,
       "graceYears": 0.5,
       "loanId": "BZV8U2T3WU",
-      "events": []
+      "events": [
+        {
+          "id": "504705a2-9379-492b-bd94-e76a5aa2b99e",
+          "type": "prepayment",
+          "date": "2025-10-15",
+          "amount": 1000
+        }
+      ]
     },
     {
       "loanName": "PSU 2025 8.10",
