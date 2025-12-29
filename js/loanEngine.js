@@ -290,12 +290,15 @@ let deferralRemaining = 0;
 
   // Contractual month loop
   for (let i = 0; i < totalMonths; ) {
-    // BEFORE processing the next contractual month at this calendarDate,
-    // check if a deferral starts here. If so, insert N deferral months.
-    const startKey = monthKey(calendarDate);
-    if (deferralRemaining === 0 && deferralStartMap[startKey]) {
-      deferralRemaining = deferralStartMap[startKey];
-    }
+
+    // Check if a deferral should START NEXT month (not this one)
+const nextMonth = addMonths(calendarDate, 1);
+const startKey = monthKey(nextMonth);
+
+if (deferralRemaining === 0 && deferralStartMap[startKey]) {
+  deferralRemaining = deferralStartMap[startKey];
+}
+
 
     // ----------------------------------------------
     // DEFERRAL INSERTION MONTHS (do NOT advance i)
