@@ -1351,12 +1351,6 @@ loansWithEarnings.map(l => [l.loanName, l])
 );
 }
 
-  // =====================================================
-// STANDARD PORTFOLIO START (AFTER LOANS LOAD)
-// =====================================================
-PORTFOLIO_START = getPortfolioStartDate(loansWithEarnings);
-
-
 const KPI_PALETTE = [
 "#2563eb",
 "#dc2626",
@@ -3109,12 +3103,14 @@ loan
 }
 
 async function initPage() {
-await loadLoansFromBackend();
-rebuildLoansWithEarnings();
+  await loadLoansFromBackend();
+  rebuildLoansWithEarnings();
 
-const PORTFOLIO_START = getPortfolioStartDate(loans ?? []);
+  // ✅ set the GLOBAL portfolio start used by KPI math
+  PORTFOLIO_START = getPortfolioStartDate(loansWithEarnings);
 
-let kpis = computeEarningsKPIs(loansWithEarnings);
+  let kpis = computeEarningsKPIs(loansWithEarnings);
+
 
 const nameSelect = document.getElementById("filterName");
 const schoolSelect = document.getElementById("filterSchool");
