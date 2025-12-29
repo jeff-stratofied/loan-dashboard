@@ -35,14 +35,7 @@
       "termYears": 8,
       "graceYears": 0.5,
       "loanId": "C0RAT4N23A",
-      "events": [
-        {
-          "id": "82562ba6-1d85-44dc-8de4-168f13376ba9",
-          "type": "deferral",
-          "startDate": "2025-09-01",
-          "months": 6
-        }
-      ]
+      "events": []
     },
     {
       "loanName": "PIT 2024 8.25",
