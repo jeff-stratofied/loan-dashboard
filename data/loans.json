@@ -65,14 +65,7 @@
       "termYears": 15,
       "graceYears": 4,
       "loanId": "7Q75NE4HOQ",
-      "events": [
-        {
-          "id": "a001aeeb-4602-4af4-8ea3-9f2900b25ac1",
-          "type": "default",
-          "date": "2023-12-01",
-          "recoveryAmount": 0
-        }
-      ]
+      "events": []
     },
     {
       "loanName": "NYU 2025 8.70",
