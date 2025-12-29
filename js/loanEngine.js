@@ -144,6 +144,26 @@ export function formatMonthYear(date) {
 }
 
 // -------------------------------
+// Canonical amort display date
+// Always first of month to avoid rollover bugs
+// -------------------------------
+function getCanonicalMonthDate(purchaseDateStr, monthIndex) {
+  const p = new Date(purchaseDateStr + "T00:00:00");
+
+  // Anchor = first day of purchase month
+  const anchor = new Date(
+    p.getFullYear(),
+    p.getMonth(),
+    1
+  );
+
+  const d = new Date(anchor);
+  d.setMonth(d.getMonth() + (monthIndex - 1));
+  return d;
+}
+
+
+// -------------------------------
 // Core: Build amortization schedule
 // -------------------------------
 //
@@ -260,6 +280,8 @@ let deferralRemaining = 0;
         monthIndex: schedule.length + 1,
         loanDate,
 
+        displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
+
         // Deferral month: no scheduled payment, no scheduled principal/interest
         payment: 0,
         principalPaid: +(prepaymentThisMonth.toFixed(2)), // only prepayment counts as principal
@@ -339,6 +361,8 @@ let deferralRemaining = 0;
     schedule.push({
       monthIndex: schedule.length + 1,
       loanDate,
+
+      displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
 
       payment: +(paymentAmt.toFixed(2)),
       principalPaid: +(principalPaid.toFixed(2)),
