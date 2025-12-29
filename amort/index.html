@@ -1749,22 +1749,23 @@ const eventByMonth = {};
 (loan.events || []).forEach(e => {
   if (!e.type) return;
 
-  // -------------------------
-  // DEFERRAL — spans months
-  // -------------------------
-  if (e.type === "deferral" && e.startDate && e.months) {
-    const startIdx = monthIndexFromDate(
-      e.startDate,
-      loan.amort.schedule
-    );
+// -------------------------
+// DEFERRAL — spans months (calendar-authoritative)
+// -------------------------
+if (e.type === "deferral" && (e.startDate || e.date) && e.months) {
+  const startIdx = monthIndexFromDate(
+    e.startDate || e.date,
+    loan.amort.schedule
+  );
 
-    if (startIdx) {
-      for (let i = 0; i < e.months; i++) {
-        eventByMonth[startIdx + i] = "deferral";
-      }
+  if (startIdx !== null) {
+    for (let i = 0; i < e.months; i++) {
+      eventByMonth[startIdx + i] = "deferral";
     }
-    return;
   }
+  return;
+}
+
 
   // -------------------------
   // PREPAYMENT — engine-authoritative
