@@ -1026,9 +1026,7 @@ USER_LABELS[PAGE_USER] || PAGE_USER;
 // STANDARD DATE — SINGLE SOURCE OF TRUTH (EARNINGS)
 // =====================================================
 const TODAY = getStandardToday();
-const PORTFOLIO_START = getPORTFOLIO_STARTDate(loans ?? []);
 
-  
 const isEmbed =
 new URLSearchParams(window.location.search).get("embed") === "true";
 
@@ -3112,6 +3110,8 @@ loan
 async function initPage() {
 await loadLoansFromBackend();
 rebuildLoansWithEarnings();
+
+const PORTFOLIO_START = getPortfolioStartDate(loans ?? []);
 
 let kpis = computeEarningsKPIs(loansWithEarnings);
 
