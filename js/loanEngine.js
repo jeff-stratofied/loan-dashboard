@@ -209,6 +209,7 @@ function getCanonicalMonthDate(purchaseDateStr, monthIndex) {
 //
 
 export function buildAmortSchedule(loan) {
+  
   const {
     principal,
     nominalRate,
@@ -227,6 +228,12 @@ export function buildAmortSchedule(loan) {
 
   const start = new Date(loanStartDate);
   const purchase = new Date(purchaseDate);
+
+    const purchaseMonth = new Date(
+  purchase.getFullYear(),
+  purchase.getMonth(),
+  1
+);
 
   // -------------------------------
   // Helpers
@@ -342,7 +349,7 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
         balance -= applied;
       });
 
-      const isOwned = loanDate >= purchase;
+      const isOwned = loanDate >= purchaseMonth;
 
       schedule.push({
         monthIndex: schedule.length + 1,
@@ -393,7 +400,7 @@ if (
     // ---
 
   const applied = Math.min(balance, defaultRecovery);
-  const isOwned = loanDate >= purchase;
+  const isOwned = loanDate >= purchaseMonth;
 
   schedule.push({
     monthIndex: schedule.length + 1,
@@ -473,7 +480,7 @@ if (
 
     principalPaid += prepaymentThisMonth;
 
-    const isOwned = loanDate >= purchase;
+    const isOwned = loanDate >= purchaseMonth;
 
     schedule.push({
       monthIndex: schedule.length + 1,
