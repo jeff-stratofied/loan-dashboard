@@ -292,12 +292,13 @@ let deferralRemaining = 0;
   for (let i = 0; i < totalMonths; ) {
 
     // Check if a deferral should START NEXT month (not this one)
-const nextMonth = addMonths(calendarDate, 1);
-const startKey = monthKey(nextMonth);
+// Check if a deferral starts in THIS calendar month
+const startKey = monthKey(calendarDate);
 
 if (deferralRemaining === 0 && deferralStartMap[startKey]) {
   deferralRemaining = deferralStartMap[startKey];
 }
+
 
 
     // ----------------------------------------------
