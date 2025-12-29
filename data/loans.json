@@ -68,7 +68,7 @@
       "events": []
     },
     {
-      "loanName": "WCC 2017 5.00 (Copy)",
+      "loanName": "WCC 2017 5.50",
       "user": "nick",
       "visible": true,
       "school": "Wyoming Catholic College",
@@ -76,9 +76,9 @@
       "purchaseDate": "2023-06-01",
       "principal": 20000,
       "purchasePrice": 10000,
-      "rate": 0.05,
-      "termYears": 15,
-      "graceYears": 4,
+      "rate": 0.055,
+      "termYears": 10,
+      "graceYears": 1,
       "loanId": "OKYTAVFDFD",
       "events": [
         {
@@ -90,7 +90,7 @@
       ]
     },
     {
-      "loanName": "WCC 2017 5.00 (Copy) (Copy)",
+      "loanName": "WCC 2017 6.00",
       "user": "nick",
       "visible": true,
       "school": "Wyoming Catholic College",
@@ -98,9 +98,9 @@
       "purchaseDate": "2023-06-01",
       "principal": 20000,
       "purchasePrice": 10000,
-      "rate": 0.05,
-      "termYears": 15,
-      "graceYears": 4,
+      "rate": 0.06,
+      "termYears": 10,
+      "graceYears": 1,
       "loanId": "EA1WJNSLWQ",
       "events": [
         {
