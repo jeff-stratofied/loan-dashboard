@@ -1399,9 +1399,33 @@ function getCurrentMonthIndex(loansList) {
 // Per-loan index (today relative to that loan only)
 function getCurrentMonthForLoan(loan) {
   if (!loan?.amort?.schedule?.length) return 1;
-   let months = monthsBetween(loan.loanStartDate);
-  return Math.min(months, loan.amort.schedule.length);
+
+  const purchase = new Date(loan.purchaseDate + "T00:00:00");
+
+  // normalize to month boundary
+  const purchaseMonth = new Date(
+    purchase.getFullYear(),
+    purchase.getMonth(),
+    1
+  );
+
+  const today = new Date();
+  const todayMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1
+  );
+
+  const months =
+    (todayMonth.getFullYear() - purchaseMonth.getFullYear()) * 12 +
+    (todayMonth.getMonth() - purchaseMonth.getMonth()) + 1;
+
+  return Math.min(
+    Math.max(1, months),
+    loan.amort.schedule.length
+  );
 }
+
 // Convert purchaseDate + offset months → "Feb 15, 2025"
 function offsetDateByMonths(startDateStr, offset) {
   const d = new Date(startDateStr + "T00:00:00");  // ensure no timezone shift
