@@ -168,6 +168,15 @@ export function getPortfolioStartDate(loans = []) {
   return min;
 }
 
+// ===============================
+// Standard "today" (midnight)
+// ===============================
+export function getStandardToday() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 
 // -------------------------------
 // Canonical amort display date
