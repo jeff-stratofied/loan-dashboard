@@ -1565,7 +1565,7 @@ function openDrawerForLoan(loan) {
 
 // walk amort schedule — SHOW EVERY MONTH
 // Standardize display date = 1st of each month, anchored to PURCHASE month.
-const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
+
 const anchor = new Date(purchaseDate.getFullYear(), purchaseDate.getMonth(), 1);
 
 function displayDateForMonthIndex(monthIndex) {
