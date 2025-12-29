@@ -656,7 +656,20 @@ function normalizeLoan(l, idx) {
     visible: l.visible !== false,
 
     // ✅ NEW (inert for now)
-    events: Array.isArray(l.events) ? l.events : []
+    events: Array.isArray(l.events)
+  ? l.events.map(e => {
+      if (e.type === "default") {
+        return {
+          id: e.id ?? crypto.randomUUID(),
+          type: "default",
+          date: e.date ?? "",
+          recoveryAmount: Number(e.recoveryAmount ?? 0)
+        };
+      }
+      return e;
+    })
+  : []
+
   };
 }
 
@@ -843,6 +856,8 @@ async function saveToBackend() {
   // VALIDATION — block saving invalid or missing values
   // =====================================================
   for (const loan of updated) {
+
+    // ---- existing validations ----
     if (loan.principal === "" || loan.principal === null || Number(loan.principal) <= 0) {
       alert(`Loan "${loan.loanName}" must have an Original Loan Amount greater than 0.`);
       status.textContent = "Save blocked";
@@ -860,31 +875,59 @@ async function saveToBackend() {
       status.textContent = "Save blocked";
       return;
     }
+
+    // ---- DEFAULT EVENT VALIDATION ----
+    const defaults = loan.events?.filter(e => e.type === "default") || [];
+
+    if (defaults.length > 1) {
+      alert(`Loan "${loan.loanName}" has more than one Default event.`);
+      status.textContent = "Save blocked";
+      return;
+    }
+
+    if (defaults.length === 1) {
+      const d = defaults[0];
+
+      if (!d.date) {
+        alert(`Loan "${loan.loanName}" default is missing a date.`);
+        status.textContent = "Save blocked";
+        return;
+      }
+
+      if (d.recoveryAmount == null || d.recoveryAmount < 0) {
+        alert(`Loan "${loan.loanName}" default recovery amount must be $0 or more.`);
+        status.textContent = "Save blocked";
+        return;
+      }
+    }
   }
 
- try {
-  const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      loans: updated,
-      sha: currentSha
-    })
-  });
+  // =====================================================
+  // SAVE (only runs if validation passed)
+  // =====================================================
+  try {
+    const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        loans: updated,
+        sha: currentSha
+      })
+    });
 
-  const data = await res.json();
-  if (!res.ok) throw data;
+    const data = await res.json();
+    if (!res.ok) throw data;
 
-  currentSha = data.content.sha;
-  status.textContent = "Saved ✔";
-   clearDirty();
+    currentSha = data.content.sha;
+    status.textContent = "Saved ✔";
+    clearDirty();
 
-
-} catch (err) {
-  console.error(err);
-  status.textContent = "Save failed";
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Save failed";
+  }
 }
-}
+
 
   /* Buttons */
   document.getElementById("add-row").onclick = () => {
