@@ -2338,52 +2338,48 @@ function openDrawerForLoan(loan){
   // --------------------------------------------------
   // ROI-BY-MONTH TABLE (use displayDate)
   // --------------------------------------------------
-  drawerAmortContainer.innerHTML = `
-    <h3 style="margin-top:8px">ROI by Month</h3>
-    <div class="amort-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Month</th>
-            <th style="text-align:right">Balance</th>
-            <th style="text-align:right">Cum Interest</th>
-            <th style="text-align:right">Cum Payments</th>
-            <th style="text-align:right">Cum Fees</th>
-            <th style="text-align:right">Loan Value</th>
-            <th style="text-align:right">ROI</th>
-          </tr>
-        </thead>
-        <tbody id="roiBody"></tbody>
-      </table>
-    </div>
-  `;
+drawerAmortContainer.innerHTML = `
+  <h3 style="margin-top:8px">ROI by Month</h3>
+  <div class="amort-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th style="text-align:right">Balance</th>
+          <th style="text-align:right">Loan Value</th>
+          <th style="text-align:right">ROI</th>
+        </tr>
+      </thead>
+      <tbody id="roiBody"></tbody>
+    </table>
+  </div>
+`;
+
 
   const roiBody = document.getElementById('roiBody');
   roiBody.innerHTML = '';
 
-  loan.roiSeries.forEach(s => {
-    const cs =
-      loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
+loan.roiSeries.forEach(s => {
+  const cs =
+    loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
 
-    const tr = document.createElement('tr');
+  const tr = document.createElement('tr');
 
-    const monthLabel =
-      cs.displayDate instanceof Date
-        ? formatMonthYear(cs.displayDate)
-        : '';
+  const monthLabel =
+    cs.displayDate instanceof Date
+      ? formatMonthYear(cs.displayDate)
+      : '';
 
-    tr.innerHTML = `
-      <td style="text-align:left">${monthLabel}</td>
-      <td style="text-align:right">$${Number(cs.balance ?? 0).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(cs.cumInterest ?? 0).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(cs.cumTotal ?? 0).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(s.cumFees ?? 0).toFixed(2)}</td>
-      <td style="text-align:right">$${Number(s.loanValue ?? 0).toFixed(2)}</td>
-      <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
-    `;
+  tr.innerHTML = `
+    <td style="text-align:left">${monthLabel}</td>
+    <td style="text-align:right">$${Number(cs.balance ?? 0).toFixed(2)}</td>
+    <td style="text-align:right">$${Number(s.loanValue ?? 0).toFixed(2)}</td>
+    <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
+  `;
 
-    roiBody.appendChild(tr);
-  });
+  roiBody.appendChild(tr);
+});
+
 
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
