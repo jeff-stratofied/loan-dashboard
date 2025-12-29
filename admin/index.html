@@ -380,47 +380,60 @@ function openEventsDrawer(loan) {
   `;
 
   drawer.innerHTML = `
-    <h3 style="margin-top:0">Events — ${loan.loanName}</h3>
+  <h3 style="margin-top:0">Events — ${loan.loanName}</h3>
 
-    <div style="margin-bottom:12px;color:var(--muted);font-size:0.8rem">
-      Prepayment events only (v1)
-    </div>
+  <div style="margin-bottom:12px;color:var(--muted);font-size:0.8rem">
+    Loan lifecycle events (Prepayments & Deferrals)
+  </div>
 
-    <div id="event-list" style="margin-bottom:16px">
-      ${
-        loan.events.length === 0
-          ? `<div style="color:var(--muted)">No events yet</div>`
-          : loan.events.map(e => `
-              <div style="
-                display:flex;
-                align-items:center;
-                justify-content:space-between;
-                margin-bottom:6px;
-              ">
-                <div>
-                  💰 ${e.date} — $${Number(e.amount).toLocaleString()}
-                </div>
-                <button
-                  data-event-id="${e.id}"
-                  style="font-size:11px;padding:2px 6px"
-                >
-                  Delete
-                </button>
+  <div id="event-list" style="margin-bottom:16px">
+    ${
+      loan.events.length === 0
+        ? `<div style="color:var(--muted)">No events yet</div>`
+        : loan.events.map(e => `
+            <div style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              margin-bottom:6px;
+              font-size:12px;
+            ">
+              <div>
+                ${
+                  e.type === "prepayment"
+                    ? `💰 Prepay — ${e.date} — $${Number(e.amount).toLocaleString()}`
+                    : `⏸ Deferral — ${e.startDate} — ${e.months} mo`
+                }
               </div>
-            `).join("")
-      }
-    </div>
+              <button
+                data-event-id="${e.id}"
+                style="font-size:11px;padding:2px 6px"
+              >
+                Delete
+              </button>
+            </div>
+          `).join("")
+    }
+  </div>
 
-    <hr style="border-color:var(--border);margin:12px 0">
+  <hr style="border-color:var(--border);margin:12px 0">
 
-    <h4>Add Prepayment</h4>
+  <h4>Add Prepayment</h4>
+  <input type="date" id="evt-date" style="margin-bottom:6px;width:100%">
+  <input type="number" id="evt-amount" placeholder="Amount" style="margin-bottom:8px;width:100%">
+  <button id="add-prepay-btn">Add Prepayment</button>
 
-    <input type="date" id="evt-date" style="margin-bottom:6px;width:100%">
-    <input type="number" id="evt-amount" placeholder="Amount" style="margin-bottom:8px;width:100%">
+  <hr style="border-color:var(--border);margin:14px 0">
 
-    <button id="add-event-btn">Add Prepayment</button>
-    <button id="close-event-btn" style="margin-left:6px">Close</button>
-  `;
+  <h4>Add Deferral</h4>
+  <input type="date" id="def-start" style="margin-bottom:6px;width:100%">
+  <input type="number" id="def-months" placeholder="Months" min="1" style="margin-bottom:8px;width:100%">
+  <button id="add-deferral-btn">Add Deferral</button>
+
+  <hr style="border-color:var(--border);margin:14px 0">
+
+  <button id="close-event-btn">Close</button>
+`;
 
   // ----------------------------------
   // Append drawer BEFORE wiring events
@@ -452,7 +465,7 @@ function openEventsDrawer(loan) {
   // ----------------------------------
   // Add prepayment
   // ----------------------------------
-  drawer.querySelector("#add-event-btn").onclick = () => {
+  drawer.querySelector("#add-prepay-btn").onclick = () => {
     const date = drawer.querySelector("#evt-date").value;
     const amount = Number(drawer.querySelector("#evt-amount").value);
 
@@ -473,6 +486,37 @@ function openEventsDrawer(loan) {
     drawer.remove();
     openEventsDrawer(loan);
   };
+
+// ----------------------------------
+// Add deferral
+// ----------------------------------
+drawer.querySelector("#add-deferral-btn").onclick = () => {
+  const startDate = drawer.querySelector("#def-start").value;
+  const months = Number(drawer.querySelector("#def-months").value);
+
+  if (!startDate || !months || months <= 0) {
+    alert("Enter a valid start date and number of months");
+    return;
+  }
+
+  loan.events.push({
+    id: crypto.randomUUID(),
+    type: "deferral",
+    startDate,
+    months
+  });
+
+  // Keep events ordered by start date / date
+  loan.events.sort((a, b) => {
+    const da = new Date(a.startDate || a.date);
+    const db = new Date(b.startDate || b.date);
+    return da - db;
+  });
+
+  drawer.remove();
+  openEventsDrawer(loan);
+};
+  
 }
 
 
