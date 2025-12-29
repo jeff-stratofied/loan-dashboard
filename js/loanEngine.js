@@ -300,9 +300,6 @@ let deferralRemaining = 0;
     // ----------------------------------------------
     // DEFERRAL INSERTION MONTHS (do NOT advance i)
     // ----------------------------------------------
-    if (defaultDate && calendarDate >= defaultDate) {
-  break;
-}
     
     if (deferralRemaining > 0) {
       const loanDate = new Date(calendarDate);
