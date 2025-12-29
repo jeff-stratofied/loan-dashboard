@@ -1092,12 +1092,17 @@ const formattedLoans = userLoans.map(l => ({
         window.KPI_COLOR_MAP[id] = palette[i];
       });
       
-    function getCurrentOwnedRoiEntry(loan){
-      const today = new Date();
-      const ownedEntries = loan.roiSeries.filter(r => r.ownershipDate && r.ownershipDate <= today);
-      if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
-      return ownedEntries[ownedEntries.length - 1];
-    }
+function getCurrentOwnedRoiEntry(loan){
+  const today = new Date();
+  const ownedEntries = loan.roiSeries.filter(
+    r => r.date && r.date <= today
+  );
+  if (!ownedEntries.length) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+  return ownedEntries[ownedEntries.length - 1];
+}
+
 
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
@@ -1223,10 +1228,11 @@ function computeKPIs(list) {
       const today = new Date();
       let todayIdx = -1;
       data.forEach((d, i) => {
-        if (d.ownershipDate && d.ownershipDate <= today) {
-          todayIdx = i;
-        }
-      });
+  if (d.date && d.date <= today) {
+    todayIdx = i;
+  }
+});
+
       if (todayIdx === -1) todayIdx = 0;
       const todayX = pad + todayIdx * stepX;
       const todayLine = document.createElementNS(svgNS, "line");
@@ -1270,7 +1276,9 @@ function computeKPIs(list) {
         tooltip.style.display = 'block';
         tooltip.style.left = (rect.left + cx) + 'px';
         tooltip.style.top = (rect.top + cy - 28) + 'px';
-        tooltip.innerHTML = (opts.labelFn ? opts.labelFn(point, idx) : (point.ownershipDate ? `Date: ${formatDate(point.ownershipDate)} • ${(point.y * 100).toFixed(2)}%` : (`M${point.x} • ${(point.y * 100).toFixed(2)}%`)));
+        tooltip.innerHTML = (opts.labelFn ? opts.labelFn(point, idx) : (point.date
+  ? `Date: ${formatDate(point.date)} • ${(point.y * 100).toFixed(2)}%`
+: (`M${point.x} • ${(point.y * 100).toFixed(2)}%`)));
       });
      svg.addEventListener('mouseleave', function () {
     hoverG.innerHTML = '';
@@ -1933,9 +1941,10 @@ const pts = anchored.map(p => [
       const svg = tile.querySelector('svg.sparkline');
       const w=170,h=48,pad=6;
       const pts = loan.roiSeries.map(s => ({
-      y: s.roi,
-      ownershipDate: s.ownershipDate
-    }));
+  y: s.roi,
+  date: s.date
+}));
+
 
       const ys = pts.map(p=>p.y); const minY=Math.min(...ys); const maxY=Math.max(...ys); const rangeY=Math.max(1e-6,maxY-minY);
       const stepX=(w-pad*2)/Math.max(1,pts.length-1);
@@ -1946,10 +1955,11 @@ const pts = anchored.map(p => [
       // find index of last roiSeries entry whose ownershipDate <= today
       let todayIdxFull = -1;
       loan.roiSeries.forEach((entry, i) => {
-        if (entry.ownershipDate && entry.ownershipDate <= today) {
-          todayIdxFull = i;
-        }
-      });
+  if (entry.date && entry.date <= today) {
+    todayIdxFull = i;
+  }
+});
+
       if (todayIdxFull === -1) todayIdxFull = 0;
 
       // map into the pts array used for the mini chart (pts may be a slice of roiSeries)
