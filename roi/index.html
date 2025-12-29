@@ -886,6 +886,23 @@ html[data-theme="dark"] .drawer-chart{
              (d2.getMonth() - d1.getMonth());
     }
 
+    function buildGlobalDatesFromLoans(loans) {
+  const set = new Set();
+
+  loans.forEach(l => {
+    if (!l.scheduleWithOwnership) return;
+
+    l.scheduleWithOwnership
+      .filter(r => r.isOwned && r.loanDate)
+      .forEach(r => set.add(+r.loanDate));
+  });
+
+  return Array.from(set)
+    .sort((a, b) => a - b)
+    .map(ms => new Date(ms));
+}
+
+
     // ----------------------------
     // Bind current user label
     // ----------------------------
@@ -2502,6 +2519,8 @@ function renderTPVDrawer() {
   // ===============================
   // 4. Render multi-series chart
   // ===============================
+ const globalDates = buildGlobalDatesFromLoans(currentLoans);
+  
   createMultiSeriesChart(
     drawerChartArea,
     timeline.perLoanSeries,
@@ -2700,7 +2719,8 @@ const timeline = buildProjectedRoiTimeline(loansWithAmort);
 // ===============================
 // 4. Render multi-series chart WITH hover
 // ===============================
-createMultiSeriesChart(
+      
+      createMultiSeriesChart(
   drawerChartArea,
   timeline.perLoanSeries,
   timeline.weightedSeries,
@@ -2805,6 +2825,8 @@ function renderROISpreadDrawer() {
   // -------------------------------
  const timeline = buildHistoricalRoiTimeline(loansWithAmort);
 
+const globalDates = buildGlobalDatesFromLoans(currentLoans);
+  
 createMultiSeriesChart(
   drawerChartArea,
   timeline.perLoanSeries,
@@ -3052,6 +3074,7 @@ function renderCapitalRecoveryDrawer() {
   // --------------------------------------------------
   // Render chart (CLEAN X-AXIS)
   // --------------------------------------------------
+  
   createMultiSeriesChart(
     document.getElementById('drawerChartArea'),
     loanSeriesList,
