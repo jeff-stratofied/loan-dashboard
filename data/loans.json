@@ -184,7 +184,14 @@
       "termYears": 5,
       "graceYears": 0,
       "loanId": "QVGKDMCI3U",
-      "events": []
+      "events": [
+        {
+          "id": "ba2f3dda-6233-4b26-ae70-5bd3d28dceed",
+          "type": "default",
+          "date": "2025-12-01",
+          "recoveryAmount": 0
+        }
+      ]
     },
     {
       "loanName": "USC 2025 7.90",
