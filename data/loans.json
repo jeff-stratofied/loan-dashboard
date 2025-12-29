@@ -24,7 +24,7 @@
     },
     {
       "loanName": "OSU 2024 8.00",
-      "user": "john",
+      "user": "jeff",
       "visible": true,
       "school": "Ohio State",
       "loanStartDate": "2024-02-01",
@@ -39,7 +39,7 @@
     },
     {
       "loanName": "PIT 2024 8.25",
-      "user": "john",
+      "user": "jeff",
       "visible": true,
       "school": "Pitt",
       "loanStartDate": "2024-03-15",
