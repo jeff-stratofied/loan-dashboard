@@ -1173,34 +1173,29 @@ const purchaseDt = new Date(normalizedLoan.purchaseDate);
 const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
 const monthsSinceStart = Number.isFinite(monthsSinceStartRaw) ? monthsSinceStartRaw : 0;
 
-amort.schedule = amort.schedule.map(row => {
-const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
+amortSchedule = amortSchedule.map(row => {
+  const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
 
-const loanDate = new Date(row.loanDate);
+  const loanDate = new Date(row.loanDate);
 
-const loanDate = new Date(
-loanDateRaw.getFullYear(),
-loanDateRaw.getMonth(),
-1
-);
+  const ownershipDate =
+    ownershipMonthIndex >= 1
+      ? new Date(
+          purchaseDt.getFullYear(),
+          purchaseDt.getMonth() + (ownershipMonthIndex - 1),
+          1
+        )
+      : null;
 
-const ownershipDate =
-ownershipMonthIndex >= 1
-? new Date(
-purchaseDt.getFullYear(),
-purchaseDt.getMonth() + (ownershipMonthIndex - 1),
-1
-)
-: null;
-
-return {
-...row,
-ownershipMonthIndex,
-isOwned: ownershipMonthIndex >= 1,
-loanDate,
-ownershipDate
-};
+  return {
+    ...row,
+    ownershipMonthIndex,
+    isOwned: ownershipMonthIndex >= 1,
+    loanDate,
+    ownershipDate
+  };
 });
+
 
 let cumPrincipal = 0;
 let cumInterest  = 0;
