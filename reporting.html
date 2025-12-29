@@ -1,556 +1,484 @@
-<!doctype html>
-<html lang="en" data-theme="dark">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Loan Admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STRATOFIED Reporting</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --surface: #f1f5f9;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --muted: #64748b;
+            --brand: #0ea5e9;
+            --shadow: 0 12px 30px rgba(15,23,42,0.06);
+        }
 
-<style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
 
-/* ===========================================
-   THEME VARIABLES — MATCH EXACTLY WITH ROI
-   =========================================== */
+        .app {
+            height: 100%;
+            display: flex;
+        }
 
-html {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --border: #1e293b;
-  --input-bg: #020617;
-  --input-border: #334155;
-  --shadow: 0 18px 40px rgba(0,0,0,0.4);
-  --button-bg: #1e293b;
-  --button-border: #334155;
-  --delete-bg: #111827;
-  --delete-border: #374151;
-  --green: #22c55e;
-}
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 70px;
+            background-color: var(--surface);
+            display: flex;
+            flex-direction: column;
+            padding-top: 20px;
+            border-right: 1px solid var(--border);
+            transition: width 0.35s ease;
+            z-index: 20;
+            overflow: hidden;
+        }
 
-html[data-theme="light"] {
-  --bg: #f8fafc;
-  --card: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --input-bg: #ffffff;
-  --input-border: #cbd5e1;
-  --shadow: 0 1px 4px rgba(0,0,0,0.08);
-  --button-bg: #ffffff;
-  --button-border: #cbd5e1;
-  --delete-bg: #f1f5f9;
-  --delete-border: #cbd5e1;
-  --green: #16a34a;
-}
+        .sidebar.expanded {
+            width: 260px;
+            padding: 20px 20px 0;
+        }
 
-/* Smooth theme transition */
-body, table, th, td, input, select, button {
-  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
-}
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            width: 100%;
+            transition: justify-content 0.35s ease;
+            justify-content: center;
+        }
 
-/* ===========================================
-   GLOBAL LAYOUT
-   =========================================== */
+        .sidebar.expanded .sidebar-header {
+            justify-content: flex-start;
+        }
 
-body {
-  margin: 0;
-  padding: 1.5rem;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
+        .hamburger {
+            font-size: 24px;
+            color: var(--text);
+            cursor: pointer;
+            transition: margin-right 0.35s ease;
+        }
 
-/* Titles */
-h1 {
-  margin: 0 0 0.3rem 0;
-  font-size: 1.45rem;
-}
+        .sidebar.expanded .hamburger {
+            margin-right: 16px;
+        }
 
-/* ===========================================
-   HEADER LAYOUT (match ROI behavior)
-   =========================================== */
+        .drawer-logo {
+            display: none;
+            height: 30px;
+        }
 
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 1.4rem;
-}
+        .sidebar.expanded .drawer-logo {
+            display: block;
+        }
 
-.header-left {
-  flex: 1;
-  min-width: 0;
-}
+        .menu-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            padding: 16px 0;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: var(--text);
+        }
 
-.header-right {
-  display: flex;
-  flex-shrink: 0;
-  gap: 10px;
-  align-items: center;
-  justify-content: flex-end;
-}
+        .sidebar:not(.expanded) .menu-item {
+            justify-content: center;
+        }
 
-  
-.sub {
-  font-size: 0.9rem;
-  color: var(--muted);
-  margin-bottom: 1.2rem;
-}
+        .sidebar.expanded .menu-item {
+            padding: 16px 24px;
+            border-radius: 8px;
+        }
 
-/* ===========================================
-   BUTTONS
-   =========================================== */
+        .menu-item:hover {
+            background: var(--bg);
+        }
 
-button {
-  border-radius: 999px;
-  border: 1px solid var(--button-border);
-  padding: 0.35rem 0.9rem;
-  font-size: 0.8rem;
-  cursor: pointer;
-  font-weight: 500;
-  background: var(--button-bg);
-  color: var(--text);
-}
+        .menu-item.active {
+            color: var(--brand);
+            font-weight: 600;
+        }
 
-button:hover {
-  opacity: 0.8;
-}
+        .menu-item i {
+            font-size: 24px;
+            width: 40px;
+            text-align: center;
+        }
 
-/* Add Loan (green pill) */
-#add-row {
-  background: var(--green);
-  border-color: var(--green);
-  color: #ffffff;
-}
+        .menu-label {
+            display: none;
+            margin-left: 20px;
+            font-size: 16px;
+            white-space: nowrap;
+        }
 
-/* Save button */
-#save-btn {
-  background: var(--button-bg);
-  border-color: var(--button-border);
-}
+        .sidebar.expanded .menu-label {
+            display: inline;
+        }
 
-/* Delete button — small, dark, not red */
-.delete-btn {
-  background: var(--delete-bg) !important;
-  border: 1px solid var(--delete-border) !important;
-  color: var(--text) !important;
-  font-size: 0.75rem !important;
-  padding: 0.22rem 0.6rem !important;
-  border-radius: 0.35rem !important;
-}
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-left: 70px;
+        }
 
-/* ===========================================
-   STATUS PILL (matches ROI)
-   =========================================== */
+        .top-header {
+            height: 60px;
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 30px;
+            box-shadow: var(--shadow);
+            gap: 20px;
+        }
 
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.15rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  font-size: 0.78rem;
-}
+        .header-logo {
+            height: 42px;
+            margin-right: auto;
+        }
 
-.pill-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--green);
-}
+        .right-section {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
 
-/* ===========================================
-   TABLE (matches ROI card/table style)
-   =========================================== */
+        .user-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--card);
-  border-radius: 0.75rem;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-  font-size: 0.78rem;
-}
+        .user-selector select {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--card);
+            color: var(--text);
+            font-weight: 500;
+        }
 
-thead {
-  background: var(--card);
-}
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 500;
+        }
 
-th, td {
-  padding: 0.45rem 0.55rem;
-  border-bottom: 1px solid var(--border);
-}
+        .user-image {
+            width: 36px;
+            height: 36px;
+            background: #e2e8f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
 
-th {
-  color: var(--muted);
-  font-weight: 600;
-  white-space: nowrap;
-}
+        .user-image i {
+            font-size: 20px;
+            color: #64748b;
+        }
 
-th.sortable {
-  cursor: pointer;
-}
+        .connected {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 14px;
+        }
 
-th.sortable:hover {
-  color: var(--text);
-}
+        .logout {
+            color: var(--muted);
+            font-size: 20px;
+            cursor: pointer;
+        }
 
-tbody tr:hover {
-  background: color-mix(in srgb, var(--card) 90%, var(--text) 10%);
-}
+        .logout:hover {
+            color: var(--text);
+        }
 
-/* ===========================================
-   INPUTS + SELECTS
-   =========================================== */
+        .content {
+            flex: 1;
+            padding: 30px 50px;
+            overflow-y: auto;
+            background: var(--bg);
+        }
 
-input, select {
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 0.45rem;
-  border: 1px solid var(--input-border);
-  background: var(--input-bg);
-  color: var(--text);
-  padding: 0.25rem 0.3rem;
-  font-size: 0.78rem;
-}
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
 
-input:focus, select:focus {
-  outline: none;
-  border-color: var(--green);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--green) 40%, transparent);
-}
+        .iframe-tile {
+            background: var(--card);
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
 
-/* Column widths */
-.cell-id { max-width: 50px; }
-.cell-number { max-width: 100px; }
-.cell-date { max-width: 130px; }
-.cell-school { min-width: 140px; }
-.cell-name { min-width: 150px; }
+        .iframe-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--card);
+        }
 
-  /* Tight numeric columns */
-.col-money,
-.col-rate,
-.col-years {
-  width: 1%;
-  white-space: nowrap;
-}
+        .iframe-title {
+            font-weight: 700;
+            font-size: 16px;
+        }
 
-/* Make inputs shrink to content */
-.col-money input,
-.col-rate input,
-.col-years input {
-  width: 100%;
-  min-width: 72px;
-  text-align: right;
-}
+        .iframe-sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
 
-/* Actions column gets priority space */
-.col-actions {
-  white-space: nowrap;
-  width: 1%;
-}
+        .iframe-body {
+            flex: 1;
+            position: relative;
+        }
 
+        .iframe-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
 
-</style>
+        .top-tile {
+            height: 800px;
+        }
 
+        .bottom-tile {
+            min-height: 420px;
+            background: var(--card);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
 
+        .placeholder {
+            color: var(--muted);
+            font-size: 18px;
+            line-height: 1.7;
+        }
+
+        .placeholder small {
+            display: block;
+            font-size: 15px;
+            margin-top: 10px;
+            color: #94a3b8;
+        }
+    </style>
 </head>
-
 <body>
+    <div class="app">
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-bars hamburger" id="hamburger"></i>
+                <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="drawer-logo">
+            </div>
+            <div class="menu-item"><i class="fas fa-home"></i> <span class="menu-label">Home</span></div>
+            <div class="menu-item active"><i class="fas fa-chart-bar"></i> <span class="menu-label">Reporting</span></div>
+            <div class="menu-item"><i class="fas fa-shopping-cart"></i> <span class="menu-label">Marketplace</span></div>
+            <div class="menu-item"><i class="fas fa-wallet"></i> <span class="menu-label">Wallet</span></div>
+            <div class="menu-item"><i class="fas fa-history"></i> <span class="menu-label">History</span></div>
+        </nav>
 
-<!-- =========================================================
-     HEADER
-     ========================================================= -->
-<div class="header-row">
-  <div class="header-left">
-    <h1>Loan Admin</h1>
-    <p>Edit the loans that power your ROI, Earnings, and Amort dashboards.</p>
-  </div>
+        <div class="main-container">
+            <header class="top-header">
+                <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="header-logo">
+                <div class="right-section">
+                    <div class="user-selector">
+                        <span>User:</span>
+                        <select id="userSelect">
+                            <option value="jeff" selected>Jeff Customer</option>
+                            <option value="nick">Nick Lender</option>
+                            <option value="john">John Investor</option>
+                        </select>
+                    </div>
 
-  <div class="header-right">
-    <!-- NAVIGATION BUTTON -->
-<button id="port-btn">
-  📊 Portfolio Dashboard
-</button>
-<select id="admin-user-select" style="padding: 0.35rem 0.7rem; border-radius: 999px; border: 1px solid var(--button-border); background: var(--button-bg); color: var(--text); font-size: 0.8rem;">
-  <option value="jeff" selected>Jeff Customer</option>
-  <option value="nick">Nick Lender</option>
-  <option value="john">John Investor</option>
-</select>
+                    <div class="user-info">
+                        <div class="user-image"><i class="fas fa-user"></i></div>
+                        <span id="currentUserDisplay">Jeff Customer</span>
+                    </div>
+                    <div class="connected">✓ Connected</div>
+                    <div class="logout"><i class="fas fa-sign-out-alt"></i></div>
+                </div>
+            </header>
 
+            <main class="content">
+                <div class="grid">
+                    <div class="iframe-tile top-tile">
+                        <div class="iframe-header">
+                            <div class="iframe-title">Return on Investment</div>
+                            <div class="iframe-sub">Portfolio ROI and projections</div>
+                        </div>
+                        <div class="iframe-body">
+                            <iframe id="roiFrame" src=""></iframe>
+                        </div>
+                    </div>
 
+                    <div class="iframe-tile top-tile">
+                        <div class="iframe-header">
+                            <div class="iframe-title">Earnings</div>
+                            <div class="iframe-sub">Cash flow and projected returns</div>
+                        </div>
+                        <div class="iframe-body">
+                            <iframe id="earningsFrame" src=""></iframe>
+                        </div>
+                    </div>
 
-    <!-- THEME TOGGLE -->
-    <button id="themeToggle" class="toggle-btn">🌙</button>
-  </div>
-</div>
+                    <div class="iframe-tile top-tile">
+                        <div class="iframe-header">
+                            <div class="iframe-title">Loan Amortization</div>
+                            <div class="iframe-sub">Schedules and balances</div>
+                        </div>
+                        <div class="iframe-body">
+                            <iframe id="amortFrame" src=""></iframe>
+                        </div>
+                    </div>
 
-<!-- STATUS -->
-<div id="status" class="pill">Idle</div>
+                    <div class="tile bottom-tile">
+                        <div class="placeholder">
+                            Sum of Initial Loan Amount by University<br>
+                            <small>(Bar Chart)</small>
+                        </div>
+                    </div>
+                    <div class="tile bottom-tile">
+                        <div class="placeholder">
+                            Loan Value by Status (Stacked Bar)<br>
+                            Remaining Loan Amount (Gauge)
+                        </div>
+                    </div>
+                    <div class="tile bottom-tile">
+                        <div class="placeholder">
+                            Map of Loan Distribution<br>
+                            Loan Value by Interest Rate Group<br>
+                            Outstanding Principal by Status
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
 
-<!-- =========================================================
-     TOP BUTTONS (ADD ROW + SAVE)
-     ========================================================= -->
-<div style="margin: 16px 0; display: flex; gap: 10px;">
-  <button id="add-row">+ Add Loan</button>
-  <button id="save-btn">💾 Save Changes</button>
-</div>
+    <script>
+        const hamburger = document.getElementById('hamburger');
+        const sidebar = document.getElementById('sidebar');
+        const userSelect = document.getElementById('userSelect');
+        const currentUserDisplay = document.getElementById('currentUserDisplay');
 
-<!-- =========================================================
-     TABLE
-     ========================================================= -->
-<table id="loan-table">
-  <thead>
-    <tr>
-      <th data-field="loanId" class="sortable">ID</th>
-      <th data-field="loanName" class="sortable">Loan Name</th>
-      <th data-field="user" class="sortable">User</th>
-      <th data-field="visible" class="sortable">Show</th>
-      <th data-field="school" class="sortable">School</th>
-      <th data-field="loanStartDate" class="sortable">Loan Start Date</th>
-      <th data-field="purchaseDate" class="sortable">Purchase Date</th>
-      <th data-field="principal" class="sortable col-money">Orig Loan Amt</th>
-      <th data-field="purchasePrice" class="sortable col-money">Purchase Price</th>
-      <th data-field="rate" class="sortable col-rate">Rate</th>
-      <th data-field="termYears" class="sortable col-years">Term (yrs)</th>
-      <th data-field="graceYears" class="sortable col-years">Grace (yrs)</th>
-      <th class="col-actions">Actions</th>
-    </tr>
-  </thead>
-  <tbody id="loan-table-body"></tbody>
-</table>
+        hamburger.addEventListener('click', () => {
+            sidebar.classList.toggle('expanded');
+        });
 
-<!-- =========================================================
-     SCRIPT: FUNCTIONALITY
-     ========================================================= -->
-<script type="module">
-  import { loadLoans } from "/loan-dashboard/js/loadLoans.js";
+        const displayNames = {
+            "jeff": "Jeff Customer",
+            "nick": "Nick Lender",
+            "john": "John Investor"
+        };
 
-  const USER_OPTIONS = [
-  { value: "jeff", label: "Jeff Customer" },
-  { value: "nick", label: "Nick Lender" },
-  { value: "john", label: "John Investor" }
-];
+        function getActiveUser() {
+            const params = new URLSearchParams(location.search);
+            let user = params.get("user");
+            if (!user || !displayNames.hasOwnProperty(user)) user = "jeff"; // Default to Jeff Customer
+            return user;
+        }
 
-  let currentLoans = [];
-  let currentSha = null;
+        function setActiveUser(user) {
+            const url = new URL(location.href);
+            url.searchParams.set("user", user);
+            history.replaceState({}, "", url);
+        }
 
-let sortColumn = 'loanStartDate';  // Default sort column
-let sortDirection = 1;            // 1 = ascending (↑)
+        function updateDisplay(user) {
+            currentUserDisplay.textContent = displayNames[user];
+            userSelect.value = user;
+        }
 
-function generateLoanId() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let id = "";
-  for (let i = 0; i < 10; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return id;
-}
+        function buildFrames(user) {
+            document.getElementById("roiFrame").src =
+                `/loan-dashboard/roi/index.html?user=${user}&embed=true&open=kpi2`;
 
-  
-const schoolOptions = [
-  "Penn State","Ohio State","Pitt","Carnegie Mellon",
-  "Michigan","UCLA","USC","NYU",
-  "Wyoming Catholic College",
-  "Ave Maria University",
-  "Texas Tech University"
-];
+            document.getElementById("earningsFrame").src =
+                `/loan-dashboard/earnings/index.html?user=${user}&embed=true&open=kpi2`;
 
-function openEventsDrawer(loan) {
-  // ... (unchanged - same as before)
-}
+            document.getElementById("amortFrame").src =
+                `/loan-dashboard/amort/index.html?user=${user}&embed=true&open=first`;
+        }
 
-/* Sort loans */
-function sortLoans() {
-  if (!sortColumn) return;
+        function wireClickRedirect(iframeId, fullPath) {
+            const iframe = document.getElementById(iframeId);
+            if (!iframe) return;
+            iframe.addEventListener("load", () => {
+                try {
+                    const doc = iframe.contentWindow.document;
+                    doc.addEventListener("click", () => {
+                        const user = getActiveUser();
+                        window.location.href = `${fullPath}?user=${user}`;
+                    }, { once: true });
+                } catch (e) {
+                    console.warn(`Click redirect failed for ${iframeId}`, e);
+                }
+            });
+        }
 
-  currentLoans.sort((a, b) => {
-    let va = a[sortColumn];
-    let vb = b[sortColumn];
+        // Initial load - now defaults to Jeff Customer
+        let activeUser = getActiveUser();
+        updateDisplay(activeUser);
+        buildFrames(activeUser);
 
-    if (sortColumn === 'visible') {
-      va = a.visible ? 1 : 0;
-      vb = b.visible ? 1 : 0;
-    } else if (['loanStartDate', 'purchaseDate'].includes(sortColumn)) {
-      va = va ? new Date(va) : new Date(0);
-      vb = vb ? new Date(vb) : new Date(0);
-    } else if (typeof va === 'string') {
-      va = va.toLowerCase();
-      vb = vb.toLowerCase();
-    } else if (isNaN(va)) {
-      va = 0;
-    } else if (isNaN(vb)) {
-      vb = 0;
-    }
+        // Wire redirects
+        wireClickRedirect("roiFrame", "/loan-dashboard/roi/index.html");
+        wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html");
+        wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html");
 
-    if (va < vb) return -sortDirection;
-    if (va > vb) return sortDirection;
-    return 0;
-  });
-}
+        // User switcher
+        userSelect.addEventListener("change", () => {
+            activeUser = userSelect.value;
+            setActiveUser(activeUser);
+            updateDisplay(activeUser);
+            buildFrames(activeUser);
 
-/* Render table */
-function renderTable() {
-  sortLoans(); // Apply sorting before rendering
-
-  const tbody = document.getElementById("loan-table-body");
-  tbody.innerHTML = "";
-
-  currentLoans.forEach((loan) => {
-    // ... (unchanged row rendering - same as before)
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${loan.loanId}</td>
-
-      <td>
-        <input type="text" value="${loan.loanName}" data-field="loanName">
-      </td>
-
-      <td>
-        <select data-field="user">
-          <option value="jeff" ${loan.user === "jeff" ? "selected" : ""}>Jeff Customer</option>
-          <option value="nick" ${loan.user === "nick" ? "selected" : ""}>Nick Lender</option>
-          <option value="john" ${loan.user === "john" ? "selected" : ""}>John Investor</option>
-        </select>
-      </td>
-
-      <td style="text-align:center">
-        <input
-          type="checkbox"
-          data-field="visible"
-          ${loan.visible !== false ? "checked" : ""}
-        />
-      </td>
-
-      <td>
-        <select data-field="school">
-          ${schoolOptions.map(s =>
-            `<option value="${s}" ${loan.school === s ? "selected" : ""}>${s}</option>`
-          ).join("")}
-        </select>
-      </td>
-
-      <td>
-        <input type="date" value="${loan.loanStartDate}" data-field="loanStartDate">
-      </td>
-
-      <td>
-        <input type="date" value="${loan.purchaseDate}" data-field="purchaseDate">
-      </td>
-
-      <td class="col-money">
-        <input type="number" step="0.01" value="${loan.principal}" data-field="principal">
-      </td>
-
-      <td class="col-money">
-        <input type="number" step="0.01" value="${loan.purchasePrice}" data-field="purchasePrice">
-      </td>
-
-      <td class="col-rate">
-        <input type="number" step="0.0001" value="${loan.rate}" data-field="rate">
-      </td>
-
-      <td class="col-years">
-        <input type="number" step="1" value="${loan.termYears}" data-field="termYears">
-      </td>
-
-      <td class="col-years">
-        <input type="number" step="0.1" value="${loan.graceYears}" data-field="graceYears">
-      </td>
-
-      <td class="col-actions">
-        <button class="delete-btn" data-action="events">Events</button>
-        <button class="delete-btn" data-action="duplicate" style="margin-left:6px;">Duplicate</button>
-        <button class="delete-btn" data-action="delete" style="margin-left:6px;">Delete</button>
-      </td>
-    `;
-
-    tr.dataset.loanId = loan.loanId;
-    tbody.appendChild(tr);
-  });
-}
-
-/* Collect from table */
-// ... (unchanged)
-
-  
-    /* Load from Worker */
-  const status = document.getElementById("status");
-
-  async function loadFromBackend() {
-    status.textContent = "Loading…";
-
-    try {
-      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-      const data = await res.json();
-
-      currentLoans = data.loans.map(normalizeLoan);
-      currentSha = data.sha;
-
-      renderTable();
-      status.textContent = "Loaded ✔";
-    } catch (e) {
-      console.error(e);
-      status.textContent = "Load failed";
-    }
-  }
-
-/* Save to Worker */
-// ... (unchanged)
-
-  /* Buttons */
-// ... (unchanged)
-
-  /* ===========================
-     THEME TOGGLE
-     =========================== */
-// ... (unchanged)
-
-  // Sorting setup
-  document.querySelectorAll('#loan-table thead th.sortable').forEach(th => {
-    th.onclick = () => {
-      const field = th.dataset.field;
-      if (sortColumn === field) {
-        sortDirection = -sortDirection;
-      } else {
-        sortColumn = field;
-        sortDirection = 1;
-      }
-
-      // Clear arrows from all headers
-      document.querySelectorAll('#loan-table thead th').forEach(t => {
-        t.innerHTML = t.innerHTML.replace(/ [↑↓]$/, '');
-      });
-
-      // Add arrow to current header
-      th.innerHTML += ` ${sortDirection === 1 ? '↑' : '↓'}`;
-
-      renderTable();
-    };
-  });
-
-  // Set default sort indicator after table loads
-  loadFromBackend().then(() => {
-    const defaultTh = document.querySelector('#loan-table thead th[data-field="loanStartDate"]');
-    if (defaultTh) {
-      defaultTh.innerHTML += ' ↑';
-    }
-  });
-
-  // Add Port Dashboard link logic
-  const portBtn = document.getElementById('port-btn');
-  const userSelect = document.getElementById('admin-user-select');
-
-  portBtn.onclick = () => {
-    const user = userSelect.value;
-    window.open(`/loan-dashboard/reporting.html?user=${user}`, '_blank');
-  };
-
-</script>
-
+            // Re-wire after iframe reloads
+            setTimeout(() => {
+                wireClickRedirect("roiFrame", "/loan-dashboard/roi/index.html");
+                wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html");
+                wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html");
+            }, 1500);
+        });
+    </script>
 </body>
 </html>
