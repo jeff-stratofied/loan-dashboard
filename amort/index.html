@@ -749,14 +749,6 @@ const loanIdParam = Number(params.get("loanId")) || null;
 
 
     
-console.log('URL params:', params.toString());
-console.log('Is embed mode?', isEmbed);
-if (isEmbed) {
-  document.body.classList.add('embed-mode');
-  console.log('Embed class added');
-}
-
-    
     const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
     
@@ -883,8 +875,6 @@ const rawLoans = Array.isArray(apiResult)
 
   apiLoans = rawLoans.map(normalizeLoan);
 
-  console.log("Normalized loan sample:", apiLoans[0]);
-
   // --------------------------------------------------
 // DEV-ONLY SCHEMA DRIFT GUARD
 // --------------------------------------------------
@@ -989,8 +979,6 @@ allLoans = allLoans.filter(l =>
 // FINALIZE CURRENT LOANS — SINGLE SOURCE OF TRUTH
 // =====================================================
 currentLoans = [...allLoans];
-
-console.log("[AMORT] currentLoans finalized:", currentLoans.length);
 
   
     // -------------------------------------------
@@ -1749,6 +1737,12 @@ const eventByMonth = {};
 (loan.events || []).forEach(e => {
   if (!e.type) return;
 
+console.log(
+  "[AMORT] eventByMonth",
+  Object.entries(eventByMonth)
+);
+
+  
 // -------------------------
 // DEFERRAL — spans months (calendar-authoritative)
 // -------------------------
@@ -2821,7 +2815,6 @@ function renderPaymentsDrawer() {
     (currentLoans && currentLoans.length) ? currentLoans : allLoans;
 
   if (!loansForSeries.length) {
-    console.warn('Payments drawer: no loans');
     return;
   }
 
@@ -2858,7 +2851,6 @@ function renderPaymentsDrawer() {
     });
 
   if (!starts.length || !ends.length) {
-    console.warn('Payments drawer: no month range computed', loansForSeries);
     return;
   }
 
@@ -3254,11 +3246,6 @@ if (isEmbed && currentLoans.length && !drawer.classList.contains("open") && !ope
   requestAnimationFrame(() => openDrawerForLoan(loan));
 }
 
-console.log("[AMORT] init complete");
-console.log("[AMORT] openParam =", openParam);
-console.log("[AMORT] loanIdParam =", loanIdParam);
-console.log("[AMORT] loans loaded =", currentLoans.length);
-
 } // <--- End of init()
 // =====================================================
 // DOM READY — INIT + EMBED REDIRECT HANDLING
@@ -3278,11 +3265,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Initialize page (loads loans internally)
   await init();
-
-  console.log("[AMORT] init complete");
-  console.log("[AMORT] openParam =", openParam);
-  console.log("[AMORT] loanIdParam =", loanIdParam);
-  console.log("[AMORT] loans loaded =", currentLoans.length);
 
   // =====================================================
   // EMBED MODE — REDIRECT TO FULL PAGE (SINGLE CONTRACT)
