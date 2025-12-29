@@ -74,30 +74,6 @@ export async function loadLoans() {
       l.loanStartDate ||
       "";
 
-// ===============================
-// Standard portfolio start date
-// ===============================
-export function getPortfolioStartDate(loans = []) {
-  const dates = loans
-    .map(l => {
-      const d = l.loanStartDate || l.purchaseDate;
-      if (!d) return null;
-      const dt = new Date(d);
-      return Number.isFinite(dt.getTime()) ? dt : null;
-    })
-    .filter(Boolean);
-
-  if (!dates.length) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  }
-
-  const min = new Date(Math.min(...dates.map(d => d.getTime())));
-  min.setHours(0, 0, 0, 0);
-  return min;
-}
-
     
     // Normalize terms
     const termYears = Number(
@@ -167,6 +143,31 @@ export function formatMonthYear(date) {
     month: "short"
   });
 }
+
+// ===============================
+// Standard portfolio start date
+// ===============================
+export function getPortfolioStartDate(loans = []) {
+  const dates = loans
+    .map(l => {
+      const d = l.loanStartDate || l.purchaseDate;
+      if (!d) return null;
+      const dt = new Date(d);
+      return Number.isFinite(dt.getTime()) ? dt : null;
+    })
+    .filter(Boolean);
+
+  if (!dates.length) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today;
+  }
+
+  const min = new Date(Math.min(...dates.map(d => d.getTime())));
+  min.setHours(0, 0, 0, 0);
+  return min;
+}
+
 
 // -------------------------------
 // Canonical amort display date
