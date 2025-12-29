@@ -1567,8 +1567,12 @@ function openDrawerForLoan(loan) {
 const seenMonths = new Set();
 
 loan.amort.schedule.forEach((r) => {
-  const rowDate = new Date(loan.loanStartDate + "T00:00:00");
-  rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
+  // Normalize start date to 1st of month to avoid rollover (Jan 31 → Mar 2 bug)
+const start = new Date(loan.loanStartDate + "T00:00:00");
+const safeStart = new Date(start.getFullYear(), start.getMonth(), 1);
+
+const rowDate = new Date(safeStart);
+rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
 
   // month key = YYYY-MM
   const monthKey =
