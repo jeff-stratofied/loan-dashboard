@@ -369,13 +369,6 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
     // ----------------------------------------------
     const loanDate = new Date(calendarDate);
 
-    console.log(
-  "[DEFAULT CHECK]",
-  calendarDate.toISOString().slice(0,10),
-  "vs",
-  defaultDate.toISOString().slice(0,10)
-);
-
 // ----------------------------------------------
 // DEFAULT — apply recovery and stop schedule
 // ----------------------------------------------
