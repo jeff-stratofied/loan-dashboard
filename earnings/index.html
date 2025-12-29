@@ -865,7 +865,7 @@ html[data-theme="dark"] .legend .sw {
   <div class="header-top">
     <div>
       <h1>Loan Portfolio — Earnings</h1>
-      <p class="lead">Cumulative principal, interest, and fees, with stacked earnings visuals.</p>
+      <p class="lead">Cumulative principal, interest, and fees for each loan and for the portfolio.</p>
     </div>
 
     <div class="header-controls">
@@ -1725,7 +1725,7 @@ const rect = container.getBoundingClientRect();
 const w = Math.max(360, rect.width || 700);
 const h = container.offsetHeight || 360;
 
-const padL = 64, padR = 10, padT = 20, padB = 20;
+const padL = 88, padR = 10, padT = 20, padB = 20;
 
 const svg = document.createElementNS(svgNS, "svg");
 svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
