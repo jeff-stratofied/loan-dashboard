@@ -1650,29 +1650,40 @@ const monthAnchor = new Date(
   1
 );
 
- function monthIndexFromDate(dateStr, schedule) {
+function monthIndexFromDate(dateStr, schedule) {
   const d = new Date(dateStr + "T00:00:00");
+  d.setHours(0, 0, 0, 0);
 
-  for (let i = 0; i < schedule.length; i++) {
-    const r = schedule[i];
+  for (const r of schedule) {
+    // ✅ Prefer the same date source the table is aligned to
+    let rowDate = null;
 
-    // Use the same date source the table uses (prefer engine-provided date if present)
-    const rowDate =
-      (r.date ? new Date(r.date + "T00:00:00") :
-      (r.loanDate ? new Date(r.loanDate) :
-      (r.monthDate ? new Date(r.monthDate) :
-      null)));
+    if (r.displayDate) {
+      // displayDate may be a Date object or an ISO string depending on how it was loaded
+      rowDate = (r.displayDate instanceof Date)
+        ? r.displayDate
+        : new Date(String(r.displayDate).slice(0, 10) + "T00:00:00");
+    } else if (r.date) {
+      rowDate = new Date(r.date + "T00:00:00");
+    } else if (r.loanDate) {
+      rowDate = (r.loanDate instanceof Date)
+        ? r.loanDate
+        : new Date(r.loanDate);
+    } else if (r.monthDate) {
+      rowDate = new Date(r.monthDate + "T00:00:00");
+    }
 
-    // Fallback to computed monthAnchor only if no row date exists
-    const effectiveRowDate = rowDate || (() => {
-      const x = new Date(monthAnchor);
-      x.setMonth(x.getMonth() + (r.monthIndex - 1));
-      return x;
-    })();
+    // Fallback only if none exist
+    if (!rowDate) {
+      rowDate = new Date(monthAnchor);
+      rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
+    }
+
+    rowDate.setHours(0, 0, 0, 0);
 
     if (
-      effectiveRowDate.getFullYear() === d.getFullYear() &&
-      effectiveRowDate.getMonth() === d.getMonth()
+      rowDate.getFullYear() === d.getFullYear() &&
+      rowDate.getMonth() === d.getMonth()
     ) {
       return r.monthIndex;
     }
@@ -1680,6 +1691,7 @@ const monthAnchor = new Date(
 
   return null;
 }
+
 
 
 
@@ -1737,11 +1749,6 @@ const eventByMonth = {};
 (loan.events || []).forEach(e => {
   if (!e.type) return;
 
-console.log(
-  "[AMORT] eventByMonth",
-  Object.entries(eventByMonth)
-);
-
   
 // -------------------------
 // DEFERRAL — spans months (calendar-authoritative)
@@ -1759,6 +1766,8 @@ if (e.type === "deferral" && (e.startDate || e.date) && e.months) {
   }
   return;
 }
+console.log("[DEFERRAL startIdx]", e.startDate, "=>", startIdx);
+console.log("[DEFERRAL months]", e.months, "mapping first=", startIdx, "last=", startIdx + Number(e.months) - 1);
 
 
   // -------------------------
