@@ -2795,14 +2795,6 @@ function openKpi2() {
 currentLoan = null;
 currentMode = 'kpi';
 
-console.log("openKpi2 fired");
-
-console.log("KPI values at openKpi2", {
-totalNetProjected: kpis?.totalNetProjected,
-totalFeesProjected: kpis?.totalFeesProjected
-});
-console.log("portfolioViews.kpis snapshot", portfolioViews?.kpis);
-
 currentLoan = null;
 
 resetDrawerContent();
@@ -3037,7 +3029,8 @@ const drawerExtra = document.getElementById("drawerExtra");
 const amortBody = document.getElementById("amortBody");
 const closeBtn = document.getElementById("closeBtn");
 
-function renderLoanTiles() {
+function renderLoanTiles(loansList) {
+
 grid.innerHTML = "";
 loansWithEarnings.forEach(loan => {
 const hasSchedule = loan.earningsSchedule.length > 0;
@@ -3104,7 +3097,8 @@ grid.appendChild(tile);
 tile.addEventListener("click", () => openLoanDrawer(loan));
 
 const mini = tile.querySelector('.mini-chart');
-const series = portfolioViews?.earningsSeries?.[loan.id] || loan.earningsSchedule;
+const series = loan.earningsSchedule || [];
+
 createMiniStackedEarningsSVG(
 mini,
 loan.earningsSchedule,
@@ -3199,7 +3193,8 @@ formatCurrency(kpis.avgMonthlyNet);
 document.getElementById("kpiFees").textContent =
 formatCurrency(kpis.projectedAvgMonthlyNet);
 
-renderLoanTiles();
+renderLoanTiles(loansWithEarnings);
+
 
 const params = new URLSearchParams(window.location.search);
 const openParam = params.get('open');
