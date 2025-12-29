@@ -1763,15 +1763,17 @@ if (defaultEvent?.date) {
   // Add missing months up to default
   for (let m = lastIdx + 1; m <= defaultIdx; m++) {
     const prev = loan.amort.schedule[loan.amort.schedule.length - 1];
-    loan.amort.schedule.push({
-      monthIndex: m,
-      payment: m === defaultIdx
-        ? Number(defaultEvent.recoveryAmount || 0)
-        : prev.payment,
-      principalPaid: 0,
-      interest: 0,
-      balance: prev.balance
-    });
+   loan.amort.schedule.push({
+  monthIndex: m,
+  payment:
+    m === defaultIdx
+      ? Number(defaultEvent.recoveryAmount || 0)
+      : 0,
+  principalPaid: 0,
+  interest: 0,
+  balance: prev.balance
+});
+
   }
 }
 
