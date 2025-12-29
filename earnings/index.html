@@ -3355,13 +3355,12 @@ let rowsHtml = "";
 loan.earningsSchedule.forEach(r => {
 rowsHtml += `
 <tr>
-<td>${formatDate(r.loanDate)}</td>
-<td>${r.isOwned ? formatDate(r.ownershipDate) : ""}</td>
-<td>$${r.cumPrincipal.toFixed(2)}</td>
-<td>$${r.cumInterest.toFixed(2)}</td>
-<td>-$${r.cumFees.toFixed(2)}</td>
-<td>$${r.netEarnings.toFixed(2)}</td>
-</tr>
+      <td>${formatDate(r.loanDate)}</td>
+      <td style="text-align:right">${formatCurrency(r.cumPrincipal)}</td>
+      <td style="text-align:right">${formatCurrency(r.cumInterest)}</td>
+      <td style="text-align:right">-${formatCurrency(r.cumFees)}</td>
+      <td style="text-align:right">${formatCurrency(r.netEarnings)}</td>
+    </tr>
 `;
 });
 
@@ -3370,15 +3369,15 @@ drawerExtra.innerHTML = `
 <div class="amort-wrap">
 <table>
 <thead>
-<tr>
-<th>Loan Date</th>
-<th>Ownership Date</th>
-<th>Cumulative Principal</th>
-<th>Cumulative Interest</th>
-<th>Cumulative Fees</th>
-<th>Net Earnings</th>
-</tr>
+  <tr>
+    <th>Date</th>
+    <th style="text-align:right">Cumulative Principal</th>
+    <th style="text-align:right">Cumulative Interest</th>
+    <th style="text-align:right">Cumulative Fees</th>
+    <th style="text-align:right">Net Earnings</th>
+  </tr>
 </thead>
+
 <tbody>
 ${rowsHtml}
 </tbody>
