@@ -291,10 +291,31 @@ let deferralRemaining = 0;
   // Contractual month loop
   for (let i = 0; i < totalMonths; ) {
 
+    // 🔍 DEBUG: trace calendar vs deferral start
+console.log(
+  "[AMORT LOOP]",
+  "i=", i,
+  "calendarDate=", calendarDate.toISOString().slice(0,10),
+  "monthKey(calendarDate)=", monthKey(calendarDate),
+  "deferralRemaining=", deferralRemaining,
+  "deferralStartMap=", deferralStartMap
+);
+
+
 // Check if a deferral starts in THIS amort row month
 const startKey = monthKey(calendarDate);
-
+/* temp replacement
 if (deferralRemaining === 0 && deferralStartMap[startKey]) {
+  deferralRemaining = deferralStartMap[startKey];
+}
+temp replacement */
+    if (deferralRemaining === 0 && deferralStartMap[startKey]) {
+  console.log(
+    "🟡 DEFERRAL TRIGGERED",
+    "calendarDate=", calendarDate.toISOString().slice(0,10),
+    "startKey=", startKey,
+    "months=", deferralStartMap[startKey]
+  );
   deferralRemaining = deferralStartMap[startKey];
 }
 
@@ -304,6 +325,12 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
     // ----------------------------------------------
     
     if (deferralRemaining > 0) {
+      console.log(
+  "❌ DEFERRAL ROW",
+  "loanDate=", calendarDate.toISOString().slice(0,10),
+  "monthIndex=", schedule.length + 1
+);
+
       const loanDate = new Date(calendarDate);
 
       
