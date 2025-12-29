@@ -2,7 +2,7 @@
   "loans": [
     {
       "loanName": "MICH 2024 9.00",
-      "user": "nick",
+      "user": "john",
       "visible": true,
       "school": "Michigan",
       "loanStartDate": "2024-07-31",
@@ -17,7 +17,7 @@
     },
     {
       "loanName": "MICH 2025 8.50",
-      "user": "nick",
+      "user": "john",
       "visible": true,
       "school": "Michigan",
       "loanStartDate": "2025-03-20",
@@ -66,6 +66,50 @@
       "graceYears": 4,
       "loanId": "7Q75NE4HOQ",
       "events": []
+    },
+    {
+      "loanName": "WCC 2017 5.00 (Copy)",
+      "user": "nick",
+      "visible": true,
+      "school": "Wyoming Catholic College",
+      "loanStartDate": "2017-01-01",
+      "purchaseDate": "2023-06-01",
+      "principal": 20000,
+      "purchasePrice": 10000,
+      "rate": 0.05,
+      "termYears": 15,
+      "graceYears": 4,
+      "loanId": "OKYTAVFDFD",
+      "events": [
+        {
+          "id": "a001aeeb-4602-4af4-8ea3-9f2900b25ac1",
+          "type": "default",
+          "date": "2023-12-01",
+          "recoveryAmount": 0
+        }
+      ]
+    },
+    {
+      "loanName": "WCC 2017 5.00 (Copy) (Copy)",
+      "user": "nick",
+      "visible": true,
+      "school": "Wyoming Catholic College",
+      "loanStartDate": "2017-01-01",
+      "purchaseDate": "2023-06-01",
+      "principal": 20000,
+      "purchasePrice": 10000,
+      "rate": 0.05,
+      "termYears": 15,
+      "graceYears": 4,
+      "loanId": "EA1WJNSLWQ",
+      "events": [
+        {
+          "id": "a001aeeb-4602-4af4-8ea3-9f2900b25ac1",
+          "type": "default",
+          "date": "2023-12-01",
+          "recoveryAmount": 0
+        }
+      ]
     },
     {
       "loanName": "NYU 2025 8.70",
@@ -282,50 +326,6 @@
       "graceYears": 0,
       "loanId": "O3MVZU9I0G",
       "events": []
-    },
-    {
-      "loanName": "WCC 2017 5.50",
-      "user": "nick",
-      "visible": true,
-      "school": "Wyoming Catholic College",
-      "loanStartDate": "2017-01-01",
-      "purchaseDate": "2023-06-01",
-      "principal": 20000,
-      "purchasePrice": 10000,
-      "rate": 0.05,
-      "termYears": 15,
-      "graceYears": 4,
-      "loanId": "OKYTAVFDFD",
-      "events": [
-        {
-          "id": "a001aeeb-4602-4af4-8ea3-9f2900b25ac1",
-          "type": "default",
-          "date": "2023-12-01",
-          "recoveryAmount": 0
-        }
-      ]
-    },
-    {
-      "loanName": "WCC 2017 6.00",
-      "user": "nick",
-      "visible": true,
-      "school": "Wyoming Catholic College",
-      "loanStartDate": "2017-01-01",
-      "purchaseDate": "2023-06-01",
-      "principal": 15000,
-      "purchasePrice": 10000,
-      "rate": 0.06,
-      "termYears": 10,
-      "graceYears": 2,
-      "loanId": "EA1WJNSLWQ",
-      "events": [
-        {
-          "id": "a001aeeb-4602-4af4-8ea3-9f2900b25ac1",
-          "type": "default",
-          "date": "2023-12-01",
-          "recoveryAmount": 0
-        }
-      ]
     }
   ]
 }
