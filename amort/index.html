@@ -1654,15 +1654,20 @@ function openDrawerForLoan(loan) {
   amortBody.innerHTML = '';
 
   // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
-  const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
+  // Standardize all month math to FIRST OF PURCHASE MONTH
+const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
+const monthAnchor = new Date(
+  purchaseDate.getFullYear(),
+  purchaseDate.getMonth(),
+  1
+);
 
-  // =====================================
+
+// =====================================
 // Build event lookup by monthIndex
-// - prepayment/default: single month
-// - deferral: span of months
+// (aligned to amort table month anchor)
 // =====================================
 const eventByMonth = {};
-const loanStart = new Date(loan.purchaseDate + "T00:00:00");
 
 (loan.events || []).forEach(e => {
   if (!e.type) return;
@@ -1674,8 +1679,8 @@ const loanStart = new Date(loan.purchaseDate + "T00:00:00");
     const start = new Date(e.startDate + "T00:00:00");
 
     const startIdx =
-      (start.getFullYear() - loanStart.getFullYear()) * 12 +
-      (start.getMonth() - loanStart.getMonth()) + 1;
+      (start.getFullYear() - monthAnchor.getFullYear()) * 12 +
+      (start.getMonth() - monthAnchor.getMonth()) + 1;
 
     for (let i = 0; i < e.months; i++) {
       const idx = startIdx + i;
@@ -1692,11 +1697,12 @@ const loanStart = new Date(loan.purchaseDate + "T00:00:00");
 
   const d = new Date(date + "T00:00:00");
   const idx =
-    (d.getFullYear() - loanStart.getFullYear()) * 12 +
-    (d.getMonth() - loanStart.getMonth()) + 1;
+    (d.getFullYear() - monthAnchor.getFullYear()) * 12 +
+    (d.getMonth() - monthAnchor.getMonth()) + 1;
 
   if (idx >= 1) eventByMonth[idx] = e.type;
 });
+
 
 
 // walk amort schedule — SHOW EVERY MONTH
@@ -1718,6 +1724,36 @@ function fmtDate(d) {
   });
 }
 
+// =====================================
+// Ensure default terminal month exists
+// =====================================
+const defaultEvent = (loan.events || []).find(e => e.type === "default");
+
+if (defaultEvent?.date) {
+  const d = new Date(defaultEvent.date + "T00:00:00");
+  const defaultIdx =
+    (d.getFullYear() - monthAnchor.getFullYear()) * 12 +
+    (d.getMonth() - monthAnchor.getMonth()) + 1;
+
+  const lastIdx =
+    loan.amort.schedule[loan.amort.schedule.length - 1]?.monthIndex || 0;
+
+  // Add missing months up to default
+  for (let m = lastIdx + 1; m <= defaultIdx; m++) {
+    const prev = loan.amort.schedule[loan.amort.schedule.length - 1];
+    loan.amort.schedule.push({
+      monthIndex: m,
+      payment: m === defaultIdx
+        ? Number(defaultEvent.recoveryAmount || 0)
+        : prev.payment,
+      principalPaid: 0,
+      interest: 0,
+      balance: prev.balance
+    });
+  }
+}
+
+  
 loan.amort.schedule.forEach((r) => {
   const rowDate = displayDateForMonthIndex(r.monthIndex);
 
