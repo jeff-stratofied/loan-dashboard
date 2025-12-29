@@ -1081,208 +1081,210 @@ let loansWithEarnings = [];
 const hiddenLoans = new Set();
 
 function rebuildLoansWithEarnings() {
-loansWithEarnings = loans.map((raw, idx) => {
+  loansWithEarnings = loans.map((raw, idx) => {
 
-const id = raw.id ?? (idx + 1);
-const loanId = raw.loanId ?? id;
+    const id = raw.id ?? (idx + 1);
+    const loanId = raw.loanId ?? id;
 
-const purchasePrice = Number(raw.purchasePrice ?? 0);
+    const purchasePrice = Number(raw.purchasePrice ?? 0);
 
-const balanceForAmort = Number(
-raw.balanceAtPurchase ??
-raw.principal ??
-raw.balance ??
-raw.originalBalance ??
-raw.faceValue ??
-purchasePrice
-);
+    const balanceForAmort = Number(
+      raw.balanceAtPurchase ??
+      raw.principal ??
+      raw.balance ??
+      raw.originalBalance ??
+      raw.faceValue ??
+      purchasePrice
+    );
 
-const nominalRate = Number(
-raw.nominalRate ??
-raw.rate ??
-raw.interestRate ??
-0
-);
+    const nominalRate = Number(
+      raw.nominalRate ??
+      raw.rate ??
+      raw.interestRate ??
+      0
+    );
 
-const termYears = Number(
-raw.termYears ??
-raw.term ??
-raw.years ??
-0
-);
+    const termYears = Number(
+      raw.termYears ??
+      raw.term ??
+      raw.years ??
+      0
+    );
 
-const graceYears = Number(
-raw.graceYears ??
-raw.grace ??
-0
-);
+    const graceYears = Number(
+      raw.graceYears ??
+      raw.grace ??
+      0
+    );
 
-const upfrontFee = Number(
-raw.upfrontFee ??
-raw.upfront_fee ??
-raw.originationFee ??
-0
-);
+    const upfrontFee = Number(
+      raw.upfrontFee ??
+      raw.upfront_fee ??
+      raw.originationFee ??
+      0
+    );
 
-const monthlyFee = Number(
-raw.monthlyFee ??
-raw.monthlyServicingFee ??
-raw.servicingFee ??
-raw.fee ??
-0
-);
+    const monthlyFee = Number(
+      raw.monthlyFee ??
+      raw.monthlyServicingFee ??
+      raw.servicingFee ??
+      raw.fee ??
+      0
+    );
 
-const monthlyFeeStart = Number(
-raw.monthlyFeeStart ??
-raw.feeStartMonth ??
-1
-);
+    const monthlyFeeStart = Number(
+      raw.monthlyFeeStart ??
+      raw.feeStartMonth ??
+      1
+    );
 
-const normalizedLoan = {
-...raw,
-loanId,
-id,
-loanName: raw.loanName ?? `Loan ${loanId}`,
-school: raw.school ?? "No school listed",
-loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
-purchaseDate: raw.purchaseDate || "",
-purchasePrice,
-balanceForAmort,
-nominalRate,
-termYears,
-graceYears,
-upfrontFee,
-monthlyFeeStart,
-monthlyFee
-};
+    const normalizedLoan = {
+      ...raw,
+      loanId,
+      id,
+      loanName: raw.loanName ?? `Loan ${loanId}`,
+      school: raw.school ?? "No school listed",
+      loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
+      purchaseDate: raw.purchaseDate || "",
+      purchasePrice,
+      balanceForAmort,
+      nominalRate,
+      termYears,
+      graceYears,
+      upfrontFee,
+      monthlyFeeStart,
+      monthlyFee
+    };
 
-// Use authoritative amort schedule (supports deferrals)
-const amortSchedule = buildAmortSchedule({
-  principal: normalizedLoan.balanceForAmort,
-  nominalRate: normalizedLoan.nominalRate,
-  termYears: normalizedLoan.termYears,
-  graceYears: normalizedLoan.graceYears,
-  loanStartDate: normalizedLoan.loanStartDate,
-  purchaseDate: normalizedLoan.purchaseDate,
-  events: normalizedLoan.events || []
-});
+    // =====================================================
+    // AUTHORITATIVE AMORT SCHEDULE (deferral-safe)
+    // =====================================================
+    const amortSchedule = buildAmortSchedule({
+      principal: normalizedLoan.balanceForAmort,
+      nominalRate: normalizedLoan.nominalRate,
+      termYears: normalizedLoan.termYears,
+      graceYears: normalizedLoan.graceYears,
+      loanStartDate: normalizedLoan.loanStartDate,
+      purchaseDate: normalizedLoan.purchaseDate,
+      events: normalizedLoan.events || []
+    });
 
+    const loanStart  = new Date(normalizedLoan.loanStartDate);
+    const purchaseDt = new Date(normalizedLoan.purchaseDate);
+    const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
+    const monthsSinceStart =
+      Number.isFinite(monthsSinceStartRaw) ? monthsSinceStartRaw : 0;
 
-const loanStart = new Date(normalizedLoan.loanStartDate);
-const purchaseDt = new Date(normalizedLoan.purchaseDate);
-const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
-const monthsSinceStart = Number.isFinite(monthsSinceStartRaw) ? monthsSinceStartRaw : 0;
+    // =====================================================
+    // APPLY OWNERSHIP (NO MUTATION, NO REASSIGNMENT)
+    // =====================================================
+    const amortScheduleWithOwnership = amortSchedule.map(row => {
+      const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
 
-amortSchedule = amortSchedule.map(row => {
-  const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
+      const ownershipDate =
+        ownershipMonthIndex >= 1
+          ? new Date(
+              purchaseDt.getFullYear(),
+              purchaseDt.getMonth() + (ownershipMonthIndex - 1),
+              1
+            )
+          : null;
 
-  const loanDate = new Date(row.loanDate);
+      return {
+        ...row,
+        ownershipMonthIndex,
+        isOwned: ownershipMonthIndex >= 1,
+        loanDate: new Date(row.loanDate),
+        ownershipDate
+      };
+    });
 
-  const ownershipDate =
-    ownershipMonthIndex >= 1
-      ? new Date(
-          purchaseDt.getFullYear(),
-          purchaseDt.getMonth() + (ownershipMonthIndex - 1),
-          1
-        )
-      : null;
+    // =====================================================
+    // EARNINGS CALCULATION
+    // =====================================================
+    let cumPrincipal = 0;
+    let cumInterest  = 0;
+    let cumFees      = 0;
 
-  return {
-    ...row,
-    ownershipMonthIndex,
-    isOwned: ownershipMonthIndex >= 1,
-    loanDate,
-    ownershipDate
-  };
-});
+    const balanceAtPurchase =
+      amortScheduleWithOwnership[Math.max(0, monthsSinceStart - 1)]?.balance || 0;
 
+    const earningsSchedule = amortScheduleWithOwnership
+      .filter(r => r.isOwned)
+      .map(row => {
 
-let cumPrincipal = 0;
-let cumInterest  = 0;
-let cumFees      = 0;
+        const upfrontFeeThisMonth =
+          row.ownershipMonthIndex === 1 ? 150 : 0;
 
-const termMonths = Math.max(
-1,
-Math.round(normalizedLoan.termYears * 12)
-);
+        const balance = Number(row.balance ?? 0);
 
-const balanceAtPurchase = amort.schedule[Math.max(0, monthsSinceStart - 1)]?.balance || 0;
+        const monthlyBalanceFee =
+          balance > 0 ? +(balance * 0.00125).toFixed(2) : 0;
 
-const earningsSchedule = amort.schedule.map(row => {
-const m = row.monthIndex;
+        const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
 
-const upfrontFeeThisMonth =
-row.isOwned && row.ownershipMonthIndex === 1
-? 150
-: 0;
+        cumFees      = +(cumFees + feeThisMonth).toFixed(2);
+        cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
+        cumInterest  = +(cumInterest + row.interest).toFixed(2);
 
-const balance = Number(row.balance ?? 0);
-const monthlyBalanceFee =
-row.isOwned && balance > 0
-? +(balance * 0.00125).toFixed(2)
-: 0;
+        const netEarnings =
+          +(cumPrincipal + cumInterest - cumFees).toFixed(2);
 
-const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
+        return {
+          ...row,
+          feeThisMonth,
+          cumPrincipal,
+          cumInterest,
+          cumFees,
+          netEarnings,
+          interestPaid: row.interest,
+          principalPaid: row.principalPaid
+        };
+      });
 
-if (row.isOwned) {
-cumFees      = +(cumFees + feeThisMonth).toFixed(2);
-cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
-cumInterest  = +(cumInterest + row.interest).toFixed(2);
+    // =====================================================
+    // ONE ROW PER OWNERSHIP MONTH
+    // =====================================================
+    const byMonth = new Map();
+    earningsSchedule.forEach(r => {
+      const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
+      byMonth.set(key, r);
+    });
+
+    const normalizedEarningsSchedule =
+      [...byMonth.values()].sort(
+        (a, b) => a.ownershipDate - b.ownershipDate
+      );
+
+    return {
+      ...normalizedLoan,
+      amortSchedule: amortScheduleWithOwnership,
+      earningsSchedule: normalizedEarningsSchedule,
+      balanceAtPurchase,
+      monthsSinceStart
+    };
+  });
+
+  // =====================================================
+  // USER FILTER + SORT
+  // =====================================================
+  loansWithEarnings = loansWithEarnings.filter(l =>
+    (l.user ?? "jeff") === PAGE_USER
+  );
+
+  loansWithEarnings.sort((a, b) => {
+    const da = new Date(a.purchaseDate).getTime() || 0;
+    const db = new Date(b.purchaseDate).getTime() || 0;
+    return da - db;
+  });
+
+  buildLoanColorMap(loansWithEarnings);
+
+  window.LoanMap = Object.fromEntries(
+    loansWithEarnings.map(l => [l.loanName, l])
+  );
 }
 
-const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
-
-return {
-...row,
-feeThisMonth,
-cumPrincipal,
-cumInterest,
-cumFees,
-netEarnings,
-interestPaid: row.interest,
-principalPaid: row.principalPaid,
-loanDate: row.loanDate,
-ownershipDate: row.ownershipDate
-};
-}).filter(r => r.isOwned);
-
-const byMonth = new Map();
-
-earningsSchedule.forEach(r => {
-const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
-byMonth.set(key, r);
-});
-
-const normalizedEarningsSchedule =
-[...byMonth.values()].sort((a, b) =>
-a.ownershipDate - b.ownershipDate
-);
-
-return {
-...normalizedLoan,
-amort,
-earningsSchedule: normalizedEarningsSchedule,
-balanceAtPurchase,
-monthsSinceStart
-};
-});
-
-loansWithEarnings = loansWithEarnings.filter(l =>
-(l.user ?? "jeff") === PAGE_USER
-);
-
-loansWithEarnings.sort((a, b) => {
-const da = new Date(a.purchaseDate).getTime() || 0;
-const db = new Date(b.purchaseDate).getTime() || 0;
-return da - db;
-});
-
-buildLoanColorMap(loansWithEarnings);
-
-window.LoanMap = Object.fromEntries(
-loansWithEarnings.map(l => [l.loanName, l])
-);
-}
 
 const KPI_PALETTE = [
 "#2563eb",
