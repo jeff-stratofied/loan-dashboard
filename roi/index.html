@@ -881,6 +881,16 @@ html[data-theme="dark"] .drawer-chart{
       });
     }
 
+  function getLoanMaturityFromAmort(loan) {
+  if (!loan.amort || !loan.amort.schedule || !loan.amort.schedule.length) {
+    return null;
+  }
+
+  const lastRow = loan.amort.schedule[loan.amort.schedule.length - 1];
+  return lastRow.loanDate ? new Date(lastRow.loanDate) : null;
+}
+
+    
     function monthDiff(d1, d2) {
       return (d2.getFullYear() - d1.getFullYear()) * 12 +
              (d2.getMonth() - d1.getMonth());
@@ -1888,9 +1898,13 @@ const pts = anchored.map(p => [
         <div class="loan-sub" style="margin-top:6px;">
         Rate: ${(loan.nominalRate * 100).toFixed(2)}% &nbsp;·&nbsp;
         Term: ${loan.termYears} yrs &nbsp;·&nbsp;
-        Matures: ${formatMonthYear(
-        addMonths(new Date(loan.loanStartDate), loan.termYears * 12)
-        )}
+        Matures: ${
+          (() => {
+            const m = getLoanMaturityFromAmort(loan);
+            return m ? formatMonthYear(m) : "—";
+          })()
+        }
+
         </div>
 
         <!-- Line 4: Loan ID -->
