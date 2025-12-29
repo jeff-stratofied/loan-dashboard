@@ -881,6 +881,14 @@ html[data-theme="dark"] .drawer-chart{
       });
     }
 
+function formatCurrency(val) {
+  return Number(val ?? 0).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+    
   function getLoanMaturityFromAmort(loan) {
   if (!loan.amort || !loan.amort.schedule || !loan.amort.schedule.length) {
     return null;
@@ -2370,12 +2378,14 @@ loan.roiSeries.forEach(s => {
       ? formatMonthYear(cs.displayDate)
       : '';
 
-  tr.innerHTML = `
-    <td style="text-align:left">${monthLabel}</td>
-    <td style="text-align:right">$${Number(cs.balance ?? 0).toFixed(2)}</td>
-    <td style="text-align:right">$${Number(s.loanValue ?? 0).toFixed(2)}</td>
-    <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
-  `;
+tr.innerHTML = `
+  <td style="text-align:left">${monthLabel}</td>
+  <td style="text-align:right">$${formatCurrency(cs.balance)}</td>
+  <td style="text-align:right">$${formatCurrency(s.loanValue)}</td>
+  <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
+`;
+
+
 
   roiBody.appendChild(tr);
 });
