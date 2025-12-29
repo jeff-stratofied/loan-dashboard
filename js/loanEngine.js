@@ -204,7 +204,8 @@ export function buildAmortSchedule(loan) {
       const m = Math.max(0, Math.floor(Number(e.months) || 0));
       deferralStartMap[key] = (deferralStartMap[key] || 0) + m;
     });
-
+ 
+  let deferralRemaining = 0;
   const schedule = [];
 
   // -------------------------------
@@ -233,6 +234,8 @@ export function buildAmortSchedule(loan) {
     // ----------------------------------------------
     if (deferralRemaining > 0) {
       const loanDate = new Date(calendarDate);
+
+      
 
       // interest accrues and is capitalized
       const accruedInterest = balance * monthlyRate;
@@ -283,6 +286,11 @@ export function buildAmortSchedule(loan) {
     // NORMAL CONTRACTUAL MONTH (advance i at end)
     // ----------------------------------------------
     const loanDate = new Date(calendarDate);
+
+      const key = monthKey(loanDate);
+  if (deferralStartMap[key]) {
+    deferralRemaining += deferralStartMap[key];
+  }
 
     let interest = balance * monthlyRate;
     let principalPaid = 0;
