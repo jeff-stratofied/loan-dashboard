@@ -368,12 +368,21 @@ function markDirty() {
   if (saveBtn) saveBtn.style.borderColor = "#fbbf24";
 }
 
-function clearDirty() {
+  function clearDirty() {
   hasUnsavedChanges = false;
 
   if (unsavedWarning) unsavedWarning.style.display = "none";
   if (saveBtn) saveBtn.style.borderColor = "";
 }
+
+// =====================================================
+// WARN BEFORE LEAVING WITH UNSAVED CHANGES
+// =====================================================
+window.addEventListener("beforeunload", (e) => {
+  if (!hasUnsavedChanges) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
 
 
 let sortColumn = null;
@@ -476,15 +485,6 @@ function openEventsDrawer(loan) {
   // Append drawer BEFORE wiring events
   // ----------------------------------
   document.body.appendChild(drawer);
-
-document
-  .getElementById("loan-table")
-  .addEventListener("input", (e) => {
-    if (e.target.matches("[data-field]")) {
-      markDirty();
-    }
-  });
-
   
   // ----------------------------------
   // Delete event handlers
@@ -838,6 +838,26 @@ async function saveToBackend() {
   };
 
   document.getElementById("save-btn").onclick = saveToBackend;
+
+  // =====================================================
+// GLOBAL DIRTY TRACKING FOR TABLE EDITS
+// =====================================================
+const loanTable = document.getElementById("loan-table");
+
+// Fires while typing (text / number inputs)
+loanTable.addEventListener("input", (e) => {
+  if (e.target.matches("[data-field]")) {
+    markDirty();
+  }
+});
+
+// Fires on blur / dropdown / checkbox changes
+loanTable.addEventListener("change", (e) => {
+  if (e.target.matches("[data-field]")) {
+    markDirty();
+  }
+});
+
 
   document.getElementById("loan-table").addEventListener("click", (e) => {
     const action = e.target.dataset.action;
