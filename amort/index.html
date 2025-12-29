@@ -1695,59 +1695,6 @@ const monthAnchor = new Date(
 
 
 
-// =====================================
-// Build event lookup by monthIndex
-// (aligned to amort table month anchor)
-// =====================================
-const eventByMonth = {};
-
-(loan.events || []).forEach(e => {
-  if (!e.type) return;
-
-  // -------------------------
-  // DEFERRAL — spans months
-  // -------------------------
-if (e.type === "deferral" && e.startDate && e.months) {
-  const startIdx = monthIndexFromDate(
-    e.startDate,
-    loan.amort.schedule,
-  );
-
-  if (startIdx) {
-    for (let i = 0; i < e.months; i++) {
-      const idx = startIdx + i;
-      eventByMonth[idx] = "deferral";
-    }
-  }
-  return;
-}
-
-// -------------------------
-// PREPAYMENT — derive from amort schedule (AUTHORITATIVE)
-// -------------------------
-if (e.type === "prepayment") {
-  const row = loan.amort.schedule.find(
-    r => r.prepayment && r.prepayment > 0
-  );
-
-  if (row) {
-    eventByMonth[row.monthIndex] = "prepayment";
-  }
-  return;
-}
-
-// -------------------------
-// DEFAULT — date-based (terminal)
-// -------------------------
-if (e.type === "default" && e.date) {
-  const idx = monthIndexFromDate(e.date, loan.amort.schedule);
-  if (idx) eventByMonth[idx] = "default";
-  return;
-}
-
-
-});
-
 function displayDateForMonthIndex(monthIndex) {
   const d = new Date(monthAnchor);
 
@@ -1793,6 +1740,52 @@ if (defaultEvent?.date) {
 
   }
 }
+
+  // =====================================
+// Build event lookup (FINAL amort schedule)
+// =====================================
+const eventByMonth = {};
+
+(loan.events || []).forEach(e => {
+  if (!e.type) return;
+
+  // -------------------------
+  // DEFERRAL — spans months
+  // -------------------------
+  if (e.type === "deferral" && e.startDate && e.months) {
+    const startIdx = monthIndexFromDate(
+      e.startDate,
+      loan.amort.schedule
+    );
+
+    if (startIdx) {
+      for (let i = 0; i < e.months; i++) {
+        eventByMonth[startIdx + i] = "deferral";
+      }
+    }
+    return;
+  }
+
+  // -------------------------
+  // PREPAYMENT — engine-authoritative
+  // -------------------------
+  if (e.type === "prepayment") {
+    const row = loan.amort.schedule.find(
+      r => r.prepayment && r.prepayment > 0
+    );
+    if (row) eventByMonth[row.monthIndex] = "prepayment";
+    return;
+  }
+
+  // -------------------------
+  // DEFAULT — terminal
+  // -------------------------
+  if (e.type === "default" && e.date) {
+    const idx = monthIndexFromDate(e.date, loan.amort.schedule);
+    if (idx) eventByMonth[idx] = "default";
+    return;
+  }
+});
 
   
 loan.amort.schedule.forEach((r) => {
