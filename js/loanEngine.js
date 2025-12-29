@@ -358,12 +358,15 @@ let deferralRemaining = 0;
     // ----------------------------------------------
     const loanDate = new Date(calendarDate);
 
-    // ----------------------------------------------
-// DEFAULT — stop schedule and apply recovery
 // ----------------------------------------------
-if (defaultDate && loanDate >= defaultDate) {
+// DEFAULT — apply recovery and stop schedule
+// ----------------------------------------------
+if (
+  defaultDate &&
+  loanDate.getFullYear() === defaultDate.getFullYear() &&
+  loanDate.getMonth() === defaultDate.getMonth()
+) {
   const applied = Math.min(balance, defaultRecovery);
-
   const isOwned = loanDate >= purchase;
 
   schedule.push({
@@ -388,9 +391,9 @@ if (defaultDate && loanDate >= defaultDate) {
     contractualMonth: i + 1
   });
 
-  // End the amort schedule permanently
-  break;
+  break; // 🔒 hard stop — no future months
 }
+
 
 
     let interest = balance * monthlyRate;
