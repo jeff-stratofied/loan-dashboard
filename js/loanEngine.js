@@ -293,13 +293,13 @@ let deferralRemaining = 0;
 
     // Check if a deferral should START NEXT month (not this one)
 // Check if a deferral starts in THIS calendar month
-const startKey = monthKey(calendarDate);
+// Check if a deferral starts in the NEXT amort row month
+const nextCalendarDate = addMonths(calendarDate, 1);
+const startKey = monthKey(nextCalendarDate);
 
 if (deferralRemaining === 0 && deferralStartMap[startKey]) {
   deferralRemaining = deferralStartMap[startKey];
 }
-
-
 
     // ----------------------------------------------
     // DEFERRAL INSERTION MONTHS (do NOT advance i)
