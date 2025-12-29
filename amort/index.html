@@ -1710,19 +1710,29 @@ if (e.type === "deferral" && e.startDate && e.months) {
   return;
 }
 
+// -------------------------
+// PREPAYMENT — derive from amort schedule (AUTHORITATIVE)
+// -------------------------
+if (e.type === "prepayment") {
+  const row = loan.amort.schedule.find(
+    r => r.prepayment && r.prepayment > 0
+  );
 
-  // -------------------------
-  // DEFAULT / PREPAYMENT
-  // -------------------------
-  const date = e.date || e.startDate;
-  if (!date) return;
+  if (row) {
+    eventByMonth[row.monthIndex] = "prepayment";
+  }
+  return;
+}
 
-const idx = monthIndexFromDate(
-  e.date || e.startDate,
-  loan.amort.schedule,
-);
+// -------------------------
+// DEFAULT — date-based (terminal)
+// -------------------------
+if (e.type === "default" && e.date) {
+  const idx = monthIndexFromDate(e.date, loan.amort.schedule);
+  if (idx) eventByMonth[idx] = "default";
+  return;
+}
 
-if (idx) eventByMonth[idx] = e.type;
 
 });
 
