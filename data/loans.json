@@ -354,6 +354,21 @@
           "recoveryAmount": 0
         }
       ]
+    },
+    {
+      "loanName": "CMU 2024 9.00",
+      "user": "jeff",
+      "visible": true,
+      "school": "Carnegie Mellon",
+      "loanStartDate": "2024-06-30",
+      "purchaseDate": "2024-09-30",
+      "principal": 7000,
+      "purchasePrice": 7000,
+      "rate": 0.095,
+      "termYears": 9,
+      "graceYears": 1,
+      "loanId": "MW3Q761GTR",
+      "events": []
     }
   ]
 }
