@@ -3185,19 +3185,16 @@ function renderLoanTiles(loansList) {
     const mini = tile.querySelector('.mini-chart');
     createMiniStackedEarningsSVG(mini, loan.earningsSchedule || [], loan);
 
-    // Attach ROI-style custom tooltips to badges
-    if (loan.events && loan.events.length > 0) {
-      const badges = tile.querySelectorAll('.loan-badge');
-      badges.forEach(b => {
-  const badge = document.createElement("span");
-  badge.className = `loan-badge ${b.type}`;
-  badge.textContent = b.label;
+// Attach ROI-style custom tooltips to existing badges
+if (loan.events && loan.events.length > 0) {
+  const badges = tile.querySelectorAll(".loan-badge");
 
-  // ✅ ADD THIS LINE (this is the entire fix)
-  createBadgeTooltip(badge, b.label);
+  badges.forEach(badge => {
+    const label = badge.textContent;
+    createBadgeTooltip(badge, label);
+  });
+}
 
-  badgeWrap.appendChild(badge);
-});
 
     }
   });
