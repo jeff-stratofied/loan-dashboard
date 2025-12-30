@@ -3178,51 +3178,6 @@ function renderLoanTiles(loansList) {
       </div>
     `;
 
-// --------------------------------------------------
-// Attach ROI-style badge tooltips (EARNINGS)
-// --------------------------------------------------
-if (Array.isArray(loan.events) && loan.events.length > 0) {
-  const badges = tile.querySelectorAll(".loan-badge");
-
-  badges.forEach((badge) => {
-    let eventType = null;
-
-    if (badge.classList.contains("prepayment")) eventType = "prepayment";
-    else if (badge.classList.contains("default")) eventType = "default";
-    else if (badge.classList.contains("deferral")) eventType = "deferral";
-
-    if (!eventType) return;
-
-    const event = loan.events.find(e => e.type === eventType);
-    if (!event) return;
-
-    let tooltipText = "";
-
-    if (event.type === "prepayment") {
-      tooltipText =
-  "Prepayment\n" +
-  "Date: " + formatDate(new Date(event.date)) + "\n" +
-  "Amount: " + formatCurrency(event.amount);
-
-    }
-
-    if (event.type === "default") {
-      tooltipText =
-  "Default\n" +
-  "Date: " + formatDate(new Date(event.date));
-    }
-
-    if (event.type === "deferral") {
-      tooltipText =
-  "Deferral\n" +
-  "Start: " + formatMonthYear(new Date(event.startDate)) + "\n" +
-  "Months: " + event.months;
-    }
-
-    createBadgeTooltip(badge, tooltipText);
-  });
-}
-
     
     grid.appendChild(tile);
     tile.addEventListener("click", () => openLoanDrawer(loan));
@@ -3231,13 +3186,6 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
     const mini = tile.querySelector('.mini-chart');
     createMiniStackedEarningsSVG(mini, loan.earningsSchedule || [], loan);
 
-if (loan.events && loan.events.length > 0) {
-  const badges = tile.querySelectorAll('.loan-badge');
-
-  badges.forEach((badge) => {
-    createBadgeTooltip(badge, badge.textContent);
-  });
-}
     }
   );
 }
