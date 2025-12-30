@@ -320,7 +320,7 @@
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  cursor: help;  /* Indicates hoverable */
+  cursor: pointer;  
 }
 
 .loan-badge.prepayment {
@@ -3200,22 +3200,23 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
 
     if (event.type === "prepayment") {
       tooltipText =
-        `Prepayment\n` +
-        `Date: ${formatDate(new Date(event.date))}\n` +
-        `Amount: ${formatCurrency(event.amount)}`;
+  "Prepayment\n" +
+  "Date: " + formatDate(new Date(event.date)) + "\n" +
+  "Amount: " + formatCurrency(event.amount);
+
     }
 
     if (event.type === "default") {
       tooltipText =
-        `Default\n` +
-        `Date: ${formatDate(new Date(event.date))}`;
+  "Default\n" +
+  "Date: " + formatDate(new Date(event.date));
     }
 
     if (event.type === "deferral") {
       tooltipText =
-        `Deferral\n` +
-        `Start: ${formatMonthYear(new Date(event.startDate))}\n` +
-        `Months: ${event.months}`;
+  "Deferral\n" +
+  "Start: " + formatMonthYear(new Date(event.startDate)) + "\n" +
+  "Months: " + event.months;
     }
 
     createBadgeTooltip(badge, tooltipText);
@@ -4506,7 +4507,7 @@ tooltip.group.setAttribute("transform", `translate(${tooltipX}, ${tooltipY})`);
 function createBadgeTooltip(badge, text) {
   const tooltip = document.createElement("div");
   tooltip.className = "badge-tooltip";
-  tooltip.textContent = text;
+  tooltip.innerHTML = text.replace(/\n/g, "<br>");
   document.body.appendChild(tooltip);
 
   badge.addEventListener("mouseenter", () => {
