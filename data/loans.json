@@ -215,28 +215,6 @@
       ]
     },
     {
-      "loanName": "AMU 2024 8.50",
-      "user": "jeff",
-      "visible": true,
-      "school": "Ave Maria University",
-      "loanStartDate": "2024-06-04",
-      "purchaseDate": "2024-08-08",
-      "principal": 11500,
-      "purchasePrice": 11000,
-      "rate": 0.085,
-      "termYears": 7,
-      "graceYears": 0.5,
-      "loanId": "D9F55ARO3R",
-      "events": [
-        {
-          "id": "9743459e-c8ad-43df-946f-bf7f5dd98c2a",
-          "type": "default",
-          "date": "2025-11-06",
-          "recoveryAmount": 600
-        }
-      ]
-    },
-    {
       "loanName": "MICH 2024 9.00",
       "user": "john",
       "visible": true,
