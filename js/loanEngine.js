@@ -209,7 +209,7 @@ function getCanonicalMonthDate(purchaseDateStr, monthIndex) {
 //
 
 export function buildAmortSchedule(loan) {
-  
+
   const {
     principal,
     nominalRate,
@@ -226,14 +226,18 @@ export function buildAmortSchedule(loan) {
   const totalMonths = (graceYears + termYears) * 12;
   const graceMonths = graceYears * 12;
 
-  const start = new Date(loanStartDate);
-  const purchase = new Date(purchaseDate);
+  // -------------------------------
+  // Canonical dates (MONTH-ANCHORED)
+  // -------------------------------
+  const start = new Date(loanStartDate + "T00:00:00");
+  const purchase = new Date(purchaseDate + "T00:00:00");
 
-    const purchaseMonth = new Date(
-  purchase.getFullYear(),
-  purchase.getMonth(),
-  1
-);
+  // Ownership always begins at the first of purchase month
+  const purchaseMonth = new Date(
+    purchase.getFullYear(),
+    purchase.getMonth(),
+    1
+  );
 
   // -------------------------------
   // Helpers
@@ -247,7 +251,7 @@ export function buildAmortSchedule(loan) {
   events
     .filter(e => e.type === "prepayment" && e.date)
     .forEach(e => {
-      const d = new Date(e.date);
+      const d = new Date(e.date + "T00:00:00");
       const key = monthKey(d);
       if (!prepayMap[key]) prepayMap[key] = [];
       prepayMap[key].push(e);
@@ -255,37 +259,44 @@ export function buildAmortSchedule(loan) {
 
   // -------------------------------
   // Index DEFERRAL events by start month
-  // If multiple deferrals start same month, we SUM them.
+  // (calendar-based, summed if same month)
   // -------------------------------
   const deferralStartMap = {};
   events
     .filter(e => e.type === "deferral" && e.startDate && Number(e.months) > 0)
     .forEach(e => {
-      const d = new Date(e.startDate);
+      const d = new Date(e.startDate + "T00:00:00");
       const key = monthKey(d);
       const m = Math.max(0, Math.floor(Number(e.months) || 0));
       deferralStartMap[key] = (deferralStartMap[key] || 0) + m;
     });
 
   // -------------------------------
-  // Index DEFAULT event (at most one)
+  // Index DEFAULT event (calendar-anchored)
   // -------------------------------
   const defaultEvent = events.find(e => e.type === "default" && e.date);
-  
-  const defaultDate = defaultEvent
-    ? new Date(defaultEvent.date)
-    : null;
-  
-  const defaultRecovery =
-    defaultEvent ? Number(defaultEvent.recoveryAmount || 0) : 0;
 
-  
+  // Raw date (day precision)
+  const defaultDate = defaultEvent
+    ? new Date(defaultEvent.date + "T00:00:00")
+    : null;
+
+  // Canonical default month (FIRST of month — critical)
+  const defaultMonth = defaultDate
+    ? new Date(defaultDate.getFullYear(), defaultDate.getMonth(), 1)
+    : null;
+
+  const defaultRecovery = defaultEvent
+    ? Number(defaultEvent.recoveryAmount || 0)
+    : 0;
+
   const schedule = [];
 
-// -------------------------------
-// State
-// -------------------------------
-let balance = Number(principal || 0);
+  // -------------------------------
+  // State
+  // -------------------------------
+  let balance = Number(principal || 0);
+
 
 // We walk "contractual months" with i, but "calendar months" can expand
 // due to inserted deferral rows.
