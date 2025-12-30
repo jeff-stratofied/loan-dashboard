@@ -1633,6 +1633,15 @@ console.log(
   loan.loanName,
   loan.events
 );
+console.log("🧾 DRAWER EVENT TYPES", loan.loanName,
+  (loan.events || []).map(e => ({
+    type: e.type,
+    date: e.date,
+    startDate: e.startDate,
+    months: e.months,
+    recoveryAmount: e.recoveryAmount
+  }))
+);
 
   
   // =====================================================
@@ -1691,6 +1700,14 @@ const monthAnchor = new Date(
   1
 );
 
+console.log("🧭 ANCHORS", loan.loanName, {
+  purchaseDate: purchaseDate.toISOString().slice(0, 10),
+  monthAnchor: monthAnchor.toISOString().slice(0, 10),
+  schedLen: loan.amort?.schedule?.length,
+  lastIdx: loan.amort?.schedule?.[loan.amort.schedule.length - 1]?.monthIndex
+});
+
+  
 function monthIndexFromDate(dateStr, schedule) {
   const d = new Date(dateStr + "T00:00:00");
   d.setHours(0, 0, 0, 0);
@@ -1751,8 +1768,11 @@ function fmtDate(d) {
   });
 }
 
+
+  console.log("🧾 UI DEFAULT EVENT (from loan.events)", loan.loanName, defaultEvent);
+  
 // =====================================
-// Ensure default terminal month exists
+// Ensure default terminal month exists (DEBUG)
 // =====================================
 const defaultEvent = (loan.events || []).find(e => e.type === "default");
 
@@ -1765,22 +1785,44 @@ if (defaultEvent?.date) {
   const lastIdx =
     loan.amort.schedule[loan.amort.schedule.length - 1]?.monthIndex || 0;
 
-  // Add missing months up to default
+  console.log("🧨 UI DEFAULT EXTEND (pre)", loan.loanName, {
+    defaultDate: defaultEvent.date,
+    defaultIdx,
+    lastIdx,
+    schedLen: loan.amort.schedule.length
+  });
+
   for (let m = lastIdx + 1; m <= defaultIdx; m++) {
     const prev = loan.amort.schedule[loan.amort.schedule.length - 1];
-   loan.amort.schedule.push({
-  monthIndex: m,
-  payment:
-    m === defaultIdx
-      ? Number(defaultEvent.recoveryAmount || 0)
-      : 0,
-  principalPaid: 0,
-  interest: 0,
-  balance: prev.balance
-});
-
+    loan.amort.schedule.push({
+      monthIndex: m,
+      payment:
+        m === defaultIdx
+          ? Number(defaultEvent.recoveryAmount || 0)
+          : 0,
+      principalPaid: 0,
+      interest: 0,
+      balance: prev.balance
+    });
   }
+
+  console.log(
+    "🧨 UI DEFAULT EXTEND (post)",
+    loan.loanName,
+    loan.amort.schedule.slice(-5).map(r => ({
+      m: r.monthIndex,
+      pay: r.payment,
+      bal: r.balance
+    }))
+  );
+} else {
+  console.log(
+    "🧨 UI DEFAULT EXTEND SKIPPED (no defaultEvent?.date)",
+    loan.loanName,
+    loan.events
+  );
 }
+
 
   /* disable
   console.log(
@@ -1799,6 +1841,12 @@ const eventByMonth = {};
 
 (loan.events || []).forEach(e => {
   if (!e.type) return;
+
+  // 🔁 Fallback: if engine schedule marks a row as defaulted,
+// highlight it even if loan.events is missing the default event.
+loan.amort.schedule.forEach(r => {
+  if (r.defaulted) eventByMonth[r.monthIndex] = "default";
+});
 
   
 // -------------------------
