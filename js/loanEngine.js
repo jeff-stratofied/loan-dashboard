@@ -321,6 +321,7 @@ let calendarDate = new Date(
 
 // Track deferral inserts (so we can insert N months without advancing i)
 let deferralRemaining = 0;
+let deferralTotal = 0;
 
 
   // Contractual month loop
@@ -371,9 +372,8 @@ const startKey = monthKey(calendarDate);
 
 if (deferralRemaining === 0 && deferralStartMap[startKey]) {
   deferralRemaining = deferralStartMap[startKey];
+  deferralTotal = deferralStartMap[startKey];
 }
-
-
 
     // ----------------------------------------------
     // DEFERRAL INSERTION MONTHS (do NOT advance i)
@@ -404,28 +404,36 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
 
       const isOwned = loanDate >= purchaseMonth;
 
-      schedule.push({
-        monthIndex: schedule.length + 1,
-        loanDate,
+const deferralIndex = deferralTotal - deferralRemaining;
 
-        displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
+schedule.push({
+  monthIndex: schedule.length + 1,
+  loanDate,
 
-        // Deferral month: no scheduled payment, no scheduled principal/interest
-        payment: 0,
-        principalPaid: +(prepaymentThisMonth.toFixed(2)), // only prepayment counts as principal
-        interest: 0,
-        balance: +(balance.toFixed(2)),
+  displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
 
-        prepayment: +(prepaymentThisMonth.toFixed(2)),
-        deferral: true,
-        accruedInterest: +(accruedInterest.toFixed(2)),
+  // Deferral month: no scheduled payment, no scheduled principal/interest
+  payment: 0,
+  principalPaid: +(prepaymentThisMonth.toFixed(2)), // only prepayment counts as principal
+  interest: 0,
+  balance: +(balance.toFixed(2)),
 
-        isOwned,
-        ownershipDate: isOwned ? loanDate : null,
+  prepayment: +(prepaymentThisMonth.toFixed(2)),
+  deferral: true,
+  accruedInterest: +(accruedInterest.toFixed(2)),
 
-        // Optional: keep contractual month context (helpful for debugging)
-        contractualMonth: i + 1
-      });
+  // 🔑 DEFERRAL FLAGS (authoritative, engine-owned)
+  isDeferred: true,
+  deferralIndex,
+  deferralRemaining,
+
+  isOwned,
+  ownershipDate: isOwned ? loanDate : null,
+
+  contractualMonth: i + 1
+});
+
+
 
       deferralRemaining -= 1;
       calendarDate = addMonths(calendarDate, 1);
@@ -484,28 +492,34 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
 
     principalPaid += prepaymentThisMonth;
 
-    const isOwned = loanDate >= purchaseMonth;
+const isOwned = loanDate >= purchaseMonth;
 
-    schedule.push({
-      monthIndex: schedule.length + 1,
-      loanDate,
+schedule.push({
+  monthIndex: schedule.length + 1,
+  loanDate,
 
-      displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
+  displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
 
-      payment: +(paymentAmt.toFixed(2)),
-      principalPaid: +(principalPaid.toFixed(2)),
-      interest: +(interest.toFixed(2)),
-      balance: +(balance.toFixed(2)),
+  payment: +(paymentAmt.toFixed(2)),
+  principalPaid: +(principalPaid.toFixed(2)),
+  interest: +(interest.toFixed(2)),
+  balance: +(balance.toFixed(2)),
 
-      prepayment: +(prepaymentThisMonth.toFixed(2)),
-      deferral: false,
-      accruedInterest: 0,
+  prepayment: +(prepaymentThisMonth.toFixed(2)),
+  deferral: false,
+  accruedInterest: 0,
 
-      isOwned,
-      ownershipDate: isOwned ? loanDate : null,
+  // 🔑 DEFERRAL FLAGS (explicitly NOT deferred)
+  isDeferred: false,
+  deferralIndex: null,
+  deferralRemaining: null,
 
-      contractualMonth: i + 1
-    });
+  isOwned,
+  ownershipDate: isOwned ? loanDate : null,
+
+  contractualMonth: i + 1
+});
+
 
     
     // advance both calendars: 1 month forward, and 1 contractual month forward
