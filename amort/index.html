@@ -1628,21 +1628,6 @@ delete */
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
 
-console.log(
-  "🧾 DRAWER EVENTS",
-  loan.loanName,
-  loan.events
-);
-console.log("🧾 DRAWER EVENT TYPES", loan.loanName,
-  (loan.events || []).map(e => ({
-    type: e.type,
-    date: e.date,
-    startDate: e.startDate,
-    months: e.months,
-    recoveryAmount: e.recoveryAmount
-  }))
-);
-
   
   // =====================================================
   // HARD RESET KPI-ONLY STATE (restore loan mode)
@@ -1680,16 +1665,7 @@ console.log("🧾 DRAWER EVENT TYPES", loan.loanName,
   /* render amort rows */
   drawerAmortContainer.style.display = 'block';
   amortBody.innerHTML = '';
-
-  /* disable
-   console.log(
-  "📦 ENGINE SCHEDULE (before UI mutation)",
-  loan.loanName,
-  loan.amort.schedule.map(r =>
-    `${r.defaulted ? "DEFAULT" : ""} ${r.monthIndex}`
-  )
-);
-  disable */                              
+                              
 
   // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
   // Standardize all month math to FIRST OF PURCHASE MONTH
@@ -1699,13 +1675,6 @@ const monthAnchor = new Date(
   purchaseDate.getMonth(),
   1
 );
-
-console.log("🧭 ANCHORS", loan.loanName, {
-  purchaseDate: purchaseDate.toISOString().slice(0, 10),
-  monthAnchor: monthAnchor.toISOString().slice(0, 10),
-  schedLen: loan.amort?.schedule?.length,
-  lastIdx: loan.amort?.schedule?.[loan.amort.schedule.length - 1]?.monthIndex
-});
 
   
 function monthIndexFromDate(dateStr, schedule) {
@@ -1770,110 +1739,34 @@ function fmtDate(d) {
 
 
 // =====================================
-// DEFAULT EVENT (declare FIRST)
-// =====================================
-const defaultEvent = (loan.events || []).find(e => e.type === "default");
-
-console.log(
-  "🧾 UI DEFAULT EVENT (from loan.events)",
-  loan.loanName,
-  defaultEvent
-);
-
-
-if (defaultEvent?.date) {
-  const d = new Date(defaultEvent.date + "T00:00:00");
-  const defaultIdx =
-    (d.getFullYear() - monthAnchor.getFullYear()) * 12 +
-    (d.getMonth() - monthAnchor.getMonth()) + 1;
-
-  const lastIdx =
-    loan.amort.schedule[loan.amort.schedule.length - 1]?.monthIndex || 0;
-
-  console.log("🧨 UI DEFAULT EXTEND (pre)", loan.loanName, {
-    defaultDate: defaultEvent.date,
-    defaultIdx,
-    lastIdx,
-    schedLen: loan.amort.schedule.length
-  });
-
-  for (let m = lastIdx + 1; m <= defaultIdx; m++) {
-    const prev = loan.amort.schedule[loan.amort.schedule.length - 1];
-    loan.amort.schedule.push({
-      monthIndex: m,
-      payment:
-        m === defaultIdx
-          ? Number(defaultEvent.recoveryAmount || 0)
-          : 0,
-      principalPaid: 0,
-      interest: 0,
-      balance: prev.balance
-    });
-  }
-
-  console.log(
-    "🧨 UI DEFAULT EXTEND (post)",
-    loan.loanName,
-    loan.amort.schedule.slice(-5).map(r => ({
-      m: r.monthIndex,
-      pay: r.payment,
-      bal: r.balance
-    }))
-  );
-} else {
-  console.log(
-    "🧨 UI DEFAULT EXTEND SKIPPED (no defaultEvent?.date)",
-    loan.loanName,
-    loan.events
-  );
-}
-
-
-  /* disable
-  console.log(
-  "🧨 UI-MUTATED SCHEDULE (after default extension)",
-  loan.loanName,
-  loan.amort.schedule.map(r =>
-    `${r.defaulted ? "DEFAULT" : ""} ${r.monthIndex}`
-  )
-);
-disable */
-
-  // =====================================
-// Build event lookup (FINAL amort schedule)
+// Build event lookup (READ-ONLY)
 // =====================================
 const eventByMonth = {};
 
-(loan.events || []).forEach(e => {
-  if (!e.type) return;
-
-  // 🔁 Fallback: if engine schedule marks a row as defaulted,
-// highlight it even if loan.events is missing the default event.
+// 1️⃣ Engine-default rows are authoritative
 loan.amort.schedule.forEach(r => {
   if (r.defaulted) eventByMonth[r.monthIndex] = "default";
 });
 
-  
-// -------------------------
-// DEFERRAL — spans months (calendar-authoritative)
-// -------------------------
-if (e.type === "deferral" && (e.startDate || e.date) && e.months) {
-  const startIdx = monthIndexFromDate(
-    e.startDate || e.date,
-    loan.amort.schedule
-  );
+// 2️⃣ Overlay non-terminal events from loan.events
+(loan.events || []).forEach(e => {
+  if (!e.type) return;
 
-  if (startIdx !== null) {
-    for (let i = 0; i < e.months; i++) {
-      eventByMonth[startIdx + i] = "deferral";
+  // DEFERRAL
+  if (e.type === "deferral" && (e.startDate || e.date) && e.months) {
+    const startIdx = monthIndexFromDate(
+      e.startDate || e.date,
+      loan.amort.schedule
+    );
+    if (startIdx !== null) {
+      for (let i = 0; i < e.months; i++) {
+        eventByMonth[startIdx + i] = "deferral";
+      }
     }
+    return;
   }
-  return;
-}
 
-  // -------------------------
-  // PREPAYMENT — engine-authoritative
-  // -------------------------
+  // PREPAYMENT
   if (e.type === "prepayment") {
     const row = loan.amort.schedule.find(
       r => r.prepayment && r.prepayment > 0
@@ -1881,16 +1774,8 @@ if (e.type === "deferral" && (e.startDate || e.date) && e.months) {
     if (row) eventByMonth[row.monthIndex] = "prepayment";
     return;
   }
-
-  // -------------------------
-  // DEFAULT — terminal
-  // -------------------------
-  if (e.type === "default" && e.date) {
-    const idx = monthIndexFromDate(e.date, loan.amort.schedule);
-    if (idx) eventByMonth[idx] = "default";
-    return;
-  }
 });
+
 
   
 loan.amort.schedule.forEach((r) => {
