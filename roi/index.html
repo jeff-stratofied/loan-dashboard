@@ -1000,27 +1000,42 @@ function getLoanEventBadges(loan) {
   return badges;
 }
 
-    function getEventRowClass(loan, row) {
-  if (!Array.isArray(loan.events)) return "";
+ function getEventRowClass(loan, row) {
+  if (!Array.isArray(loan.events) || !row.displayDate) return "";
 
-  const rowMonth = row.displayDate
-    ? new Date(row.displayDate).toISOString().slice(0, 7)
-    : null;
+  const rowDate = new Date(row.displayDate);
+  const rowKey = rowDate.getFullYear() * 12 + rowDate.getMonth();
 
   for (const e of loan.events) {
     if (!e.date) continue;
 
-    const eventMonth = new Date(e.date).toISOString().slice(0, 7);
+    const start = new Date(e.date);
+    const startKey = start.getFullYear() * 12 + start.getMonth();
 
-    if (eventMonth === rowMonth) {
+    // ----------------------------------
+    // DEFERRAL: spans multiple months
+    // ----------------------------------
+    if (e.type === "deferral") {
+      const months = Number(e.months ?? e.duration ?? 0);
+      const endKey = startKey + Math.max(0, months - 1);
+
+      if (rowKey >= startKey && rowKey <= endKey) {
+        return "event-deferral";
+      }
+    }
+
+    // ----------------------------------
+    // DEFAULT / PREPAYMENT: single month
+    // ----------------------------------
+    if (rowKey === startKey) {
       if (e.type === "default") return "event-default";
-      if (e.type === "deferral") return "event-deferral";
       if (e.type === "prepayment") return "event-prepayment";
     }
   }
 
   return "";
 }
+
 
 
     // ----------------------------
