@@ -201,11 +201,18 @@
       "purchaseDate": "2024-02-02",
       "principal": 7000,
       "purchasePrice": 7000,
-      "rate": 0.09,
+      "rate": 9,
       "termYears": 10,
       "graceYears": 1,
       "loanId": "XYU7FKX6PV",
-      "events": []
+      "events": [
+        {
+          "id": "d4081441-bb1a-434f-a0f2-645488c6b7e7",
+          "type": "default",
+          "date": "2025-11-04",
+          "recoveryAmount": 250
+        }
+      ]
     },
     {
       "loanName": "MICH 2024 9.00",
@@ -357,11 +364,18 @@
       "purchaseDate": "2024-08-08",
       "principal": 11500,
       "purchasePrice": 11000,
-      "rate": 0.085,
+      "rate": 8.5,
       "termYears": 7,
       "graceYears": 0.5,
       "loanId": "D9F55ARO3R",
-      "events": []
+      "events": [
+        {
+          "id": "f892d101-1c87-4ba7-ad4c-1e3899ea590d",
+          "type": "default",
+          "date": "2025-11-05",
+          "recoveryAmount": 0
+        }
+      ]
     }
   ]
 }
