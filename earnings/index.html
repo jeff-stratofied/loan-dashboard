@@ -300,12 +300,12 @@
 }
 
 /* =========================================
-   Loan event badges (exact match to Amort)
+   Loan event badges (match Amort layout/icons/classes)
    ========================================= */
 .loan-badges {
   display: flex;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 4px;  /* Tight spacing for position between name and school */
   flex-wrap: wrap;
 }
 
@@ -320,7 +320,7 @@
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  cursor: help;  /* Shows hand + native tooltip */
+  cursor: help;  /* Indicates hoverable */
 }
 
 .loan-badge.prepayment {
@@ -339,6 +339,26 @@
   background: rgba(239, 68, 68, 0.15);
   color: #b91c1c;
   border-color: rgba(239, 68, 68, 0.35);
+}
+
+    /* ROI-style badge tooltip (custom div, black bg, white text) */
+.badge-tooltip {
+  position: fixed !important;  /* Fixed to avoid clipping */
+  background: var(--tooltip-bg);  /* #0f172a */
+  color: var(--tooltip-text);    /* #f8fafc */
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10000 !important;  /* High z-index above everything */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.badge-tooltip.visible {
+  opacity: 1;
 }
 
     
@@ -3098,22 +3118,26 @@ function renderLoanTiles(loansList) {
     tile.dataset.amount = Number(loan.purchasePrice || 0);
     tile.setAttribute("data-loan", loan.loanName);
 
-    // Build badges exactly like Amort
+    // Build badges (match Amort icons/classes, ROI custom hover)
     let badgesHTML = '';
     if (loan.events && loan.events.length > 0) {
       badgesHTML = `
         <div class="loan-badges">
           ${loan.events.map(e => {
             let html = '';
-            const date = formatMonthYear(new Date(e.date));  // or formatDate if you prefer full date
+            let tooltipText = '';
+            const date = formatMonthYear(new Date(e.date));
 
             if (e.type === 'prepayment') {
-              html = `<span class="loan-badge prepayment" title="Prepayment • ${date}">💰 Prepay</span>`;
+              tooltipText = `Prepayment • ${date}`;
+              html = `<span class="loan-badge prepayment" data-tooltip="${tooltipText}">💰 Prepay</span>`;
             } else if (e.type === 'deferral') {
               const endDate = e.endDate ? formatMonthYear(new Date(e.endDate)) : 'Unknown';
-              html = `<span class="loan-badge deferral" title="Deferral • ${date} to ${endDate}">⏸ Deferral</span>`;
+              tooltipText = `Deferral • ${date} to ${endDate}`;
+              html = `<span class="loan-badge deferral" data-tooltip="${tooltipText}">⏸ Deferral</span>`;
             } else if (e.type === 'default') {
-              html = `<span class="loan-badge default" title="Default • ${date}">⚠️ Default</span>`;
+              tooltipText = `Default • ${date}`;
+              html = `<span class="loan-badge default" data-tooltip="${tooltipText}">⚠️ Default</span>`;
             }
 
             return html;
@@ -3128,6 +3152,8 @@ function renderLoanTiles(loansList) {
         <div class="loan-name" style="font-weight:700; font-size:14px;">
           ${loan.loanName}
         </div>
+        <!-- Event Badges (position between name and school, like Amort) -->
+        ${badgesHTML}
         <!-- Line 2: School -->
         <div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
           ${loan.school || "No school listed"}
@@ -3142,8 +3168,6 @@ function renderLoanTiles(loansList) {
         <div class="loan-sub" style="margin-top:4px;">
           Loan ${loan.loanId}
         </div>
-        <!-- Event Badges (exact Amort match) -->
-        ${badgesHTML}
       </div>
       <div class="chart-wrap">
         <div class="mini-label">
@@ -3159,6 +3183,17 @@ function renderLoanTiles(loansList) {
     // Create mini chart
     const mini = tile.querySelector('.mini-chart');
     createMiniStackedEarningsSVG(mini, loan.earningsSchedule || [], loan);
+
+    // Attach ROI-style custom tooltips to badges
+    if (loan.events && loan.events.length > 0) {
+      const badges = tile.querySelectorAll('.loan-badge');
+      badges.forEach(badge => {
+        const tooltipText = badge.getAttribute('data-tooltip');
+        if (tooltipText) {
+          createBadgeTooltip(badge, tooltipText);
+        }
+      });
+    }
   });
 }
 
@@ -4452,6 +4487,36 @@ function createBadgeTooltip(badge, text) {
 
   badge.addEventListener('remove', () => tooltip.remove());
 }
+
+function createBadgeTooltip(badge, text) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'badge-tooltip';
+  tooltip.textContent = text;
+  document.body.appendChild(tooltip);  // Append to body to avoid clipping
+
+  badge.addEventListener('mouseenter', (e) => {
+    const badgeRect = badge.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const margin = 8;
+
+    let left = badgeRect.left + (badgeRect.width / 2) - (tooltipRect.width / 2);
+    let top = badgeRect.top - tooltipRect.height - margin;
+
+    left = Math.max(0, Math.min(left, window.innerWidth - tooltipRect.width));
+    top = Math.max(0, top);
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.classList.add('visible');
+  });
+
+  badge.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('visible');
+  });
+
+  badge.addEventListener('remove', () => tooltip.remove());
+}
+
   
 document.body.addEventListener("click", (e) => {
 if (e.target.matches("#downloadCsvBtn") || e.target.matches("[data-download-csv]")) {
