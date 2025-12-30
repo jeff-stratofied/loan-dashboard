@@ -74,10 +74,10 @@
       "loanId": "0MK5TFLK8O",
       "events": [
         {
-          "id": "f1d02143-d538-4ffc-ae11-b09483d27942",
+          "id": "e4383ade-e2c6-4ac6-94c3-a7555a9404e1",
           "type": "default",
           "date": "2025-11-12",
-          "recoveryAmount": 500
+          "recoveryAmount": 0
         }
       ]
     },
