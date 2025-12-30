@@ -326,6 +326,45 @@ let deferralRemaining = 0;
   // Contractual month loop
   for (let i = 0; i < totalMonths; ) {
 
+    // ----------------------------------------------
+// DEFAULT — terminal event (must run first)
+// ----------------------------------------------
+if (
+  defaultMonth &&
+  calendarDate.getFullYear() === defaultMonth.getFullYear() &&
+  calendarDate.getMonth() === defaultMonth.getMonth()
+) {
+  const loanDate = new Date(calendarDate);
+  const applied = Math.min(balance, defaultRecovery);
+  const isOwned = loanDate >= purchaseMonth;
+
+  console.log("🚨 DEFAULT FIRED", formatMonthYear(calendarDate));
+
+  schedule.push({
+    monthIndex: schedule.length + 1,
+    loanDate,
+    displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
+
+    payment: +(applied.toFixed(2)),
+    principalPaid: +(applied.toFixed(2)),
+    interest: 0,
+    balance: +((balance - applied).toFixed(2)),
+
+    prepayment: 0,
+    deferral: false,
+    accruedInterest: 0,
+
+    isOwned,
+    ownershipDate: isOwned ? loanDate : null,
+
+    defaulted: true,
+    recovery: +(applied.toFixed(2)),
+    contractualMonth: i + 1
+  });
+
+  break; // 🔒 STOP schedule immediately
+}
+
 
 // Check if a deferral starts in THIS amort row month
 const startKey = monthKey(calendarDate);
@@ -397,52 +436,6 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
     // NORMAL CONTRACTUAL MONTH (advance i at end)
     // ----------------------------------------------
     const loanDate = new Date(calendarDate);
-
-// ----------------------------------------------
-// DEFAULT — apply recovery and stop schedule
-// Calendar-month aligned (correct for grace + no deferrals)
-// ----------------------------------------------
-if (
-  defaultMonth &&
-  calendarDate.getFullYear() === defaultMonth.getFullYear() &&
-  calendarDate.getMonth() === defaultMonth.getMonth()
-) {
-console.log("🚨 DEFAULT FIRED", {
-  calendar: calendarDate,
-  defaultMonth,
-  balance,
-  recovery: defaultRecovery
-});
-
-
-
-  const applied = Math.min(balance, defaultRecovery);
-  const isOwned = loanDate >= purchaseMonth;
-
-  schedule.push({
-    monthIndex: schedule.length + 1,
-    loanDate,
-    displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
-
-    payment: +(applied.toFixed(2)),
-    principalPaid: +(applied.toFixed(2)),
-    interest: 0,
-    balance: +((balance - applied).toFixed(2)),
-
-    prepayment: 0,
-    deferral: false,
-    accruedInterest: 0,
-
-    isOwned,
-    ownershipDate: isOwned ? loanDate : null,
-
-    defaulted: true,
-    recovery: +(applied.toFixed(2)),
-    contractualMonth: i + 1
-  });
-  
-  break; // 🔒 hard stop — no future months
-}
 
     let interest = balance * monthlyRate;
     let principalPaid = 0;
