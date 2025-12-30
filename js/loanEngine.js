@@ -290,18 +290,6 @@ export function buildAmortSchedule(loan) {
     ? Number(defaultEvent.recoveryAmount || 0)
     : 0;
 
-  // ----------------------------------------------
-// Contractual month index for DEFAULT (0-based)
-// This prevents deferrals from delaying default
-// ----------------------------------------------
-const defaultContractualMonth = defaultDate
-  ? monthDiff(
-      new Date(loanStartDate + "T00:00:00"),
-      new Date(defaultDate.getFullYear(), defaultDate.getMonth(), 1)
-    )
-  : null;
-
-
   const schedule = [];
 
   // -------------------------------
@@ -409,12 +397,14 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
 
 // ----------------------------------------------
 // DEFAULT — apply recovery and stop schedule
-// (contractual-timeline based, deferral-safe)
+// Calendar-month aligned (correct for grace + no deferrals)
 // ----------------------------------------------
 if (
-  defaultContractualMonth !== null &&
-  i >= defaultContractualMonth
+  defaultMonth &&
+  calendarDate.getFullYear() === defaultMonth.getFullYear() &&
+  calendarDate.getMonth() === defaultMonth.getMonth()
 ) {
+
 
 
   const applied = Math.min(balance, defaultRecovery);
