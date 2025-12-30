@@ -347,6 +347,21 @@
           "recoveryAmount": 0
         }
       ]
+    },
+    {
+      "loanName": "AMU 2024 8.50",
+      "user": "jeff",
+      "visible": true,
+      "school": "Ave Maria University",
+      "loanStartDate": "2024-06-04",
+      "purchaseDate": "2024-08-08",
+      "principal": 11500,
+      "purchasePrice": 11000,
+      "rate": 8.5,
+      "termYears": 7,
+      "graceYears": 0.5,
+      "loanId": "D9F55ARO3R",
+      "events": []
     }
   ]
 }
