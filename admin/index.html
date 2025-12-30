@@ -859,23 +859,32 @@ function collectLoans() {
     /* Load from Worker */
   const status = document.getElementById("status");
 
-  async function loadFromBackend() {
-    status.textContent = "Loading…";
+async function loadFromBackend() {
+  status.textContent = "Loading…";
 
-    try {
-      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-      const data = await res.json();
+  try {
+    const url =
+      "https://loan-dashboard-api.jeff-263.workers.dev/loans?t=" + Date.now();
 
-      currentLoans = data.loans.map(normalizeLoan);
-      currentSha = data.sha;
+    const res = await fetch(url, { cache: "no-store" });
 
-      renderTable();
-      status.textContent = "Loaded ✔";
-    } catch (e) {
-      console.error(e);
-      status.textContent = "Load failed";
+    if (!res.ok) {
+      throw new Error(`Load failed: ${res.status}`);
     }
+
+    const data = await res.json();   // ✅ THIS WAS MISSING
+
+    currentLoans = data.loans.map(normalizeLoan);
+    currentSha = data.sha;
+
+    renderTable();
+    status.textContent = "Loaded ✔";
+  } catch (e) {
+    console.error("[ADMIN] loadFromBackend failed", e);
+    status.textContent = "Load failed";
   }
+}
+
 
 /* Save to Worker */
 async function saveToBackend() {
