@@ -970,10 +970,12 @@ async function saveToBackend() {
 
 
   /* Buttons */
-  document.getElementById("add-row").onclick = () => {
-    currentLoans.push(normalizeLoan({}, currentLoans.length));
-    renderTable();
-  };
+ document.getElementById("add-row").onclick = () => {
+  currentLoans.push(normalizeLoan({}, currentLoans.length));
+  renderTable();
+  markDirty();   // ✅ REQUIRED
+};
+
 
   document.getElementById("save-btn").onclick = saveToBackend;
 
