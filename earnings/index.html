@@ -341,11 +341,11 @@
   border-color: rgba(239, 68, 68, 0.35);
 }
 
-    /* ROI-style badge tooltip (custom div, black bg, white text) */
+/* Event badge tooltip — MATCH ROI EXACTLY */
 .badge-tooltip {
-  position: fixed !important;  /* Fixed to avoid clipping */
-  background: var(--tooltip-bg);  /* #0f172a */
-  color: var(--tooltip-text);    /* #f8fafc */
+  position: fixed !important;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 12px;
@@ -354,9 +354,10 @@
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease;
-  z-index: 10000 !important;  /* High z-index above everything */
+  z-index: 10000 !important;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
+
 .badge-tooltip.visible {
   opacity: 1;
 }
@@ -3187,12 +3188,17 @@ function renderLoanTiles(loansList) {
     // Attach ROI-style custom tooltips to badges
     if (loan.events && loan.events.length > 0) {
       const badges = tile.querySelectorAll('.loan-badge');
-      badges.forEach(badge => {
-        const tooltipText = badge.getAttribute('data-tooltip');
-        if (tooltipText) {
-          createBadgeTooltip(badge, tooltipText);
-        }
-      });
+      badges.forEach(b => {
+  const badge = document.createElement("span");
+  badge.className = `loan-badge ${b.type}`;
+  badge.textContent = b.label;
+
+  // ✅ ADD THIS LINE (this is the entire fix)
+  createBadgeTooltip(badge, b.label);
+
+  badgeWrap.appendChild(badge);
+});
+
     }
   });
 }
@@ -4460,17 +4466,18 @@ tooltip.group.setAttribute("transform", `translate(${tooltipX}, ${tooltipY})`);
 }
 
 function createBadgeTooltip(badge, text) {
-  const tooltip = document.createElement('div');
-  tooltip.className = 'badge-tooltip';
+  const tooltip = document.createElement("div");
+  tooltip.className = "badge-tooltip";
   tooltip.textContent = text;
-  document.body.appendChild(tooltip);  // Append to body to avoid clipping
+  document.body.appendChild(tooltip);
 
-  badge.addEventListener('mouseenter', (e) => {
+  badge.addEventListener("mouseenter", () => {
     const badgeRect = badge.getBoundingClientRect();
     const tooltipRect = tooltip.getBoundingClientRect();
     const margin = 8;
 
-    let left = badgeRect.left + (badgeRect.width / 2) - (tooltipRect.width / 2);
+    let left =
+      badgeRect.left + badgeRect.width / 2 - tooltipRect.width / 2;
     let top = badgeRect.top - tooltipRect.height - margin;
 
     left = Math.max(0, Math.min(left, window.innerWidth - tooltipRect.width));
@@ -4478,15 +4485,14 @@ function createBadgeTooltip(badge, text) {
 
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
-    tooltip.classList.add('visible');
+    tooltip.classList.add("visible");
   });
 
-  badge.addEventListener('mouseleave', () => {
-    tooltip.classList.remove('visible');
+  badge.addEventListener("mouseleave", () => {
+    tooltip.classList.remove("visible");
   });
-
-  badge.addEventListener('remove', () => tooltip.remove());
 }
+
 
   
 document.body.addEventListener("click", (e) => {
