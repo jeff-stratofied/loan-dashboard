@@ -1103,14 +1103,16 @@ const formattedLoans = userLoans.map(l => ({
   nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
 }));
 
-
-
       const loansWithAmort = formattedLoans.map(l => {
-        // compute amortization schedule for this loan
-    // -------------------------------------
-    // USE REAL AMORT ENGINE FROM loanEngine
-    // -------------------------------------
-      const amortSchedule = buildAmortSchedule(l);
+        
+   const amortSchedule = buildAmortSchedule(l).map(r => ({
+  ...r,
+  // 🔑 persist deferral state from engine
+  isDeferral:
+    (r.deferralRemaining ?? 0) > 0 ||
+    r.isDeferred === true ||
+    r.inGracePeriod === true
+}));
 
       // Attach ownership flags
       const purchase = new Date(l.purchaseDate);
@@ -2449,7 +2451,9 @@ function getEventRowClass(loan, row) {
 
     if (eventMonth === rowMonth) {
       if (e.type === "default") return "event-default";
-      if (e.type === "deferral") return "event-deferral";
+      if (row.isOwned && row.isDeferral) {
+  return 'event-deferral';
+}
       if (e.type === "prepayment") return "event-prepayment";
     }
   }
