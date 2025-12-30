@@ -210,6 +210,9 @@ function getCanonicalMonthDate(purchaseDateStr, monthIndex) {
 
 export function buildAmortSchedule(loan) {
 
+console.log("🔥 loanEngine version: 2025-01-DEFAULT-CHECK");
+
+  
   const {
     principal,
     nominalRate,
@@ -290,6 +293,14 @@ export function buildAmortSchedule(loan) {
     ? Number(defaultEvent.recoveryAmount || 0)
     : 0;
 
+console.log("[DEFAULT INIT]", {
+  loan: loan.loanName || loan.name,
+  defaultEvent,
+  defaultDate,
+  defaultMonth
+});
+
+  
   const schedule = [];
 
   // -------------------------------
@@ -314,14 +325,6 @@ let deferralRemaining = 0;
 
   // Contractual month loop
   for (let i = 0; i < totalMonths; ) {
-
-    // --- ADD THIS BLOCK AT THE VERY TOP OF THE LOOP ---
-  console.log(`\n--- Processing calendar month: ${formatMonthYear(calendarDate)} (contractual month ${i + 1})`);
-  if (defaultDate) {
-    console.log(`Default event date: ${formatMonthYear(defaultDate)} (raw: ${defaultEvent.date})`);
-    console.log(`Trigger condition: calendarDate >= first of default month → ${calendarDate >= new Date(defaultDate.getFullYear(), defaultDate.getMonth(), 1)}`);
-  }
-  // --- END OF DEBUG BLOCK ---
 
 
 // Check if a deferral starts in THIS amort row month
@@ -404,6 +407,12 @@ if (
   calendarDate.getFullYear() === defaultMonth.getFullYear() &&
   calendarDate.getMonth() === defaultMonth.getMonth()
 ) {
+console.log("🚨 DEFAULT FIRED", {
+  calendar: calendarDate,
+  defaultMonth,
+  balance,
+  recovery: defaultRecovery
+});
 
 
 
@@ -505,9 +514,6 @@ if (
       contractualMonth: i + 1
     });
 
-// --- ADD THIS AT THE END OF THE LOOP (before i += 1) ---
-  console.log(`Normal row added for ${formatMonthYear(calendarDate)}: payment $${paymentAmt.toFixed(2)}, balance $${balance.toFixed(2)}`);
-  // ---
     
     // advance both calendars: 1 month forward, and 1 contractual month forward
     calendarDate = addMonths(calendarDate, 1);
