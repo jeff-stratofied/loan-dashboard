@@ -1001,19 +1001,27 @@ function getLoanEventBadges(loan) {
 }
 
 function getEventRowClass(loan, row) {
-  if (!row) return "";
+  if (!row || !row.displayDate) return "";
 
   // ----------------------------------
-  // DEFERRAL — authoritative from engine
+  // DEFERRAL (grace period)
   // ----------------------------------
-  if (row.deferralRemaining > 0 || row.isDeferred === true) {
+  // During deferral:
+  // - loan is owned
+  // - no principal is paid
+  // - interest accrues
+  if (
+    row.isOwned &&
+    row.principalPaid === 0 &&
+    row.interest > 0
+  ) {
     return "event-deferral";
   }
 
   // ----------------------------------
-  // DEFAULT / PREPAYMENT — event month
+  // DEFAULT / PREPAYMENT (event month)
   // ----------------------------------
-  if (Array.isArray(loan.events) && row.displayDate) {
+  if (Array.isArray(loan.events)) {
     const rowKey =
       row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
 
@@ -1031,6 +1039,7 @@ function getEventRowClass(loan, row) {
 
   return "";
 }
+
 
 
 
