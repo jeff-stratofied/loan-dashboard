@@ -227,7 +227,14 @@
       "termYears": 8,
       "graceYears": 0.5,
       "loanId": "DYRYYM33PL",
-      "events": []
+      "events": [
+        {
+          "id": "8ab9ae12-14ae-4aca-96a4-1ec37a0a880d",
+          "type": "default",
+          "date": "2025-11-11",
+          "recoveryAmount": 675
+        }
+      ]
     },
     {
       "loanName": "MICH 2024 9.00",
