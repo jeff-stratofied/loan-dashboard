@@ -209,9 +209,9 @@ function getCanonicalMonthDate(purchaseDateStr, monthIndex) {
 //
 
 export function buildAmortSchedule(loan) {
-
+/* diable
 console.log("🔥 loanEngine version: 2025-01-DEFAULT-CHECK");
-
+disable */
   
   const {
     principal,
@@ -521,6 +521,13 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
     }
   }
 
+console.log(
+  "📦 FINAL SCHEDULE",
+  loan.loanName,
+  schedule.map(r => formatMonthYear(r.loanDate))
+);
+
+  
   return schedule;
 }
 
