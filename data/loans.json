@@ -227,14 +227,7 @@
       "termYears": 7,
       "graceYears": 0.5,
       "loanId": "D9F55ARO3R",
-      "events": [
-        {
-          "id": "f892d101-1c87-4ba7-ad4c-1e3899ea590d",
-          "type": "default",
-          "date": "2025-11-05",
-          "recoveryAmount": 0
-        }
-      ]
+      "events": []
     },
     {
       "loanName": "MICH 2024 9.00",
