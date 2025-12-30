@@ -193,6 +193,21 @@
       ]
     },
     {
+      "loanName": "",
+      "user": "jeff",
+      "visible": true,
+      "school": "Carnegie Mellon",
+      "loanStartDate": "2024-02-01",
+      "purchaseDate": "2024-02-02",
+      "principal": 7000,
+      "purchasePrice": 7000,
+      "rate": 9,
+      "termYears": 10,
+      "graceYears": 1,
+      "loanId": "XYU7FKX6PV",
+      "events": []
+    },
+    {
       "loanName": "MICH 2024 9.00",
       "user": "john",
       "visible": true,
