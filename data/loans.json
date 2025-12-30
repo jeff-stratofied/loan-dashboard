@@ -201,7 +201,7 @@
       "purchaseDate": "2024-02-02",
       "principal": 7000,
       "purchasePrice": 7000,
-      "rate": 9,
+      "rate": 0.09,
       "termYears": 10,
       "graceYears": 1,
       "loanId": "XYU7FKX6PV",
@@ -211,6 +211,28 @@
           "type": "default",
           "date": "2025-11-04",
           "recoveryAmount": 250
+        }
+      ]
+    },
+    {
+      "loanName": "AMU 2024 8.50",
+      "user": "jeff",
+      "visible": true,
+      "school": "Ave Maria University",
+      "loanStartDate": "2024-06-04",
+      "purchaseDate": "2024-08-08",
+      "principal": 11500,
+      "purchasePrice": 11000,
+      "rate": 0.085,
+      "termYears": 7,
+      "graceYears": 0.5,
+      "loanId": "D9F55ARO3R",
+      "events": [
+        {
+          "id": "f892d101-1c87-4ba7-ad4c-1e3899ea590d",
+          "type": "default",
+          "date": "2025-11-05",
+          "recoveryAmount": 0
         }
       ]
     },
@@ -351,28 +373,6 @@
           "id": "a001aeeb-4602-4af4-8ea3-9f2900b25ac1",
           "type": "default",
           "date": "2023-12-01",
-          "recoveryAmount": 0
-        }
-      ]
-    },
-    {
-      "loanName": "AMU 2024 8.50",
-      "user": "jeff",
-      "visible": true,
-      "school": "Ave Maria University",
-      "loanStartDate": "2024-06-04",
-      "purchaseDate": "2024-08-08",
-      "principal": 11500,
-      "purchasePrice": 11000,
-      "rate": 8.5,
-      "termYears": 7,
-      "graceYears": 0.5,
-      "loanId": "D9F55ARO3R",
-      "events": [
-        {
-          "id": "f892d101-1c87-4ba7-ad4c-1e3899ea590d",
-          "type": "default",
-          "date": "2025-11-05",
           "recoveryAmount": 0
         }
       ]
