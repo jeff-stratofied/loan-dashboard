@@ -1743,11 +1743,6 @@ function fmtDate(d) {
 // =====================================
 const eventByMonth = {};
 
-// 1️⃣ Engine-default rows are authoritative
-loan.amort.schedule.forEach(r => {
-  if (r.defaulted) eventByMonth[r.monthIndex] = "default";
-});
-
 // 2️⃣ Overlay non-terminal events from loan.events
 (loan.events || []).forEach(e => {
   if (!e.type) return;
@@ -1776,6 +1771,18 @@ loan.amort.schedule.forEach(r => {
   }
 });
 
+// DEFAULT — anchor highlight strictly to event date
+const defaultEvent = (loan.events || []).find(e => e.type === "default" && e.date);
+
+if (defaultEvent) {
+  const idx = monthIndexFromDate(
+    defaultEvent.date,
+    loan.amort.schedule
+  );
+  if (idx !== null) {
+    eventByMonth[idx] = "default";
+  }
+}
 
   
 loan.amort.schedule.forEach((r) => {
