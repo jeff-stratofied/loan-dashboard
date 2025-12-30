@@ -72,7 +72,14 @@
       "termYears": 9,
       "graceYears": 1,
       "loanId": "0MK5TFLK8O",
-      "events": []
+      "events": [
+        {
+          "id": "24929e69-3a26-4142-8843-6a5b186ae193",
+          "type": "default",
+          "date": "2025-12-10",
+          "recoveryAmount": 500
+        }
+      ]
     },
     {
       "loanName": "UCLA 2025 7.30",
