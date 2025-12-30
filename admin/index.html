@@ -1010,11 +1010,15 @@ loanTable.addEventListener("change", (e) => {
       return;
     }
 
-    if (action === "delete") {
-      currentLoans.splice(idx, 1);
-      renderTable();
-      return;
-    }
+   if (action === "delete") {
+  if (!confirm("Delete this loan?")) return;
+
+  currentLoans.splice(idx, 1);
+  renderTable();
+  markDirty();   // ✅ REQUIRED
+  return;
+}
+
 
     if (action === "duplicate") {
     const clone = { ...currentLoans[idx] };
