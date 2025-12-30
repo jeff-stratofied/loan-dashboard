@@ -2519,6 +2519,15 @@ loan.roiSeries.forEach(s => {
   const cs =
     loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
 
+console.log(
+  formatMonthYear(cs.displayDate),
+  'deferralRemaining =',
+  cs.deferralRemaining,
+  'isDeferred =',
+  cs.isDeferred
+);
+
+  
   const tr = document.createElement('tr');
 
   // ✅ FIXED: use cs, not r
