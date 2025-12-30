@@ -240,6 +240,11 @@
   box-shadow: 0 6px 16px rgba(0,0,0,0.15);
 }
 
+/* KPI drawer table row hover (match Earnings) */
+#drawerExtra table tbody tr:hover {
+  background: rgba(148, 163, 184, 0.12); /* same subtle gray */
+}
+    
 .kpi h3 {
   margin:0;
   font-size:12px;
@@ -294,6 +299,69 @@
   cursor: pointer;
 }
 
+/* =========================================
+   Loan event badges (ROI tiles)
+   ========================================= */
+.loan-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.loan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.loan-badge.default {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.loan-badge.deferral {
+  background: rgba(234, 179, 8, 0.18);
+  color: #92400e;
+  border-color: rgba(234, 179, 8, 0.35);
+}
+
+.loan-badge.prepayment {
+  background: rgba(34, 197, 94, 0.18);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+    /* Event badge tooltip */
+.badge-tooltip {
+  position: absolute;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2000;  /* Increased for layering above drawers/tiles */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transform: translateY(-8px);
+}
+
+.badge-tooltip.visible {
+  opacity: 1;
+}
+    
 /* Compact earnings tiles */
 .grid.compact .tile {
   min-height: 64px;
@@ -3024,82 +3092,113 @@ const amortBody = document.getElementById("amortBody");
 const closeBtn = document.getElementById("closeBtn");
 
 function renderLoanTiles(loansList) {
+  grid.innerHTML = "";
+  loansWithEarnings.forEach(loan => {
+    const hasSchedule = loan.earningsSchedule.length > 0;
+    const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
+    const fallbackRow = { netEarnings: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
+    const loanStart = new Date(loan.loanStartDate);
+    const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
+    const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+      ? Math.max(1, diffMonthsFromStartRaw)
+      : 1;
+    const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
+    const atCurrent = hasSchedule
+      ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
+      : fallbackRow;
+    const currentMonthLabel = formatMonthYear(new Date());
 
-grid.innerHTML = "";
-loansWithEarnings.forEach(loan => {
-const hasSchedule = loan.earningsSchedule.length > 0;
-const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
-const fallbackRow = { netEarnings: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
-const loanStart = new Date(loan.loanStartDate);
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.dataset.loanName = (loan.loanName || "").toLowerCase();
+    tile.dataset.school = (loan.school || "").toLowerCase();
+    tile.dataset.rate = loan.nominalRate;
+    tile.dataset.purchaseDate = new Date(loan.purchaseDate).getTime();
+    tile.dataset.startDate = new Date(loan.loanStartDate).getTime();
+    tile.dataset.amount = Number(loan.purchasePrice || 0);
+    tile.setAttribute("data-loan", loan.loanName);
 
-const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
-const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
-? Math.max(1, diffMonthsFromStartRaw)
-: 1;
-const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
-const atCurrent = hasSchedule
-? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
-: fallbackRow;
-const currentMonthLabel = formatMonthYear(new Date());
+    // Build the badges HTML if events exist
+    let badgesHTML = '';
+    if (loan.events && loan.events.length > 0) {
+      badgesHTML = `
+        <div class="loan-badges">
+          ${loan.events.map(e => {
+            let label = '';
+            let className = '';
+            let tooltipText = '';
 
-const tile = document.createElement("div");
-tile.className = "tile";
-tile.dataset.loanName = (loan.loanName || "").toLowerCase();
-tile.dataset.school = (loan.school || "").toLowerCase();
-tile.dataset.rate = loan.nominalRate;
-tile.dataset.purchaseDate = new Date(loan.purchaseDate).getTime();
-tile.dataset.startDate = new Date(loan.loanStartDate).getTime();
-tile.dataset.amount = Number(loan.purchasePrice || 0);
+            if (e.type === 'prepayment') {
+              label = 'Prepayment';
+              className = 'prepayment';
+              tooltipText = `Prepaid $${formatCurrency(e.amount)} on ${formatDate(new Date(e.date))}`;
+            } else if (e.type === 'default') {
+              label = 'Default';
+              className = 'default';
+              tooltipText = `Defaulted on ${formatDate(new Date(e.date))}`;
+            } else if (e.type === 'deferral') {
+              label = 'Deferral';
+              className = 'deferral';
+              tooltipText = `Deferred from ${formatDate(new Date(e.date))} to ${formatDate(new Date(e.endDate))}`;
+            }
 
-tile.setAttribute("data-loan", loan.loanName);
-tile.innerHTML = `
-<div class="tile-left">
+            return `<span class="loan-badge ${className}" data-tooltip="${tooltipText}">${label}</span>`;
+          }).join('')}
+        </div>
+      `;
+    }
 
-<!-- Line 1: Loan Name -->
-<div class="loan-name" style="font-weight:700; font-size:14px;">
-${loan.loanName}
-</div>
+    tile.innerHTML = `
+      <div class="tile-left">
+        <!-- Line 1: Loan Name -->
+        <div class="loan-name" style="font-weight:700; font-size:14px;">
+          ${loan.loanName}
+        </div>
+        <!-- Line 2: School -->
+        <div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
+          ${loan.school || "No school listed"}
+        </div>
+        <!-- Line 3: Rate · Term · Matures -->
+        <div class="loan-sub" style="margin-top:6px;">
+          Rate: ${(loan.nominalRate * 100).toFixed(2)}% &nbsp;·&nbsp;
+          Term: ${loan.termYears} yrs &nbsp;·&nbsp;
+          Matures: ${formatMonthYear(addMonths(new Date(loan.loanStartDate), loan.termYears * 12))}
+        </div>
+        <!-- Line 4: Loan ID -->
+        <div class="loan-sub" style="margin-top:4px;">
+          Loan ${loan.loanId}
+        </div>
+        <!-- Event Badges -->
+        ${badgesHTML}
+      </div>
+      <div class="chart-wrap">
+        <div class="mini-label">
+          Net Earnings ${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
+        </div>
+        <div class="mini-chart"></div>
+      </div>
+    `;
 
-<!-- Line 2: School -->
-<div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
-${loan.school || "No school listed"}
-</div>
+    grid.appendChild(tile);
 
-<!-- Line 3: Rate · Term · Matures -->
-<div class="loan-sub" style="margin-top:6px;">
-Rate: ${(loan.nominalRate * 100).toFixed(2)}% &nbsp;·&nbsp;
-Term: ${loan.termYears} yrs &nbsp;·&nbsp;
-Matures: ${formatMonthYear(addMonths(new Date(loan.loanStartDate), loan.termYears * 12))}
-</div>
+    tile.addEventListener("click", () => openLoanDrawer(loan));
 
-<!-- Line 4: Loan ID -->
-<div class="loan-sub" style="margin-top:4px;">
-Loan ${loan.loanId}
-</div>
+    // Create mini chart
+    const mini = tile.querySelector('.mini-chart');
+    const series = loan.earningsSchedule || [];
+    createMiniStackedEarningsSVG(mini, loan.earningsSchedule, loan);
 
-</div>
-
-<div class="chart-wrap">
-<div class="mini-label">
-Net Earnings ${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
-</div>
-<div class="mini-chart"></div>
-</div>
-`;
-grid.appendChild(tile);
-
-tile.addEventListener("click", () => openLoanDrawer(loan));
-
-const mini = tile.querySelector('.mini-chart');
-const series = loan.earningsSchedule || [];
-
-createMiniStackedEarningsSVG(
-mini,
-loan.earningsSchedule,
-loan
-);
-
-});
+    // Attach tooltips to badges (only if badges exist)
+    if (loan.events && loan.events.length > 0) {
+      const badges = tile.querySelectorAll('.loan-badge');
+      badges.forEach(badge => {
+        const tooltipText = badge.getAttribute('data-tooltip');
+        if (tooltipText) {
+          createBadgeTooltip(badge, tooltipText);
+        }
+      });
+    }
+  });
 }
 
 async function initPage() {
@@ -4364,6 +4463,35 @@ tooltipY = Math.min(tooltipY, cy - height - 2);
 tooltip.group.setAttribute("transform", `translate(${tooltipX}, ${tooltipY})`);
 }
 
+function createBadgeTooltip(badge, text) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'badge-tooltip';
+  tooltip.textContent = text;
+  document.body.appendChild(tooltip);  // Append to body to avoid clipping
+
+  badge.addEventListener('mouseenter', (e) => {
+    const badgeRect = badge.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const margin = 8;
+
+    let left = badgeRect.left + (badgeRect.width / 2) - (tooltipRect.width / 2);
+    let top = badgeRect.top - tooltipRect.height - margin;
+
+    left = Math.max(0, Math.min(left, window.innerWidth - tooltipRect.width));
+    top = Math.max(0, top);
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.classList.add('visible');
+  });
+
+  badge.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('visible');
+  });
+
+  badge.addEventListener('remove', () => tooltip.remove());
+}
+  
 document.body.addEventListener("click", (e) => {
 if (e.target.matches("#downloadCsvBtn") || e.target.matches("[data-download-csv]")) {
 downloadCurrentDrawerCsv();
