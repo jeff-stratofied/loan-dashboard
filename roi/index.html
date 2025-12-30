@@ -1003,33 +1003,20 @@ function getLoanEventBadges(loan) {
 function getEventRowClass(loan, row) {
   if (!row || !row.displayDate) return "";
 
-  const rowKey =
-    row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
-
   // ----------------------------------
-// DEFERRAL (multi-month window)
-// ----------------------------------
-if (row.isOwned && Array.isArray(loan.events)) {
-  const def = loan.events.find(e => e.type === 'deferral' && e.date);
-  if (def && loan.graceYears > 0) {
-    const start = new Date(def.date);
-    const startKey = start.getFullYear() * 12 + start.getMonth();
-    const graceMonths = Math.round(Number(loan.graceYears || 0) * 12);
-    const endKey = startKey + graceMonths - 1;
-
-    const rowKey = row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
-
-    if (rowKey >= startKey && rowKey <= endKey) {
-      return 'event-deferral';
-    }
+  // DEFERRAL — authoritative from engine
+  // ----------------------------------
+  if (row.isOwned && row.isDeferred === true) {
+    return "event-deferral";
   }
-}
-
 
   // ----------------------------------
   // DEFAULT / PREPAYMENT (single month)
   // ----------------------------------
   if (Array.isArray(loan.events)) {
+    const rowKey =
+      row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
+
     for (const e of loan.events) {
       if (!e.date) continue;
 
@@ -1046,8 +1033,6 @@ if (row.isOwned && Array.isArray(loan.events)) {
 
   return "";
 }
-
-
 
 
     // ----------------------------
@@ -1104,39 +1089,10 @@ const formattedLoans = userLoans.map(l => ({
 }));
 
       const loansWithAmort = formattedLoans.map(l => {
-
-        console.log(
-  '[DEFERRAL EVENTS]',
-  l.name,
-  Array.isArray(l.events) ? l.events : 'NO EVENTS'
-);
-
-        
+    
 const rawAmort = buildAmortSchedule(l);
 
-// 🔎 DEBUG: inspect raw amort rows around deferral period
-console.log(
-  '[AMORT RAW DEFERRAL CHECK]',
-  l.name,
-  rawAmort.map(r => ({
-    date: r.loanDate,
-    principalPaid: r.principalPaid,
-    interest: r.interest,
-    deferralRemaining: r.deferralRemaining,
-    isDeferred: r.isDeferred,
-    inGracePeriod: r.inGracePeriod
-  }))
-);
-
-const amortSchedule = rawAmort.map(r => ({
-  ...r,
-  // 🔑 persist deferral state from engine
-  isDeferral:
-    (r.deferralRemaining ?? 0) > 0 ||
-    r.isDeferred === true ||
-    r.inGracePeriod === true
-}));
-
+const amortSchedule = rawAmort;
 
       // Attach ownership flags
       const purchase = new Date(l.purchaseDate);
@@ -1148,19 +1104,6 @@ const amortSchedule = rawAmort.map(r => ({
         : 0,
       ownershipDate: r.loanDate >= purchase ? r.loanDate : null
     }));
-
-console.log(
-  '[OWNERSHIP + DEFERRAL]',
-  l.name,
-  scheduleWithOwnership
-    .filter(r => r.isOwned)
-    .slice(0, 12)
-    .map(r => ({
-      date: r.displayDate,
-      isOwned: r.isOwned,
-      isDeferral: r.isDeferral
-    }))
-);
 
         
     // Build cumulative values only for owned rows
@@ -2576,23 +2519,16 @@ loan.roiSeries.forEach(s => {
   const cs =
     loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
 
-console.log(
+  console.log(
   formatMonthYear(cs.displayDate),
-  'deferralRemaining =',
-  cs.deferralRemaining,
-  'isDeferred =',
-  cs.isDeferred
+  'isDeferred =', cs.isDeferred,
+  'remaining =', cs.deferralRemaining
 );
 
   
   const tr = document.createElement('tr');
 
 const rowClass = getEventRowClass(loan, cs);
-console.log(
-  '[ROW CLASS]',
-  formatMonthYear(cs.displayDate),
-  rowClass
-);
 
 if (rowClass) tr.classList.add(rowClass);
 
