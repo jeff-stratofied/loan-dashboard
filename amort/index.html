@@ -1628,6 +1628,13 @@ delete */
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
 
+console.log(
+  "🧾 DRAWER EVENTS",
+  loan.loanName,
+  loan.events
+);
+
+  
   // =====================================================
   // HARD RESET KPI-ONLY STATE (restore loan mode)
   // =====================================================
@@ -1665,6 +1672,7 @@ function openDrawerForLoan(loan) {
   drawerAmortContainer.style.display = 'block';
   amortBody.innerHTML = '';
 
+  /* disable
    console.log(
   "📦 ENGINE SCHEDULE (before UI mutation)",
   loan.loanName,
@@ -1672,7 +1680,7 @@ function openDrawerForLoan(loan) {
     `${r.defaulted ? "DEFAULT" : ""} ${r.monthIndex}`
   )
 );
-                                    
+  disable */                              
 
   // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
   // Standardize all month math to FIRST OF PURCHASE MONTH
@@ -1774,6 +1782,7 @@ if (defaultEvent?.date) {
   }
 }
 
+  /* disable
   console.log(
   "🧨 UI-MUTATED SCHEDULE (after default extension)",
   loan.loanName,
@@ -1781,7 +1790,7 @@ if (defaultEvent?.date) {
     `${r.defaulted ? "DEFAULT" : ""} ${r.monthIndex}`
   )
 );
-
+disable */
 
   // =====================================
 // Build event lookup (FINAL amort schedule)
