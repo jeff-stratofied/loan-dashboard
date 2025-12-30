@@ -2587,18 +2587,15 @@ console.log(
   
   const tr = document.createElement('tr');
 
-  const rowClass = getEventRowClass(loan, cs);
+const rowClass = getEventRowClass(loan, cs);
 console.log(
   '[ROW CLASS]',
   formatMonthYear(cs.displayDate),
   rowClass
 );
+
 if (rowClass) tr.classList.add(rowClass);
 
-
-  // ✅ FIXED: use cs, not r
-  const rowClass = getEventRowClass(loan, cs);
-  if (rowClass) tr.classList.add(rowClass);
 
   const monthLabel =
     cs.displayDate instanceof Date
