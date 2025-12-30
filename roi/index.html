@@ -983,6 +983,28 @@ function getLoanEventBadges(loan) {
   return badges;
 }
 
+    function getEventRowClass(loan, row) {
+  if (!Array.isArray(loan.events)) return "";
+
+  const rowMonth = row.displayDate
+    ? new Date(row.displayDate).toISOString().slice(0, 7)
+    : null;
+
+  for (const e of loan.events) {
+    if (!e.date) continue;
+
+    const eventMonth = new Date(e.date).toISOString().slice(0, 7);
+
+    if (eventMonth === rowMonth) {
+      if (e.type === "default") return "event-default";
+      if (e.type === "deferral") return "event-deferral";
+      if (e.type === "prepayment") return "event-prepayment";
+    }
+  }
+
+  return "";
+}
+
 
     // ----------------------------
     // Bind current user label
@@ -2370,6 +2392,27 @@ function populateProjectedROILoanTable(){
   });
 }
 
+function getEventRowClass(loan, row) {
+  if (!Array.isArray(loan.events) || !row.displayDate) return "";
+
+  const rowMonth =
+    row.displayDate.getFullYear() + "-" + row.displayDate.getMonth();
+
+  for (const e of loan.events) {
+    if (!e.date) continue;
+    const d = new Date(e.date);
+    const eventMonth = d.getFullYear() + "-" + d.getMonth();
+
+    if (eventMonth === rowMonth) {
+      if (e.type === "default") return "event-default";
+      if (e.type === "deferral") return "event-deferral";
+      if (e.type === "prepayment") return "event-prepayment";
+    }
+  }
+  return "";
+}
+
+      
 function openDrawerForLoan(loan){
   currentMode = 'loan';
   currentLoan = loan;
@@ -2449,22 +2492,25 @@ loan.roiSeries.forEach(s => {
 
   const tr = document.createElement('tr');
 
+  // ✅ FIXED: use cs, not r
+  const rowClass = getEventRowClass(loan, cs);
+  if (rowClass) tr.classList.add(rowClass);
+
   const monthLabel =
     cs.displayDate instanceof Date
       ? formatMonthYear(cs.displayDate)
       : '';
 
-tr.innerHTML = `
-  <td style="text-align:left">${monthLabel}</td>
-  <td style="text-align:right">$${formatCurrency(cs.balance)}</td>
-  <td style="text-align:right">$${formatCurrency(s.loanValue)}</td>
-  <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
-`;
-
-
+  tr.innerHTML = `
+    <td style="text-align:left">${monthLabel}</td>
+    <td style="text-align:right">$${formatCurrency(cs.balance)}</td>
+    <td style="text-align:right">$${formatCurrency(s.loanValue)}</td>
+    <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
+  `;
 
   roiBody.appendChild(tr);
 });
+
 
 
   drawer.classList.add('open');
