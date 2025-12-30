@@ -753,6 +753,24 @@ tr.event-default td {
   margin-top: 0 !important;
 }
 
+.badge-tooltip {
+  position: fixed !important;  /* Change from absolute to fixed to avoid clipping */
+  z-index: 10000 !important;   /* Higher than .drawer (120) and other elements */
+  transform: none !important;  /* Remove translateY; we'll handle in JS */
+  white-space: pre-wrap;       /* Allow wrapping if text is long */
+}
+
+.badge-tooltip.visible {
+  opacity: 1 !important;
+}
+
+/* Optional: Prevent clipping in parents (add if fixed position alone doesn't work) */
+.grid,
+.drawer-body,
+.app {
+  overflow: visible !important;  /* Test; may need to toggle via JS on hover if it breaks layout */
+}
+    
   </style>
 </head>
 <body>
@@ -966,25 +984,36 @@ function formatCurrency(val) {
   });
 }
 
-    function createBadgeTooltip(badge, text) {
+function createBadgeTooltip(badge, text) {
   const tooltip = document.createElement('div');
   tooltip.className = 'badge-tooltip';
   tooltip.textContent = text;
-  badge.style.position = 'relative';
-  badge.appendChild(tooltip);
+  document.body.appendChild(tooltip);  // Append to body to escape clipping
 
   badge.addEventListener('mouseenter', (e) => {
+    const badgeRect = badge.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const margin = 8;  // Space above badge
+
+    // Position above the badge, centered horizontally
+    let left = badgeRect.left + (badgeRect.width / 2) - (tooltipRect.width / 2);
+    let top = badgeRect.top - tooltipRect.height - margin;
+
+    // Clamp to viewport (prevent off-screen)
+    left = Math.max(0, Math.min(left, window.innerWidth - tooltipRect.width));
+    top = Math.max(0, top);  // Don't go above top edge
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
     tooltip.classList.add('visible');
-    // Position above the badge
-    const rect = badge.getBoundingClientRect();
-    tooltip.style.left = `${rect.width / 2}px`;
-    tooltip.style.top = `${-tooltip.offsetHeight - 8}px`;
-    tooltip.style.transform = 'translateX(-50%) translateY(-8px)';
   });
 
   badge.addEventListener('mouseleave', () => {
     tooltip.classList.remove('visible');
   });
+
+  // Clean up on removal (optional, but good practice)
+  badge.addEventListener('remove', () => tooltip.remove());
 }
     
   function getLoanMaturityFromAmort(loan) {
