@@ -380,7 +380,7 @@ html[data-theme="dark"] body {
   border-color: rgba(34, 197, 94, 0.35);
 }
 
-    /* Event badge tooltip */
+/* Event badge tooltip */
 .badge-tooltip {
   position: absolute;
   background: var(--tooltip-bg);
@@ -393,7 +393,7 @@ html[data-theme="dark"] body {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease;
-  z-index: 100;
+  z-index: 2000;  /* Increased from 100 to layer above drawer (z=1000) and tiles */
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   transform: translateY(-8px);
 }
