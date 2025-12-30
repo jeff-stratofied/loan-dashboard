@@ -1769,12 +1769,17 @@ function fmtDate(d) {
 }
 
 
-  console.log("🧾 UI DEFAULT EVENT (from loan.events)", loan.loanName, defaultEvent);
-  
 // =====================================
-// Ensure default terminal month exists (DEBUG)
+// DEFAULT EVENT (declare FIRST)
 // =====================================
 const defaultEvent = (loan.events || []).find(e => e.type === "default");
+
+console.log(
+  "🧾 UI DEFAULT EVENT (from loan.events)",
+  loan.loanName,
+  defaultEvent
+);
+
 
 if (defaultEvent?.date) {
   const d = new Date(defaultEvent.date + "T00:00:00");
