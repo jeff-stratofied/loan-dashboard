@@ -60,28 +60,6 @@
       "events": []
     },
     {
-      "loanName": "CMU 2024 9.50",
-      "user": "jeff",
-      "visible": true,
-      "school": "Carnegie Mellon",
-      "loanStartDate": "2024-06-30",
-      "purchaseDate": "2024-09-30",
-      "principal": 6000,
-      "purchasePrice": 6000,
-      "rate": 0.095,
-      "termYears": 9,
-      "graceYears": 1,
-      "loanId": "0MK5TFLK8O",
-      "events": [
-        {
-          "id": "969650d8-435e-47fa-84e0-8230767c8ef1",
-          "type": "default",
-          "date": "2025-11-11",
-          "recoveryAmount": 0
-        }
-      ]
-    },
-    {
       "loanName": "UCLA 2025 7.30",
       "user": "jeff",
       "visible": true,
@@ -211,28 +189,6 @@
           "type": "default",
           "date": "2025-12-01",
           "recoveryAmount": 500
-        }
-      ]
-    },
-    {
-      "loanName": "CMU 2024 9.00",
-      "user": "jeff",
-      "visible": true,
-      "school": "Carnegie Mellon",
-      "loanStartDate": "2024-06-30",
-      "purchaseDate": "2024-09-30",
-      "principal": 7000,
-      "purchasePrice": 7000,
-      "rate": 0.095,
-      "termYears": 9,
-      "graceYears": 1,
-      "loanId": "MW3Q761GTR",
-      "events": [
-        {
-          "id": "a04f8b86-3016-4ecd-8122-f4e71e9d7658",
-          "type": "default",
-          "date": "2025-11-12",
-          "recoveryAmount": 0
         }
       ]
     },
