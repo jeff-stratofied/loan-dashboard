@@ -4488,35 +4488,6 @@ function createBadgeTooltip(badge, text) {
   badge.addEventListener('remove', () => tooltip.remove());
 }
 
-function createBadgeTooltip(badge, text) {
-  const tooltip = document.createElement('div');
-  tooltip.className = 'badge-tooltip';
-  tooltip.textContent = text;
-  document.body.appendChild(tooltip);  // Append to body to avoid clipping
-
-  badge.addEventListener('mouseenter', (e) => {
-    const badgeRect = badge.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const margin = 8;
-
-    let left = badgeRect.left + (badgeRect.width / 2) - (tooltipRect.width / 2);
-    let top = badgeRect.top - tooltipRect.height - margin;
-
-    left = Math.max(0, Math.min(left, window.innerWidth - tooltipRect.width));
-    top = Math.max(0, top);
-
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
-    tooltip.classList.add('visible');
-  });
-
-  badge.addEventListener('mouseleave', () => {
-    tooltip.classList.remove('visible');
-  });
-
-  badge.addEventListener('remove', () => tooltip.remove());
-}
-
   
 document.body.addEventListener("click", (e) => {
 if (e.target.matches("#downloadCsvBtn") || e.target.matches("[data-download-csv]")) {
