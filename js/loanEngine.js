@@ -209,9 +209,6 @@ function getCanonicalMonthDate(purchaseDateStr, monthIndex) {
 //
 
 export function buildAmortSchedule(loan) {
-/* diable
-console.log("🔥 loanEngine version: 2025-01-DEFAULT-CHECK");
-disable */
   
   const {
     principal,
@@ -293,13 +290,6 @@ disable */
     ? Number(defaultEvent.recoveryAmount || 0)
     : 0;
 
-console.log("[DEFAULT INIT]", {
-  loan: loan.loanName || loan.name,
-  defaultEvent,
-  defaultDate,
-  defaultMonth
-});
-
   
   const schedule = [];
 
@@ -338,8 +328,6 @@ if (
   const loanDate = new Date(calendarDate);
   const applied = Math.min(balance, defaultRecovery);
   const isOwned = loanDate >= purchaseMonth;
-
-  console.log("🚨 DEFAULT FIRED", formatMonthYear(calendarDate));
 
   schedule.push({
     monthIndex: schedule.length + 1,
@@ -535,17 +523,8 @@ schedule.push({
     }
   }
 
-console.log(
-  "📦 FINAL SCHEDULE",
-  loan.loanName,
-  schedule.map(r => formatMonthYear(r.loanDate))
-);
-
-  
   return schedule;
 }
-
-
 
 // -------------------------------
 // Attach schedules to all loans
