@@ -1003,32 +1003,39 @@ function getLoanEventBadges(loan) {
 function getEventRowClass(loan, row) {
   if (!row || !row.displayDate) return "";
 
+  const rowKey =
+    row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
+
   // ----------------------------------
   // DEFERRAL (grace period)
   // ----------------------------------
-  // During deferral:
-  // - loan is owned
-  // - no principal is paid
-  // - interest accrues
-  if (
-    row.isOwned &&
-    row.principalPaid === 0 &&
-    row.interest > 0
-  ) {
-    return "event-deferral";
+  if (Array.isArray(loan.events)) {
+    for (const e of loan.events) {
+      if (e.type !== "deferral" || !e.date) continue;
+
+      const start = new Date(e.date);
+      const startKey =
+        start.getFullYear() * 12 + start.getMonth();
+
+      const deferralMonths = Number(loan.graceYears || 0) * 12;
+      const endKey = startKey + deferralMonths - 1;
+
+      if (rowKey >= startKey && rowKey <= endKey) {
+        return "event-deferral";
+      }
+    }
   }
 
   // ----------------------------------
-  // DEFAULT / PREPAYMENT (event month)
+  // DEFAULT / PREPAYMENT (single month)
   // ----------------------------------
   if (Array.isArray(loan.events)) {
-    const rowKey =
-      row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
-
     for (const e of loan.events) {
       if (!e.date) continue;
+
       const d = new Date(e.date);
-      const eventKey = d.getFullYear() * 12 + d.getMonth();
+      const eventKey =
+        d.getFullYear() * 12 + d.getMonth();
 
       if (rowKey === eventKey) {
         if (e.type === "default") return "event-default";
@@ -1039,7 +1046,6 @@ function getEventRowClass(loan, row) {
 
   return "";
 }
-
 
 
 
