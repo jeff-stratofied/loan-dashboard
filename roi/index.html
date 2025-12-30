@@ -878,9 +878,6 @@ tr.event-default td {
             <tr>
               <th>Month</th>
               <th>Balance</th>
-              <th>Cum Interest</th>
-              <th>Cum Payments</th>
-              <th>Cum Fees</th>
               <th>Loan Value</th>
               <th>ROI</th>
             </tr>
@@ -2519,13 +2516,7 @@ loan.roiSeries.forEach(s => {
   const cs =
     loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
 
-  console.log(
-  formatMonthYear(cs.displayDate),
-  'isDeferred =', cs.isDeferred,
-  'remaining =', cs.deferralRemaining
-);
 
-  
   const tr = document.createElement('tr');
 
 const rowClass = getEventRowClass(loan, cs);
