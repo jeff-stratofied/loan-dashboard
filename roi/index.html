@@ -524,6 +524,23 @@ html[data-theme="dark"] .drawer-chart{
     td{ padding:8px; border-bottom:1px dashed var(--table-border); text-align:right }
     td:first-child, th:first-child{ text-align:left }
 
+/* =========================================
+   ROI table event highlights (MATCH AMORT)
+   ========================================= */
+tr.event-prepayment td {
+  background: rgba(34, 197, 94, 0.16);
+}
+
+tr.event-deferral td {
+  background: rgba(234, 179, 8, 0.20);
+}
+
+tr.event-default td {
+  background: rgba(239, 68, 68, 0.20);
+  font-weight: 600;
+}
+
+    
   .tooltip{
     position:fixed;
     pointer-events:none;
