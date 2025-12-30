@@ -3178,6 +3178,58 @@ function renderLoanTiles(loansList) {
       </div>
     `;
 
+    // --------------------------------------------------
+// ROI-style event badge hover (reuse mini tooltip)
+// --------------------------------------------------
+if (Array.isArray(loan.events) && loan.events.length > 0) {
+  const badges = tile.querySelectorAll(".loan-badge");
+
+  badges.forEach((badge) => {
+    badge.addEventListener("mouseenter", (e) => {
+      let eventType = null;
+
+      if (badge.classList.contains("prepayment")) eventType = "prepayment";
+      else if (badge.classList.contains("default")) eventType = "default";
+      else if (badge.classList.contains("deferral")) eventType = "deferral";
+
+      if (!eventType) return;
+
+      const event = loan.events.find(ev => ev.type === eventType);
+      if (!event) return;
+
+      const lines = [];
+
+      if (eventType === "prepayment") {
+        lines.push(
+          "Prepayment",
+          `Date: ${formatDate(new Date(event.date))}`,
+          `Amount: ${formatCurrency(event.amount)}`
+        );
+      }
+
+      if (eventType === "default") {
+        lines.push(
+          "Default",
+          `Date: ${formatDate(new Date(event.date))}`
+        );
+      }
+
+      if (eventType === "deferral") {
+        lines.push(
+          "Deferral",
+          `Start: ${formatMonthYear(new Date(event.startDate))}`,
+          `Months: ${event.months}`
+        );
+      }
+
+      setMiniTooltipContent(lines);
+      positionMiniTooltip(e.clientX, e.clientY, 12);
+    });
+
+    badge.addEventListener("mouseleave", hideMiniTooltip);
+  });
+}
+
     
     grid.appendChild(tile);
     tile.addEventListener("click", () => openLoanDrawer(loan));
