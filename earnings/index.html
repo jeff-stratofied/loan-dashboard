@@ -773,7 +773,7 @@ html[data-theme="dark"] .legend .sw {
       color: #ffffff;                   /* white text */
       padding: 6px 10px;
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 400;
       border-radius: 6px;
       border: 1px solid rgba(255,255,255,0.15);
       box-shadow: 0 6px 18px rgba(0,0,0,0.45);
@@ -3208,8 +3208,25 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
       }
 
 if (eventType === "default") {
-  const recovered = Number(event.recoveredAmount || event.recovered || 0);
-  const remaining = Number(event.remainingBalance || event.remaining || 0);
+  const recovered = Number(
+  event.recovered ??
+  event.recoveredAmount ??
+  event.recoveryAmount ??
+  event.amountRecovered ??
+  event.recovery ??
+  0
+);
+
+const remaining = Number(
+  event.remainingBalance ??
+  event.remaining ??
+  event.remainingAmount ??
+  event.balanceRemaining ??
+  event.principalRemaining ??
+  event.remainingPrincipal ??
+  0
+);
+
 
   lines.push(
     "Default",
