@@ -769,49 +769,10 @@ loansWithAmort.forEach(loan => {
 let totalNetToDate  = 0;
 let totalFeesToDate = 0;
 
+// --------------------------------------
 // KPI 3 — portfolio calendar-month aggregation
-const monthlyTotals = {}; // key = "YYYY-MM"
-
-  // --------------------------------------
-// KPI 3 SERIES — avg net per calendar month
 // --------------------------------------
-const kpi3Series = Object.keys(monthlyTotals)
-  .sort((a, b) => {
-    const [ay, am] = a.split("-").map(Number);
-    const [by, bm] = b.split("-").map(Number);
-    return ay !== by ? ay - by : am - bm;
-  })
-  .map(key => {
-    const [year, month] = key.split("-").map(Number);
-    return {
-      date: new Date(year, month, 1),
-      avg: monthlyTotals[key]
-    };
-  });
-
-const monthsCounted = Object.keys(monthlyTotals).length;
-  
-  // --------------------------------------
-// KPI 3 TABLE — per-loan avg monthly net
-// --------------------------------------
-const kpi3Rows = loansWithAmort
-  .map(loan => {
-    const loanKey = loan.loanId;
-    const loanView = loanEarnings[loanKey];
-    if (!loanView) return null;
-
-    return {
-      loanId: loanKey,
-      loanName: loan.loanName,
-      school: loan.school,
-      avgMonthly:
-        monthsCounted > 0
-          ? loanView.current.netEarnings / monthsCounted
-          : 0
-    };
-  })
-  .filter(Boolean);
-
+const monthlyTotals = {}; // key = "YYYY-M"
 
 loansWithAmort.forEach(loan => {
   const purchase = new Date(loan.purchaseDate);
@@ -832,10 +793,61 @@ loansWithAmort.forEach(loan => {
       Number(r.interest ?? 0) -
       Number(r.feeThisMonth ?? 0);
 
-    // Aggregate per calendar month (across all loans)
     monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
   });
 });
+
+// --------------------------------------
+// KPI 3 — derived values
+// --------------------------------------
+const monthsCounted = Object.keys(monthlyTotals).length;
+
+const totalNetAcrossMonths =
+  Object.values(monthlyTotals).reduce((sum, v) => sum + v, 0);
+
+const avgMonthlyNet =
+  monthsCounted > 0
+    ? totalNetAcrossMonths / monthsCounted
+    : 0;
+
+// --------------------------------------
+// KPI 3 SERIES — avg net per calendar month
+// --------------------------------------
+const kpi3Series = Object.keys(monthlyTotals)
+  .sort((a, b) => {
+    const [ay, am] = a.split("-").map(Number);
+    const [by, bm] = b.split("-").map(Number);
+    return ay !== by ? ay - by : am - bm;
+  })
+  .map(key => {
+    const [year, month] = key.split("-").map(Number);
+    return {
+      date: new Date(year, month, 1),
+      avg: monthlyTotals[key]
+    };
+  });
+
+// --------------------------------------
+// KPI 3 TABLE — per-loan avg monthly net
+// --------------------------------------
+const kpi3Rows = loansWithAmort
+  .map(loan => {
+    const loanKey = loan.loanId;
+    const loanView = loanEarnings[loanKey];
+    if (!loanView) return null;
+
+    return {
+      loanId: loanKey,
+      loanName: loan.loanName,
+      school: loan.school,
+      avgMonthly:
+        monthsCounted > 0
+          ? loanView.current.netEarnings / monthsCounted
+          : 0
+    };
+  })
+  .filter(Boolean);
+
 
 // Final KPI 3 values
 
