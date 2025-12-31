@@ -786,7 +786,7 @@ let totalFeesToDate = 0;
 // --------------------------------------
 const monthlyTotals = {}; // key = "YYYY-M"
 
-loansWithAmort.forEach(loan => {
+loansOwnedByUser.forEach(loan => {
   const purchase = new Date(loan.purchaseDate);
 
   loan.amort.schedule.forEach(r => {
@@ -863,7 +863,7 @@ const kpi3Series = Object.keys(monthlyTotals)
 // --------------------------------------
 // KPI 3 TABLE — per-loan avg monthly net
 // --------------------------------------
-const kpi3Rows = loansWithAmort
+const kpi3Rows = loansOwnedByUser
   .map(loan => {
     const loanKey = loan.loanId;
     const loanView = loanEarnings[loanKey];
@@ -910,7 +910,10 @@ const kpi3Rows = loansWithAmort
 // --------------------------------------
 // KPI 1 totals (already correct)
 // --------------------------------------
-Object.values(loanEarnings).forEach(l => {
+loansOwnedByUser.forEach(loan => {
+  const l = loanEarnings[loan.loanId];
+  if (!l) return;
+
   totalNetToDate  += Number(l.current.netEarnings ?? 0);
   totalFeesToDate += Number(l.feesToDate ?? 0);
 });
