@@ -74,7 +74,6 @@ export async function loadLoans() {
       l.loanStartDate ||
       "";
 
-    
     // Normalize terms
     const termYears = Number(
       l.termYears != null
@@ -92,6 +91,23 @@ export async function loadLoans() {
         : 0
     );
 
+    // --------------------------------------------------
+    // ✅ Earnings / portfolio normalization (NEW)
+    // --------------------------------------------------
+
+    // Used by earnings / ROI / amort pages for filtering
+    const user = l.user || "jeff";
+
+    // Fee configuration (engine-driven earnings)
+    // Defaults intentionally match old earnings page behavior
+    const upfrontFee = Number(
+      l.upfrontFee != null ? l.upfrontFee : 150
+    );
+
+    const monthlyFeeRate = Number(
+      l.monthlyFeeRate != null ? l.monthlyFeeRate : 0.00125
+    );
+
     return {
       id,
       loanName,
@@ -107,10 +123,17 @@ export async function loadLoans() {
       termYears,
       graceYears,
 
-      // ✅ REQUIRED FOR PREPAYMENTS
-      events: Array.isArray(l.events) ? l.events : []
+      // ✅ REQUIRED FOR PREPAYMENTS / DEFERRALS
+      events: Array.isArray(l.events) ? l.events : [],
+
+      // ✅ REQUIRED FOR EARNINGS + FILTERING
+      user,
+      upfrontFee,
+      monthlyFeeRate
     };
   });
+}
+
 }
 
 
@@ -242,6 +265,31 @@ export function buildAmortSchedule(loan) {
   // -------------------------------
   // Helpers
   // -------------------------------
+   // -------------------------------
+  // Fees (used by Earnings views)
+  // -------------------------------
+  const upfrontFeeAmount = Number(loan.upfrontFee ?? 150);        // default = 150 to match current earnings page
+  const monthlyFeeRate   = Number(loan.monthlyFeeRate ?? 0.00125); // default = 0.125% of balance
+  const isSameMonth = (a, b) => a && b &&
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth();
+
+  function computeFeeThisMonth(loanDate, balanceAfter, isOwned) {
+    if (!isOwned) return { upfrontFeeThisMonth: 0, monthlyBalanceFee: 0, feeThisMonth: 0 };
+
+    const firstOwnedMonth = isSameMonth(loanDate, purchaseMonth);
+    const upfrontFeeThisMonth = firstOwnedMonth ? upfrontFeeAmount : 0;
+
+    const monthlyBalanceFee =
+      balanceAfter > 0 ? +(balanceAfter * monthlyFeeRate).toFixed(2) : 0;
+
+    const feeThisMonth = +(upfrontFeeThisMonth + monthlyBalanceFee).toFixed(2);
+
+    return { upfrontFeeThisMonth, monthlyBalanceFee, feeThisMonth };
+  }
+
+  
+  
   const monthKey = (d) => `${d.getFullYear()}-${d.getMonth()}`;
 
   // -------------------------------
@@ -394,12 +442,20 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
 
 const deferralIndex = deferralTotal - deferralRemaining;
 
+      const fees = computeFeeThisMonth(loanDate, balance, isOwned);
+
+      
 schedule.push({
   monthIndex: schedule.length + 1,
   loanDate,
 
   displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
 
+    feeThisMonth: fees.feeThisMonth,
+  upfrontFeeThisMonth: fees.upfrontFeeThisMonth,
+  monthlyBalanceFee: fees.monthlyBalanceFee,
+
+  
   // Deferral month: no scheduled payment, no scheduled principal/interest
   payment: 0,
   principalPaid: +(prepaymentThisMonth.toFixed(2)), // only prepayment counts as principal
@@ -481,6 +537,8 @@ schedule.push({
     principalPaid += prepaymentThisMonth;
 
 const isOwned = loanDate >= purchaseMonth;
+const fees = computeFeeThisMonth(loanDate, balance, isOwned);
+
 
 schedule.push({
   monthIndex: schedule.length + 1,
@@ -493,6 +551,11 @@ schedule.push({
   interest: +(interest.toFixed(2)),
   balance: +(balance.toFixed(2)),
 
+  feeThisMonth: fees.feeThisMonth,
+  upfrontFeeThisMonth: fees.upfrontFeeThisMonth,
+  monthlyBalanceFee: fees.monthlyBalanceFee,
+
+  
   prepayment: +(prepaymentThisMonth.toFixed(2)),
   deferral: false,
   accruedInterest: 0,
