@@ -2455,11 +2455,6 @@ function renderKPI2Table(data, containerId = "kpi2Table") {
 
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
-  // --------------------------------------------------
-  // Phase 3: UI-only placeholder
-  // KPI3 table rows will be engine-provided
-  // --------------------------------------------------
-
   const rows = (data || []).map(l => ({
     loanId: l.loanId,
     cells: [
@@ -2473,9 +2468,13 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
         </div>
       </div>
       `,
-      "—",
-      l.purchaseDate ? formatDate(new Date(l.purchaseDate)) : "—",
-      "—"
+      formatCurrency(l.avgMonthly ?? 0),
+      l.purchaseDate
+        ? formatMonthYear(new Date(l.purchaseDate))
+        : "—",
+      l.maturityDate
+        ? formatMonthYear(new Date(l.maturityDate))
+        : "—"
     ]
   }));
 
@@ -2495,6 +2494,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 
   table.classList.add("kpi3-table");
 }
+
 
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
