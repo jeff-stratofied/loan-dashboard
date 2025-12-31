@@ -3188,89 +3188,107 @@ function renderLoanTiles(loansList) {
       </div>
     `;
 
-    // -----------------------------
-    // Badge hover (ROI-style)
-    // -----------------------------
-    if (Array.isArray(loan.events) && loan.events.length > 0) {
-      const badges = tile.querySelectorAll(".loan-badge");
+// -----------------------------
+// Badge hover (MATCH ROI EXACTLY)
+// -----------------------------
+if (Array.isArray(loan.events) && loan.events.length > 0) {
+  const badgeElements = tile.querySelectorAll(".loan-badge");
 
-      badges.forEach(badge => {
-        badge.addEventListener("mouseenter", e => {
-          let eventType = null;
-          if (badge.classList.contains("prepayment")) eventType = "prepayment";
-          if (badge.classList.contains("default")) eventType = "default";
-          if (badge.classList.contains("deferral")) eventType = "deferral";
-          if (!eventType) return;
+  badgeElements.forEach((badgeEl, index) => {
+    const badgeType =
+      badgeEl.classList.contains("prepayment") ? "prepayment" :
+      badgeEl.classList.contains("deferral")   ? "deferral" :
+      badgeEl.classList.contains("default")    ? "default" :
+      null;
 
-          const event = loan.events.find(ev => ev.type === eventType);
-          if (!event) return;
+    if (!badgeType) return;
 
-          const lines = [];
+    const eventsOfType = loan.events.filter(e => e.type === badgeType);
+    if (!eventsOfType.length) return;
 
-          if (eventType === "prepayment") {
-            lines.push(
-              "Prepayment",
-              `Date: ${formatDate(new Date(event.date))}`,
-              `Amount: ${formatCurrency(event.amount)}`
-            );
-          }
+    badgeEl.addEventListener("mouseenter", e => {
+      let lines = [];
 
-          if (eventType === "default") {
-            const schedule = loan.amort?.schedule || [];
+      // -----------------------------
+      // PREPAYMENT
+      // -----------------------------
+      if (badgeType === "prepayment") {
+        lines = eventsOfType.map(ev => {
+          const d = new Date(ev.date);
+          return [
+            "Prepayment",
+            `Date: ${d.toLocaleDateString()}`,
+            `Amount: ${formatCurrency(ev.amount || 0)}`
+          ].join("\n");
+        }).join("\n\n").split("\n");
+      }
 
-// --------------------------------------------------
-// CORRECT: default balance = amort balance for event month
-// (match amort + ROI behavior exactly)
-// --------------------------------------------------
-let balanceAtDefault = 0;
+      // -----------------------------
+      // DEFERRAL
+      // -----------------------------
+      else if (badgeType === "deferral") {
+        lines = eventsOfType.map(ev => {
+          const start = new Date(ev.startDate);
+          const end = new Date(start);
+          end.setMonth(end.getMonth() + Number(ev.months || 0));
+          return [
+            "Deferral",
+            `Start: ${formatMonthYear(start)}`,
+            `Duration: ${ev.months} months`,
+            `End: ${formatMonthYear(end)}`
+          ].join("\n");
+        }).join("\n\n").split("\n");
+      }
 
-const defDate = new Date(event.date);
-defDate.setHours(0, 0, 0, 0);
+      // -----------------------------
+      // DEFAULT (MATCH ROI)
+      // -----------------------------
+      else if (badgeType === "default") {
+        const ev = eventsOfType[0]; // assume single default
+        if (!ev) return;
 
-for (const row of schedule) {
-  if (!(row.loanDate instanceof Date)) continue;
+        const defDate = new Date(ev.date);
+        const recovered = Number(
+          ev.recoveryAmount ??
+          ev.recovered ??
+          ev.recoveredAmount ??
+          ev.recovery ??
+          0
+        );
 
-  if (
-    row.loanDate.getFullYear() === defDate.getFullYear() &&
-    row.loanDate.getMonth() === defDate.getMonth()
-  ) {
-    balanceAtDefault = Number(row.balance || 0);
-    break;
-  }
+        const defYear = defDate.getFullYear();
+        const defMonth = defDate.getMonth();
+
+        const schedule = loan.amort?.schedule || [];
+        const defaultRow = schedule.find(r =>
+          r.loanDate instanceof Date &&
+          r.loanDate.getFullYear() === defYear &&
+          r.loanDate.getMonth() === defMonth
+        );
+
+        let remaining = 0;
+        if (defaultRow) {
+          remaining = Number(defaultRow.balance || 0);
+        }
+
+        lines = [
+          "Default",
+          `Date: ${formatMonthYear(defDate)}`,
+          `Recovered: ${formatCurrency(recovered)}`,
+          `Remaining: ${formatCurrency(remaining)}`
+        ];
+      }
+
+      if (lines.length) {
+        setMiniTooltipContent(lines);
+        positionMiniTooltip(e.clientX, e.clientY, 12);
+      }
+    });
+
+    badgeEl.addEventListener("mouseleave", hideMiniTooltip);
+  });
 }
 
-            const recovered = Number(
-              event.recovered ??
-              event.recoveredAmount ??
-              event.recoveryAmount ??
-              event.amountRecovered ??
-              event.recovery ??
-              0
-            );
-
-            lines.push(
-              "Default",
-              `Date: ${formatMonthYear(defDate)}`,
-              `Recovered: ${formatCurrency(recovered)}`,
-              `Remaining: ${formatCurrency(balanceAtDefault)}`
-            );
-          }
-
-          if (eventType === "deferral") {
-            lines.push(
-              "Deferral",
-              `Start: ${formatMonthYear(new Date(event.startDate))}`,
-              `Months: ${event.months}`
-            );
-          }
-
-          setMiniTooltipContent(lines);
-          positionMiniTooltip(e.clientX, e.clientY, 12);
-        });
-
-        badge.addEventListener("mouseleave", hideMiniTooltip);
-      });
-    }
 
     // -----------------------------
     // Attach tile + mini chart
