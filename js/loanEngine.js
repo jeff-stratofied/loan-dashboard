@@ -769,9 +769,8 @@ loansWithAmort.forEach(loan => {
 let totalNetToDate  = 0;
 let totalFeesToDate = 0;
 
-// KPI 3 accumulators
-let monthsCounted = 0;
-let totalNetAcrossMonths = 0;
+// KPI 3 — portfolio calendar-month aggregation
+const monthlyTotals = {}; // key = "YYYY-MM"
 
 loansWithAmort.forEach(loan => {
   const purchase = new Date(loan.purchaseDate);
@@ -785,15 +784,28 @@ loansWithAmort.forEach(loan => {
     // Must not be in the future
     if (d > TODAY) return;
 
-    // Month counts even if earnings are 0 (deferral)
-    monthsCounted += 1;
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
 
     const net =
       Number(r.principalPaid ?? 0) +
       Number(r.interest ?? 0) -
       Number(r.feeThisMonth ?? 0);
 
-    totalNetAcrossMonths += net;
+    // Aggregate per calendar month (across all loans)
+    monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
+  });
+});
+
+// Final KPI 3 values
+const monthsCounted = Object.keys(monthlyTotals).length;
+
+const totalNetAcrossMonths =
+  Object.values(monthlyTotals).reduce((sum, v) => sum + v, 0);
+
+const avgMonthlyNet =
+  monthsCounted > 0
+    ? totalNetAcrossMonths / monthsCounted
+    : 0;
   });
 });
 
