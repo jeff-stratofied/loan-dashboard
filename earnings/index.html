@@ -1188,7 +1188,8 @@ function hideMiniTooltip() {
 if (miniHtmlTooltip) miniHtmlTooltip.style.display = "none";
 }
 
-function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan) {
+function createMiniStackedEarningsSVG(containerEl) {
+
   // --------------------------------------------------
   // Phase 3: UI-only placeholder
   // Earnings data will be engine-provided later
@@ -1237,264 +1238,14 @@ else nf = 10;
 return nf * base;
 }
 
-function createKpiStackedChart(container, rows, opts = {}) {
-
-const denseXAxis = opts.denseXAxis || false;
-
-container.innerHTML = "";
-
-const svgNS = "http://www.w3.org/2000/svg";
-const rect = container.getBoundingClientRect();
-const w = Math.max(360, rect.width || 700);
-const h = container.offsetHeight || 360;
-
-const padL = 88, padR = 10, padT = 20, padB = 20;
-
-const svg = document.createElementNS(svgNS, "svg");
-svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-svg.setAttribute("width", "100%");
-svg.setAttribute("height", "100%");
-
-const loanIds = new Set();
-rows.forEach(r => r.contributions.forEach(c => loanIds.add(c.loanId)));
-const loanIdList = [...loanIds];
-
-const colors = window.KPI_COLOR_MAP || {};
-
-let maxPos = 0;
-let maxNeg = 0;
-
-rows.forEach(r => {
-const total = r.contributions.reduce((s, c) => {
-const v = (opts.useMonthly === true) ? (c.monthlyNet ?? 0) : (c.net ?? 0);
-return s + (Number(v) || 0);
-}, 0);
-
-if (total > maxPos) maxPos = total;
-if (total < maxNeg) maxNeg = total;
-});
-
-maxPos = niceAxisMax(maxPos);
-maxNeg = Math.abs(niceAxisMax(Math.abs(maxNeg)));
-
-const yRange = maxPos + maxNeg || 1;
-const usableH = h - padT - padB;
-const scale = usableH / yRange;
-const yZero = padT + maxPos * scale;
-
-const gridAbove = 4;
-const gridBelow = maxNeg > 0 ? 2 : 0;
-
-for (let gy = -gridBelow; gy <= gridAbove; gy++) {
-const value =
-gy >= 0
-? (maxPos / gridAbove) * gy
-: -(maxNeg / gridBelow) * Math.abs(gy);
-
-const y = yZero - value * scale;
-
-const line = document.createElementNS(svgNS, "line");
-line.setAttribute("x1", padL);
-line.setAttribute("x2", w - padR);
-line.setAttribute("y1", y);
-line.setAttribute("y2", y);
-line.setAttribute("stroke", gy === 0 ? "var(--grid-strong)" : "var(--grid-light)");
-svg.appendChild(line);
-
-if (gy !== 0) {
-const lbl = document.createElementNS(svgNS, "text");
-lbl.textContent = formatCurrency(value);
-lbl.setAttribute("x", padL - 12);
-lbl.setAttribute("y", y + 4);
-lbl.setAttribute("font-size", "11");
-lbl.setAttribute("fill", "var(--text)");
-lbl.setAttribute("text-anchor", "end");
-svg.appendChild(lbl);
-}
+function createKpiStackedChart(container) {
+  container.innerHTML = `
+    <div style="padding:24px;color:var(--muted);text-align:center">
+      Portfolio earnings timeline will be provided by loanEngine
+    </div>
+  `;
 }
 
-const axis = document.createElementNS(svgNS, "line");
-axis.setAttribute("x1", padL);
-axis.setAttribute("x2", w - padR);
-axis.setAttribute("y1", yZero);
-axis.setAttribute("y2", yZero);
-axis.setAttribute("stroke", "var(--grid-strong)");
-axis.setAttribute("stroke-width", "1");
-svg.appendChild(axis);
-
-const barW = (w - padL - padR) / rows.length;
-
-rows.forEach((r, i) => {
-const x = padL + i * barW;
-
-let bw;
-if (opts.thinBars) {
-bw = Math.max(1, barW * 0.35);
-} else {
-bw = Math.max(2, barW * 0.85);
-}
-
-let yPos = yZero;
-let yNeg = yZero;
-
-const sortedContribs = r.contributions
-.filter(c => !hiddenLoans.has(c.loanId))
-.sort((a, b) => {
-const av = (opts.useMonthly === true) ? (a.monthlyNet ?? 0) : (a.net ?? 0);
-const bv = (opts.useMonthly === true) ? (b.monthlyNet ?? 0) : (b.net ?? 0);
-return Math.abs(bv) - Math.abs(av);
-});
-
-sortedContribs.forEach(c => {
-const segVal = opts.useMonthly === true
-? (c.monthlyNet ?? 0)
-: (c.net ?? 0);
-
-if (!Number.isFinite(segVal) || segVal === 0) return;
-
-const hVal = Math.abs(segVal) * scale;
-if (hVal <= 0) return;
-
-const bar = document.createElementNS(svgNS, "rect");
-bar.dataset.loanId = c.loanId;
-
-const xBar = x + (barW - bw) / 2;
-bar.setAttribute("x", xBar);
-bar.setAttribute("width", bw);
-bar.setAttribute("height", hVal);
-bar.setAttribute("fill", colors[c.loanId] || "#0ea5e9");
-
-if (segVal > 0) {
-bar.setAttribute("y", yPos - hVal);
-yPos -= hVal;
-} else {
-bar.setAttribute("y", yNeg);
-yNeg += hVal;
-}
-
-svg.appendChild(bar);
-});
-
-if ((denseXAxis && i % 4 === 0) || (!denseXAxis && i % 24 === 0)) {
-const lbl = document.createElementNS(svgNS, "text");
-lbl.textContent = r.date.toLocaleString("en-US", {
-month: "short",
-year: "numeric"
-});
-lbl.setAttribute("x", x + bw / 2);
-lbl.setAttribute("y", h - 4);
-lbl.setAttribute("font-size", "11");
-lbl.setAttribute("fill", "var(--text)");
-lbl.setAttribute("text-anchor", "middle");
-svg.appendChild(lbl);
-}
-});
-
-
-
-const firstDate = rows[0]?.date;
-const lastDate  = rows[rows.length - 1]?.date;
-
-if (firstDate && lastDate) {
-const totalMonths = monthDiff(firstDate, lastDate);
-let monthsToToday = monthDiff(firstDate, TODAY);
-
-if (!Number.isFinite(monthsToToday)) monthsToToday = 0;
-
-monthsToToday = Math.max(0, Math.min(monthsToToday, totalMonths));
-
-const ratio = totalMonths > 0 ? monthsToToday / totalMonths : 0;
-const todayX = padL + ratio * (w - padL - padR);
-
-const todayLine = document.createElementNS(svgNS, "line");
-todayLine.setAttribute("x1", todayX);
-todayLine.setAttribute("x2", todayX);
-todayLine.setAttribute("y1", padT);
-todayLine.setAttribute("y2", h - padB);
-todayLine.setAttribute("stroke", "#64748b");
-todayLine.setAttribute("stroke-dasharray", "4,3");
-todayLine.setAttribute("stroke-width", "1");
-todayLine.setAttribute("pointer-events", "none");
-
-svg.appendChild(todayLine);
-}
-
-container.appendChild(svg);
-
-let lensInstance = null;
-const lensRadius = 40;
-const lensScale = 1.5;
-
-function handleMove(e) {
-const rect = svg.getBoundingClientRect();
-const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-const mouseY = ((e.clientY - rect.top) / rect.height) * h;
-
-const x = Math.max(padL, Math.min(w - padR, mouseX));
-const y = Math.max(padT, Math.min(h - padB, mouseY));
-
-const rowIndex = Math.max(
-0,
-Math.min(rows.length - 1,
-Math.floor((x - padL) / barW)
-)
-);
-
-const row = rows[rowIndex];
-if (!row) return;
-
-if (!lensInstance) {
-lensInstance = createLens(svg, lensRadius, lensScale);
-const clones = Array.from(svg.querySelectorAll("rect"));
-clones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-svg.appendChild(lensInstance.group);
-}
-
-updateLens(lensInstance, x, y);
-
-const owned = row.contributions.filter(c => c.hasData === true);
-
-const principal = row.contributions.reduce(
-(s, c) => s + (Number(c.cumulativePrincipal) || 0),
-0
-);
-
-const interest = row.contributions.reduce(
-(s, c) => s + (Number(c.cumulativeInterest) || 0),
-0
-);
-
-const fees = row.contributions.reduce(
-(s, c) => s + (Number(c.cumulativeFees) || 0),
-0
-);
-
-const cumulativeNet = row.contributions.reduce(
-(s, c) => s + (Number(c.cumulativeNet ?? c.net) || 0),
-0
-);
-
-const tooltipLines = [
-`Date: ${formatMonthYear(row.date)}`,
-`Principal: ${formatCurrency(principal)}`,
-`Interest: ${formatCurrency(interest)}`,
-`Fees: -${formatCurrency(fees)}`,
-`Cumulative Net: ${formatCurrency(cumulativeNet)}`
-];
-
-setMiniTooltipContent(tooltipLines);
-positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-}
-
-function handleLeave() {
-removeLens(svg, lensInstance);
-lensInstance = null;
-hideMiniTooltip();
-}
-
-svg.addEventListener("mousemove", handleMove);
-svg.addEventListener("mouseleave", handleLeave);
-}
 
 function highlightLoanInKpiChart(container, loanId) {
 if (!container) return;
@@ -1697,15 +1448,21 @@ const tooltipLines = [
 `Net to Date: ${formatCurrency(r.netToDate)}`
 ];
 
-setMiniTooltipContent(tooltipLines);
-positionMiniTooltip(e.clientX, e.clientY, 40);
+// ------------------------------------
+// UI-only hover behavior (no tooltips)
+// ------------------------------------
+
+function handleMove(e) {
+  // Visual hover only — no tooltip logic
+  vLine.setAttribute("stroke-opacity", "0.8");
+  dot.setAttribute("opacity", "1");
 }
 
 function handleLeave() {
-vLine.setAttribute("stroke-opacity", "0");
-dot.setAttribute("opacity", "0");
-hideMiniTooltip();
+  vLine.setAttribute("stroke-opacity", "0");
+  dot.setAttribute("opacity", "0");
 }
+
 
 svg.addEventListener("mousemove", handleMove);
 svg.addEventListener("mouseleave", handleLeave);
@@ -2078,13 +1835,8 @@ grid.appendChild(tile);
 tile.addEventListener("click", () => openLoanDrawer(loan));
 
 const mini = tile.querySelector('.mini-chart');
-const series = loan.earningsSchedule || [];
-
-createMiniStackedEarningsSVG(
-mini,
-loan.earningsSchedule,
-loan
-);
+  
+createMiniStackedEarningsSVG(mini);
 
 });
 }
