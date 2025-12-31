@@ -604,7 +604,8 @@ export function attachSchedules(loans) {
 
 // -------------------------------
 // Portfolio-level view builder
-// (Placeholder for now)
+// Authoritative source for amort, ROI, and earnings views
+
 // -------------------------------
 //
 // ROI, earnings, amort KPIs, next-month expected income,
@@ -666,51 +667,56 @@ export function buildPortfolioViews(loansWithAmort) {
   const roiSeries = {};
   const roiKpis = {};
 
-  loansWithAmort.forEach(loan => {
-    const purchase = new Date(loan.purchaseDate);
-    const purchasePrice = Number(
-      loan.purchasePrice ?? loan.principal ?? 0
-    );
+loansWithAmort.forEach(loan => {
 
-    let cumInterest  = 0;
-    let cumPrincipal = 0;
-    let cumFees      = 0;
+  // 🔑 Canonical loan key (use everywhere)
+  const loanKey = loan.loanId;
 
-    roiSeries[loan.id] = loan.amort.schedule
-      .filter(r => r.loanDate >= purchase)
-      .map(r => {
-        cumInterest  += Number(r.interest ?? 0);
-        cumPrincipal += Number(r.principalPaid ?? 0);
-        cumFees      += Number(r.feeThisMonth ?? 0);
+  const purchase = new Date(loan.purchaseDate);
+  const purchasePrice = Number(
+    loan.purchasePrice ?? loan.principal ?? 0
+  );
 
-        const realized   = cumPrincipal + cumInterest - cumFees;
-        const unrealized = Number(r.balance ?? 0) * 0.95;
-        const loanValue  = realized + unrealized;
+  let cumInterest  = 0;
+  let cumPrincipal = 0;
+  let cumFees      = 0;
 
-        const roi = purchasePrice
-          ? (loanValue - purchasePrice) / purchasePrice
-          : 0;
+  roiSeries[loanKey] = loan.amort.schedule
+    .filter(r => r.loanDate >= purchase)
+    .map(r => {
+      cumInterest  += Number(r.interest ?? 0);
+      cumPrincipal += Number(r.principalPaid ?? 0);
+      cumFees      += Number(r.feeThisMonth ?? 0);
 
-        return {
-          date: r.loanDate,
-          month: r.monthIndex,
-          roi,
-          loanValue,
-          realized,
-          unrealized,
-          balance: r.balance,
-          cumInterest,
-          cumPrincipal,
-          cumFees,
-          ownershipDate: r.ownershipDate
-        };
-      });
+      const realized   = cumPrincipal + cumInterest - cumFees;
+      const unrealized = Number(r.balance ?? 0) * 0.95;
+      const loanValue  = realized + unrealized;
 
-    roiKpis[loan.id] =
-      roiSeries[loan.id].length > 0
-        ? roiSeries[loan.id][roiSeries[loan.id].length - 1].roi
+      const roi = purchasePrice
+        ? (loanValue - purchasePrice) / purchasePrice
         : 0;
-  });
+
+      return {
+        date: r.loanDate,
+        month: r.monthIndex,
+        roi,
+        loanValue,
+        realized,
+        unrealized,
+        balance: r.balance,
+        cumInterest,
+        cumPrincipal,
+        cumFees,
+        ownershipDate: r.ownershipDate
+      };
+    });
+
+  roiKpis[loanKey] =
+    roiSeries[loanKey].length > 0
+      ? roiSeries[loanKey][roiSeries[loanKey].length - 1].roi
+      : 0;
+});
+
 
   // ======================================================
   // 3) LOAN EARNINGS VIEWS (AUTHORITATIVE)
@@ -719,6 +725,9 @@ export function buildPortfolioViews(loansWithAmort) {
   const loanEarnings = {};
 
   loansWithAmort.forEach(loan => {
+      // 🔑 CANONICAL LOAN KEY — FIRST LINE IN LOOP
+  const loanKey = loan.loanId;
+    
     const purchase = new Date(loan.purchaseDate);
 
     let cumPrincipal = 0;
@@ -772,7 +781,7 @@ export function buildPortfolioViews(loansWithAmort) {
     totalFeesProjected: totalFeesToDate,
     avgMonthlyNet: 0,
     projectedAvgMonthlyNet: 0,
-    monthsCounted: 0
+    monthsCounted: null
   };
 
   // ======================================================
