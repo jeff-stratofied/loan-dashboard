@@ -1091,7 +1091,7 @@ bar.setAttribute("data-stack-index", index);
 }
 
 
-const hiddenLoans = new Set();
+
 
 const KPI_PALETTE = [
 "#2563eb",
@@ -1864,25 +1864,6 @@ function openDrawer() {
 openDrawerBase();
 }
 
-function buildPortfolioDrawerRows(loans) {
-  // --------------------------------------------------
-  // Phase 3: UI-only placeholder
-  // Portfolio drawer rows will be built in loanEngine
-  // --------------------------------------------------
-
-  return [];
-}
-
-
-function buildProjectedDrawerRows(loans) {
-  // --------------------------------------------------
-  // Phase 3: UI-only placeholder
-  // Projected drawer rows will be built in loanEngine
-  // --------------------------------------------------
-
-  return [];
-}
-
 
 function openKpi1() {
   currentLoan = null;
@@ -1995,14 +1976,6 @@ function openKpi4() {
 }
 
 
-
-const series = buildKpi4AvgMonthlySeries(activeLoans);
-
-renderKpi4AvgLineChart(
-document.getElementById("drawerChartArea"),
-series
-);
-
 document.getElementById("drawerLegend").style.display = "none";
 
 if (isEmbed) {
@@ -2042,20 +2015,19 @@ function renderLoanTiles(loansList) {
 
 grid.innerHTML = "";
 
-const hasSchedule = loan.earningsSchedule.length > 0;
-const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
-const fallbackRow = { netEarnings: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
-const loanStart = new Date(loan.loanStartDate);
+// --------------------------------------------------
+// Engine-driven current loan earnings (UI-only)
+// --------------------------------------------------
 
-const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
-const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
-? Math.max(1, diffMonthsFromStartRaw)
-: 1;
-const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
-const atCurrent = hasSchedule
-? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
-: fallbackRow;
-const currentMonthLabel = formatMonthYear(new Date());
+const loanView = views?.loanEarnings?.[loan.loanId] || null;
+
+const atCurrent = loanView?.current || {
+  netEarnings: 0
+};
+
+const currentMonthLabel = formatMonthYear(
+  loanView?.currentDate || new Date()
+);
 
 const tile = document.createElement("div");
 tile.className = "tile";
@@ -2345,17 +2317,21 @@ function openLoanDrawer(loan) {
     </div>
   `;
 
-  // ------------------------------------
-  // Loan-level KPIs (engine-driven only)
-  // ------------------------------------
-  const loanKpis = views?.earningsKpis || {};
-  const loanNet  = Number(loanKpis[loan.id] ?? 0);
+ // ------------------------------------
+// Loan-level KPIs (engine-driven only)
+// ------------------------------------
+const loanView = views?.loanEarnings?.[loan.loanId] || null;
 
-  drawerPrimaryTitle.textContent = "Lifetime Net Earnings";
-  drawerPrimary.textContent = formatCurrency(loanNet);
+drawerPrimaryTitle.textContent = "Lifetime Net Earnings";
+drawerPrimary.textContent = formatCurrency(
+  loanView?.lifetimeNet ?? 0
+);
 
-  drawerSecondaryTitle.textContent = "Fees";
-  drawerSecondary.textContent = "—";
+drawerSecondaryTitle.textContent = "Fees to Date";
+drawerSecondary.textContent = formatCurrency(
+  loanView?.feesToDate ?? 0
+);
+
 
   // ------------------------------------
   // Chart area (placeholder — engine later)
