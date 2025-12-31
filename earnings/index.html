@@ -894,7 +894,7 @@ html[data-theme="dark"] .legend .sw {
       </div>
 
       <div class="kpi" data-kpi="avgMonthly">
-        <h3>Average Monthly Earnings To Date</h3>
+        <h3>Avg Monthly Income (Net of Fees)</h3>
         <p id="kpiAvgMonth">--</p>
       </div>
 
@@ -1428,19 +1428,36 @@ return Math.max(0, Math.min(rows.length - 1, Math.round(t)));
 function handleMove(e) {
   const idx = idxFromClientX(e.clientX);
   const r = rows[idx];
+  if (!r) return;
 
   const x = padL + idx * stepX;
   const y =
     padT + (maxVal - (Number(r.avg) || 0)) * scaleY;
 
+  // Crosshair
   vLine.setAttribute("x1", x);
   vLine.setAttribute("x2", x);
   vLine.setAttribute("stroke-opacity", "0.8");
 
+  // Dot
   dot.setAttribute("cx", x);
   dot.setAttribute("cy", y);
   dot.setAttribute("opacity", "1");
+
+  // Tooltip content (APPROVED FORMAT)
+  setMiniTooltipContent([
+    `Date: ${formatMonthYear(r.date)}`,
+    `Avg / Month: ${formatCurrency(r.avg)}`,
+    `Net to Date: ${formatCurrency(
+      rows
+        .slice(0, idx + 1)
+        .reduce((s, d) => s + (Number(d.avg) || 0), 0)
+    )}`
+  ]);
+
+  positionMiniTooltip(e.clientX, e.clientY, 5);
 }
+
 
 function handleLeave() {
   vLine.setAttribute("stroke-opacity", "0");
@@ -1670,11 +1687,12 @@ function openKpi3() {
 
   resetDrawerContent();
 
-  drawerTitle.textContent = "Avg Monthly Earnings To Date";
-  drawerSub.textContent =
-    "Total net earnings divided by months since portfolio inception.";
+  drawerTitle.textContent = "Avg Monthly Income (Net of Fees)";
+drawerSub.textContent =
+  "Total principal + interest received, minus fees, averaged per month.";
 
-  drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
+drawerPrimaryTitle.textContent = "Avg Monthly Net Cash Inflow";
+
   drawerSecondaryTitle.textContent = "Months Counted";
 
   const portfolio = views?.portfolioEarnings || {};
