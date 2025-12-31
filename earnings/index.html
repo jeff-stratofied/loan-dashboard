@@ -1437,20 +1437,20 @@ dot.setAttribute("cx", x);
 dot.setAttribute("cy", y);
 dot.setAttribute("opacity", "1");
 
-const tooltipLines = [
-`Date: ${formatMonthYear(r.date)}`,
-`Avg / Month: ${formatCurrency(r.avg)}`,
-
-`Net to Date: ${formatCurrency(r.netToDate)}`
-];
-
-// ------------------------------------
-// UI-only hover behavior (no tooltips)
-// ------------------------------------
-
 function handleMove(e) {
-  // Visual hover only — no tooltip logic
+  const idx = idxFromClientX(e.clientX);
+  const r = rows[idx];
+
+  const x = padL + idx * stepX;
+  const y =
+    padT + (maxVal - (Number(r.avg) || 0)) * scaleY;
+
+  vLine.setAttribute("x1", x);
+  vLine.setAttribute("x2", x);
   vLine.setAttribute("stroke-opacity", "0.8");
+
+  dot.setAttribute("cx", x);
+  dot.setAttribute("cy", y);
   dot.setAttribute("opacity", "1");
 }
 
@@ -1458,6 +1458,10 @@ function handleLeave() {
   vLine.setAttribute("stroke-opacity", "0");
   dot.setAttribute("opacity", "0");
 }
+
+svg.addEventListener("mousemove", handleMove);
+svg.addEventListener("mouseleave", handleLeave);
+
 
 
 svg.addEventListener("mousemove", handleMove);
