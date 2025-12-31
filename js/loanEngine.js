@@ -788,9 +788,14 @@ loansWithAmort.forEach(loan => {
 
     const key = `${d.getFullYear()}-${d.getMonth()}`;
 
-    const paymentReceived =
-  Number(r.principalPaid ?? 0) +
+// KPI-3 income = scheduled principal + interest only (NO prepayments)
+const scheduledPrincipal =
+  Number(r.payment ?? 0) - Number(r.interest ?? 0);
+
+const paymentReceived =
+  Math.max(0, scheduledPrincipal) +
   Number(r.interest ?? 0);
+
 
 let net;
 
