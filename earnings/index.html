@@ -1075,6 +1075,9 @@ maximumFractionDigits: 2
 
 let loans = [];
 
+  let loansForUser = [];
+
+
 document.getElementById("currentDate").textContent =
   formatDate(TODAY);
 
@@ -1857,6 +1860,21 @@ async function initPage() {
   const compactToggle = document.getElementById("toggleCompact");
   const loanGrid      = document.getElementById("loanGrid");
 
+// ------------------------------------
+// Load loans + attach engine schedules
+// ------------------------------------
+const rawLoans = await loadLoans(PAGE_USER);
+const normalizedLoans = rawLoans || [];
+
+attachSchedules(normalizedLoans);
+
+// Engine builds all earnings views
+views = buildPortfolioViews(normalizedLoans);
+
+// Single UI source of truth
+loansForUser = normalizedLoans;
+
+  
   // ------------------------------------
   // Populate filter dropdowns (UI-only)
   // ------------------------------------
