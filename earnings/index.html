@@ -1446,14 +1446,16 @@ function handleMove(e) {
 
   // Tooltip content (APPROVED FORMAT)
   setMiniTooltipContent([
-    `Date: ${formatMonthYear(r.date)}`,
-    `Avg / Month: ${formatCurrency(r.avg)}`,
-    `Net to Date: ${formatCurrency(
-      rows
-        .slice(0, idx + 1)
-        .reduce((s, d) => s + (Number(d.avg) || 0), 0)
-    )}`
-  ]);
+  `Date: ${formatMonthYear(r.date)}`,
+  `Avg / Month: ${formatCurrency(
+    views.portfolioEarnings.avgMonthlyNet
+  )}`,
+  `Net to Date: ${formatCurrency(
+    views.portfolioEarnings.avgMonthlyNet *
+    views.portfolioEarnings.monthsCounted
+  )}`
+]);
+
 
   positionMiniTooltip(e.clientX, e.clientY, 5);
 }
