@@ -809,17 +809,20 @@ const avgMonthlyNet =
     : 0;
 
 
-  const portfolioEarnings = {
-    totalNetToDate,
-    totalFeesToDate,
+const portfolioEarnings = {
+  totalNetToDate,
+  totalFeesToDate,
 
-    // Phase 4 placeholders
-    totalNetProjected: totalNetToDate,
-    totalFeesProjected: totalFeesToDate,
-    avgMonthlyNet: 0,
-    projectedAvgMonthlyNet: 0,
-    monthsCounted: null
-  };
+  // KPI 3 — now real
+  avgMonthlyNet,
+  monthsCounted,
+
+  // Phase 4 placeholders (next)
+  totalNetProjected: totalNetToDate,
+  totalFeesProjected: totalFeesToDate,
+  projectedAvgMonthlyNet: 0
+};
+
 
   // ======================================================
   // 5) AMORT KPIs (AMORT PAGE)
