@@ -609,13 +609,6 @@ export function attachSchedules(loans) {
 
 export function buildPortfolioViews(loansWithAmort) {
 
-loansWithAmort.forEach(l => {
-  if (!l.amort || !Array.isArray(l.amort.schedule)) {
-    throw new Error(`Loan ${l.loanId} missing amort.schedule`);
-  }
-});
-
-  
   const TODAY = new Date();
   const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
 
@@ -762,79 +755,29 @@ loansWithAmort.forEach(loan => {
     };
   });
 
-// ======================================================
-// 4) PORTFOLIO EARNINGS KPIs (EARNINGS PAGE)
-// ======================================================
+  // ======================================================
+  // 4) PORTFOLIO EARNINGS KPIs (EARNINGS PAGE)
+  // ======================================================
 
-let totalNetToDate  = 0;
-let totalFeesToDate = 0;
+  let totalNetToDate  = 0;
+  let totalFeesToDate = 0;
 
-// KPI 3 — portfolio calendar-month aggregation
-const monthlyTotals = {}; // key = "YYYY-MM"
-
-loansWithAmort.forEach(loan => {
-  const purchase = new Date(loan.purchaseDate);
-
-  loan.amort.schedule.forEach(r => {
-    const d = new Date(r.loanDate);
-
-    // Must be owned
-    if (d < purchase) return;
-
-    // Must not be in the future
-    if (d > TODAY) return;
-
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
-
-    const net =
-      Number(r.principalPaid ?? 0) +
-      Number(r.interest ?? 0) -
-      Number(r.feeThisMonth ?? 0);
-
-    // Aggregate per calendar month (across all loans)
-    monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
+  Object.values(loanEarnings).forEach(l => {
+    totalNetToDate  += Number(l.current.netEarnings ?? 0);
+    totalFeesToDate += Number(l.feesToDate ?? 0);
   });
-});
 
-// Final KPI 3 values
-const monthsCounted = Object.keys(monthlyTotals).length;
+  const portfolioEarnings = {
+    totalNetToDate,
+    totalFeesToDate,
 
-const totalNetAcrossMonths =
-  Object.values(monthlyTotals).reduce((sum, v) => sum + v, 0);
-
-const avgMonthlyNet =
-  monthsCounted > 0
-    ? totalNetAcrossMonths / monthsCounted
-    : 0;
-  });
-});
-
-// KPI 1 totals (already correct)
-Object.values(loanEarnings).forEach(l => {
-  totalNetToDate  += Number(l.current.netEarnings ?? 0);
-  totalFeesToDate += Number(l.feesToDate ?? 0);
-});
-
-const avgMonthlyNet =
-  monthsCounted > 0
-    ? totalNetAcrossMonths / monthsCounted
-    : 0;
-
-
-const portfolioEarnings = {
-  totalNetToDate,
-  totalFeesToDate,
-
-  // KPI 3 — now real
-  avgMonthlyNet,
-  monthsCounted,
-
-  // Phase 4 placeholders (next)
-  totalNetProjected: totalNetToDate,
-  totalFeesProjected: totalFeesToDate,
-  projectedAvgMonthlyNet: 0
-};
-
+    // Phase 4 placeholders
+    totalNetProjected: totalNetToDate,
+    totalFeesProjected: totalFeesToDate,
+    avgMonthlyNet: 0,
+    projectedAvgMonthlyNet: 0,
+    monthsCounted: null
+  };
 
   // ======================================================
   // 5) AMORT KPIs (AMORT PAGE)
