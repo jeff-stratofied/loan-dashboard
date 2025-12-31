@@ -40,30 +40,6 @@ html {
   color-scheme: light;
 }
 
-/* delete
-html[data-theme="light"] {
-  --bg:#f8fafc;
-  --surface:#f1f5f9;
-  --card:#ffffff;
-  --border:#e2e8f0;
-  --text:#0f172a;
-  --muted:#64748b;
-
-  --brand:#0ea5e9;
-  --accent:#7c3aed;
-
-  --shadow:0 12px 30px rgba(15,23,42,0.06);
-
-  --chart-bg:linear-gradient(180deg,#ffffff,#fcfeff);
-
-  --tooltip-bg:#0f172a;
-  --tooltip-text:#f8fafc;
-
-  --table-header:var(--surface);
-  --table-border:rgba(148,163,184,0.35);
-}
-delete */
-
 html[data-theme="dark"] {
    color-scheme: dark; 
   --bg:#0f172a;
@@ -1799,9 +1775,6 @@ svg.addEventListener("mouseleave", () => {
   vLine.setAttribute("x1", -9999);
   vLine.setAttribute("x2", -9999);
 });
-
-
-
   
   svg.appendChild(axis);
   containerEl.appendChild(svg);
@@ -2054,8 +2027,6 @@ const pts = anchored.map(p => [
       document.getElementById("roiSpread").textContent =
         (roiSpread * 100).toFixed(2) + "%";
       
-      
-
       
     /* -------------------------
        Render loan tiles + mini charts
@@ -3109,15 +3080,6 @@ drawer.scrollTop = 0;
 
 }
 
-
-
-
-
-
-
-
-
-
 // ============================================================
 // KPI4 — ROI SPREAD DRAWER
 // ============================================================
@@ -3673,41 +3635,3 @@ const isEmbed = new URLSearchParams(window.location.search).get('embed') === 'tr
 
 </script>
 
-<!-- Added customTooltip function -->
-<!--
-<script>
-
-const loanColors = [
-  "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
-  "#3b82f6", "#6366f1", "#a855f7", "#ec4899", "#14b8a6"
-];
-
-  
-function customTooltip(context) {
-    let tooltipEl = document.getElementById('chartjs-tooltip');
-    if (!tooltipEl) {
-        tooltipEl = document.createElement('div');
-        tooltipEl.id = 'chartjs-tooltip';
-        tooltipEl.style.position = 'absolute';
-        tooltipEl.style.background = 'rgba(0,0,0,0.85)';
-        tooltipEl.style.color = 'var(--card)';
-        tooltipEl.style.padding = '8px 12px';
-        tooltipEl.style.borderRadius = '6px';
-        tooltipEl.style.pointerEvents = 'none';
-        tooltipEl.style.transition = '0.1s ease';
-        tooltipEl.style.zIndex = '9999';
-        document.body.appendChild(tooltipEl);
-    }
-    const tooltip = context.tooltip;
-    if (tooltip.opacity === 0) {
-        tooltipEl.style.opacity = 0;
-        return;
-    }
-    tooltipEl.style.opacity = 1;
-    tooltipEl.innerHTML = `<div style="font-weight:600;font-size:13px;">${tooltip.dataPoints[0].formattedValue}</div>`;
-    const { offsetLeft, offsetTop } = context.chart.canvas;
-    tooltipEl.style.left = offsetLeft + tooltip.caretX + 15 + 'px';
-    tooltipEl.style.top = offsetTop + tooltip.caretY + 'px';
-}
-</script>
--->
