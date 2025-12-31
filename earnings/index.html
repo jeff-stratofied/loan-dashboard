@@ -1866,13 +1866,10 @@ async function initPage() {
 const rawLoans = await loadLoans(PAGE_USER);
 const normalizedLoans = rawLoans || [];
 
-attachSchedules(normalizedLoans);
+const loansWithAmort = attachSchedules(normalizedLoans);
 
-// Engine builds all earnings views
-views = buildPortfolioViews(normalizedLoans);
-
-// Single UI source of truth
-loansForUser = normalizedLoans;
+views = buildPortfolioViews(loansWithAmort);
+loansForUser = loansWithAmort;
 
   
   // ------------------------------------
