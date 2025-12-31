@@ -772,6 +772,47 @@ let totalFeesToDate = 0;
 // KPI 3 — portfolio calendar-month aggregation
 const monthlyTotals = {}; // key = "YYYY-MM"
 
+  // --------------------------------------
+// KPI 3 SERIES — avg net per calendar month
+// --------------------------------------
+const kpi3Series = Object.keys(monthlyTotals)
+  .sort((a, b) => {
+    const [ay, am] = a.split("-").map(Number);
+    const [by, bm] = b.split("-").map(Number);
+    return ay !== by ? ay - by : am - bm;
+  })
+  .map(key => {
+    const [year, month] = key.split("-").map(Number);
+    return {
+      date: new Date(year, month, 1),
+      avg: monthlyTotals[key]
+    };
+  });
+
+const monthsCounted = Object.keys(monthlyTotals).length;
+  
+  // --------------------------------------
+// KPI 3 TABLE — per-loan avg monthly net
+// --------------------------------------
+const kpi3Rows = loansWithAmort
+  .map(loan => {
+    const loanKey = loan.loanId;
+    const loanView = loanEarnings[loanKey];
+    if (!loanView) return null;
+
+    return {
+      loanId: loanKey,
+      loanName: loan.loanName,
+      school: loan.school,
+      avgMonthly:
+        monthsCounted > 0
+          ? loanView.current.netEarnings / monthsCounted
+          : 0
+    };
+  })
+  .filter(Boolean);
+
+
 loansWithAmort.forEach(loan => {
   const purchase = new Date(loan.purchaseDate);
 
@@ -797,7 +838,6 @@ loansWithAmort.forEach(loan => {
 });
 
 // Final KPI 3 values
-const monthsCounted = Object.keys(monthlyTotals).length;
 
 const totalNetAcrossMonths =
   Object.values(monthlyTotals).reduce((sum, v) => sum + v, 0);
@@ -817,15 +857,18 @@ const portfolioEarnings = {
   totalNetToDate,
   totalFeesToDate,
 
-  // KPI 3 — now real
+  // KPI 3 (AUTHORITATIVE)
   avgMonthlyNet,
   monthsCounted,
+  kpi3Series,
+  kpi3Rows,
 
-  // Phase 4 placeholders (next)
+  // Phase 4 placeholders
   totalNetProjected: totalNetToDate,
   totalFeesProjected: totalFeesToDate,
   projectedAvgMonthlyNet: 0
 };
+
 
 
 
