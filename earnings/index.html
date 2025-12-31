@@ -3216,6 +3216,8 @@ function renderLoanTiles(loansList) {
           }
 
           if (eventType === "default") {
+            const schedule = loan.amort?.schedule || [];
+
 // --------------------------------------------------
 // CORRECT: default balance comes from amort event row
 // --------------------------------------------------
