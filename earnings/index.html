@@ -3209,32 +3209,44 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
 
 if (eventType === "default") {
   const recovered = Number(
-  event.recovered ??
-  event.recoveredAmount ??
-  event.recoveryAmount ??
-  event.amountRecovered ??
-  event.recovery ??
-  0
-);
+    event.recovered ??
+    event.recoveredAmount ??
+    event.recoveryAmount ??
+    event.amountRecovered ??
+    event.recovery ??
+    0
+  );
 
-const remaining = Number(
-  event.remainingBalance ??
-  event.remaining ??
-  event.remainingAmount ??
-  event.balanceRemaining ??
-  event.principalRemaining ??
-  event.remainingPrincipal ??
-  0
-);
+  const defDate = new Date(event.date);
+  const defYear = defDate.getFullYear();
+  const defMonth = defDate.getMonth();
 
+  // ✅ ROI-style: Remaining comes from amort balance at the default month
+  const defaultRow = loan?.amort?.schedule?.find(r =>
+    r.loanDate &&
+    r.loanDate.getFullYear() === defYear &&
+    r.loanDate.getMonth() === defMonth
+  );
+
+  const remaining =
+    defaultRow ? Number(defaultRow.balance || 0) : Number(
+      event.remainingBalance ??
+      event.remaining ??
+      event.remainingAmount ??
+      event.balanceRemaining ??
+      event.principalRemaining ??
+      event.remainingPrincipal ??
+      0
+    );
 
   lines.push(
     "Default",
-    `Date: ${formatMonthYear(new Date(event.date))}`,
+    `Date: ${formatMonthYear(defDate)}`,
     `Recovered: ${formatCurrency(recovered)}`,
     `Remaining: ${formatCurrency(remaining)}`
   );
 }
+
 
 
       if (eventType === "deferral") {
