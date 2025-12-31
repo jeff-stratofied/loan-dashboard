@@ -807,12 +807,6 @@ const avgMonthlyNet =
     ? totalNetAcrossMonths / monthsCounted
     : 0;
 
-  console.log("[KPI3 DEBUG]", {
-  totalNetToDate,
-  monthsCounted,
-  avgMonthlyNet:
-    monthsCounted > 0 ? totalNetToDate / monthsCounted : 0
-});
 
 
 // KPI 1 totals (already correct)
@@ -829,11 +823,6 @@ const portfolioEarnings = {
   avgMonthlyNet,
   monthsCounted,
 
-  // Phase 4 placeholders
-  totalNetProjected: totalNetToDate,
-  totalFeesProjected: totalFeesToDate,
-  projectedAvgMonthlyNet: 0
-};
 
 // KPI 3 drawer rows
 portfolioEarnings.kpi3Rows = loansWithAmort
