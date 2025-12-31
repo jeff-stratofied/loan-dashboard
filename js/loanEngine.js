@@ -134,11 +134,6 @@ export async function loadLoans() {
   });
 }
 
-}
-
-
-
-
 
 export function addMonths(date, n) {
   const d = new Date(date);
