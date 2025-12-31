@@ -991,6 +991,7 @@ html[data-theme="dark"] .legend .sw {
 <script type="module">
 import {
   addMonths,
+  monthDiff,          // ✅ ADD THIS LINE
   formatDate,
   formatMonthYear,
   getStandardToday,
@@ -998,6 +999,7 @@ import {
   attachSchedules,
   buildPortfolioViews
 } from "../js/loanEngine.js";
+
 
 let currentLoan = null;
 let currentMode = 'portfolio';
