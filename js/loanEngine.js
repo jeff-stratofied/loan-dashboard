@@ -788,10 +788,23 @@ loansWithAmort.forEach(loan => {
 
     const key = `${d.getFullYear()}-${d.getMonth()}`;
 
-    const net =
-      Number(r.principalPaid ?? 0) +
-      Number(r.interest ?? 0) -
-      Number(r.feeThisMonth ?? 0);
+    const paymentReceived =
+  Number(r.principalPaid ?? 0) +
+  Number(r.interest ?? 0);
+
+let net;
+
+if (paymentReceived > 0) {
+  // Borrower paid → owner receives payment minus servicing fee
+  net = paymentReceived - Number(r.monthlyBalanceFee ?? 0);
+} else {
+  // No borrower payment → owner still pays fees (negative income)
+  net = -(
+    Number(r.monthlyBalanceFee ?? 0) +
+    Number(r.upfrontFeeThisMonth ?? 0)
+  );
+}
+
 
     monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
   });
