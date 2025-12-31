@@ -612,13 +612,14 @@ export function attachSchedules(loans) {
 //
 
 export function buildPortfolioViews(loansWithAmort) {
-  
+
   const TODAY = new Date();
   const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
 
-  // ----------------------------------------------
-  // 1) Next-Month Expected Income (Option A)
-  // ----------------------------------------------
+  // ======================================================
+  // 1) NEXT-MONTH EXPECTED INCOME (AMORT PAGE)
+  // ======================================================
+
   function sameMonthYear(d1, d2) {
     return (
       d1.getFullYear() === d2.getFullYear() &&
@@ -633,15 +634,15 @@ export function buildPortfolioViews(loansWithAmort) {
       return sum + loan.amort.schedule
         .filter(r => {
           const payDate = r.loanDate;
-          const sameMonth = sameMonthYear(payDate, targetMonthDate);
-          const owned = payDate >= purchaseDate;
-          return sameMonth && owned;
+          return (
+            sameMonthYear(payDate, targetMonthDate) &&
+            payDate >= purchaseDate
+          );
         })
         .reduce((s, r) => s + r.payment, 0);
     }, 0);
   }
 
-  // Default: 24-month forward projection
   const forwardMonths = 24;
   const incomeLabels = [];
   const incomePayments = [];
@@ -658,20 +659,11 @@ export function buildPortfolioViews(loansWithAmort) {
 
   const monthlyIncomeKpi = calcMonthlyExpectedIncome(nextMonthDate);
 
+  // ======================================================
+  // 2) ROI SERIES + KPIs (ROI PAGE)
+  // ======================================================
 
-  // ----------------------------------------------
-  // 2) ROI Series (per-loan & portfolio)
-  // ----------------------------------------------
-  //
-  // ROI definition:
-  //
-  //   ROI = (CurrentValue - PurchasePrice) / PurchasePrice
-  //
-  // CurrentValue = principal remaining + cumulative interest earned
-  //
-  // Everything aligned to loanDate.
-
-    const roiSeries = {};
+  const roiSeries = {};
   const roiKpis = {};
 
   loansWithAmort.forEach(loan => {
@@ -686,157 +678,115 @@ export function buildPortfolioViews(loansWithAmort) {
 
     roiSeries[loan.id] = loan.amort.schedule
       .filter(r => r.loanDate >= purchase)
-.map(r => {
-  // accumulate realized components
-  cumInterest  += r.interest;
-  cumPrincipal += r.principalPaid;
+      .map(r => {
+        cumInterest  += Number(r.interest ?? 0);
+        cumPrincipal += Number(r.principalPaid ?? 0);
+        cumFees      += Number(r.feeThisMonth ?? 0);
 
-  const feeThisMonth = Number(r.feeThisMonth ?? 0);
-  cumFees += feeThisMonth;
+        const realized   = cumPrincipal + cumInterest - cumFees;
+        const unrealized = Number(r.balance ?? 0) * 0.95;
+        const loanValue  = realized + unrealized;
 
-  const realized   = cumPrincipal + cumInterest - cumFees;
-  const unrealized = r.balance * 0.95;
-  const loanValue  = realized + unrealized;
+        const roi = purchasePrice
+          ? (loanValue - purchasePrice) / purchasePrice
+          : 0;
 
-  const roi = purchasePrice
-    ? (loanValue - purchasePrice) / purchasePrice
-    : 0;
+        return {
+          date: r.loanDate,
+          month: r.monthIndex,
+          roi,
+          loanValue,
+          realized,
+          unrealized,
+          balance: r.balance,
+          cumInterest,
+          cumPrincipal,
+          cumFees,
+          ownershipDate: r.ownershipDate
+        };
+      });
 
-  return {
-    date: r.loanDate,
-    month: r.monthIndex,
-    roi,
-    loanValue,
-    realized,
-    unrealized,
-    balance: r.balance,
-    cumInterest,
-    cumPrincipal,
-    cumFees,
-    ownershipDate: r.ownershipDate
-  };
-});
-
-
-
-    // Latest ROI KPI for this loan (last point in its series)
     roiKpis[loan.id] =
       roiSeries[loan.id].length > 0
         ? roiSeries[loan.id][roiSeries[loan.id].length - 1].roi
         : 0;
   });
 
-  
+  // ======================================================
+  // 3) LOAN EARNINGS VIEWS (AUTHORITATIVE)
+  // ======================================================
 
-// ----------------------------------------------
-// 3) Earnings Timeline (PROJECTED AS-OF)
-// ----------------------------------------------
-//
-// netEarnings = earned so far
-// projectedNet = earned + remaining lifetime
-// ----------------------------------------------
+  const loanEarnings = {};
 
-const earningsSeries = {};
-const earningsKpis = {};
+  loansWithAmort.forEach(loan => {
+    const purchase = new Date(loan.purchaseDate);
 
-loansWithAmort.forEach(loan => {
-  const purchase = new Date(loan.purchaseDate);
+    let cumPrincipal = 0;
+    let cumInterest  = 0;
+    let cumFees      = 0;
+    let currentRow   = null;
 
-  let cumPrincipal = 0;
-  let cumInterest  = 0;
-  let cumFees      = 0;
+    loan.amort.schedule.forEach(r => {
+      if (r.loanDate < purchase) return;
 
-  // --- build earned-to-date series first
-  const earnedSeries = loan.amort.schedule
-    .filter(r => r.loanDate >= purchase)
-    .map(r => {
-      cumPrincipal += r.principalPaid;
-      cumInterest  += r.interest;
+      cumPrincipal += Number(r.principalPaid ?? 0);
+      cumInterest  += Number(r.interest ?? 0);
+      cumFees      += Number(r.feeThisMonth ?? 0);
 
-      const feeThisMonth = Number(r.feeThisMonth ?? 0);
-      cumFees += feeThisMonth;
-
-      return {
-        loanDate: r.loanDate,
-        ownershipDate: r.loanDate,
-        monthIndex: r.monthIndex,
-        payment: r.payment,
-        principalPaid: r.principalPaid,
-        interest: r.interest,
-        balance: r.balance,
-
-        cumPrincipal,
-        cumInterest,
-        cumFees,
-        netEarnings: cumPrincipal + cumInterest - cumFees
-      };
+      currentRow = r;
     });
 
-  if (!earnedSeries.length) {
-    earningsSeries[loan.id] = [];
-    earningsKpis[loan.id] = 0;
-    return;
-  }
+    const lifetimeNet = cumPrincipal + cumInterest - cumFees;
 
-  // --- lifetime net (final earned point)
-  const lifetimeNet =
-    earnedSeries[earnedSeries.length - 1].netEarnings;
+    loanEarnings[loan.loanId] = {
+      currentDate: currentRow?.loanDate ?? purchase,
 
-  // --- PROJECTED-AS-OF timeline
-  earningsSeries[loan.id] = earnedSeries.map(r => {
-    const earned = r.netEarnings;
-    const projected = earned + (lifetimeNet - earned);
+      current: {
+        netEarnings: lifetimeNet,
+        feesToDate: cumFees
+      },
 
-    return {
-      ...r,
-      netEarnings: projected
+      lifetimeNet,
+      feesToDate: cumFees
     };
   });
 
-  // KPI2 value = lifetime net (unchanged)
-  earningsKpis[loan.id] = lifetimeNet;
-});
+  // ======================================================
+  // 4) PORTFOLIO EARNINGS KPIs (EARNINGS PAGE)
+  // ======================================================
 
-// ----------------------------------------------
-// 3b) Projected Earnings Timeline (AS-OF)
-// ----------------------------------------------
+  let totalNetToDate  = 0;
+  let totalFeesToDate = 0;
 
-const projectedEarningsSeries = {};
-
-Object.keys(earningsSeries).forEach(loanId => {
-  const series = earningsSeries[loanId];
-  if (!series.length) {
-    projectedEarningsSeries[loanId] = [];
-    return;
-  }
-
-  const lifetimeNet =
-    series[series.length - 1].netEarnings;
-
-  projectedEarningsSeries[loanId] = series.map(r => {
-    const earned = r.netEarnings;
-    const projected = earned + (lifetimeNet - earned);
-
-    return {
-      ...r,
-      netEarnings: projected
-    };
+  Object.values(loanEarnings).forEach(l => {
+    totalNetToDate  += Number(l.current.netEarnings ?? 0);
+    totalFeesToDate += Number(l.feesToDate ?? 0);
   });
-});
 
+  const portfolioEarnings = {
+    totalNetToDate,
+    totalFeesToDate,
 
+    // Phase 4 placeholders
+    totalNetProjected: totalNetToDate,
+    totalFeesProjected: totalFeesToDate,
+    avgMonthlyNet: 0,
+    projectedAvgMonthlyNet: 0,
+    monthsCounted: 0
+  };
 
-  // ----------------------------------------------
-  // 4) Amort KPIs (Total Invested, Portfolio Value, etc.)
-  // ----------------------------------------------
+  // ======================================================
+  // 5) AMORT KPIs (AMORT PAGE)
+  // ======================================================
 
-  const totalInvested = loansWithAmort.reduce((sum, loan) => {
-    return sum + loan.principal;
-  }, 0);
+  const totalInvested = loansWithAmort.reduce(
+    (sum, loan) => sum + Number(loan.principal ?? 0),
+    0
+  );
 
   const portfolioValue = loansWithAmort.reduce((sum, loan) => {
     const last = loan.amort.schedule[loan.amort.schedule.length - 1];
-    return sum + last.balance;
+    return sum + Number(last?.balance ?? 0);
   }, 0);
 
   const amortKpis = {
@@ -849,31 +799,24 @@ Object.keys(earningsSeries).forEach(loanId => {
     })
   };
 
+  // ======================================================
+  // RETURN UNIFIED VIEWS
+  // ======================================================
 
+  return {
+    loans: loansWithAmort,
 
-  // ----------------------------------------------
-  // Return unified views
-  // ----------------------------------------------
+    // amort page
+    incomeLabels,
+    incomePayments,
+    amortKpis,
 
-return {
-  loans: loansWithAmort,
+    // ROI page
+    roiSeries,
+    roiKpis,
 
-  // amort page data
-  incomeLabels,
-  incomePayments,
-  amortKpis,
-
-  // ROI page data
-  roiSeries,
-  roiKpis,
-
-  // earnings page data
-  earningsSeries,              // earned-to-date (KPI1)
-  projectedEarningsSeries,     // projected-as-of (KPI2)
-  earningsKpis
-};
-
-
-
-  
+    // earnings page (AUTHORITATIVE)
+    portfolioEarnings,
+    loanEarnings
+  };
 }
