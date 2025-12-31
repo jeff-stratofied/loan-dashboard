@@ -1462,7 +1462,9 @@ function handleMove(e) {
 function handleLeave() {
   vLine.setAttribute("stroke-opacity", "0");
   dot.setAttribute("opacity", "0");
+  hideMiniTooltip(); // ✅ REQUIRED
 }
+
 
 svg.addEventListener("mousemove", handleMove);
 svg.addEventListener("mouseleave", handleLeave);
