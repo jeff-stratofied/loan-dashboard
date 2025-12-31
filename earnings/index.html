@@ -3226,20 +3226,76 @@ const schedule = loan.amort?.schedule || [];
 const defMonthKey =
   defDate.getFullYear() + "-" + defDate.getMonth();
 
+// =========================
+// DEBUG: Default badge hover
+// =========================
+console.groupCollapsed(
+  `[EARNINGS DEFAULT DEBUG] ${loan.loanName || loan.loanId}`
+);
+
+console.log("event.date =", event.date);
+console.log("defDate =", defDate);
+console.log("defMonthKey =", defMonthKey);
+console.log("schedule length =", schedule.length);
+
+// show first few rows so we can see what fields actually exist
+console.table(
+  schedule.slice(0, 12).map((r, i) => ({
+    i,
+    monthIndex: r.monthIndex,
+    loanDate: r.loanDate,
+    displayDate: r.displayDate,
+    balance: r.balance
+  }))
+);
+
+// show rows near the end too
+console.table(
+  schedule.slice(-6).map((r, i) => ({
+    i: schedule.length - 6 + i,
+    monthIndex: r.monthIndex,
+    loanDate: r.loanDate,
+    displayDate: r.displayDate,
+    balance: r.balance
+  }))
+);
+
+console.groupEnd();
+
 let balanceAtDefault = 0;
 
-for (const row of schedule) {
-  if (!row.displayDate) continue;
+for (let i = 0; i < schedule.length; i++) {
+  const row = schedule[i];
 
-  const rowKey =
-    row.displayDate.getFullYear() + "-" +
-    row.displayDate.getMonth();
+  // DEBUG: show weird rows
+  if (!row.loanDate) continue;
 
-  if (rowKey === defMonthKey) {
+  const rowDate = (row.loanDate instanceof Date) ? row.loanDate : new Date(row.loanDate);
+
+  // DEBUG: if rowDate is invalid, you'll see it
+  if (!Number.isFinite(rowDate.getTime())) {
+    console.warn("[BAD loanDate]", { i, loanDate: row.loanDate, row });
+    continue;
+  }
+
+  if (
+    rowDate.getFullYear() === defDate.getFullYear() &&
+    rowDate.getMonth() === defDate.getMonth()
+  ) {
+    console.log("[MATCH FOUND]", {
+      i,
+      monthIndex: row.monthIndex,
+      rowDate,
+      balance: row.balance
+    });
+
     balanceAtDefault = Number(row.balance || 0);
     break;
   }
 }
+
+console.log("[RESULT] balanceAtDefault =", balanceAtDefault);
+
 
 
             const recovered = Number(
