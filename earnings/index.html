@@ -3094,21 +3094,57 @@ const closeBtn = document.getElementById("closeBtn");
 
 function renderLoanTiles(loansList) {
   grid.innerHTML = "";
+
   loansWithEarnings.forEach(loan => {
-    const hasSchedule = loan.earningsSchedule.length > 0;
+    const hasSchedule = Array.isArray(loan.earningsSchedule) && loan.earningsSchedule.length > 0;
     const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
-    const fallbackRow = { netEarnings: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
+
+    const fallbackRow = {
+      netEarnings: 0,
+      ownershipDate: new Date(loan.loanStartDate),
+      loanDate: new Date(loan.loanStartDate)
+    };
+
     const loanStart = new Date(loan.loanStartDate);
     const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
     const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
       ? Math.max(1, diffMonthsFromStartRaw)
       : 1;
+
     const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
     const atCurrent = hasSchedule
       ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
       : fallbackRow;
+
     const currentMonthLabel = formatMonthYear(new Date());
 
+    // -----------------------------
+    // Build event badges HTML
+    // -----------------------------
+    let badgesHTML = "";
+    if (Array.isArray(loan.events) && loan.events.length > 0) {
+      badgesHTML = `
+        <div class="loan-badges">
+          ${loan.events.map(e => {
+            const date = formatMonthYear(new Date(e.date));
+            if (e.type === "prepayment") {
+              return `<span class="loan-badge prepayment">💰 Prepay</span>`;
+            }
+            if (e.type === "deferral") {
+              return `<span class="loan-badge deferral">⏸ Deferral</span>`;
+            }
+            if (e.type === "default") {
+              return `<span class="loan-badge default">⚠️ Default</span>`;
+            }
+            return "";
+          }).join("")}
+        </div>
+      `;
+    }
+
+    // -----------------------------
+    // Create tile
+    // -----------------------------
     const tile = document.createElement("div");
     tile.className = "tile";
     tile.dataset.loanName = (loan.loanName || "").toLowerCase();
@@ -3119,57 +3155,31 @@ function renderLoanTiles(loansList) {
     tile.dataset.amount = Number(loan.purchasePrice || 0);
     tile.setAttribute("data-loan", loan.loanName);
 
-    // Build badges (match Amort icons/classes, ROI custom hover)
-    let badgesHTML = '';
-    if (loan.events && loan.events.length > 0) {
-      badgesHTML = `
-        <div class="loan-badges">
-          ${loan.events.map(e => {
-            let html = '';
-            let tooltipText = '';
-            const date = formatMonthYear(new Date(e.date));
-
-            if (e.type === 'prepayment') {
-              tooltipText = `Prepayment • ${date}`;
-              html = `<span class="loan-badge prepayment" data-tooltip="${tooltipText}">💰 Prepay</span>`;
-            } else if (e.type === 'deferral') {
-              const endDate = e.endDate ? formatMonthYear(new Date(e.endDate)) : 'Unknown';
-              tooltipText = `Deferral • ${date} to ${endDate}`;
-              html = `<span class="loan-badge deferral" data-tooltip="${tooltipText}">⏸ Deferral</span>`;
-            } else if (e.type === 'default') {
-              tooltipText = `Default • ${date}`;
-              html = `<span class="loan-badge default" data-tooltip="${tooltipText}">⚠️ Default</span>`;
-            }
-
-            return html;
-          }).join('')}
-        </div>
-      `;
-    }
-
     tile.innerHTML = `
       <div class="tile-left">
-        <!-- Line 1: Loan Name -->
-        <div class="loan-name" style="font-weight:700; font-size:14px;">
+        <div class="loan-name" style="font-weight:700;font-size:14px;">
           ${loan.loanName}
         </div>
-        <!-- Event Badges (position between name and school, like Amort) -->
+
         ${badgesHTML}
-        <!-- Line 2: School -->
-        <div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
+
+        <div class="loan-name" style="font-weight:700;font-size:14px;margin-top:2px;">
           ${loan.school || "No school listed"}
         </div>
-        <!-- Line 3: Rate · Term · Matures -->
+
         <div class="loan-sub" style="margin-top:6px;">
-          Rate: ${(loan.nominalRate * 100).toFixed(2)}% &nbsp;·&nbsp;
-          Term: ${loan.termYears} yrs &nbsp;·&nbsp;
-          Matures: ${formatMonthYear(addMonths(new Date(loan.loanStartDate), loan.termYears * 12))}
+          Rate: ${(loan.nominalRate * 100).toFixed(2)}% ·
+          Term: ${loan.termYears} yrs ·
+          Matures: ${formatMonthYear(
+            addMonths(new Date(loan.loanStartDate), loan.termYears * 12)
+          )}
         </div>
-        <!-- Line 4: Loan ID -->
+
         <div class="loan-sub" style="margin-top:4px;">
           Loan ${loan.loanId}
         </div>
       </div>
+
       <div class="chart-wrap">
         <div class="mini-label">
           Net Earnings ${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
@@ -3178,87 +3188,100 @@ function renderLoanTiles(loansList) {
       </div>
     `;
 
-    // --------------------------------------------------
-// ROI-style event badge hover (reuse mini tooltip)
-// --------------------------------------------------
-if (Array.isArray(loan.events) && loan.events.length > 0) {
-  const badges = tile.querySelectorAll(".loan-badge");
+    // -----------------------------
+    // Badge hover (ROI-style)
+    // -----------------------------
+    if (Array.isArray(loan.events) && loan.events.length > 0) {
+      const badges = tile.querySelectorAll(".loan-badge");
 
-  badges.forEach((badge) => {
-    badge.addEventListener("mouseenter", (e) => {
-      let eventType = null;
-      if (badge.classList.contains("prepayment")) eventType = "prepayment";
-      else if (badge.classList.contains("default")) eventType = "default";
-      else if (badge.classList.contains("deferral")) eventType = "deferral";
-      if (!eventType) return;
-      const event = loan.events.find(ev => ev.type === eventType);
-      if (!event) return;
-      const lines = [];
-      if (eventType === "prepayment") {
-        lines.push(
-          "Prepayment",
-          `Date: ${formatDate(new Date(event.date))}`,
-          `Amount: ${formatCurrency(event.amount)}`
-        );
-      }
-      if (eventType === "default") {
-        const defDate = new Date(event.date);
-        // --------------------------------------------------
-        // MATCH ROI EXACTLY: use engine amort schedule
-        // --------------------------------------------------
-        const schedule = loan.amort?.schedule || [];
-        let balanceAtDefault = 0;
-        for (let i = 0; i < schedule.length; i++) {
-          const row = schedule[i];
-          if (!row.loanDate) continue;
-          if (
-            row.loanDate.getFullYear() === defDate.getFullYear() &&
-            row.loanDate.getMonth() === defDate.getMonth()
-          ) {
-            balanceAtDefault = Number(row.balance || 0);
-            break;
+      badges.forEach(badge => {
+        badge.addEventListener("mouseenter", e => {
+          let eventType = null;
+          if (badge.classList.contains("prepayment")) eventType = "prepayment";
+          if (badge.classList.contains("default")) eventType = "default";
+          if (badge.classList.contains("deferral")) eventType = "deferral";
+          if (!eventType) return;
+
+          const event = loan.events.find(ev => ev.type === eventType);
+          if (!event) return;
+
+          const lines = [];
+
+          if (eventType === "prepayment") {
+            lines.push(
+              "Prepayment",
+              `Date: ${formatDate(new Date(event.date))}`,
+              `Amount: ${formatCurrency(event.amount)}`
+            );
           }
-        }
-        const recovered = Number(
-          event.recovered ??
-          event.recoveredAmount ??
-          event.recoveryAmount ??
-          event.amountRecovered ??
-          event.recovery ??
-          0
-        );
-        const remaining = Number(balanceAtDefault || 0) - recovered;
-        lines.push(
-          "Default",
-          `Date: ${formatMonthYear(defDate)}`,
-          `Recovered: ${formatCurrency(recovered)}`,
-          `Remaining: ${formatCurrency(remaining)}`
-        );
-      }
-      if (eventType === "deferral") {
-        lines.push(
-          "Deferral",
-          `Start: ${formatMonthYear(new Date(event.startDate))}`,
-          `Months: ${event.months}`
-        );
-      }
-      setMiniTooltipContent(lines);
-      positionMiniTooltip(e.clientX, e.clientY, 12);
-    });
-    badge.addEventListener("mouseleave", hideMiniTooltip);
-  });
-}
-})
 
-    
+          if (eventType === "default") {
+            const defDate = new Date(event.date);
+            const schedule = loan.amort?.schedule || [];
+            let balanceAtDefault = 0;
+
+            for (const row of schedule) {
+              if (
+                row.loanDate &&
+                row.loanDate.getFullYear() === defDate.getFullYear() &&
+                row.loanDate.getMonth() === defDate.getMonth()
+              ) {
+                balanceAtDefault = Number(row.balance || 0);
+                break;
+              }
+            }
+
+            const recovered = Number(
+              event.recovered ??
+              event.recoveredAmount ??
+              event.recoveryAmount ??
+              event.amountRecovered ??
+              event.recovery ??
+              0
+            );
+
+            lines.push(
+              "Default",
+              `Date: ${formatMonthYear(defDate)}`,
+              `Recovered: ${formatCurrency(recovered)}`,
+              `Remaining: ${formatCurrency(balanceAtDefault - recovered)}`
+            );
+          }
+
+          if (eventType === "deferral") {
+            lines.push(
+              "Deferral",
+              `Start: ${formatMonthYear(new Date(event.startDate))}`,
+              `Months: ${event.months}`
+            );
+          }
+
+          setMiniTooltipContent(lines);
+          positionMiniTooltip(e.clientX, e.clientY, 12);
+        });
+
+        badge.addEventListener("mouseleave", hideMiniTooltip);
+      });
+    }
+
+    // -----------------------------
+    // Attach tile + mini chart
+    // -----------------------------
     grid.appendChild(tile);
     tile.addEventListener("click", () => openLoanDrawer(loan));
 
-    // Create mini chart
-    const mini = tile.querySelector('.mini-chart');
-    createMiniStackedEarningsSVG(mini, loan.earningsSchedule || [], loan);
-
+    const mini = tile.querySelector(".mini-chart");
+    if (mini) {
+      createMiniStackedEarningsSVG(
+        mini,
+        loan.earningsSchedule || [],
+        loan
+      );
     }
+  });
+}
+
+
 
 
 async function initPage() {
