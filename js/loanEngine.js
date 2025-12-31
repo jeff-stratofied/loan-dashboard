@@ -836,28 +836,28 @@ const kpi3Rows = loansWithAmort
     const loanView = loanEarnings[loanKey];
     if (!loanView) return null;
 
-    const maturityDate =
-      loan.maturityDate ??
-      addMonths(
-        new Date(loan.loanStartDate),
-        Math.round(
-          (Number(loan.termYears || 0) + Number(loan.graceYears || 0)) * 12
-        )
-      );
+    const purchase = new Date(loan.purchaseDate);
+
+    // Count months this loan has been owned
+    const monthsOwned = Object.keys(monthlyTotals).filter(key => {
+      const [y, m] = key.split("-").map(Number);
+      const d = new Date(y, m, 1);
+      return d >= purchase;
+    }).length;
 
     return {
       loanId: loanKey,
       loanName: loan.loanName,
       school: loan.school,
       avgMonthly:
-        monthsCounted > 0
-          ? loanView.current.netEarnings / monthsCounted
-          : 0,
-      purchaseDate: loan.purchaseDate,
-      maturityDate
+        monthsOwned > 0
+          ? loanView.current.netEarnings / monthsOwned
+          : 0
     };
   })
   .filter(Boolean);
+
+
 
 
 // --------------------------------------
