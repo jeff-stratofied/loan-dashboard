@@ -1765,30 +1765,29 @@ const amortBody = document.getElementById("amortBody");
 const closeBtn = document.getElementById("closeBtn");
 
 function renderLoanTiles(loansList) {
+  const grid = document.getElementById("loanGrid");
+  if (!grid) return;
 
   grid.innerHTML = "";
 
-  loansList.forEach(loan => {
+  (loansList || []).forEach(loan => {
+    const loanId = loan.loanId ?? loan.id;
 
-    // ------------------------------------
-    // Engine-driven loan view (per loan)
-    // ------------------------------------
-    const loanView = views?.loanEarnings?.[loan.loanId] || null;
+    // Engine-provided loan view (single source of truth)
+    const loanView = views?.loanEarnings?.[loanId] || null;
 
-    const atCurrent = loanView?.current || {
-      netEarnings: 0
-    };
-
+    const atCurrent = loanView?.current || { netEarnings: 0 };
     const currentMonthLabel = formatMonthYear(
-      loanView?.currentDate || new Date()
+      loanView?.currentDate ? new Date(loanView.currentDate) : new Date()
     );
 
-    // ------------------------------------
-    // Build tile
-    // ------------------------------------
+    // Use engine maturity if provided, otherwise fallback display-only estimate
+    const matLabel = loanView?.maturityDate
+      ? formatMonthYear(new Date(loanView.maturityDate))
+      : formatMonthYear(addMonths(new Date(loan.loanStartDate), Math.round((Number(loan.termYears || 0) + Number(loan.graceYears || 0)) * 12)));
+
     const tile = document.createElement("div");
     tile.className = "tile";
-
     tile.dataset.loanName = (loan.loanName || "").toLowerCase();
     tile.dataset.school = (loan.school || "").toLowerCase();
     tile.dataset.rate = loan.nominalRate;
@@ -1800,36 +1799,28 @@ function renderLoanTiles(loansList) {
 
     tile.innerHTML = `
       <div class="tile-left">
-
-        <!-- Line 1: Loan Name -->
         <div class="loan-name" style="font-weight:700; font-size:14px;">
           ${loan.loanName}
         </div>
 
-        <!-- Line 2: School -->
         <div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
           ${loan.school || "No school listed"}
         </div>
 
-        <!-- Line 3: Rate · Term · Matures -->
         <div class="loan-sub" style="margin-top:6px;">
-          Rate: ${(loan.nominalRate * 100).toFixed(2)}% &nbsp;·&nbsp;
+          Rate: ${(Number(loan.nominalRate || 0) * 100).toFixed(2)}% &nbsp;·&nbsp;
           Term: ${loan.termYears} yrs &nbsp;·&nbsp;
-          Matures: ${formatMonthYear(
-            addMonths(new Date(loan.loanStartDate), loan.termYears * 12)
-          )}
+          Matures: ${matLabel}
         </div>
 
-        <!-- Line 4: Loan ID -->
         <div class="loan-sub" style="margin-top:4px;">
-          Loan ${loan.loanId}
+          Loan ${loanId}
         </div>
-
       </div>
 
       <div class="chart-wrap">
         <div class="mini-label">
-          Net Earnings ${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
+          Net Earnings ${currentMonthLabel}: ${formatCurrency(atCurrent.netEarnings || 0)}
         </div>
         <div class="mini-chart"></div>
       </div>
@@ -1839,13 +1830,13 @@ function renderLoanTiles(loansList) {
 
     tile.addEventListener("click", () => openLoanDrawer(loan));
 
-    // ------------------------------------
-    // Mini chart (UI-only placeholder)
-    // ------------------------------------
+    // Mini chart is render-only; data comes from engine
     const mini = tile.querySelector(".mini-chart");
-    createMiniStackedEarningsSVG(mini);
+    const schedule = loanView?.schedule || [];
+    createMiniStackedEarningsSVG(mini, schedule, loan);
   });
 }
+
 
 }
 
@@ -2064,6 +2055,17 @@ function openLoanDrawer(loan) {
 
   resetDrawerContent();
 
+  const loanId = loan.loanId;
+
+  // ------------------------------------
+  // Engine-provided loan earnings view
+  // ------------------------------------
+  const loanView = views?.loanEarnings?.[loanId] || null;
+
+  const currentDateLabel = loanView?.currentDate
+    ? formatMonthYear(new Date(loanView.currentDate))
+    : formatMonthYear(new Date());
+
   // ------------------------------------
   // Drawer header (UI-only)
   // ------------------------------------
@@ -2077,29 +2079,31 @@ function openLoanDrawer(loan) {
     </div>
   `;
 
- // ------------------------------------
-// Loan-level KPIs (engine-driven only)
-// ------------------------------------
-const loanView = views?.loanEarnings?.[loan.loanId] || null;
+  // ------------------------------------
+  // Loan-level KPIs (ENGINE-DRIVEN ONLY)
+  // ------------------------------------
+  drawerPrimaryTitle.textContent = `Net Earnings ${currentDateLabel}`;
+  drawerPrimary.textContent = formatCurrency(
+    loanView?.current?.netEarnings ?? 0
+  );
 
-drawerPrimaryTitle.textContent = "Lifetime Net Earnings";
-drawerPrimary.textContent = formatCurrency(
-  loanView?.lifetimeNet ?? 0
-);
-
-drawerSecondaryTitle.textContent = "Fees to Date";
-drawerSecondary.textContent = formatCurrency(
-  loanView?.feesToDate ?? 0
-);
-
+  drawerSecondaryTitle.textContent = "Fees to Date";
+  drawerSecondary.textContent = formatCurrency(
+    loanView?.feesToDate ?? 0
+  );
 
   // ------------------------------------
-  // Chart area (placeholder — engine later)
+  // Chart area (render-only placeholder)
   // ------------------------------------
-  drawerChartArea.innerHTML = "";
+  drawerChartArea.innerHTML = `
+    <div style="height:220px;display:flex;align-items:center;justify-content:center;
+                color:var(--muted);font-size:13px;">
+      Earnings chart will be rendered here
+    </div>
+  `;
 
   // ------------------------------------
-  // Extra content (placeholder table shell)
+  // Extra content (table placeholder)
   // ------------------------------------
   drawerExtra.innerHTML = `
     <h3 style="margin-top:12px;margin-bottom:8px;">
@@ -2114,6 +2118,7 @@ drawerSecondary.textContent = formatCurrency(
 
   openDrawerBase();
 }
+
 
 
 document.addEventListener("DOMContentLoaded", initPage);
