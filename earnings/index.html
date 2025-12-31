@@ -1979,6 +1979,10 @@ loansForUser = loansWithAmort;
   }
 }
 
+  console.assert(typeof buildPortfolioViews === "function");
+console.assert(views && views.portfolioEarnings, "views not initialized");
+console.assert(Array.isArray(loansForUser), "loansForUser not set");
+
 
 function applyLoanFilters() {
 const nameVal = filterName.value;
