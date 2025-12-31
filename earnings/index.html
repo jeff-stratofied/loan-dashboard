@@ -1977,11 +1977,27 @@ loansForUser = loansWithAmort;
       true
     );
   }
+
+// ====================================
+// PHASE 0 — ARCHITECTURE GUARDS
+// ====================================
+console.assert(
+  typeof buildPortfolioViews === "function",
+  "ENGINE MISSING: buildPortfolioViews"
+);
+
+console.assert(
+  views && views.portfolioEarnings,
+  "ENGINE NOT INITIALIZED: views.portfolioEarnings"
+);
+
+console.assert(
+  Array.isArray(loansForUser),
+  "DATA ERROR: loansForUser not set"
+);
+  
 }
 
-  console.assert(typeof buildPortfolioViews === "function");
-console.assert(views && views.portfolioEarnings, "views not initialized");
-console.assert(Array.isArray(loansForUser), "loansForUser not set");
 
 
 function applyLoanFilters() {
