@@ -807,20 +807,11 @@ const avgMonthlyNet =
     ? totalNetAcrossMonths / monthsCounted
     : 0;
 
-  });
-});
-
 // KPI 1 totals (already correct)
 Object.values(loanEarnings).forEach(l => {
   totalNetToDate  += Number(l.current.netEarnings ?? 0);
   totalFeesToDate += Number(l.feesToDate ?? 0);
 });
-
-const avgMonthlyNet =
-  monthsCounted > 0
-    ? totalNetAcrossMonths / monthsCounted
-    : 0;
-
 
 const portfolioEarnings = {
   totalNetToDate,
@@ -835,6 +826,7 @@ const portfolioEarnings = {
   totalFeesProjected: totalFeesToDate,
   projectedAvgMonthlyNet: 0
 };
+
 
 
   // ======================================================
