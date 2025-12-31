@@ -609,6 +609,13 @@ export function attachSchedules(loans) {
 
 export function buildPortfolioViews(loansWithAmort) {
 
+loansWithAmort.forEach(l => {
+  if (!l.amort || !Array.isArray(l.amort.schedule)) {
+    throw new Error(`Loan ${l.loanId} missing amort.schedule`);
+  }
+});
+
+  
   const TODAY = new Date();
   const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
 
