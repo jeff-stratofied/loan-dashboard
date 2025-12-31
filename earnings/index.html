@@ -1426,22 +1426,6 @@ return Math.max(0, Math.min(rows.length - 1, Math.round(t)));
 }
 
 function handleMove(e) {
-const idx = idxFromClientX(e.clientX);
-const r = rows[idx];
-
-const x = padL + idx * stepX;
-const y =
-padT + (maxVal - (Number(r.avg) || 0)) * scaleY;
-
-vLine.setAttribute("x1", x);
-vLine.setAttribute("x2", x);
-vLine.setAttribute("stroke-opacity", "0.8");
-
-dot.setAttribute("cx", x);
-dot.setAttribute("cy", y);
-dot.setAttribute("opacity", "1");
-
-function handleMove(e) {
   const idx = idxFromClientX(e.clientX);
   const r = rows[idx];
 
