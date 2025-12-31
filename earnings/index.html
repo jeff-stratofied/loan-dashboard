@@ -368,6 +368,70 @@
       width:100%;
     }
 
+    /* =========================================
+   Loan event badges (ROI tiles)
+   ========================================= */
+.loan-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.loan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.loan-badge.default {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.loan-badge.deferral {
+  background: rgba(234, 179, 8, 0.18);
+  color: #92400e;
+  border-color: rgba(234, 179, 8, 0.35);
+}
+
+.loan-badge.prepayment {
+  background: rgba(34, 197, 94, 0.18);
+  color: #166534;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+/* Event badge tooltip */
+.badge-tooltip {
+  position: absolute;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2000;  /* Increased from 100 to layer above drawer (z=1000) and tiles */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transform: translateY(-8px);
+}
+
+.badge-tooltip.visible {
+  opacity: 1;
+}
+
+    
 /* ============================================================
    AMORT-STYLE DRAWER FOR EARNINGS (WIDE VERSION)
    ============================================================ */
@@ -856,6 +920,17 @@ html[data-theme="dark"] .legend .sw {
   max-height: 40vh !important;
 }
 
+.badge-tooltip {
+  position: fixed !important;  /* Change from absolute to fixed to avoid clipping */
+  z-index: 10000 !important;   /* Higher than .drawer (120) and other elements */
+  transform: none !important;  /* Remove translateY; we'll handle in JS */
+  white-space: pre-wrap;       /* Allow wrapping if text is long */
+}
+
+.badge-tooltip.visible {
+  opacity: 1 !important;
+}
+    
     
   </style>
 </head>
@@ -1374,6 +1449,92 @@ map[loan.loanId] = KPI_PALETTE[idx % KPI_PALETTE.length];
 window.KPI_COLOR_MAP = map;
 }
 
+function createBadgeTooltip(badge, text) {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'badge-tooltip';
+  tooltip.textContent = text;
+  document.body.appendChild(tooltip);  // Append to body to escape clipping
+
+  badge.addEventListener('mouseenter', (e) => {
+    const badgeRect = badge.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const margin = 8;  // Space above badge
+
+    // Position above the badge, centered horizontally
+    let left = badgeRect.left + (badgeRect.width / 2) - (tooltipRect.width / 2);
+    let top = badgeRect.top - tooltipRect.height - margin;
+
+    // Clamp to viewport (prevent off-screen)
+    left = Math.max(0, Math.min(left, window.innerWidth - tooltipRect.width));
+    top = Math.max(0, top);  // Don't go above top edge
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.classList.add('visible');
+  });
+
+  badge.addEventListener('mouseleave', () => {
+    tooltip.classList.remove('visible');
+  });
+
+  // Clean up on removal (optional, but good practice)
+  badge.addEventListener('remove', () => tooltip.remove());
+}
+
+  function getLoanEventBadges(loan) {
+  const badges = [];
+
+  if (!Array.isArray(loan.events)) return badges;
+
+  const types = new Set(loan.events.map(e => e.type));
+
+  if (types.has("default")) {
+    badges.push({ type: "default", label: "Defaulted" });
+  }
+  if (types.has("deferral")) {
+    badges.push({ type: "deferral", label: "Deferral" });
+  }
+  if (types.has("prepayment")) {
+    badges.push({ type: "prepayment", label: "Prepayment" });
+  }
+
+  return badges;
+}
+
+function getEventRowClass(loan, row) {
+  if (!row || !row.displayDate) return "";
+
+  // ----------------------------------
+  // DEFERRAL — authoritative from engine
+  // ----------------------------------
+  if (row.isOwned && row.isDeferred === true) {
+    return "event-deferral";
+  }
+
+  // ----------------------------------
+  // DEFAULT / PREPAYMENT (single month)
+  // ----------------------------------
+  if (Array.isArray(loan.events)) {
+    const rowKey =
+      row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
+
+    for (const e of loan.events) {
+      if (!e.date) continue;
+
+      const d = new Date(e.date);
+      const eventKey =
+        d.getFullYear() * 12 + d.getMonth();
+
+      if (rowKey === eventKey) {
+        if (e.type === "default") return "event-default";
+        if (e.type === "prepayment") return "event-prepayment";
+      }
+    }
+  }
+
+  return "";
+}
+  
 function computeEarningsKPIs(list) {
 let totalNetToDate = 0;
 let totalNetProjected = 0;
@@ -1468,7 +1629,6 @@ console.warn("Unknown KPI tile:", type);
 });
 
 function getCurrentEarningsRow(loan) {
-
 
 const sched = loan.earningsSchedule || [];
 if (!sched.length) {
@@ -2552,6 +2712,29 @@ if (drawerChartArea) drawerChartArea.innerHTML = "";
 if (drawerExtra) drawerExtra.innerHTML = "";
 }
 
+function getEventRowClass(loan, row) {
+  if (!Array.isArray(loan.events) || !row.displayDate) return "";
+
+  const rowMonth =
+    row.displayDate.getFullYear() + "-" + row.displayDate.getMonth();
+
+  for (const e of loan.events) {
+    if (!e.date) continue;
+    const d = new Date(e.date);
+    const eventMonth = d.getFullYear() + "-" + d.getMonth();
+
+    if (eventMonth === rowMonth) {
+      if (e.type === "default") return "event-default";
+      if (row.isOwned && row.isDeferral) {
+  return 'event-deferral';
+}
+      if (e.type === "prepayment") return "event-prepayment";
+    }
+  }
+  return "";
+}
+
+
 function openDrawerBase() {
 drawer.classList.add("open");
 drawer.setAttribute("aria-hidden","false");
@@ -3052,6 +3235,18 @@ tile.dataset.startDate = new Date(loan.loanStartDate).getTime();
 tile.dataset.amount = Number(loan.purchasePrice || 0);
 
 tile.setAttribute("data-loan", loan.loanName);
+
+const badges = getLoanEventBadges(loan);
+
+const badgeHtml = badges.length
+  ? `
+    <div class="loan-badges">
+      ${badges.map(b =>
+        `<span class="loan-badge ${b.type}">${b.label}</span>`
+      ).join("")}
+    </div>`
+  : "";
+  
 tile.innerHTML = `
 <div class="tile-left">
 
@@ -3059,6 +3254,8 @@ tile.innerHTML = `
 <div class="loan-name" style="font-weight:700; font-size:14px;">
 ${loan.loanName}
 </div>
+
+ ${badgeHtml}
 
 <!-- Line 2: School -->
 <div class="loan-name" style="font-weight:700; font-size:14px; margin-top:2px;">
@@ -3086,6 +3283,58 @@ Net Earnings ${currentMonthLabel}: $${atCurrent.netEarnings.toFixed(0)}
 <div class="mini-chart"></div>
 </div>
 `;
+
+// After tile.innerHTML is set, attach tooltips to badges
+const badgeElements = tile.querySelectorAll('.loan-badge');
+badgeElements.forEach((badgeEl, index) => {
+  const badgeData = badges[index]; // Matches order from getLoanEventBadges
+  if (!badgeData) return;
+
+  const type = badgeData.type;
+  const eventsOfType = loan.events.filter(e => e.type === type);
+
+  let tooltipText = '';
+
+  if (type === 'prepayment') {
+    tooltipText = eventsOfType.map(e => {
+      const date = new Date(e.date);
+      return `Prepayment\nDate: ${date.toLocaleDateString()}\nAmount: $${Number(e.amount || 0).toLocaleString()}`;
+    }).join('\n\n');
+  } else if (type === 'deferral') {
+    tooltipText = eventsOfType.map(e => {
+      const start = new Date(e.startDate);
+      const end = new Date(start);
+      end.setMonth(end.getMonth() + Number(e.months || 0));
+      return `Deferral\nStart: ${start.toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}\nDuration: ${e.months} months\nEnd: ${end.toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}`;
+    }).join('\n\n');
+  } else if (type === 'default') {
+    const e = eventsOfType[0]; // Assume one default
+    if (!e) return;
+
+    const defDate = new Date(e.date);
+    const recovered = Number(e.recoveryAmount || 0);
+
+    // Find the default row in amort schedule (matches month/year)
+    const defYear = defDate.getFullYear();
+    const defMonth = defDate.getMonth();
+    const defaultRow = loan.amort.schedule.find(r =>
+      r.loanDate.getFullYear() === defYear && r.loanDate.getMonth() === defMonth
+    );
+
+    let remaining = 0;
+    if (defaultRow) {
+      const balanceAtDefault = defaultRow.balance + recovered; // Reconstruct balance before recovery
+      remaining = balanceAtDefault - recovered; // Remaining (loss) after recovery
+    }
+
+    tooltipText = `Default\nDate: ${defDate.toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}\nRecovered: $${recovered.toLocaleString()}\nRemaining: $${remaining.toLocaleString()}`;
+  }
+
+  if (tooltipText) {
+    createBadgeTooltip(badgeEl, tooltipText);
+  }
+});
+  
 grid.appendChild(tile);
 
 tile.addEventListener("click", () => openLoanDrawer(loan));
