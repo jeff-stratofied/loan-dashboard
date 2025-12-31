@@ -1445,17 +1445,24 @@ function handleMove(e) {
   dot.setAttribute("opacity", "1");
 
   // Tooltip content (APPROVED FORMAT)
-  setMiniTooltipContent([
+  // ------------------------------------
+// KPI-3 hover math (AUTHORITATIVE)
+// ------------------------------------
+let netToDate = 0;
+for (let i = 0; i <= idx; i++) {
+  netToDate += Number(rows[i].avg || 0);
+}
+
+const avgToDate = (idx + 1) > 0
+  ? netToDate / (idx + 1)
+  : 0;
+
+setMiniTooltipContent([
   `Date: ${formatMonthYear(r.date)}`,
-  `Avg / Month: ${formatCurrency(
-    views.portfolioEarnings.avgMonthlyNet
-  )}`,
-  `Net to Date: ${formatCurrency(
-    rows
-      .slice(0, idx + 1)
-      .reduce((s, d) => s + (Number(d.avg) || 0), 0)
-  )}`
+  `Avg / Month: ${formatCurrency(avgToDate)}`,
+  `Net to Date: ${formatCurrency(netToDate)}`
 ]);
+
 
 
   positionMiniTooltip(e.clientX, e.clientY, 5);
