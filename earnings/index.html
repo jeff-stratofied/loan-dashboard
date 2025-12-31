@@ -3208,6 +3208,31 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
       }
 
 if (eventType === "default") {
+  const defDate = new Date(event.date);
+
+  // --------------------------------------------------
+  // MATCH ROI EXACTLY: use engine amort schedule
+  // --------------------------------------------------
+  const schedule = loan.amort?.schedule || [];
+
+  let balanceAtDefault = 0;
+
+  for (let i = schedule.length - 1; i >= 0; i--) {
+    const row = schedule[i];
+    if (!row.loanDate) continue;
+
+    const rowDate = new Date(
+      row.loanDate.getFullYear(),
+      row.loanDate.getMonth(),
+      1
+    );
+
+    if (rowDate <= defDate) {
+      balanceAtDefault = Number(row.balance || 0);
+      break;
+    }
+  }
+
   const recovered = Number(
     event.recovered ??
     event.recoveredAmount ??
@@ -3217,25 +3242,10 @@ if (eventType === "default") {
     0
   );
 
-  // --------------------------------------------------
-  // MATCH ROI: Remaining comes from PURE amort schedule
-  // --------------------------------------------------
-  const pureAmort = calcAmort(
-    loan.balanceForAmort,
-    loan.nominalRate,
-    loan.termYears,
-    loan.graceYears
+  const remaining = Math.max(
+    0,
+    +(balanceAtDefault - recovered).toFixed(2)
   );
-
-  const defDate = new Date(event.date);
-  const defKey = defDate.getFullYear() * 12 + defDate.getMonth();
-
-  const amortRow = pureAmort.schedule.find(r => {
-    const d = addMonths(new Date(loan.loanStartDate), r.monthIndex - 1);
-    return (d.getFullYear() * 12 + d.getMonth()) === defKey;
-  });
-
-  const remaining = amortRow ? Number(amortRow.balance) : 0;
 
   lines.push(
     "Default",
@@ -3244,6 +3254,7 @@ if (eventType === "default") {
     `Remaining: ${formatCurrency(remaining)}`
   );
 }
+
 
 
 
