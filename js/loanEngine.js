@@ -615,6 +615,18 @@ loansWithAmort.forEach(l => {
   }
 });
 
+  // ======================================================
+// USER SCOPING (AUTHORITATIVE FOR EARNINGS)
+// ======================================================
+
+// NOTE: earnings KPIs must only include loans owned by the active user
+// Default user is normalized in loadLoans() as l.user || "jeff"
+const ACTIVE_USER = "jeff"; // 🔒 later this comes from auth / URL / session
+
+const loansOwnedByUser = loansWithAmort.filter(
+  loan => loan.user === ACTIVE_USER
+);
+
   
   const TODAY = new Date();
   const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
