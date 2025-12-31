@@ -1687,6 +1687,17 @@ function openKpi3() {
   drawerExtra.innerHTML =
     `<div class="amort-wrap" id="drawerKpiTable"></div>`;
 
+renderKpi3AvgLineChart(
+  drawerChartArea,
+  views.portfolioEarnings.kpi3Series.filter(d => d.avg !== null)
+);
+  
+renderKPI3Table(
+  views?.portfolioEarnings?.kpi3Rows || [],
+  "drawerKpiTable"
+);
+
+  
   openDrawer();
 }
 
