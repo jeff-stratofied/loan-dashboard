@@ -830,6 +830,9 @@ const kpi3Series = Object.keys(monthlyTotals)
 // --------------------------------------
 // KPI 3 TABLE — per-loan avg monthly net
 // --------------------------------------
+// --------------------------------------
+// KPI 3 TABLE — per-loan avg monthly net
+// --------------------------------------
 const kpi3Rows = loansWithAmort
   .map(loan => {
     const loanKey = loan.loanId;
@@ -845,17 +848,31 @@ const kpi3Rows = loansWithAmort
       return d >= purchase;
     }).length;
 
+    // Contractual maturity
+    const maturityDate = addMonths(
+      new Date(loan.loanStartDate),
+      Math.round(
+        (Number(loan.termYears || 0) + Number(loan.graceYears || 0)) * 12
+      )
+    );
+
     return {
       loanId: loanKey,
       loanName: loan.loanName,
       school: loan.school,
+
       avgMonthly:
         monthsOwned > 0
           ? loanView.current.netEarnings / monthsOwned
-          : 0
+          : 0,
+
+      // ✅ RESTORED FIELDS (required by UI)
+      purchaseDate: loan.purchaseDate,
+      maturityDate
     };
   })
   .filter(Boolean);
+
 
 
 
