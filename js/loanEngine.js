@@ -836,6 +836,15 @@ const kpi3Rows = loansWithAmort
     const loanView = loanEarnings[loanKey];
     if (!loanView) return null;
 
+    const maturityDate =
+      loan.maturityDate ??
+      addMonths(
+        new Date(loan.loanStartDate),
+        Math.round(
+          (Number(loan.termYears || 0) + Number(loan.graceYears || 0)) * 12
+        )
+      );
+
     return {
       loanId: loanKey,
       loanName: loan.loanName,
@@ -843,10 +852,13 @@ const kpi3Rows = loansWithAmort
       avgMonthly:
         monthsCounted > 0
           ? loanView.current.netEarnings / monthsCounted
-          : 0
+          : 0,
+      purchaseDate: loan.purchaseDate,
+      maturityDate
     };
   })
   .filter(Boolean);
+
 
 // --------------------------------------
 // KPI 1 totals (already correct)
