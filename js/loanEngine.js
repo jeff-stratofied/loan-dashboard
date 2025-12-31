@@ -829,22 +829,21 @@ const portfolioEarnings = {
   avgMonthlyNet,
   monthsCounted,
 
-portfolioEarnings.kpi3Rows = loansWithAmort.map(loan => {
-  const loanKey = loan.loanId;
-  const loanView = loanEarnings[loanKey];
+const portfolioEarnings = {
+  totalNetToDate,
+  totalFeesToDate,
 
-  if (!loanView) return null;
+  // KPI 3
+  avgMonthlyNet,
+  monthsCounted,
 
-  return {
-    loanId: loanKey,
-    loanName: loan.loanName,
-    school: loan.school,
-    avgMonthly:
-      loanView.current?.netEarnings && portfolioEarnings.monthsCounted
-        ? loanView.current.netEarnings / portfolioEarnings.monthsCounted
-        : 0
-  };
-}).filter(Boolean);
+  // Phase 4 placeholders
+  totalNetProjected: totalNetToDate,
+  totalFeesProjected: totalFeesToDate,
+  projectedAvgMonthlyNet: 0
+};
+
+  .filter(Boolean);
 
   portfolioEarnings.kpi3Series = incomeLabels.map((label, i) => ({
   date: new Date(
