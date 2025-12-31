@@ -821,15 +821,12 @@ const portfolioEarnings = {
 
   // KPI 3
   avgMonthlyNet,
-  monthsCounted,
-
-
-// KPI 3 drawer rows
+  monthsCounted
+};
 portfolioEarnings.kpi3Rows = loansWithAmort
   .map(loan => {
     const loanKey = loan.loanId;
     const loanView = loanEarnings[loanKey];
-
     if (!loanView) return null;
 
     return {
