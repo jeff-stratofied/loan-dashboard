@@ -995,8 +995,14 @@ import {
   formatDate,
   formatMonthYear,
   getStandardToday,
-  getPortfolioStartDate
+  getPortfolioStartDate,
+
+  // ✅ NEW — engine is the data source
+  loadLoans,
+  attachSchedules,
+  buildPortfolioViews
 } from "../js/loanEngine.js";
+
 
 
 let currentLoan = null;
@@ -1073,21 +1079,6 @@ maximumFractionDigits: 2
 
 let loans = [];
 
-async function loadLoansFromBackend() {
-try {
-const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-const data = await res.json();
-const arr = data.loans || [];
-loans = arr.map(l => ({
-...l,
-loanStartDate: l.loanStartDate || "",
-}));
-} catch (err) {
-console.error("Failed to load loans from backend", err);
-loans = [];
-}
-}
-
 document.getElementById("currentDate").textContent =
   formatDate(TODAY);
 
@@ -1099,257 +1090,8 @@ bar.setAttribute("data-stack-group", groupId);
 bar.setAttribute("data-stack-index", index);
 }
 
-function calcAmort(principal, annualRate, termYears, graceYears){
-const monthlyRate = annualRate / 12;
-const totalMonths = Math.round((termYears + graceYears) * 12);
-const graceMonths = Math.round(graceYears * 12);
-const repayMonths = Math.max(1, totalMonths - graceMonths);
-
-let balance = principal;
-const schedule = [];
-
-for (let m = 1; m <= graceMonths; m++) {
-const interest = +(balance * monthlyRate).toFixed(2);
-balance = +(balance + interest).toFixed(2);
-schedule.push({
-monthIndex: m,
-payment: 0,
-principalPaid: 0,
-interest,
-balance
-});
-}
-
-const payment = monthlyRate === 0
-? +(balance / repayMonths).toFixed(2)
-: +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -repayMonths))).toFixed(2);
-
-for (let m = 1; m <= repayMonths; m++) {
-const interest = +(balance * monthlyRate).toFixed(2);
-const principalPaid = +Math.min(
-balance,
-+(payment - interest).toFixed(2)
-);
-balance = +(Math.max(0, balance - principalPaid).toFixed(2));
-
-schedule.push({
-monthIndex: graceMonths + m,
-payment: +payment.toFixed(2),
-principalPaid,
-interest,
-balance
-});
-}
-
-return { payment, schedule };
-}
-
-let loansWithEarnings = [];
 
 const hiddenLoans = new Set();
-
-function rebuildLoansWithEarnings() {
-loansWithEarnings = loans.map((raw, idx) => {
-
-const id = raw.id ?? (idx + 1);
-const loanId = raw.loanId ?? id;
-
-const purchasePrice = Number(raw.purchasePrice ?? 0);
-
-const balanceForAmort = Number(
-raw.balanceAtPurchase ??
-raw.principal ??
-raw.balance ??
-raw.originalBalance ??
-raw.faceValue ??
-purchasePrice
-);
-
-const nominalRate = Number(
-raw.nominalRate ??
-raw.rate ??
-raw.interestRate ??
-0
-);
-
-const termYears = Number(
-raw.termYears ??
-raw.term ??
-raw.years ??
-0
-);
-
-const graceYears = Number(
-raw.graceYears ??
-raw.grace ??
-0
-);
-
-const upfrontFee = Number(
-raw.upfrontFee ??
-raw.upfront_fee ??
-raw.originationFee ??
-0
-);
-
-const monthlyFee = Number(
-raw.monthlyFee ??
-raw.monthlyServicingFee ??
-raw.servicingFee ??
-raw.fee ??
-0
-);
-
-const monthlyFeeStart = Number(
-raw.monthlyFeeStart ??
-raw.feeStartMonth ??
-1
-);
-
-const normalizedLoan = {
-...raw,
-loanId,
-id,
-loanName: raw.loanName ?? `Loan ${loanId}`,
-school: raw.school ?? "No school listed",
-loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
-purchaseDate: raw.purchaseDate || "",
-purchasePrice,
-balanceForAmort,
-nominalRate,
-termYears,
-graceYears,
-upfrontFee,
-monthlyFeeStart,
-monthlyFee
-};
-
-const amort = calcAmort(
-normalizedLoan.balanceForAmort,
-normalizedLoan.nominalRate,
-normalizedLoan.termYears,
-normalizedLoan.graceYears
-);
-
-const loanStart = new Date(normalizedLoan.loanStartDate);
-const purchaseDt = new Date(normalizedLoan.purchaseDate);
-const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
-const monthsSinceStart = Number.isFinite(monthsSinceStartRaw) ? monthsSinceStartRaw : 0;
-
-amort.schedule = amort.schedule.map(row => {
-const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
-
-const loanDateRaw = addMonths(loanStart, row.monthIndex - 1);
-const loanDate = new Date(
-loanDateRaw.getFullYear(),
-loanDateRaw.getMonth(),
-1
-);
-
-const ownershipDate =
-ownershipMonthIndex >= 1
-? new Date(
-purchaseDt.getFullYear(),
-purchaseDt.getMonth() + (ownershipMonthIndex - 1),
-1
-)
-: null;
-
-return {
-...row,
-ownershipMonthIndex,
-isOwned: ownershipMonthIndex >= 1,
-loanDate,
-ownershipDate
-};
-});
-
-let cumPrincipal = 0;
-let cumInterest  = 0;
-let cumFees      = 0;
-
-const termMonths = Math.max(
-1,
-Math.round(normalizedLoan.termYears * 12)
-);
-
-const balanceAtPurchase = amort.schedule[Math.max(0, monthsSinceStart - 1)]?.balance || 0;
-
-const earningsSchedule = amort.schedule.map(row => {
-const m = row.monthIndex;
-
-const upfrontFeeThisMonth =
-row.isOwned && row.ownershipMonthIndex === 1
-? 150
-: 0;
-
-const balance = Number(row.balance ?? 0);
-const monthlyBalanceFee =
-row.isOwned && balance > 0
-? +(balance * 0.00125).toFixed(2)
-: 0;
-
-const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
-
-if (row.isOwned) {
-cumFees      = +(cumFees + feeThisMonth).toFixed(2);
-cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
-cumInterest  = +(cumInterest + row.interest).toFixed(2);
-}
-
-const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
-
-return {
-...row,
-feeThisMonth,
-cumPrincipal,
-cumInterest,
-cumFees,
-netEarnings,
-interestPaid: row.interest,
-principalPaid: row.principalPaid,
-loanDate: row.loanDate,
-ownershipDate: row.ownershipDate
-};
-}).filter(r => r.isOwned);
-
-const byMonth = new Map();
-
-earningsSchedule.forEach(r => {
-const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
-byMonth.set(key, r);
-});
-
-const normalizedEarningsSchedule =
-[...byMonth.values()].sort((a, b) =>
-a.ownershipDate - b.ownershipDate
-);
-
-return {
-...normalizedLoan,
-amort,
-earningsSchedule: normalizedEarningsSchedule,
-balanceAtPurchase,
-monthsSinceStart
-};
-});
-
-loansWithEarnings = loansWithEarnings.filter(l =>
-(l.user ?? "jeff") === PAGE_USER
-);
-
-loansWithEarnings.sort((a, b) => {
-const da = new Date(a.purchaseDate).getTime() || 0;
-const db = new Date(b.purchaseDate).getTime() || 0;
-return da - db;
-});
-
-buildLoanColorMap(loansWithEarnings);
-
-window.LoanMap = Object.fromEntries(
-loansWithEarnings.map(l => [l.loanName, l])
-);
-}
 
 const KPI_PALETTE = [
 "#2563eb",
@@ -1372,72 +1114,6 @@ sortedLoans.forEach((loan, idx) => {
 map[loan.loanId] = KPI_PALETTE[idx % KPI_PALETTE.length];
 });
 window.KPI_COLOR_MAP = map;
-}
-
-function computeEarningsKPIs(list) {
-let totalNetToDate = 0;
-let totalNetProjected = 0;
-let totalFeesToDate = 0;
-let totalFeesProjected = 0;
-let totalPrincipal = 0;
-let monthsCounted = 1;
-let projectedNetTotal = 0;
-let projectedMonthsTotal = 0;
-
-list.forEach(l => {
-totalPrincipal += Number(l.purchasePrice || 0);
-
-const sched = l.earningsSchedule || [];
-if (!sched.length) return;
-
-const lastIdx = sched.length - 1;
-const atEnd = sched[lastIdx];
-
-projectedNetTotal += Number(atEnd.netEarnings || 0);
-projectedMonthsTotal += sched.length;
-
-const purchase = new Date(l.purchaseDate || l.loanStartDate);
-purchase.setHours(0, 0, 0, 0);
-
-const diffRaw = monthDiff(purchase, TODAY);
-const diff = Number.isFinite(diffRaw) ? Math.max(0, diffRaw) : 0;
-
-const currentIdx = Math.max(0, Math.min(diff, lastIdx));
-
-const atCurrent = sched[currentIdx];
-
-totalNetToDate += Number(atCurrent?.netEarnings || 0);
-totalFeesToDate += Number(atCurrent?.cumFees || 0);
-
-totalNetProjected += Number(atEnd.netEarnings || 0);
-totalFeesProjected += Number(atEnd.cumFees || 0);
-
-monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
-});
-
-const projectedAvgMonthlyNet =
-projectedMonthsTotal > 0
-? projectedNetTotal / projectedMonthsTotal
-: 0;
-
-const portfolioMonths =
-Math.max(1, monthDiff(PORTFOLIO_START, TODAY) + 1);
-
-const avgMonthlyNet = totalNetToDate / portfolioMonths;
-const monthsCountedKpi3 = portfolioMonths;
-
-window.kpis = {
-totalNetToDate,
-totalNetProjected,
-totalFeesToDate,
-totalFeesProjected,
-totalPrincipal,
-avgMonthlyNet,
-monthsCounted: monthsCountedKpi3,
-projectedAvgMonthlyNet
-};
-
-return window.kpis;
 }
 
 document.querySelectorAll(".kpi").forEach(tile => {
@@ -1467,25 +1143,6 @@ console.warn("Unknown KPI tile:", type);
 });
 });
 
-function getCurrentEarningsRow(loan) {
-
-
-const sched = loan.earningsSchedule || [];
-if (!sched.length) {
-return { row: { netEarnings:0, cumPrincipal:0, cumInterest:0, cumFees:0 }, idx: 0 };
-}
-
-const purchase = new Date(loan.purchaseDate || loan.loanStartDate);
-purchase.setHours(0, 0, 0, 0);
-
-const lastIdx = sched.length - 1;
-
-const diffRaw = monthDiff(purchase, TODAY);
-const diff = Number.isFinite(diffRaw) ? Math.max(1, diffRaw) : 1;
-
-const idx = Math.max(0, Math.min(diff - 1, lastIdx));
-return { row: sched[idx], idx };
-}
 
 let miniHtmlTooltip = null;
 function getMiniHtmlTooltip() {
@@ -1531,171 +1188,37 @@ function hideMiniTooltip() {
 if (miniHtmlTooltip) miniHtmlTooltip.style.display = "none";
 }
 
-function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan){
-containerEl.innerHTML = "";
-const svgNS = "http://www.w3.org/2000/svg";
-const w = 170;
-const h = 48;
-const padL = 4, padR = 4, padT = 4, padB = 4;
+function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan) {
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // Earnings data will be engine-provided later
+  // --------------------------------------------------
 
-const data = earningsSchedule;
+  containerEl.innerHTML = "";
 
-let maxAbs = 0;
-data.forEach(d => {
-const pos = d.cumPrincipal + d.cumInterest;
-const neg = -d.cumFees;
-maxAbs = Math.max(maxAbs, pos, Math.abs(neg));
-});
-if(maxAbs <= 0) maxAbs = 1;
+  // Minimal SVG placeholder to preserve layout
+  const svgNS = "http://www.w3.org/2000/svg";
+  const w = 170;
+  const h = 48;
 
-const yZero = h/2;
-const halfHeight = (h - padT - padB) / 2;
-const scale = halfHeight / maxAbs;
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "48");
 
-const count = data.length;
-const barW = (w - padL - padR) / Math.max(1, count);
+  // Baseline only (visual consistency)
+  const axis = document.createElementNS(svgNS, "line");
+  axis.setAttribute("x1", 4);
+  axis.setAttribute("x2", w - 4);
+  axis.setAttribute("y1", h / 2);
+  axis.setAttribute("y2", h / 2);
+  axis.setAttribute("stroke", "#cbd5e1");
+  axis.setAttribute("stroke-width", "0.8");
 
-const svg = document.createElementNS(svgNS,"svg");
-svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-svg.setAttribute("width","100%");
-svg.setAttribute("height","48");
-
-const stackedGroupId = `stack-${stackedBarGroupCounter++}`;
-
-const axis = document.createElementNS(svgNS,"line");
-axis.setAttribute("x1",padL);
-axis.setAttribute("x2",w-padR);
-axis.setAttribute("y1",yZero);
-axis.setAttribute("y2",yZero);
-axis.setAttribute("stroke","#cbd5e1");
-axis.setAttribute("stroke-width","0.8");
-svg.appendChild(axis);
-
-data.forEach((d, i) => {
-const x = padL + i*barW;
-
-const principal = d.cumPrincipal;
-const interest = d.cumInterest;
-const negFees = -d.cumFees;
-
-const hPrin = principal * scale;
-const hInt  = interest  * scale;
-const hFees = Math.abs(negFees) * scale;
-
-const yInt  = yZero - hInt;
-const yPrin = yZero - hInt - hPrin;
-const yFee  = yZero;
-
-const barWidth = Math.max(1, barW-2);
-
-const rPrin = document.createElementNS(svgNS,"rect");
-rPrin.setAttribute("x", x+1);
-rPrin.setAttribute("y", yPrin);
-rPrin.setAttribute("width", barWidth);
-rPrin.setAttribute("height", hPrin);
-rPrin.setAttribute("fill", "#0ea5e9");
-rPrin.__value = principal;
-prepareStackedBar(rPrin, stackedGroupId, 0, true);
-
-const rInt = document.createElementNS(svgNS,"rect");
-rInt.setAttribute("x", x+1);
-rInt.setAttribute("y", yInt);
-rInt.setAttribute("width", barWidth);
-rInt.setAttribute("height", hInt);
-rInt.setAttribute("fill", "#22c55e");
-rInt.__value  = interest;
-prepareStackedBar(rInt, stackedGroupId, 1, true);
-
-const rFee = document.createElementNS(svgNS,"rect");
-rFee.setAttribute("x", x+1);
-rFee.setAttribute("y", yFee);
-rFee.setAttribute("width", barWidth);
-rFee.setAttribute("height", hFees);
-rFee.setAttribute("fill", "#ef4444");
-rFee.__value  = negFees;
-prepareStackedBar(rFee, stackedGroupId, 2, false);
-
-svg.appendChild(rPrin);
-svg.appendChild(rInt);
-svg.appendChild(rFee);
-});
-
-
-
-const firstOwnDate = new Date(loan.purchaseDate);
-const lastOwnDate  = new Date(data[data.length - 1].ownershipDate);
-
-let totalOwnedMonths = monthDiff(firstOwnDate, lastOwnDate);
-if (!Number.isFinite(totalOwnedMonths) || totalOwnedMonths <= 0) {
-totalOwnedMonths = data.length - 1;
+  svg.appendChild(axis);
+  containerEl.appendChild(svg);
 }
 
-let ownedMonthsToToday = monthDiff(firstOwnDate, TODAY);
-if (!Number.isFinite(ownedMonthsToToday)) ownedMonthsToToday = 0;
-
-ownedMonthsToToday = Math.max(0, Math.min(ownedMonthsToToday, totalOwnedMonths));
-
-const ratio = totalOwnedMonths > 0 ? (ownedMonthsToToday / totalOwnedMonths) : 0;
-const currentX = padL + ratio * (w - padL - padR);
-
-const vline = document.createElementNS(svgNS, "line");
-vline.setAttribute("x1", currentX);
-vline.setAttribute("x2", currentX);
-vline.setAttribute("y1", 0);
-vline.setAttribute("y2", h);
-vline.setAttribute("stroke", "#64748b");
-vline.setAttribute("stroke-dasharray", "4,3");
-vline.setAttribute("stroke-width", "1");
-svg.appendChild(vline);
-
-containerEl.appendChild(svg);
-
-let lensInstance = null;
-const lensRadius = 20;
-const lensScale = 2;
-
-function handleMove(e){
-const rect = svg.getBoundingClientRect();
-const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-const mouseY = ((e.clientY - rect.top) / rect.height) * h;
-const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
-const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
-
-if(!lensInstance){
-lensInstance = createLens(svg, lensRadius, lensScale);
-const barClones = Array.from(svg.querySelectorAll("rect"))
-.filter(r => r.__value !== undefined || r.getAttribute("fill"));
-barClones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-svg.appendChild(lensInstance.group);
-}
-
-updateLens(lensInstance, x, y);
-
-const idx = Math.max(0, Math.min(data.length - 1, Math.floor((x - padL) / barW)));
-const row = data[idx];
-const loanStart = new Date(loan.loanStartDate);
-const tooltipDate = addMonths(loanStart, idx);
-const tooltipLines = [
-`Date: ${formatDate(tooltipDate)}`,
-`Principal: $${row.cumPrincipal.toFixed(2)}`,
-`Interest: $${row.cumInterest.toFixed(2)}`,
-`Fees: -$${row.cumFees.toFixed(2)}`,
-`Net: $${row.netEarnings.toFixed(2)}`
-];
-
-setMiniTooltipContent(tooltipLines);
-positionMiniTooltip(e.clientX, e.clientY, lensRadius);
-}
-
-function handleLeave(){
-removeLens(svg, lensInstance);
-lensInstance = null;
-hideMiniTooltip();
-}
-
-svg.addEventListener("mousemove", handleMove);
-svg.addEventListener("mouseleave", handleLeave);
-}
 
 function niceAxisMax(v){
 const x = Math.max(0, Number(v) || 0);
@@ -2189,349 +1712,128 @@ svg.addEventListener("mouseleave", handleLeave);
 }
 
 function renderKpi4AvgLineChart(container, rows) {
-container.innerHTML = "";
-if (!rows || !rows.length) return;
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI4 data will be provided by engine in later phase
+  // --------------------------------------------------
 
-const svgNS = "http://www.w3.org/2000/svg";
-const w = container.clientWidth || 700;
-const h = container.clientHeight || 240;
+  container.innerHTML = "";
 
-const padL = 60, padR = 20, padT = 20, padB = 52;
+  const svgNS = "http://www.w3.org/2000/svg";
+  const w = container.clientWidth || 700;
+  const h = container.clientHeight || 240;
 
-const svg = document.createElementNS(svgNS, "svg");
-svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-svg.setAttribute("width", "100%");
-svg.setAttribute("height", "100%");
+  const padL = 60, padR = 20, padT = 20, padB = 52;
 
-const values = rows.map(r => Number(r.avg) || 0);
-const maxVal = niceAxisMax(Math.max(...values));
-const minVal = 0;
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
 
-const usableH = h - padT - padB;
-const usableW = w - padL - padR;
-const scaleY = usableH / (maxVal - minVal || 1);
-const stepX = usableW / Math.max(1, rows.length - 1);
+  // Horizontal grid + axis labels (visual consistency only)
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = padT + i * ((h - padT - padB) / gridLines);
 
-for (let i = 0; i <= 4; i++) {
-const y = padT + i * (usableH / 4);
-const val = maxVal - (maxVal * i / 4);
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", padL);
+    line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "var(--grid-light)");
+    svg.appendChild(line);
+  }
 
-const line = document.createElementNS(svgNS, "line");
-line.setAttribute("x1", padL);
-line.setAttribute("x2", w - padR);
-line.setAttribute("y1", y);
-line.setAttribute("y2", y);
-line.setAttribute("stroke", "var(--grid-light)");
-svg.appendChild(line);
+  // Zero / baseline
+  const axis = document.createElementNS(svgNS, "line");
+  axis.setAttribute("x1", padL);
+  axis.setAttribute("x2", w - padR);
+  axis.setAttribute("y1", h - padB);
+  axis.setAttribute("y2", h - padB);
+  axis.setAttribute("stroke", "var(--grid-strong)");
+  axis.setAttribute("stroke-width", "1");
+  svg.appendChild(axis);
 
-const txt = document.createElementNS(svgNS, "text");
-txt.textContent = formatCurrency(val);
-txt.setAttribute("x", padL - 8);
-txt.setAttribute("y", y + 4);
-txt.setAttribute("font-size", "11");
-txt.setAttribute("text-anchor", "end");
-txt.setAttribute("fill", "var(--text)");
-svg.appendChild(txt);
+  // Placeholder message
+  const msg = document.createElementNS(svgNS, "text");
+  msg.textContent = "Projected average earnings will appear here";
+  msg.setAttribute("x", w / 2);
+  msg.setAttribute("y", padT + (h - padT - padB) / 2);
+  msg.setAttribute("text-anchor", "middle");
+  msg.setAttribute("font-size", "13");
+  msg.setAttribute("fill", "var(--muted)");
+  svg.appendChild(msg);
+
+  container.appendChild(svg);
 }
 
-let d = "";
-rows.forEach((r, i) => {
-const x = padL + i * stepX;
-const y = padT + (maxVal - r.avg) * scaleY;
-d += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
-});
 
-const path = document.createElementNS(svgNS, "path");
-path.setAttribute("d", d);
-path.setAttribute("fill", "none");
-path.setAttribute("stroke", "var(--brand)");
-path.setAttribute("stroke-width", "3");
-svg.appendChild(path);
+function createDrawerStackedChart(containerEl, earningsSchedule, loan) {
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // Detailed earnings chart will be engine-provided
+  // --------------------------------------------------
 
-const xAxisY = h - padB + 18;
-const labelEvery = Math.max(1, Math.floor(rows.length / 6));
+  containerEl.innerHTML = "";
 
-for (let i = 0; i < rows.length; i += labelEvery) {
-const x = padL + i * stepX;
+  const svgNS = "http://www.w3.org/2000/svg";
+  const rect = containerEl.getBoundingClientRect();
+  const w = Math.max(360, rect.width || 700);
+  const h = 260;
 
-const lbl = document.createElementNS(svgNS, "text");
-lbl.textContent = formatMonthYear(rows[i].date);
-lbl.setAttribute("x", x);
-lbl.setAttribute("y", xAxisY);
-lbl.setAttribute("font-size", "11");
-lbl.setAttribute("fill", "var(--muted)");
-lbl.setAttribute("text-anchor", "middle");
-svg.appendChild(lbl);
+  const padL = 50, padR = 20, padT = 20, padB = 16;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+
+  // --------------------------------------------------
+  // Grid (visual consistency only)
+  // --------------------------------------------------
+  const gridLines = 4;
+  const usableHeight = h - padT - padB;
+
+  for (let i = 0; i <= gridLines; i++) {
+    const y = padT + i * (usableHeight / gridLines);
+
+    const gridLine = document.createElementNS(svgNS, "line");
+    gridLine.setAttribute("x1", padL);
+    gridLine.setAttribute("x2", w - padR);
+    gridLine.setAttribute("y1", y);
+    gridLine.setAttribute("y2", y);
+    gridLine.setAttribute("stroke", i === gridLines ? "var(--grid-strong)" : "var(--grid-light)");
+    gridLine.setAttribute("stroke-width", "0.8");
+    svg.appendChild(gridLine);
+  }
+
+  // --------------------------------------------------
+  // Baseline
+  // --------------------------------------------------
+  const axis = document.createElementNS(svgNS, "line");
+  axis.setAttribute("x1", padL);
+  axis.setAttribute("x2", w - padR);
+  axis.setAttribute("y1", h - padB);
+  axis.setAttribute("y2", h - padB);
+  axis.setAttribute("stroke", "var(--grid-strong)");
+  axis.setAttribute("stroke-width", "1");
+  svg.appendChild(axis);
+
+  // --------------------------------------------------
+  // Placeholder label
+  // --------------------------------------------------
+  const msg = document.createElementNS(svgNS, "text");
+  msg.textContent = "Detailed earnings chart will appear here";
+  msg.setAttribute("x", (padL + w - padR) / 2);
+  msg.setAttribute("y", padT + usableHeight / 2);
+  msg.setAttribute("text-anchor", "middle");
+  msg.setAttribute("font-size", "14");
+  msg.setAttribute("fill", "var(--muted)");
+  svg.appendChild(msg);
+
+  containerEl.appendChild(svg);
 }
 
-const vLine = document.createElementNS(svgNS, "line");
-vLine.setAttribute("y1", padT);
-vLine.setAttribute("y2", h - padB);
-vLine.setAttribute("stroke", "var(--text)");
-vLine.setAttribute("stroke-dasharray", "3 4");
-vLine.setAttribute("stroke-opacity", "0");
-svg.appendChild(vLine);
-
-const dot = document.createElementNS(svgNS, "circle");
-dot.setAttribute("r", "5");
-dot.setAttribute("fill", "var(--brand)");
-dot.setAttribute("stroke", "white");
-dot.setAttribute("stroke-width", "2");
-dot.setAttribute("opacity", "0");
-svg.appendChild(dot);
-
-container.appendChild(svg);
-
-function idxFromClientX(clientX) {
-const rect = svg.getBoundingClientRect();
-const x = ((clientX - rect.left) / rect.width) * w;
-return Math.max(0, Math.min(rows.length - 1, Math.round((x - padL) / stepX)));
-}
-
-function handleMove(e) {
-const idx = idxFromClientX(e.clientX);
-const r = rows[idx];
-
-const x = padL + idx * stepX;
-const y = padT + (maxVal - r.avg) * scaleY;
-
-vLine.setAttribute("x1", x);
-vLine.setAttribute("x2", x);
-vLine.setAttribute("stroke-opacity", "0.8");
-
-dot.setAttribute("cx", x);
-dot.setAttribute("cy", y);
-dot.setAttribute("opacity", "1");
-
-setMiniTooltipContent([
-`Date: ${formatMonthYear(r.date)}`,
-`Avg / Month (Projected): ${formatCurrency(r.avg)}`
-]);
-positionMiniTooltip(e.clientX, e.clientY, 40);
-}
-
-function handleLeave() {
-vLine.setAttribute("stroke-opacity", "0");
-dot.setAttribute("opacity", "0");
-hideMiniTooltip();
-}
-
-svg.addEventListener("mousemove", handleMove);
-svg.addEventListener("mouseleave", handleLeave);
-}
-
-function createDrawerStackedChart(containerEl, earningsSchedule, loan){
-containerEl.innerHTML = "";
-const svgNS = "http://www.w3.org/2000/svg";
-const rect = containerEl.getBoundingClientRect();
-const w = Math.max(360, rect.width || 700);
-const h = 260;
-const padL = 50, padR = 20, padT = 20, padB = 16;
-
-const data = earningsSchedule;
-
-let maxValue = 0;
-let minValue = 0;
-data.forEach(d => {
-const pos = d.cumPrincipal + d.cumInterest;
-const neg = -d.cumFees;
-maxValue = Math.max(maxValue, pos);
-minValue = Math.min(minValue, neg);
-});
-
-const yMax = Math.max(maxValue, 1);
-const yMin = minValue < -10 ? minValue : -(yMax * 0.10);
-const yRange = yMax - yMin || 1;
-const usableHeight = h - padT - padB;
-const scale = usableHeight / yRange;
-const yZero = padT + (yMax / yRange) * usableHeight;
-
-const count = data.length;
-const barW = (w - padL - padR) / Math.max(1, count);
-
-const svg = document.createElementNS(svgNS,"svg");
-svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-svg.setAttribute("width","100%");
-svg.setAttribute("height","100%");
-
-const gridBelowZero = 2;
-const gridAboveZero = 4;
-
-for (let gy = -gridBelowZero; gy <= gridAboveZero; gy++) {
-const y = yZero - gy * ((yZero - padT) / gridAboveZero);
-
-const gridLine = document.createElementNS(svgNS,"line");
-gridLine.setAttribute("x1",padL);
-gridLine.setAttribute("x2",w-padR);
-gridLine.setAttribute("y1",y);
-gridLine.setAttribute("y2",y);
-gridLine.setAttribute("stroke", gy >= 0 ? "var(--grid-strong)" : "var(--grid-light)");
-gridLine.setAttribute("stroke-width","0.7");
-svg.appendChild(gridLine);
-
-if(gy > 0){
-const lbl = document.createElementNS(svgNS,"text");
-const value = (yMax / gridAboveZero) * gy;
-lbl.textContent = "$" + Math.round(value).toLocaleString();
-lbl.setAttribute("x", padL - 10);
-lbl.setAttribute("y", y + 4);
-lbl.setAttribute("font-size","11");
-lbl.setAttribute("fill","var(--text)");
-lbl.setAttribute("text-anchor","end");
-svg.appendChild(lbl);
-}
-}
-
-const axis = document.createElementNS(svgNS,"line");
-axis.setAttribute("x1",padL);
-axis.setAttribute("x2",w-padR);
-axis.setAttribute("y1",yZero);
-axis.setAttribute("y2",yZero);
-axis.setAttribute("stroke","var(--grid-strong)");
-axis.setAttribute("stroke-width","1");
-svg.appendChild(axis);
-
-data.forEach((d, i) => {
-const stackedGroupId = `stack-drawer-${d.ownershipMonthIndex || d.monthIndex || i}`;
-const x = padL + i*barW;
-
-const principal = d.cumPrincipal;
-const interest = d.cumInterest;
-const negFees = -d.cumFees;
-
-const hPrin = principal * scale;
-const hInt  = interest  * scale;
-const hFees = Math.abs(negFees) * scale;
-
-const yInt  = yZero - hInt;
-const yPrin = yZero - hInt - hPrin;
-const yFee  = yZero;
-
-const barWidth = Math.max(2, barW-4);
-
-const rPrin = document.createElementNS(svgNS,"rect");
-rPrin.setAttribute("x", x+2);
-rPrin.setAttribute("y", yPrin);
-rPrin.setAttribute("width", barWidth);
-rPrin.setAttribute("height", hPrin);
-rPrin.setAttribute("fill","#0ea5e9");
-prepareStackedBar(rPrin, stackedGroupId, 0, true);
-
-const rInt = document.createElementNS(svgNS,"rect");
-rInt.setAttribute("x", x+2);
-rInt.setAttribute("y", yInt);
-rInt.setAttribute("width", barWidth);
-rInt.setAttribute("height", hInt);
-rInt.setAttribute("fill","#22c55e");
-prepareStackedBar(rInt, stackedGroupId, 1, true);
-
-const rFee = document.createElementNS(svgNS,"rect");
-rFee.setAttribute("x", x+2);
-rFee.setAttribute("y", yFee);
-rFee.setAttribute("width", barWidth);
-rFee.setAttribute("height", hFees);
-rFee.setAttribute("fill","#ef4444");
-prepareStackedBar(rFee, stackedGroupId, 2, false);
-
-svg.appendChild(rPrin);
-svg.appendChild(rInt);
-svg.appendChild(rFee);
-
-if(((d.ownershipMonthIndex || d.monthIndex) % 12) === 0 || (d.ownershipMonthIndex || d.monthIndex) === 1){
-const lbl = document.createElementNS(svgNS,"text");
-const dateLabel = d.ownershipDate || d.loanDate;
-lbl.textContent = formatMonthYear(dateLabel);
-lbl.setAttribute("x", x+barWidth/2);
-lbl.setAttribute("y", h-padB+16);
-lbl.setAttribute("font-size","11");
-lbl.setAttribute("fill","var(--text)");
-lbl.setAttribute("text-anchor","middle");
-svg.appendChild(lbl);
-}
-});
-
-
-
-const firstOwnDate = new Date(loan.purchaseDate);
-const lastOwnDate  = new Date(data[data.length - 1].ownershipDate);
-
-let totalOwnedMonths = monthDiff(firstOwnDate, lastOwnDate);
-if (!Number.isFinite(totalOwnedMonths) || totalOwnedMonths <= 0) {
-totalOwnedMonths = data.length - 1;
-}
-
-let ownedMonthsToToday = monthDiff(firstOwnDate, TODAY);
-if (!Number.isFinite(ownedMonthsToToday)) ownedMonthsToToday = 0;
-
-ownedMonthsToToday = Math.max(0, Math.min(ownedMonthsToToday, totalOwnedMonths));
-
-const ratio = totalOwnedMonths > 0 ? (ownedMonthsToToday / totalOwnedMonths) : 0;
-const currentX = padL + ratio * (w - padL - padR);
-
-const vline = document.createElementNS(svgNS, "line");
-vline.setAttribute("x1", currentX);
-vline.setAttribute("x2", currentX);
-vline.setAttribute("y1", 0);
-vline.setAttribute("y2", h);
-vline.setAttribute("stroke", "#64748b");
-vline.setAttribute("stroke-dasharray", "4,3");
-vline.setAttribute("stroke-width", "1");
-svg.appendChild(vline);
-
-containerEl.appendChild(svg);
-
-let lensInstance = null;
-let tooltipInstance = null;
-const lensRadius = 40;
-const lensScale = 1.5;
-
-function handleMove(e){
-const rect = svg.getBoundingClientRect();
-const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-const mouseY = ((e.clientY - rect.top) / rect.height) * h;
-const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
-const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
-
-if(!lensInstance){
-lensInstance = createLens(svg, lensRadius, lensScale);
-const barClones = Array.from(svg.querySelectorAll("rect"))
-.filter(r => r.__value !== undefined || r.getAttribute("fill"));
-barClones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-svg.appendChild(lensInstance.group);
-}
-
-if(!tooltipInstance){
-tooltipInstance = createTooltip(svg, true);
-}
-
-updateLens(lensInstance, x, y);
-
-const idx = Math.max(0, Math.min(data.length - 1, Math.floor((x - padL) / barW)));
-const row = data[idx];
-const tooltipLines = [
-`${currentLoan ? currentLoan.loanName : "Loan"} • ${formatDate(row.ownershipDate || row.loanDate)}`,
-`Principal: $${row.cumPrincipal.toFixed(2)}`,
-`Interest: $${row.cumInterest.toFixed(2)}`,
-`Fees: -$${row.cumFees.toFixed(2)}`,
-`Net: $${row.netEarnings.toFixed(2)}`
-];
-
-updateTooltipContent(tooltipInstance, tooltipLines, true);
-updateTooltipPosition(tooltipInstance, x, y, lensRadius);
-}
-
-function handleLeave(){
-removeLens(svg, lensInstance);
-lensInstance = null;
-if(tooltipInstance){
-tooltipInstance.group.remove();
-tooltipInstance = null;
-}
-}
-
-svg.addEventListener("mousemove", handleMove);
-svg.addEventListener("mouseleave", handleLeave);
-}
 
 const kpisEl = document.getElementById("kpis");
 const kpiCards = document.querySelectorAll('.kpi');
@@ -2563,423 +1865,136 @@ openDrawerBase();
 }
 
 function buildPortfolioDrawerRows(loans) {
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // Portfolio drawer rows will be built in loanEngine
+  // --------------------------------------------------
 
-
-const monthly = new Map();
-
-loans.forEach(loan => {
-(loan.earningsSchedule || []).forEach(r => {
-
-if (!r.isOwned || !r.ownershipDate) return;
-
-const d = new Date(
-r.ownershipDate.getFullYear(),
-r.ownershipDate.getMonth(),
-1
-);
-d.setHours(0, 0, 0, 0);
-
-if (d > TODAY) return;
-
-const key = `${d.getFullYear()}-${d.getMonth()}`;
-
-if (!monthly.has(key)) {
-monthly.set(key, {
-date: d,
-contributions: []
-});
+  return [];
 }
 
-monthly.get(key).contributions.push({
-loanId: loan.loanId,
-
-principal: r.principalPaid ?? 0,
-interest:  r.interestPaid  ?? 0,
-fees:      r.feeThisMonth  ?? 0,
-
-monthlyNet:
-(r.principalPaid ?? 0) +
-(r.interestPaid ?? 0) -
-(r.feeThisMonth ?? 0),
-
-cumulativePrincipal: r.cumPrincipal ?? 0,
-cumulativeInterest:  r.cumInterest  ?? 0,
-cumulativeFees:      r.cumFees      ?? 0,
-cumulativeNet:       r.netEarnings  ?? 0,
-
-net: r.netEarnings ?? 0,
-
-hasData: true
-});
-
-});
-});
-
-const sorted = [...monthly.values()].sort((a, b) => a.date - b.date);
-
-const allLoanIds = loans.map(l => l.loanId);
-
-for (let i = 0; i < sorted.length; i++) {
-const row = sorted[i];
-const present = new Set(row.contributions.map(c => c.loanId));
-
-allLoanIds.forEach(id => {
-if (!present.has(id)) {
-let last = {
-cumulativePrincipal: 0,
-cumulativeInterest:  0,
-cumulativeFees:      0,
-cumulativeNet:       0
-};
-
-for (let j = i - 1; j >= 0; j--) {
-const prev = sorted[j].contributions.find(c => c.loanId === id);
-if (prev) {
-last = prev;
-break;
-}
-}
-
-row.contributions.push({
-loanId: id,
-
-principal: 0,
-interest:  0,
-fees:      0,
-monthlyNet: 0,
-
-cumulativePrincipal: last.cumulativePrincipal,
-cumulativeInterest:  last.cumulativeInterest,
-cumulativeFees:      last.cumulativeFees,
-cumulativeNet:       last.cumulativeNet,
-
-hasData: false
-});
-}
-});
-}
-
-return sorted;
-}
 
 function buildProjectedDrawerRows(loans) {
-const monthly = new Map();
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // Projected drawer rows will be built in loanEngine
+  // --------------------------------------------------
 
-loans.forEach(loan => {
-(loan.earningsSchedule || []).forEach(r => {
-if (!r.isOwned || !r.ownershipDate) return;
-
-const d = new Date(
-r.ownershipDate.getFullYear(),
-r.ownershipDate.getMonth(),
-1
-);
-d.setHours(0, 0, 0, 0);
-
-const key = `${d.getFullYear()}-${d.getMonth()}`;
-
-if (!monthly.has(key)) {
-monthly.set(key, { date: d, contributions: [] });
+  return [];
 }
 
-const principalPaid = Number(r.principalPaid ?? 0);
-const interestPaid  = Number(r.interestPaid ?? r.interest ?? 0);
-const feeThisMonth  = Number(r.feeThisMonth ?? 0);
 
-monthly.get(key).contributions.push({
-loanId: loan.loanId,
+function openKpi1() {
+  currentLoan = null;
+  currentMode = "kpi";
 
-principal: principalPaid,
-interest: interestPaid,
-fees: feeThisMonth,
-monthlyNet: principalPaid + interestPaid - feeThisMonth,
+  resetDrawerContent();
 
-cumulativePrincipal: Number(r.cumPrincipal ?? 0),
-cumulativeInterest:  Number(r.cumInterest ?? 0),
-cumulativeFees:      Number(r.cumFees ?? 0),
-cumulativeNet:       Number(r.netEarnings ?? 0),
+  drawerTitle.textContent = "Total Net Earnings to Date";
+  drawerSub.textContent = "Portfolio-level earnings across all loans.";
 
-net: Number(r.netEarnings ?? 0),
+  drawerPrimaryTitle.textContent = "Net Earnings to Date";
+  drawerSecondaryTitle.textContent = "Total Fees to Date";
 
-hasData: true
-});
-});
-});
+  const portfolio = views?.portfolioEarnings || {};
 
-const sorted = [...monthly.values()].sort((a, b) => a.date - b.date);
+  drawerPrimary.textContent =
+    formatCurrency(portfolio.totalNetToDate ?? 0);
 
-const allLoanIds = loans.map(l => l.loanId);
+  drawerSecondary.textContent =
+    formatCurrency(portfolio.totalFeesToDate ?? 0);
 
-for (let i = 0; i < sorted.length; i++) {
-const row = sorted[i];
-const present = new Set(row.contributions.map(c => c.loanId));
+  // Chart + table will be engine-provided in later phase
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
 
-allLoanIds.forEach(id => {
-if (present.has(id)) return;
-
-let last = {
-cumulativePrincipal: 0,
-cumulativeInterest: 0,
-cumulativeFees: 0,
-cumulativeNet: 0
-};
-
-for (let j = i - 1; j >= 0; j--) {
-const prev = sorted[j].contributions.find(c => c.loanId === id);
-if (prev) { last = prev; break; }
-}
-
-row.contributions.push({
-loanId: id,
-
-principal: 0,
-interest: 0,
-fees: 0,
-monthlyNet: 0,
-
-cumulativePrincipal: last.cumulativePrincipal,
-cumulativeInterest:  last.cumulativeInterest,
-cumulativeFees:      last.cumulativeFees,
-cumulativeNet:       last.cumulativeNet,
-
-net: last.cumulativeNet,
-
-hasData: false
-});
-});
-}
-
-return sorted;
-}
-
-function openKpi1(){
-currentLoan = null;
-
-resetDrawerContent();
-
-drawerTitle.textContent = "Total Net Earnings to Date";
-drawerSub.textContent = "Portfolio-level earnings across all loans.";
-drawerPrimaryTitle.textContent = "Net Earnings to Date";
-drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
-drawerSecondaryTitle.textContent = "Total Fees to Date";
-drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
-
-const rows = buildPortfolioDrawerRows(loansWithEarnings);
-
-createKpiStackedChart(
-document.getElementById("drawerChartArea"),
-rows,
-{
-denseXAxis: true,
-thinBars: false,
-useMonthly: true,
-projected: false
-}
-);
-
-drawerExtra.innerHTML =
-`<div class="amort-wrap" id="drawerKpiTable"></div>`;
-renderKPI1Table(loansWithEarnings, "drawerKpiTable");
-
-openDrawer();
+  openDrawer();
 }
 
 function openKpi2() {
+  currentLoan = null;
+  currentMode = "kpi";
 
-currentLoan = null;
-currentMode = 'kpi';
+  resetDrawerContent();
 
-currentLoan = null;
+  drawerTitle.textContent = "Projected Total Net Earnings";
+  drawerSub.textContent =
+    "Projected lifetime earnings across all loans, assuming full term.";
 
-resetDrawerContent();
+  drawerPrimaryTitle.textContent = "Projected Net Earnings";
+  drawerSecondaryTitle.textContent = "Projected Total Fees";
 
-drawerTitle.textContent = "Projected Total Net Earnings";
-drawerSub.textContent =
-"Projected lifetime earnings across all loans, assuming full term.";
+  const portfolio = views?.portfolioEarnings || {};
 
-renderKPI2Chart(loansWithEarnings);
+  drawerPrimary.textContent =
+    formatCurrency(portfolio.totalNetProjected ?? 0);
 
-drawerExtra.innerHTML = `
-<div class="amort-wrap" id="kpi2Table"></div>
-`;
-renderKPI2Table(loansWithEarnings, "kpi2Table");
+  drawerSecondary.textContent =
+    formatCurrency(portfolio.totalFeesProjected ?? 0);
 
-drawerPrimaryTitle.textContent = "Projected Net Earnings";
-drawerPrimary.textContent =
-formatCurrency(kpis.totalNetProjected);
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
 
-drawerSecondaryTitle.textContent = "Projected Total Fees";
-drawerSecondary.textContent =
-formatCurrency(kpis.totalFeesProjected);
-
-openDrawer();
+  openDrawer();
 }
 
 function openKpi3() {
-currentLoan = null;
+  currentLoan = null;
+  currentMode = "kpi";
 
-drawerTitle.textContent = "Avg Monthly Earnings To Date";
-drawerSub.textContent =
-"Total net earnings divided by months since portfolio inception.";
+  resetDrawerContent();
 
-drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
-drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
+  drawerTitle.textContent = "Avg Monthly Earnings To Date";
+  drawerSub.textContent =
+    "Total net earnings divided by months since portfolio inception.";
 
-drawerSecondaryTitle.innerHTML = `
-Months Counted
-<span class="info-icon" title="Months counted is the total months each loan has been owned.">ⓘ</span>
-`;
-drawerSecondary.textContent = String(
-Math.max(0, Number(kpis?.monthsCounted ?? 0))
-);
+  drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
+  drawerSecondaryTitle.textContent = "Months Counted";
 
-resetDrawerContent();
+  const portfolio = views?.portfolioEarnings || {};
 
-const activeLoans = loansWithEarnings.filter(
-l => !hiddenLoans.has(l.loanId)
-);
+  drawerPrimary.textContent =
+    formatCurrency(portfolio.avgMonthlyNet ?? 0);
 
-const rows = buildPortfolioDrawerRows(activeLoans);
+  drawerSecondary.textContent =
+    String(Math.max(0, Number(portfolio.monthsCounted ?? 0)));
 
-const PORTFOLIO_START = window.__PORTFOLIO_START__
-? new Date(window.__PORTFOLIO_START__)
-: (rows.length ? new Date(rows[0].date) : new Date());
+  // Chart + table will be engine-provided in later phase
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
 
-PORTFOLIO_START.setHours(0, 0, 0, 0);
-
-
-
-const rowByMonth = new Map();
-rows.forEach(r => {
-const d = new Date(r.date);
-const key = `${d.getFullYear()}-${d.getMonth()}`;
-rowByMonth.set(key, r);
-});
-
-const fullMonths = [];
-const cursor = new Date(
-PORTFOLIO_START.getFullYear(),
-PORTFOLIO_START.getMonth(),
-1
-);
-const end = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
-
-while (cursor <= end) {
-const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
-const existing = rowByMonth.get(key);
-
-fullMonths.push({
-date: new Date(cursor),
-contributions: existing?.contributions || []
-});
-
-cursor.setMonth(cursor.getMonth() + 1);
-}
-
-const firstNonZeroIdx = fullMonths.findIndex(
-m => (m.contributions || []).some(c => c.hasData)
-);
-
-const chartMonths =
-firstNonZeroIdx >= 0
-? fullMonths.slice(firstNonZeroIdx)
-: fullMonths;
-
-let cumulativeNet = 0;
-
-const avgRows = chartMonths.map(m => {
-const monthNet = (m.contributions || []).reduce(
-(sum, c) =>
-sum + (c.hasData ? (Number(c.monthlyNet) || 0) : 0),
-0
-);
-
-cumulativeNet += monthNet;
-
-const monthsElapsed = Math.max(
-1,
-monthDiff(PORTFOLIO_START, m.date) + 1
-);
-
-return {
-date: m.date,
-avg: cumulativeNet / monthsElapsed,
-netToDate: cumulativeNet
-};
-});
-
-renderKpi3AvgLineChart(
-document.getElementById("drawerChartArea"),
-avgRows
-);
-
-drawerExtra.innerHTML =
-`<div class="amort-wrap" id="drawerKpiTable"></div>`;
-
-renderKPI3Table(activeLoans, "drawerKpiTable");
-
-const table = document.querySelector("#drawerKpiTable table");
-if (table) {
-
-table.classList.remove("kpi1-table", "kpi2-table", "kpi4-table");
-
-table.querySelectorAll(".loan-swatch").forEach(el => el.remove());
-
-table.querySelectorAll("td, td *").forEach(el => {
-el.style.color = "var(--text)";
-});
-}
-
-openDrawer();
+  openDrawer();
 }
 
 function openKpi4() {
-currentLoan = null;
-currentMode = "kpi";
+  currentLoan = null;
+  currentMode = "kpi";
 
-const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
-const loansWithEarningsFiltered = activeLoans.filter(l =>
-l.earningsSchedule && Array.isArray(l.earningsSchedule) && l.earningsSchedule.length > 0
-);
+  resetDrawerContent();
 
-console.log('Active loans:', activeLoans.length, 'With schedules:', loansWithEarningsFiltered.length);
+  drawerTitle.textContent = "Projected Avg Monthly Earnings";
+  drawerSub.textContent =
+    "Average projected net earnings per month across the full lifetime of all loans.";
 
-drawerTitle.textContent = "Projected Avg Monthly Earnings";
-drawerSub.textContent =
-"Average projected net earnings per month across the full lifetime of all loans.";
+  drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
+  drawerSecondaryTitle.textContent = "Months Through Maturity";
 
-drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
-drawerPrimary.textContent =
-formatCurrency(window.kpis?.projectedAvgMonthlyNet ?? 0);
+  const portfolio = views?.portfolioEarnings || {};
 
-const totalMonthsThroughMaturity = loansWithEarningsFiltered.length > 0
-? Math.max(...loansWithEarningsFiltered.map(l => l.earningsSchedule.length))
-: 0;
-drawerSecondaryTitle.textContent = "Months Through Maturity";
-drawerSecondary.textContent = `${totalMonthsThroughMaturity}`;
+  drawerPrimary.textContent =
+    formatCurrency(portfolio.projectedAvgMonthlyNet ?? 0);
 
-resetDrawerContent();
+  // Not yet exposed by engine
+  drawerSecondary.textContent = "—";
 
-const rows = buildKpi4AvgMonthlyRows(loansWithEarningsFiltered);
+  // Chart + table will be engine-provided in later phase
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
 
-renderKpi3AvgLineChart(
-document.getElementById("drawerChartArea"),
-rows,
-{ xLabelEveryMonths: 24 }
-);
-
-document.getElementById("drawerLegend").style.display = "none";
-
-drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-renderKPI4Table(activeLoans, "drawerKpiTable");
-document.getElementById("drawerKpiTable")?.classList.add("kpi4-table");
-
-openDrawer();
+  openDrawer();
 }
 
-const activeLoans = loansWithEarnings.filter(
-l => !hiddenLoans.has(l.loanId)
-);
+
 
 const series = buildKpi4AvgMonthlySeries(activeLoans);
 
@@ -3026,7 +2041,7 @@ const closeBtn = document.getElementById("closeBtn");
 function renderLoanTiles(loansList) {
 
 grid.innerHTML = "";
-loansWithEarnings.forEach(loan => {
+
 const hasSchedule = loan.earningsSchedule.length > 0;
 const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
 const fallbackRow = { netEarnings: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
@@ -3103,134 +2118,144 @@ loan
 }
 
 async function initPage() {
-  await loadLoansFromBackend();
-  rebuildLoansWithEarnings();
 
-  // ✅ set the GLOBAL portfolio start used by KPI math
-  PORTFOLIO_START = getPortfolioStartDate(loansWithEarnings);
+  // ------------------------------------
+  // UI references
+  // ------------------------------------
+  const nameSelect    = document.getElementById("filterName");
+  const schoolSelect  = document.getElementById("filterSchool");
+  const filterRate    = document.getElementById("filterRate");
+  const sortLoans     = document.getElementById("sortLoans");
+  const resetBtn      = document.getElementById("resetFilters");
+  const compactToggle = document.getElementById("toggleCompact");
+  const loanGrid      = document.getElementById("loanGrid");
 
-  let kpis = computeEarningsKPIs(loansWithEarnings);
+  // ------------------------------------
+  // Populate filter dropdowns (UI-only)
+  // ------------------------------------
+  const sourceLoans = loansForUser || [];
 
+  const uniqueNames = [...new Set(
+    sourceLoans.map(l => l.loanName).filter(Boolean)
+  )];
 
-const nameSelect = document.getElementById("filterName");
-const schoolSelect = document.getElementById("filterSchool");
+  const uniqueSchools = [...new Set(
+    sourceLoans.map(l => l.school).filter(Boolean)
+  )];
 
-nameSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
-schoolSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+  // Reset existing options (except placeholder)
+  nameSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
+  schoolSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
 
-const uniqueNames = [...new Set(
-loansWithEarnings.map(l => l.loanName).filter(Boolean)
-)];
+  uniqueNames.forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name.toLowerCase();
+    opt.textContent = name;
+    nameSelect.appendChild(opt);
+  });
 
-const uniqueSchools = [...new Set(
-loansWithEarnings.map(l => l.school).filter(Boolean)
-)];
+  uniqueSchools.forEach(school => {
+    const opt = document.createElement("option");
+    opt.value = school.toLowerCase();
+    opt.textContent = school;
+    schoolSelect.appendChild(opt);
+  });
 
-uniqueNames.forEach(name => {
-const opt = document.createElement("option");
-opt.value = name.toLowerCase();
-opt.textContent = name;
-nameSelect.appendChild(opt);
-});
+  // ------------------------------------
+  // Filter / sort handlers
+  // ------------------------------------
+  nameSelect.addEventListener("change", applyLoanFilters);
+  schoolSelect.addEventListener("change", applyLoanFilters);
+  filterRate.addEventListener("change", applyLoanFilters);
+  sortLoans.addEventListener("change", applyLoanSort);
 
-uniqueSchools.forEach(school => {
-const opt = document.createElement("option");
-opt.value = school.toLowerCase();
-opt.textContent = school;
-schoolSelect.appendChild(opt);
-});
+  resetBtn.addEventListener("click", () => {
+    nameSelect.value = "";
+    schoolSelect.value = "";
+    filterRate.value = "";
+    applyLoanFilters();
+  });
 
-const filterName   = document.getElementById("filterName");
-const filterSchool = document.getElementById("filterSchool");
-const filterRate   = document.getElementById("filterRate");
-const sortLoans    = document.getElementById("sortLoans");
-const resetBtn     = document.getElementById("resetFilters");
-const compactToggle = document.getElementById("toggleCompact");
-const loanGrid     = document.getElementById("loanGrid");
+  // ------------------------------------
+  // Compact view toggle
+  // ------------------------------------
+  const savedCompact = localStorage.getItem("loanGridCompact");
+  if (savedCompact !== null) {
+    compactToggle.checked = savedCompact === "true";
+  }
 
-filterName.addEventListener("change", applyLoanFilters);
-filterSchool.addEventListener("change", applyLoanFilters);
-filterRate.addEventListener("change", applyLoanFilters);
+  loanGrid.classList.toggle("compact", compactToggle.checked);
 
-sortLoans.addEventListener("change", applyLoanSort);
+  compactToggle.addEventListener("change", () => {
+    loanGrid.classList.toggle("compact", compactToggle.checked);
+    localStorage.setItem("loanGridCompact", compactToggle.checked);
+  });
 
-resetBtn.addEventListener("click", () => {
-filterName.value = "";
-filterSchool.value = "";
-filterRate.value = "";
-applyLoanFilters();
-});
+  // ------------------------------------
+  // KPIs — engine driven (UI only)
+  // ------------------------------------
+  const portfolio = views?.portfolioEarnings || {};
 
-const savedCompact = localStorage.getItem("loanGridCompact");
-if (savedCompact !== null) {
-compactToggle.checked = savedCompact === "true";
+  document.getElementById("kpiNetToDate").textContent =
+    formatCurrency(portfolio.totalNetToDate ?? 0);
+
+  document.getElementById("kpiNetProj").textContent =
+    formatCurrency(portfolio.totalNetProjected ?? 0);
+
+  document.getElementById("kpiAvgMonth").textContent =
+    formatCurrency(portfolio.avgMonthlyNet ?? 0);
+
+  document.getElementById("kpiFees").textContent =
+    formatCurrency(portfolio.projectedAvgMonthlyNet ?? 0);
+
+  // ------------------------------------
+  // Loan tiles — engine loans only
+  // ------------------------------------
+  renderLoanTiles(loansForUser);
+
+  // ------------------------------------
+  // URL-driven behavior (embed / deep link)
+  // ------------------------------------
+  const params   = new URLSearchParams(window.location.search);
+  const openParam = params.get("open");
+  const isEmbed   = params.get("embed") === "true";
+  const userParam = params.get("user") || "jeff";
+
+  if (openParam === "kpi2") {
+    currentLoan = null;
+    currentMode = "kpi";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(openKpi2);
+    });
+  }
+
+  if (isEmbed) {
+    const header = document.querySelector("header");
+    if (header) header.style.display = "none";
+
+    if (loanGrid) loanGrid.style.display = "none";
+
+    document.body.style.margin = "0";
+    document.body.style.padding = "0";
+
+    const app = document.querySelector(".app");
+    if (app) {
+      app.style.margin = "0";
+      app.style.padding = "0";
+    }
+
+    document.body.addEventListener(
+      "click",
+      e => {
+        if (e.target.closest("button, a")) return;
+        window.top.location.href =
+          `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
+      },
+      true
+    );
+  }
 }
 
-loanGrid.classList.toggle("compact", compactToggle.checked);
-
-compactToggle.addEventListener("change", () => {
-loanGrid.classList.toggle("compact", compactToggle.checked);
-localStorage.setItem("loanGridCompact", compactToggle.checked);
-});
-
-buildLoanColorMap(loansWithEarnings);
-
-kpis = computeEarningsKPIs(loansWithEarnings);
-
-document.getElementById("kpiNetToDate").textContent =
-formatCurrency(kpis.totalNetToDate);
-
-document.getElementById("kpiNetProj").textContent =
-formatCurrency(kpis.totalNetProjected);
-
-document.getElementById("kpiAvgMonth").textContent =
-formatCurrency(kpis.avgMonthlyNet);
-
-document.getElementById("kpiFees").textContent =
-formatCurrency(kpis.projectedAvgMonthlyNet);
-
-renderLoanTiles(loansWithEarnings);
-
-
-const params = new URLSearchParams(window.location.search);
-const openParam = params.get('open');
-const isEmbed = params.get('embed') === 'true';
-const userParam = params.get('user') || 'jeff';
-
-if (openParam === 'kpi2') {
-currentLoan = null;
-currentMode = 'kpi';
-requestAnimationFrame(() => {
-requestAnimationFrame(() => {
-openKpi2();
-});
-});
-}
-
-if (isEmbed) {
-
-const header = document.querySelector('header');
-if (header) header.style.display = 'none';
-
-const loanGrid = document.getElementById('loanGrid');
-if (loanGrid) loanGrid.style.display = 'none';
-
-document.body.style.padding = '0';
-document.body.style.margin = '0';
-const app = document.querySelector('.app');
-if (app) {
-app.style.padding = '0';
-app.style.margin = '0';
-}
-
-document.body.addEventListener('click', (e) => {
-if (e.target.closest('button, a')) return;
-
-window.top.location.href = `/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
-}, true);
-}
-
-}
 
 function applyLoanFilters() {
 const nameVal = filterName.value;
@@ -3302,86 +2327,58 @@ if (e.target.closest(".tile")) return;
 closeDrawer();
 });
 
-function openLoanDrawer(loan){
-currentLoan = loan;
-resetDrawerContent();
-const hasSchedule = loan.earningsSchedule.length > 0;
-const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
-const fallbackRow = { netEarnings: 0, cumFees: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
-const loanStart = new Date(loan.loanStartDate);
+function openLoanDrawer(loan) {
+  currentLoan = loan;
 
-const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
-const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
-? Math.max(1, diffMonthsFromStartRaw)
-: 1;
-const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
-const atCurrent = hasSchedule
-? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
-: fallbackRow;
-const atEnd = hasSchedule ? loan.earningsSchedule[lastIdx] : fallbackRow;
+  resetDrawerContent();
 
-drawerTitle.textContent = loan.loanName;
+  // ------------------------------------
+  // Drawer header (UI-only)
+  // ------------------------------------
+  drawerTitle.textContent = loan.loanName;
 
-drawerSub.innerHTML = `
-<div>${loan.school}</div>
-<div>
-Purchased ${loan.purchaseDate}
-• Orig Loan Amt ${formatCurrency(loan.purchasePrice)}
-</div>
-`;
+  drawerSub.innerHTML = `
+    <div>${loan.school || ""}</div>
+    <div>
+      Purchased ${loan.purchaseDate || ""}
+      • Orig Loan Amt ${formatCurrency(loan.purchasePrice || 0)}
+    </div>
+  `;
 
-drawerPrimaryTitle.textContent = "Net Earnings to Date";
-drawerPrimary.textContent = `$${atCurrent.netEarnings.toFixed(2)}`;
-drawerSecondaryTitle.textContent = "Fees to Date";
-drawerSecondary.textContent = `$${atCurrent.cumFees.toFixed(2)}`;
+  // ------------------------------------
+  // Loan-level KPIs (engine-driven only)
+  // ------------------------------------
+  const loanKpis = views?.earningsKpis || {};
+  const loanNet  = Number(loanKpis[loan.id] ?? 0);
 
-document.getElementById("drawerPrimaryTitle").textContent = "Net Earnings To Date";
-document.getElementById("drawerPrimary").textContent = `$${atCurrent.netEarnings.toLocaleString()}`;
+  drawerPrimaryTitle.textContent = "Lifetime Net Earnings";
+  drawerPrimary.textContent = formatCurrency(loanNet);
 
-document.getElementById("drawerSecondaryTitle").textContent = "Fees To Date";
-document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.toLocaleString()}`;
+  drawerSecondaryTitle.textContent = "Fees";
+  drawerSecondary.textContent = "—";
 
-createDrawerStackedChart(
-drawerChartArea,
-loan.earningsSchedule,
-loan
-);
+  // ------------------------------------
+  // Chart area (placeholder — engine later)
+  // ------------------------------------
+  drawerChartArea.innerHTML = "";
 
-let rowsHtml = "";
-loan.earningsSchedule.forEach(r => {
-rowsHtml += `
-<tr>
-      <td>${formatDate(r.loanDate)}</td>
-      <td style="text-align:right">${formatCurrency(r.cumPrincipal)}</td>
-      <td style="text-align:right">${formatCurrency(r.cumInterest)}</td>
-      <td style="text-align:right">-${formatCurrency(r.cumFees)}</td>
-      <td style="text-align:right">${formatCurrency(r.netEarnings)}</td>
-    </tr>
-`;
-});
+  // ------------------------------------
+  // Extra content (placeholder table shell)
+  // ------------------------------------
+  drawerExtra.innerHTML = `
+    <h3 style="margin-top:12px;margin-bottom:8px;">
+      Earnings Breakdown by Month
+    </h3>
+    <div class="amort-wrap">
+      <div style="padding:12px;text-align:center;color:var(--muted);font-size:13px">
+        Monthly earnings details will be available here
+      </div>
+    </div>
+  `;
 
-drawerExtra.innerHTML = `
-<h3 style="margin-top:12px;margin-bottom:8px;">Earnings Breakdown by Month</h3>
-<div class="amort-wrap">
-<table>
-<thead>
-  <tr>
-    <th>Date</th>
-    <th style="text-align:right">Cumulative Principal</th>
-    <th style="text-align:right">Cumulative Interest</th>
-    <th style="text-align:right">Cumulative Fees</th>
-    <th style="text-align:right">Net Earnings</th>
-  </tr>
-</thead>
-
-<tbody>
-${rowsHtml}
-</tbody>
-</table>
-</div>
-`;
-openDrawerBase();
+  openDrawerBase();
 }
+
 
 document.addEventListener("DOMContentLoaded", initPage);
 
@@ -3413,380 +2410,133 @@ applyTheme(isDark ? "light" : "dark");
 
 const loanColors = ["#0ea5e9", "#22c55e", "#7c3aed", "#14b8a6", "#f59e0b", "#ef4444", "#6366f1", "#a855f7", "#f97316", "#06b6d4"];
 
-function buildKpiStackedChart(containerId, data, valueGetter, showCurrentLine = true, mode = null){
-const container = document.getElementById(containerId);
-if(!container) return;
-container.innerHTML = "";
+function buildKpiStackedChart(
+  containerId,
+  data,
+  valueGetter,
+  showCurrentLine = true,
+  mode = null
+) {
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI stacked charts will be engine-provided
+  // --------------------------------------------------
 
-const key = mode || containerId;
+  const container = document.getElementById(containerId);
+  if (!container) return;
 
-const startTimes = data.map(l => new Date(l.loanStartDate).getTime()).filter(t => Number.isFinite(t));
-const earliestLoanStart = startTimes.length
-? new Date(Math.min(...startTimes))
-: new Date();
+  container.innerHTML = "";
 
-const svgNS = "http://www.w3.org/2000/svg";
-const rect = container.getBoundingClientRect();
-const w = Math.max(360, rect.width || 700);
-const h = 260;
-const padL = 50, padR = 20, padT = 20, padB = 16;
+  const svgNS = "http://www.w3.org/2000/svg";
+  const rect = container.getBoundingClientRect();
+  const w = Math.max(360, rect.width || 700);
+  const h = 260;
 
-const maxMonths = Math.max(1, ...data.map(l => l.earningsSchedule.length));
-const months = Array.from({length:maxMonths}, (_,i) => {
-const sampleRow = data.find(l => l.earningsSchedule[i])?.earningsSchedule[i];
-const month = sampleRow?.ownershipMonthIndex || i+1;
-const monthDate = addMonths(earliestLoanStart, i);
-const contributions = data.map(loan => {
-const row = loan.earningsSchedule[Math.min(i, loan.earningsSchedule.length-1)];
-const value = valueGetter(row || {}, month, loan);
-return {
-loanId: loan.id,
-value,
-color: loanColors[(loan.id - 1) % loanColors.length]
-};
-});
-const posTotal = contributions.reduce((sum,c) => c.value > 0 ? sum + c.value : sum, 0);
-const negTotal = contributions.reduce((sum,c) => c.value < 0 ? sum + c.value : sum, 0);
-return { month, monthDate, contributions, posTotal, negTotal };
-});
+  const padL = 50, padR = 20, padT = 20, padB = 16;
+  const usableHeight = h - padT - padB;
 
-let maxValue = 0;
-let minValue = 0;
-months.forEach(m => {
-maxValue = Math.max(maxValue, m.posTotal);
-minValue = Math.min(minValue, m.negTotal);
-});
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
 
-const yMax = Math.max(maxValue, 1);
-const yMin = minValue < -10 ? minValue : - (yMax * 0.10);
-const yRange = yMax - yMin || 1;
-const usableHeight = h - padT - padB;
-const scale = usableHeight / yRange;
-const yZero = padT + (yMax / yRange) * usableHeight;
+  // --------------------------------------------------
+  // Grid (visual consistency only)
+  // --------------------------------------------------
+  const gridLines = 4;
+  for (let i = 0; i <= gridLines; i++) {
+    const y = padT + i * (usableHeight / gridLines);
 
-const count = months.length;
-const barW = (w - padL - padR) / Math.max(1, count);
+    const gridLine = document.createElementNS(svgNS, "line");
+    gridLine.setAttribute("x1", padL);
+    gridLine.setAttribute("x2", w - padR);
+    gridLine.setAttribute("y1", y);
+    gridLine.setAttribute("y2", y);
+    gridLine.setAttribute("stroke", "var(--grid-light)");
+    gridLine.setAttribute("stroke-width", "0.8");
+    svg.appendChild(gridLine);
+  }
 
-const svg = document.createElementNS(svgNS, "svg");
-svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-svg.setAttribute("width","100%");
-svg.setAttribute("height","100%");
+  // --------------------------------------------------
+  // Baseline
+  // --------------------------------------------------
+  const axis = document.createElementNS(svgNS, "line");
+  axis.setAttribute("x1", padL);
+  axis.setAttribute("x2", w - padR);
+  axis.setAttribute("y1", h - padB);
+  axis.setAttribute("y2", h - padB);
+  axis.setAttribute("stroke", "var(--grid-strong)");
+  axis.setAttribute("stroke-width", "1");
+  svg.appendChild(axis);
 
-const gridBelowZero = 2;
-const gridAboveZero = 4;
+  // --------------------------------------------------
+  // Placeholder label
+  // --------------------------------------------------
+  const msg = document.createElementNS(svgNS, "text");
+  msg.textContent = "KPI chart will appear here";
+  msg.setAttribute("x", (padL + w - padR) / 2);
+  msg.setAttribute("y", padT + usableHeight / 2);
+  msg.setAttribute("text-anchor", "middle");
+  msg.setAttribute("font-size", "14");
+  msg.setAttribute("fill", "var(--muted)");
+  svg.appendChild(msg);
 
-for (let gy = -gridBelowZero; gy <= gridAboveZero; gy++) {
-const y = yZero - gy * ((yZero - padT) / gridAboveZero);
-
-const gridLine = document.createElementNS(svgNS,"line");
-gridLine.setAttribute("x1",padL);
-gridLine.setAttribute("x2",w-padR);
-gridLine.setAttribute("y1",y);
-gridLine.setAttribute("y2",y);
-gridLine.setAttribute("stroke", gy >= 0 ? "var(--grid-strong)" : "var(--grid-light)");
-gridLine.setAttribute("stroke-width","0.7");
-svg.appendChild(gridLine);
-
-if(gy > 0){
-const lbl = document.createElementNS(svgNS,"text");
-const value = (yMax / gridAboveZero) * gy;
-lbl.textContent = "$" + Math.round(value).toLocaleString();
-lbl.setAttribute("x", padL - 10);
-lbl.setAttribute("y", y + 4);
-lbl.setAttribute("font-size","11");
-lbl.setAttribute("fill","var(--text)");
-lbl.setAttribute("text-anchor","end");
-svg.appendChild(lbl);
-}
+  container.appendChild(svg);
 }
 
-const axis = document.createElementNS(svgNS,"line");
-axis.setAttribute("x1",padL);
-axis.setAttribute("x2",w-padR);
-axis.setAttribute("y1",yZero);
-axis.setAttribute("y2",yZero);
-axis.setAttribute("stroke","var(--grid-strong)");
-axis.setAttribute("stroke-width","1");
-svg.appendChild(axis);
-
-months.forEach((m, idx) => {
-const stackedGroupId = `stack-kpi-${m.month}`;
-const x = padL + idx*barW;
-let yPos = yZero;
-let yNeg = yZero;
-const barWidth = Math.max(2, barW-4);
-
-m.contributions.forEach((c, loanIndex) => {
-const hVal = Math.abs(c.value) * scale;
-if(hVal <= 0) return;
-
-const r = document.createElementNS(svgNS,"rect");
-r.setAttribute("x", x+2);
-r.setAttribute("width", barWidth);
-r.setAttribute("fill", c.color);
-prepareStackedBar(r, stackedGroupId, loanIndex, c.value >= 0);
-
-if(c.value >= 0){
-yPos -= hVal;
-r.setAttribute("y", yPos);
-r.setAttribute("height", hVal);
-} else {
-r.setAttribute("y", yNeg);
-r.setAttribute("height", hVal);
-yNeg += hVal;
-}
-
-svg.appendChild(r);
-});
-
-const labelInterval =
-key === "kpi1" ? 3 :
-12;
-
-const monthIndex = idx;
-
-if (monthIndex % labelInterval === 0) {
-const lbl = document.createElementNS(svgNS, "text");
-lbl.textContent = m.monthDate.toLocaleString("en-US", {
-month: "short",
-year: "numeric"
-});
-lbl.setAttribute("x", x + barWidth / 2);
-lbl.setAttribute("y", h - padB + 16);
-lbl.setAttribute("font-size", "11");
-lbl.setAttribute("fill", "var(--text)");
-lbl.setAttribute("text-anchor", "middle");
-svg.appendChild(lbl);
-}
-
-});
-
-if(showCurrentLine){
-
-const todayIdx = months.findIndex(m =>
-m.monthDate.getFullYear() === TODAY.getFullYear() &&
-m.monthDate.getMonth() === TODAY.getMonth()
-);
-
-const todayIndex = todayIdx >= 0 ? todayIdx : months.length - 1;
-const currentX = padL + todayIndex * barW;
-
-const vline = document.createElementNS(svgNS, "line");
-vline.setAttribute("x1", currentX);
-vline.setAttribute("x2", currentX);
-vline.setAttribute("y1", 0);
-vline.setAttribute("y2", h);
-vline.setAttribute("stroke", "#64748b");
-vline.setAttribute("stroke-dasharray", "4,3");
-vline.setAttribute("stroke-width", "1.5");
-svg.appendChild(vline);
-}
-
-container.appendChild(svg);
-
-let lensInstance = null;
-let tooltipInstance = null;
-const lensRadius = 40;
-const lensScale = 1.5;
-
-function handleMove(e){
-const rect = svg.getBoundingClientRect();
-const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-const mouseY = ((e.clientY - rect.top) / rect.height) * h;
-const x = Math.max(lensRadius, Math.min(w - lensRadius, mouseX));
-const y = Math.max(lensRadius, Math.min(h - lensRadius, mouseY));
-
-if(!lensInstance){
-lensInstance = createLens(svg, lensRadius, lensScale);
-const barClones = Array.from(svg.querySelectorAll("rect"))
-.filter(r => r.__value !== undefined || r.getAttribute("fill"));
-barClones.forEach(r => lensInstance.content.appendChild(r.cloneNode(true)));
-svg.appendChild(lensInstance.group);
-}
-
-if(!tooltipInstance){
-tooltipInstance = createTooltip(svg, true);
-}
-
-updateLens(lensInstance, x, y);
-
-const idx = Math.max(0, Math.min(months.length - 1, Math.floor((x - padL) / barW)));
-const monthRow = months[idx];
-const month = monthRow.month;
-
-const aggregates = data.reduce((acc, loan) => {
-const row = loan.earningsSchedule[Math.min(idx, loan.earningsSchedule.length-1)] || {};
-acc.principal += row.cumPrincipal || 0;
-acc.interest += row.cumInterest || 0;
-acc.fees += row.cumFees || 0;
-acc.net += row.netEarnings || 0;
-return acc;
-}, {principal:0, interest:0, fees:0, net:0});
-
-let tooltipLines = [];
-if(key === "kpi1"){
-tooltipLines = [
-`Date: ${formatMonthYear(monthRow.monthDate)}`,
-`Net: $${aggregates.net.toFixed(2)}`,
-`Principal: $${aggregates.principal.toFixed(2)}`,
-`Interest: $${aggregates.interest.toFixed(2)}`,
-`Fees: -$${aggregates.fees.toFixed(2)}`
-];
-} else if(key === "kpi2"){
-tooltipLines = [
-`Date: ${formatMonthYear(monthRow.monthDate)}`,
-`Projected Net: $${(monthRow.posTotal + monthRow.negTotal).toFixed(2)}`
-];
-} else if (key === "kpi3") {
-
-const PORTFOLIO_START = window.__PORTFOLIO_START__;
-
-const monthsElapsed = PORTFOLIO_START
-? Math.max(1, monthDiff(PORTFOLIO_START, monthRow.monthDate) + 1)
-: 1;
-
-const avg = aggregates.net / monthsElapsed;
-
-tooltipLines = [
-`Date: ${formatMonthYear(monthRow.monthDate)}`,
-`Avg / Month: $${avg.toFixed(2)}`,
-`Net to Date: $${aggregates.net.toFixed(2)}`
-];
-}
-
-tooltipLines = [
-`Date: ${formatMonthYear(monthRow.monthDate)}`,
-`Fees: -$${aggregates.fees.toFixed(2)}`,
-`Net: $${aggregates.net.toFixed(2)}`
-];
-
-updateTooltipContent(tooltipInstance, tooltipLines, true);
-updateTooltipPosition(tooltipInstance, x, y, lensRadius);
-}
-
-function handleLeave(){
-removeLens(svg, lensInstance);
-lensInstance = null;
-if(tooltipInstance){
-tooltipInstance.group.remove();
-tooltipInstance = null;
-}
-}
-
-svg.addEventListener("mousemove", handleMove);
-svg.addEventListener("mouseleave", handleLeave);
-}
 
 function renderKPI2Chart(loans) {
-const container = document.getElementById("drawerChartArea");
-if (!container) return;
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI2 chart will be engine-provided in later phase
+  // --------------------------------------------------
 
-container.innerHTML = "";
+  const container = document.getElementById("drawerChartArea");
+  if (!container) return;
 
-const rows = buildProjectedDrawerRows(loans);
-
-if (!rows || !rows.length) {
-container.innerHTML =
-`<div style="color:var(--muted);font-size:13px">
-No projected earnings data available
-</div>`;
-return;
+  container.innerHTML = `
+    <div style="color:var(--muted);font-size:13px;padding:12px;text-align:center">
+      Projected earnings chart will appear here
+    </div>
+  `;
 }
 
-createKpiStackedChart(
-container,
-rows,
-{ denseXAxis: false, thinBars: true, projected: true }
-);
+
+function renderKPI3Chart(data, containerId = "kpi3Chart") {
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI3 chart will be engine-provided in later phase
+  // --------------------------------------------------
+
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="color:var(--muted);font-size:13px;padding:12px;text-align:center">
+      Avg monthly earnings chart will appear here
+    </div>
+  `;
 }
 
-function renderKPI3Chart(data, containerId = "kpi3Chart"){
-buildKpiStackedChart(containerId, data, (row, month) => {
-const net = row.netEarnings || 0;
-return month > 0 ? net / month : 0;
-}, true, "kpi3");
+  function buildKpi4AvgMonthlySeries(loans) {
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI4 avg monthly series will be built in loanEngine
+  // --------------------------------------------------
+
+  return [];
 }
 
-function buildKpi4AvgMonthlySeries(loans) {
-
-const rows = buildPortfolioDrawerRows(loans);
-if (!rows.length) return [];
-
-const start = new Date(rows[0].date);
-start.setDate(1);
-
-const end = new Date();
-end.setDate(1);
-
-let cumulativeNet = 0;
-let monthsElapsed = 0;
-
-const series = [];
-
-const cursor = new Date(start);
-while (cursor <= end) {
-const ym = `${cursor.getFullYear()}-${cursor.getMonth()}`;
-
-const row = rows.find(r => {
-const d = new Date(r.date);
-return d.getFullYear() === cursor.getFullYear() &&
-d.getMonth() === cursor.getMonth();
-});
-
-if (row) {
-const monthNet = row.contributions.reduce(
-(s, c) => s + (Number(c.monthlyNet) || 0),
-0
-);
-cumulativeNet += monthNet;
-}
-
-monthsElapsed += 1;
-
-series.push({
-date: new Date(cursor),
-avg: cumulativeNet / Math.max(1, monthsElapsed)
-});
-
-cursor.setMonth(cursor.getMonth() + 1);
-}
-
-return series;
-}
 
 function buildKpi4AvgMonthlyRows(loans) {
-const rowsByMonth = new Map();
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI4 avg monthly rows will be built in loanEngine
+  // --------------------------------------------------
 
-loans.forEach(l => {
-const sched = l.earningsSchedule || [];
-if (!sched.length) return;
-
-sched.forEach((r, i) => {
-const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
-if (!rowsByMonth.has(key)) {
-rowsByMonth.set(key, {
-date: new Date(r.ownershipDate),
-totalNet: 0,
-months: 0
-});
+  return [];
 }
 
-const row = rowsByMonth.get(key);
-row.totalNet += Number(r.netEarnings || 0);
-row.months = Math.max(row.months, i + 1);
-});
-});
-
-const rows = [...rowsByMonth.values()]
-.sort((a, b) => a.date - b.date)
-.map(r => ({
-date: r.date,
-avg: r.months > 0 ? r.totalNet / r.months : 0,
-netToDate: r.totalNet
-}));
-
-return rows;
-}
 
 function renderKpiTable(containerId, headers, rows) {
 const container = document.getElementById(containerId);
@@ -3820,126 +2570,56 @@ container.innerHTML = html;
 }
 
 function renderKPI1Table(data, containerId = "kpi1Table") {
-const rows = data.map(l => {
-const { row: atCur } = getCurrentEarningsRow(l);
-const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI1 table rows will be engine-provided
+  // --------------------------------------------------
 
-return {
-loanId: l.loanId,
-cells: [
+  const rows = (data || []).map(l => {
+    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
 
-`<div
-class="loan-swatch"
-data-loan-id="${l.loanId}"
-title="Toggle loan"
-style="
-width:10px;
-height:10px;
-border-radius:2px;
-background:${color};
-margin:4px auto;
-cursor:pointer;
-"
-></div>`,
+    return {
+      loanId: l.loanId,
+      cells: [
+        `<div
+          class="loan-swatch"
+          style="
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color};
+            margin:4px auto;
+            opacity:0.5;
+          "
+        ></div>`,
 
-`<div>
-<div style="font-weight:600;color:${color};">
-${l.loanName}
-</div>
-<div style="font-size:12px;line-height:1.2;margin-top:2px;color:${color};opacity:0.85;">
-${l.school || ""}
-</div>
-</div>`,
+        `<div>
+          <div style="font-weight:600;color:${color};">
+            ${l.loanName}
+          </div>
+          <div style="font-size:12px;line-height:1.2;margin-top:2px;color:${color};opacity:0.85;">
+            ${l.school || ""}
+          </div>
+        </div>`
+      ]
+    };
+  });
 
-`<span style="color:var(--text)">${formatCurrency(atCur.netEarnings)}</span>`,
-`<span style="color:var(--text)">${formatCurrency(atCur.cumPrincipal)}</span>`,
-`<span style="color:var(--text)">${formatCurrency(atCur.cumInterest)}</span>`,
-`<span style="color:var(--text)">-${formatCurrency(atCur.cumFees)}</span>`
-]
-};
-});
+  renderKpiTable(
+    containerId,
+    [
+      "Loan",
+      "Loan"
+    ],
+    rows
+  );
 
-renderKpiTable(
-containerId,
-[
-`<span title="Hover to highlight loan • Click swatch to toggle loan on/off">
-Loan On/Off
-</span>`,
-"Loan",
-"Net Earnings",
-"Principal",
-"Interest",
-"Fees"
-],
-rows
-);
+  const table = document.getElementById(containerId);
+  if (!table) return;
 
-const table = document.getElementById(containerId);
-if (!table) return;
-
-table.classList.add("kpi1-table");
-
-const chartRects = () =>
-document.querySelectorAll("#drawerChartArea svg rect[data-loan-id]");
-
-const setChartHighlight = (loanId) => {
-chartRects().forEach(r => {
-r.style.opacity = (r.dataset.loanId === loanId) ? "1" : "0.15";
-});
-};
-
-const clearChartHighlight = () => {
-chartRects().forEach(r => {
-r.style.opacity = "";
-});
-};
-
-const setRowHighlight = (loanId) => {
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-tr.classList.toggle("dimmed", tr.dataset.loanId !== loanId);
-});
-};
-
-const clearRowHighlight = () => {
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-tr.classList.remove("dimmed");
-});
-};
-
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-const loanId = tr.dataset.loanId;
-
-tr.addEventListener("mouseenter", () => {
-setRowHighlight(loanId);
-setChartHighlight(loanId);
-});
-
-tr.addEventListener("mouseleave", () => {
-clearRowHighlight();
-clearChartHighlight();
-});
-});
-
-table.querySelectorAll(".loan-swatch").forEach(sw => {
-const loanId = sw.dataset.loanId;
-
-if (hiddenLoans.has(loanId)) sw.style.opacity = "0.25";
-
-sw.addEventListener("click", (e) => {
-e.stopPropagation();
-
-if (hiddenLoans.has(loanId)) {
-hiddenLoans.delete(loanId);
-sw.style.opacity = "1";
-} else {
-hiddenLoans.add(loanId);
-sw.style.opacity = "0.25";
+  table.classList.add("kpi1-table");
 }
 
-openKpi1();
-});
-});
-}
 
 function toggleLoanVisibility(loanId) {
 if (hiddenLoans.has(loanId)) {
@@ -3952,246 +2632,134 @@ openKpi4();
 }
 
 function renderKPI2Table(data, containerId = "kpi2Table") {
-const rows = data
-.map(l => {
-const { row: atCur } = getCurrentEarningsRow(l);
-if (!atCur) return null;
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI2 table rows will be engine-provided
+  // --------------------------------------------------
 
-const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
+  const rows = (data || []).map(l => {
+    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
 
-return {
-loanId: l.loanId,
-cells: [
-`<div
-class="loan-swatch"
-data-loan-id="${l.loanId}"
-title="Toggle loan"
-style="
-width:10px;
-height:10px;
-border-radius:2px;
-background:${color};
-margin:4px auto;
-cursor:pointer;
-"
-></div>`,
+    return {
+      loanId: l.loanId,
+      cells: [
+        `<div
+          class="loan-swatch"
+          style="
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color};
+            margin:4px auto;
+            opacity:0.5;
+          "
+        ></div>`,
 
-`<div style="line-height:1.15">
-<div style="font-weight:600;color:${color}">
-${l.loanName}
-</div>
-<div style="font-size:12px;color:${color}">
-${l.school || ""}
-</div>
-</div>`,
+        `<div style="line-height:1.15">
+          <div style="font-weight:600;color:${color}">
+            ${l.loanName}
+          </div>
+          <div style="font-size:12px;color:${color}">
+            ${l.school || ""}
+          </div>
+        </div>`
+      ]
+    };
+  });
 
-`<span style="color:var(--text)">${formatCurrency(atCur.netEarnings)}</span>`,
-`<span style="color:var(--text)">${formatCurrency(atCur.cumPrincipal)}</span>`,
-`<span style="color:var(--text)">${formatCurrency(atCur.cumInterest)}</span>`,
-`<span style="color:var(--text)">-${formatCurrency(atCur.cumFees)}</span>`
-]
-};
-})
-.filter(Boolean);
+  renderKpiTable(
+    containerId,
+    ["Loan", "Loan"],
+    rows
+  );
 
-renderKpiTable(
-containerId,
-["Loan On/Off", "Loan", "Projected Net", "Principal", "Interest", "Fees"],
-rows
-);
+  const table = document.getElementById(containerId);
+  if (!table) return;
 
-const table = document.getElementById(containerId);
-if (!table) return;
-
-table.classList.add("kpi2-table");
-
-const chartRects = () =>
-document.querySelectorAll("#drawerChartArea svg rect[data-loan-id]");
-
-const setChartHighlight = (loanId) => {
-chartRects().forEach(r => {
-r.style.opacity = (r.dataset.loanId === loanId) ? "1" : "0.15";
-});
-};
-
-const clearChartHighlight = () => {
-chartRects().forEach(r => {
-r.style.opacity = "";
-});
-};
-
-const setRowHighlight = (loanId) => {
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-tr.classList.toggle("dimmed", tr.dataset.loanId !== loanId);
-});
-};
-
-const clearRowHighlight = () => {
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-tr.classList.remove("dimmed");
-});
-};
-
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-const loanId = tr.dataset.loanId;
-
-tr.addEventListener("mouseenter", () => {
-setRowHighlight(loanId);
-setChartHighlight(loanId);
-});
-
-tr.addEventListener("mouseleave", () => {
-clearRowHighlight();
-clearChartHighlight();
-});
-});
-
-table.querySelectorAll(".loan-swatch").forEach(sw => {
-const loanId = sw.dataset.loanId;
-
-if (hiddenLoans.has(loanId)) sw.style.opacity = "0.25";
-
-sw.addEventListener("click", (e) => {
-e.stopPropagation();
-
-if (hiddenLoans.has(loanId)) {
-hiddenLoans.delete(loanId);
-sw.style.opacity = "1";
-} else {
-hiddenLoans.add(loanId);
-sw.style.opacity = "0.25";
+  table.classList.add("kpi2-table");
 }
 
-openKpi2();
-});
-});
-}
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
-const rows = data.map(l => {
-const purchaseDate = l.purchaseDate
-? formatDate(new Date(l.purchaseDate))
-: "-";
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI3 table rows will be engine-provided
+  // --------------------------------------------------
 
-let maturityDate = "-";
-try {
-const pd = new Date(l.purchaseDate);
-const months = Math.round((l.termYears + l.graceYears) * 12);
-pd.setMonth(pd.getMonth() + months);
-maturityDate = formatDate(pd);
-} catch {}
+  const rows = (data || []).map(l => ({
+    loanId: l.loanId,
+    cells: [
+      `
+      <div>
+        <div style="font-weight:600;">
+          ${l.loanName}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+          ${l.school || ""}
+        </div>
+      </div>
+      `,
+      "—",
+      l.purchaseDate ? formatDate(new Date(l.purchaseDate)) : "—",
+      "—"
+    ]
+  }));
 
-const avgMonthly =
-kpis.monthsCounted > 0
-? (getCurrentEarningsRow(l).row.netEarnings / kpis.monthsCounted)
-: 0;
+  renderKpiTable(
+    containerId,
+    [
+      "Loan",
+      "Avg Monthly Earnings To Date",
+      "Purchase Date",
+      "Maturity Date"
+    ],
+    rows
+  );
 
-return {
-loanId: l.loanId,
-cells: [
+  const table = document.getElementById(containerId);
+  if (!table) return;
 
-`
-<div>
-<div style="font-weight:600;">
-${l.loanName}
-</div>
-<div style="font-size:12px;color:var(--muted);margin-top:2px;">
-${l.school}
-</div>
-</div>
-`,
-formatCurrency(avgMonthly),
-purchaseDate,
-maturityDate
-]
-};
-});
-
-renderKpiTable(
-containerId,
-[
-"Loan",
-"Avg Monthly Earnings To Date",
-"Purchase Date",
-"Maturity Date"
-],
-rows
-);
-
-const table = document.getElementById(containerId);
-if (!table) return;
-
-table.classList.add("kpi3-table");
+  table.classList.add("kpi3-table");
 }
+
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
-const rows = data
-.map(l => {
-const sched = l.earningsSchedule || [];
-if (!sched.length) return null;
+  // --------------------------------------------------
+  // Phase 3: UI-only placeholder
+  // KPI4 table rows will be engine-provided
+  // --------------------------------------------------
 
-const last = sched[sched.length - 1];
-const months = sched.length;
+  const rows = (data || []).map(l => ({
+    loanId: l.loanId,
+    cells: [
+      `<div style="line-height:1.15">
+        <div style="font-weight:600;color:var(--text)">
+          ${l.loanName}
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">
+          ${l.school || ""}
+        </div>
+      </div>`,
+      "—",
+      "—",
+      formatCurrency(l.purchasePrice || 0),
+      "—"
+    ]
+  }));
 
-const projectedAvg =
-months > 0 ? Number(last.netEarnings || 0) / months : 0;
-const projectedNet = Number(last.netEarnings || 0);
-
-let maturity = "";
-try {
-const d = new Date(l.purchaseDate);
-const totalMonths = Math.round(
-(Number(l.termYears || 0) + Number(l.graceYears || 0)) * 12
-);
-d.setMonth(d.getMonth() + totalMonths);
-maturity = d.toISOString().slice(0, 10);
-} catch {}
-
-return {
-loanId: l.loanId,
-cells: [
-
-`<div style="line-height:1.15">
-<div style="font-weight:600;color:var(--text)">
-${l.loanName}
-</div>
-<div style="font-size:12px;color:var(--muted);margin-top:2px">
-${l.school || ""}
-</div>
-</div>`,
-
-`<span style="color:var(--text)">
-${formatCurrency(projectedAvg)}
-</span>`,
-
-`<span style="color:var(--text)">
-${formatCurrency(projectedNet)}
-</span>`,
-
-`<span style="color:var(--text)">
-${formatCurrency(l.purchasePrice || 0)}
-</span>`,
-
-`<span style="color:var(--text)">
-${maturity}
-</span>`
-]
-};
-})
-.filter(Boolean);
-
-renderKpiTable(
-containerId,
-[
-"Loan",
-"Projected Avg Monthly Earnings",
-"Projected Net",
-"Purchase Price",
-"Maturity Date"
-],
-rows
-);
+  renderKpiTable(
+    containerId,
+    [
+      "Loan",
+      "Projected Avg Monthly Earnings",
+      "Projected Net",
+      "Purchase Price",
+      "Maturity Date"
+    ],
+    rows
+  );
 }
+
 
 function createLens(svg, radius = 40, scale = 1.5, borderColor = "#94a3b8", borderWidth = 1.5, bgFill = "rgba(255,255,255,0.7)"){
 const svgNS = "http://www.w3.org/2000/svg";
