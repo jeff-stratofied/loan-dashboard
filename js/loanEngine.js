@@ -806,8 +806,8 @@ const avgMonthlyNet =
   monthsCounted > 0
     ? totalNetAcrossMonths / monthsCounted
     : 0;
-
-
+  });
+});
 
 // KPI 1 totals (already correct)
 Object.values(loanEarnings).forEach(l => {
@@ -815,46 +815,25 @@ Object.values(loanEarnings).forEach(l => {
   totalFeesToDate += Number(l.feesToDate ?? 0);
 });
 
+const avgMonthlyNet =
+  monthsCounted > 0
+    ? totalNetAcrossMonths / monthsCounted
+    : 0;
+
+
 const portfolioEarnings = {
   totalNetToDate,
   totalFeesToDate,
 
-  // KPI 3
+  // KPI 3 — now real
   avgMonthlyNet,
-  monthsCounted
+  monthsCounted,
+
+  // Phase 4 placeholders (next)
+  totalNetProjected: totalNetToDate,
+  totalFeesProjected: totalFeesToDate,
+  projectedAvgMonthlyNet: 0
 };
-portfolioEarnings.kpi3Rows = loansWithAmort
-  .map(loan => {
-    const loanKey = loan.loanId;
-    const loanView = loanEarnings[loanKey];
-    if (!loanView) return null;
-
-    return {
-      loanId: loanKey,
-      loanName: loan.loanName,
-      school: loan.school,
-      avgMonthly:
-        loanView.current?.netEarnings && portfolioEarnings.monthsCounted
-          ? loanView.current.netEarnings / portfolioEarnings.monthsCounted
-          : 0
-    };
-  })
-  .filter(Boolean);
-
-// KPI 3 series (for chart)
-  portfolioEarnings.kpi3Series = incomeLabels.map((label, i) => ({
-  date: new Date(
-    nextMonthDate.getFullYear(),
-    nextMonthDate.getMonth() - (incomeLabels.length - i - 1),
-    1
-  ),
-  avg:
-    i < monthsCounted
-      ? totalNetAcrossMonths / Math.max(1, i + 1)
-      : null
-}));
-};
-
 
 
   // ======================================================
