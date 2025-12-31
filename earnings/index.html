@@ -3207,12 +3207,18 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
         );
       }
 
-      if (eventType === "default") {
-        lines.push(
-          "Default",
-          `Date: ${formatDate(new Date(event.date))}`
-        );
-      }
+if (eventType === "default") {
+  const recovered = Number(event.recoveredAmount || event.recovered || 0);
+  const remaining = Number(event.remainingBalance || event.remaining || 0);
+
+  lines.push(
+    "Default",
+    `Date: ${formatMonthYear(new Date(event.date))}`,
+    `Recovered: ${formatCurrency(recovered)}`,
+    `Remaining: ${formatCurrency(remaining)}`
+  );
+}
+
 
       if (eventType === "deferral") {
         lines.push(
