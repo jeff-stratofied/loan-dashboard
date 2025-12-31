@@ -790,16 +790,20 @@ loansOwnedByUser.forEach(loan => {
 const purchase = new Date(loan.purchaseDate);
 
 // Ownership starts at FIRST of purchase month
+const purchase = new Date(loan.purchaseDate);
+
+// Ownership starts at FIRST of purchase month
 const purchaseMonth = new Date(
   purchase.getFullYear(),
   purchase.getMonth(),
   1
 );
 
-...
+const d = new Date(r.loanDate);
 
 // Must be owned (month-based)
 if (d < purchaseMonth) return;
+
 
 
     // Must not be in the future
