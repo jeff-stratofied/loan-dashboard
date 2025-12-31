@@ -3242,10 +3242,8 @@ if (eventType === "default") {
     0
   );
 
-  const remaining = Math.max(
-    0,
-    +(balanceAtDefault - recovered).toFixed(2)
-  );
+ const remaining = Number(balanceAtDefault || 0);
+
 
   lines.push(
     "Default",
