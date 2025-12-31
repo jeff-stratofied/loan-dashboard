@@ -3219,23 +3219,24 @@ function renderLoanTiles(loansList) {
             const schedule = loan.amort?.schedule || [];
 
 // --------------------------------------------------
-// CORRECT: default balance comes from amort event row
+// CORRECT: default balance = amort balance for event month
+// (match amort + ROI behavior exactly)
 // --------------------------------------------------
 let balanceAtDefault = 0;
 
-// find the amort row that corresponds to the default event
-const defaultRow = schedule.find(r =>
-  r.eventType === "default" ||
-  (r.isDefault === true)
-);
+const defDate = new Date(event.date);
+defDate.setHours(0, 0, 0, 0);
 
-if (defaultRow) {
-  balanceAtDefault = Number(defaultRow.balance || 0);
-} else {
-  console.warn(
-    "[EARNINGS] default event but no amort default row found",
-    loan.loanName || loan.loanId
-  );
+for (const row of schedule) {
+  if (!(row.loanDate instanceof Date)) continue;
+
+  if (
+    row.loanDate.getFullYear() === defDate.getFullYear() &&
+    row.loanDate.getMonth() === defDate.getMonth()
+  ) {
+    balanceAtDefault = Number(row.balance || 0);
+    break;
+  }
 }
 
             const recovered = Number(
@@ -3251,7 +3252,7 @@ if (defaultRow) {
               "Default",
               `Date: ${formatMonthYear(defDate)}`,
               `Recovered: ${formatCurrency(recovered)}`,
-              `Remaining: ${formatCurrency(balanceAtDefault - recovered)}`
+              `Remaining: ${formatCurrency(balanceAtDefault)}`
             );
           }
 
