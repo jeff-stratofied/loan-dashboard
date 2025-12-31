@@ -3216,20 +3216,31 @@ function renderLoanTiles(loansList) {
           }
 
           if (eventType === "default") {
-            const defDate = new Date(event.date);
-            const schedule = loan.amort?.schedule || [];
-            let balanceAtDefault = 0;
+           const defDate = new Date(event.date);
 
-            for (const row of schedule) {
-              if (
-                row.loanDate &&
-                row.loanDate.getFullYear() === defDate.getFullYear() &&
-                row.loanDate.getMonth() === defDate.getMonth()
-              ) {
-                balanceAtDefault = Number(row.balance || 0);
-                break;
-              }
-            }
+// --------------------------------------------------
+// MATCH AMORT + ROI: use ownership month index
+// --------------------------------------------------
+const schedule = loan.amort?.schedule || [];
+
+const defMonthKey =
+  defDate.getFullYear() + "-" + defDate.getMonth();
+
+let balanceAtDefault = 0;
+
+for (const row of schedule) {
+  if (!row.displayDate) continue;
+
+  const rowKey =
+    row.displayDate.getFullYear() + "-" +
+    row.displayDate.getMonth();
+
+  if (rowKey === defMonthKey) {
+    balanceAtDefault = Number(row.balance || 0);
+    break;
+  }
+}
+
 
             const recovered = Number(
               event.recovered ??
