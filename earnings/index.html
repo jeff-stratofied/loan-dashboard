@@ -3240,7 +3240,7 @@ for (let i = 0; i < schedule.length; i++) {
     0
   );
 
- const remaining = Number(balanceAtDefault || 0);
+  const remaining = Number(balanceAtDefault || 0) - recovered;
 
 
   lines.push(
