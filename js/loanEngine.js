@@ -825,14 +825,6 @@ const portfolioEarnings = {
   totalNetToDate,
   totalFeesToDate,
 
-  // KPI 3 — now real
-  avgMonthlyNet,
-  monthsCounted,
-
-const portfolioEarnings = {
-  totalNetToDate,
-  totalFeesToDate,
-
   // KPI 3
   avgMonthlyNet,
   monthsCounted,
@@ -843,7 +835,39 @@ const portfolioEarnings = {
   projectedAvgMonthlyNet: 0
 };
 
+// KPI 3 drawer rows
+portfolioEarnings.kpi3Rows = loansWithAmort
+  .map(loan => {
+    const loanKey = loan.loanId;
+    const loanView = loanEarnings[loanKey];
+
+    if (!loanView) return null;
+
+    return {
+      loanId: loanKey,
+      loanName: loan.loanName,
+      school: loan.school,
+      avgMonthly:
+        loanView.current?.netEarnings && portfolioEarnings.monthsCounted
+          ? loanView.current.netEarnings / portfolioEarnings.monthsCounted
+          : 0
+    };
+  })
   .filter(Boolean);
+
+// KPI 3 series (for chart)
+portfolioEarnings.kpi3Series = incomeLabels.map((label, i) => ({
+  date: new Date(
+    nextMonthDate.getFullYear(),
+    nextMonthDate.getMonth() - (incomeLabels.length - i - 1),
+    1
+  ),
+  avg:
+    i < monthsCounted
+      ? totalNetAcrossMonths / Math.max(1, i + 1)
+      : null
+}));
+
 
   portfolioEarnings.kpi3Series = incomeLabels.map((label, i) => ({
   date: new Date(
