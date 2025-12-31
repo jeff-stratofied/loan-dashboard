@@ -3187,18 +3187,13 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
   badges.forEach((badge) => {
     badge.addEventListener("mouseenter", (e) => {
       let eventType = null;
-
       if (badge.classList.contains("prepayment")) eventType = "prepayment";
       else if (badge.classList.contains("default")) eventType = "default";
       else if (badge.classList.contains("deferral")) eventType = "deferral";
-
       if (!eventType) return;
-
       const event = loan.events.find(ev => ev.type === eventType);
       if (!event) return;
-
       const lines = [];
-
       if (eventType === "prepayment") {
         lines.push(
           "Prepayment",
@@ -3206,55 +3201,40 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
           `Amount: ${formatCurrency(event.amount)}`
         );
       }
-
-if (eventType === "default") {
-  const defDate = new Date(event.date);
-
-  // --------------------------------------------------
-  // MATCH ROI EXACTLY: use engine amort schedule
-  // --------------------------------------------------
-  const schedule = loan.amort?.schedule || [];
-
-  let balanceAtDefault = 0;
-
-for (let i = 0; i < schedule.length; i++) {
-  const row = schedule[i];
-  if (!row.loanDate) continue;
-
-  if (
-    row.loanDate.getFullYear() === defDate.getFullYear() &&
-    row.loanDate.getMonth() === defDate.getMonth()
-  ) {
-    balanceAtDefault = Number(row.balance || 0);
-    break;
-  }
-}
-
-
-  const recovered = Number(
-    event.recovered ??
-    event.recoveredAmount ??
-    event.recoveryAmount ??
-    event.amountRecovered ??
-    event.recovery ??
-    0
-  );
-
-  const remaining = Number(balanceAtDefault || 0) - recovered;
-
-
-  lines.push(
-    "Default",
-    `Date: ${formatMonthYear(defDate)}`,
-    `Recovered: ${formatCurrency(recovered)}`,
-    `Remaining: ${formatCurrency(remaining)}`
-  );
-}
-
-
-
-
-
+      if (eventType === "default") {
+        const defDate = new Date(event.date);
+        // --------------------------------------------------
+        // MATCH ROI EXACTLY: use engine amort schedule
+        // --------------------------------------------------
+        const schedule = loan.amort?.schedule || [];
+        let balanceAtDefault = 0;
+        for (let i = 0; i < schedule.length; i++) {
+          const row = schedule[i];
+          if (!row.loanDate) continue;
+          if (
+            row.loanDate.getFullYear() === defDate.getFullYear() &&
+            row.loanDate.getMonth() === defDate.getMonth()
+          ) {
+            balanceAtDefault = Number(row.balance || 0);
+            break;
+          }
+        }
+        const recovered = Number(
+          event.recovered ??
+          event.recoveredAmount ??
+          event.recoveryAmount ??
+          event.amountRecovered ??
+          event.recovery ??
+          0
+        );
+        const remaining = Number(balanceAtDefault || 0) - recovered;
+        lines.push(
+          "Default",
+          `Date: ${formatMonthYear(defDate)}`,
+          `Recovered: ${formatCurrency(recovered)}`,
+          `Remaining: ${formatCurrency(remaining)}`
+        );
+      }
       if (eventType === "deferral") {
         lines.push(
           "Deferral",
@@ -3262,13 +3242,12 @@ for (let i = 0; i < schedule.length; i++) {
           `Months: ${event.months}`
         );
       }
-
       setMiniTooltipContent(lines);
       positionMiniTooltip(e.clientX, e.clientY, 12);
     });
-
     badge.addEventListener("mouseleave", hideMiniTooltip);
   });
+}
 }
 
     
