@@ -3217,21 +3217,19 @@ if (eventType === "default") {
 
   let balanceAtDefault = 0;
 
-  for (let i = schedule.length - 1; i >= 0; i--) {
-    const row = schedule[i];
-    if (!row.loanDate) continue;
+for (let i = 0; i < schedule.length; i++) {
+  const row = schedule[i];
+  if (!row.loanDate) continue;
 
-    const rowDate = new Date(
-      row.loanDate.getFullYear(),
-      row.loanDate.getMonth(),
-      1
-    );
-
-    if (rowDate <= defDate) {
-      balanceAtDefault = Number(row.balance || 0);
-      break;
-    }
+  if (
+    row.loanDate.getFullYear() === defDate.getFullYear() &&
+    row.loanDate.getMonth() === defDate.getMonth()
+  ) {
+    balanceAtDefault = Number(row.balance || 0);
+    break;
   }
+}
+
 
   const recovered = Number(
     event.recovered ??
