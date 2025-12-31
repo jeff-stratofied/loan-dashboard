@@ -856,19 +856,6 @@ portfolioEarnings.kpi3Rows = loansWithAmort
   .filter(Boolean);
 
 // KPI 3 series (for chart)
-portfolioEarnings.kpi3Series = incomeLabels.map((label, i) => ({
-  date: new Date(
-    nextMonthDate.getFullYear(),
-    nextMonthDate.getMonth() - (incomeLabels.length - i - 1),
-    1
-  ),
-  avg:
-    i < monthsCounted
-      ? totalNetAcrossMonths / Math.max(1, i + 1)
-      : null
-}));
-
-
   portfolioEarnings.kpi3Series = incomeLabels.map((label, i) => ({
   date: new Date(
     nextMonthDate.getFullYear(),
@@ -880,13 +867,6 @@ portfolioEarnings.kpi3Series = incomeLabels.map((label, i) => ({
       ? totalNetAcrossMonths / Math.max(1, i + 1)
       : null
 }));
-
-
-  
-  // Phase 4 placeholders (next)
-  totalNetProjected: totalNetToDate,
-  totalFeesProjected: totalFeesToDate,
-  projectedAvgMonthlyNet: 0
 };
 
 
