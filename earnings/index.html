@@ -1733,6 +1733,7 @@ function openKpi1() {
   // KPI-1 chart + table (ENGINE-DRIVEN)
   // ----------------------------------
   const series = portfolio.kpi1Series || [];
+const rows   = portfolio.kpi1Rows   || [];
 
   // Always clear chart area before rendering
   drawerChartArea.innerHTML = "";
@@ -2007,7 +2008,8 @@ const ownedLoans = filterLoansByUser(normalizedLoans, PAGE_USER);
 const loansWithAmort = attachSchedules(ownedLoans);
 
 // Everything downstream uses owned loans only
-views = buildPortfolioViews(loansWithAmort);
+views = buildPortfolioViews(loansWithAmort, userParam);
+
 loansForUser = loansWithAmort;
 
 
@@ -2494,22 +2496,9 @@ html += `</tbody></table>`;
 container.innerHTML = html;
 }
 
-function renderKpi1Table(series, containerId) {
+function renderKpi1Table(rows, containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
-
-  const totals = {};
-
-  series.forEach(m => {
-    Object.entries(m.byLoan).forEach(([loanId, net]) => {
-      if (!totals[loanId]) {
-        totals[loanId] = { net: 0, principal: 0, interest: 0, fees: 0 };
-      }
-      totals[loanId].net += net;
-      if (net > 0) totals[loanId].principal += net;
-      else totals[loanId].fees += net;
-    });
-  });
 
   el.innerHTML = `
     <table class="kpi1-table">
@@ -2523,24 +2512,36 @@ function renderKpi1Table(series, containerId) {
         </tr>
       </thead>
       <tbody>
-        ${loansForUser.map(l => {
-          const t = totals[l.loanId] || {};
-          const color = KPI_COLOR_MAP[l.loanId];
+        ${(rows || []).map(l => {
+          const color = KPI_COLOR_MAP?.[l.loanId] || "#64748b";
+
           return `
             <tr data-loan-id="${l.loanId}">
               <td>
-                <div style="display:flex;gap:10px">
-                  <div style="width:10px;height:10px;background:${color};border-radius:2px;margin-top:4px"></div>
+                <div style="display:flex;gap:10px;align-items:flex-start">
+                  <div
+                    style="
+                      width:10px;
+                      height:10px;
+                      border-radius:2px;
+                      background:${color};
+                      margin-top:4px;
+                    "
+                  ></div>
                   <div>
-                    <div style="font-weight:600;color:${color}">${l.loanName}</div>
-                    <div style="font-size:12px;color:${color};opacity:.8">${l.school}</div>
+                    <div style="font-weight:600;color:${color}">
+                      ${l.loanName}
+                    </div>
+                    <div style="font-size:12px;color:${color};opacity:.8">
+                      ${l.school || ""}
+                    </div>
                   </div>
                 </div>
               </td>
-              <td>${formatCurrency(t.net || 0)}</td>
-              <td>${formatCurrency(t.principal || 0)}</td>
-              <td>${formatCurrency(t.interest || 0)}</td>
-              <td>${formatCurrency(t.fees || 0)}</td>
+              <td>${formatCurrency(l.netEarnings ?? 0)}</td>
+              <td>${formatCurrency(l.principal ?? 0)}</td>
+              <td>${formatCurrency(l.interest ?? 0)}</td>
+              <td>${formatCurrency(l.fees ?? 0)}</td>
             </tr>
           `;
         }).join("")}
@@ -2548,20 +2549,26 @@ function renderKpi1Table(series, containerId) {
     </table>
   `;
 
-  el.querySelectorAll("tbody tr").forEach(row => {
+  const table = el.querySelector("table");
+
+  // ------------------------------------
+  // Table ↔ chart hover wiring
+  // ------------------------------------
+  table.querySelectorAll("tbody tr").forEach(row => {
     const loanId = row.dataset.loanId;
 
     row.addEventListener("mouseenter", () => {
       highlightLoanInKpiChart(drawerChartArea, loanId);
-      highlightKpiRow(el.querySelector("table"), loanId);
+      highlightKpiRow(table, loanId);
     });
 
     row.addEventListener("mouseleave", () => {
       clearKpiChartHighlight(drawerChartArea);
-      clearKpiRowHighlight(el.querySelector("table"));
+      clearKpiRowHighlight(table);
     });
   });
 }
+
 
 
 
