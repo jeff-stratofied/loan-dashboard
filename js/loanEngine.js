@@ -798,6 +798,13 @@ let totalFeesToDate = 0;
 // --------------------------------------
 const monthlyTotals = {}; // key = "YYYY-M"
 
+ // --------------------------------------
+// KPI 1 / KPI 3 — per-loan monthly breakdown
+// --------------------------------------
+const monthlyByLoan = {}; 
+// shape: { "YYYY-M": { loanId: netAmount } }
+
+
 loansOwnedByUser.forEach(loan => {
   const purchase = new Date(loan.purchaseDate);
 
@@ -843,6 +850,14 @@ if (d >= CURRENT_MONTH_START) return;
       );
     }
 
+     // ----------------------------------
+    // KPI 1 / KPI 3 — per-loan breakdown
+    // ----------------------------------
+    if (!monthlyByLoan[key]) monthlyByLoan[key] = {};
+    monthlyByLoan[key][loan.loanId] =
+      (monthlyByLoan[key][loan.loanId] || 0) + net;
+
+   
     monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
   });
 });
@@ -867,6 +882,24 @@ const avgMonthlyNet =
 // --------------------------------------
 const netEarningsToDateCompletedMonths = totalNetAcrossMonths;
 
+ // --------------------------------------
+// KPI 1 — stacked monthly series
+// --------------------------------------
+const kpi1Series = Object.keys(monthlyTotals)
+  .sort((a, b) => {
+    const [ay, am] = a.split("-").map(Number);
+    const [by, bm] = b.split("-").map(Number);
+    return ay !== by ? ay - by : am - bm;
+  })
+  .map(key => ({
+    date: (() => {
+      const [y, m] = key.split("-").map(Number);
+      return new Date(y, m, 1);
+    })(),
+    total: monthlyTotals[key],
+    byLoan: monthlyByLoan[key] || {}
+  }));
+
  
 // --------------------------------------
 // KPI 3 SERIES — avg net per calendar month
@@ -885,9 +918,6 @@ const kpi3Series = Object.keys(monthlyTotals)
     };
   });
 
-// --------------------------------------
-// KPI 3 TABLE — per-loan avg monthly net
-// --------------------------------------
 // --------------------------------------
 // KPI 3 TABLE — per-loan avg monthly net
 // --------------------------------------
@@ -943,31 +973,26 @@ loansOwnedByUser.forEach(loan => {
   if (!l) return;
 
   totalNetToDate  += Number(l.current.netEarnings ?? 0);
+
   totalFeesToDate += Number(l.feesToDate ?? 0);
 });
 
 const portfolioEarnings = {
-  // ----------------------------------
-  // KPI 1 (AUTHORITATIVE)
-  // ----------------------------------
   totalNetToDate: netEarningsToDateCompletedMonths,
   totalFeesToDate,
 
-  // ----------------------------------
-  // KPI 3
-  // ----------------------------------
   avgMonthlyNet,
   monthsCounted,
+
+  kpi1Series,      // ✅ ADD
   kpi3Series,
   kpi3Rows,
 
-  // ----------------------------------
-  // Phase 4 placeholders
-  // ----------------------------------
   totalNetProjected: netEarningsToDateCompletedMonths,
   totalFeesProjected: totalFeesToDate,
   projectedAvgMonthlyNet: 0
 };
+
 
 
 
