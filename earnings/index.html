@@ -2539,12 +2539,11 @@ container.innerHTML = html;
 }
 
 function renderKpi1Table(rows, containerId) {
-console.group("🟪 KPI1 TABLE DEBUG");
-console.log("rows =", rows);
-console.log("row count =", rows?.length);
-console.groupEnd();
+  console.group("🟪 KPI1 TABLE DEBUG");
+  console.log("rows =", rows);
+  console.log("row count =", rows?.length);
+  console.groupEnd();
 
-  
   const el = document.getElementById(containerId);
   if (!el) return;
 
@@ -2561,10 +2560,17 @@ console.groupEnd();
       </thead>
       <tbody>
         ${(rows || []).map(l => {
-          const color = KPI_COLOR_MAP?.[l.loanId] || "#64748b";
+          const loanId = l.loanId;
+          const color = KPI_COLOR_MAP?.[loanId] || "#64748b";
+
+          // 🔑 FIX: use engine field names, not legacy ones
+          const net = Number(l.net ?? 0);
+          const principal = Number(l.principal ?? 0);
+          const interest = Number(l.interest ?? 0);
+          const fees = Number(l.fees ?? 0);
 
           return `
-            <tr data-loan-id="${l.loanId}">
+            <tr data-loan-id="${loanId}">
               <td>
                 <div style="display:flex;gap:10px;align-items:flex-start">
                   <div
@@ -2586,10 +2592,10 @@ console.groupEnd();
                   </div>
                 </div>
               </td>
-              <td>${formatCurrency(l.netEarnings ?? 0)}</td>
-              <td>${formatCurrency(l.principal ?? 0)}</td>
-              <td>${formatCurrency(l.interest ?? 0)}</td>
-              <td>${formatCurrency(l.fees ?? 0)}</td>
+              <td>${formatCurrency(net)}</td>
+              <td>${formatCurrency(principal)}</td>
+              <td>${formatCurrency(interest)}</td>
+              <td>${formatCurrency(fees)}</td>
             </tr>
           `;
         }).join("")}
@@ -2616,6 +2622,7 @@ console.groupEnd();
     });
   });
 }
+
 
 
 
