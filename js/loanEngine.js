@@ -862,6 +862,13 @@ const avgMonthlyNet =
     : 0;
 
 // --------------------------------------
+// KPI 1 — Net Earnings to Date
+// (COMPLETED MONTHS — matches KPI 3 endpoint)
+// --------------------------------------
+const netEarningsToDateCompletedMonths = totalNetAcrossMonths;
+
+ 
+// --------------------------------------
 // KPI 3 SERIES — avg net per calendar month
 // --------------------------------------
 const kpi3Series = Object.keys(monthlyTotals)
@@ -940,20 +947,28 @@ loansOwnedByUser.forEach(loan => {
 });
 
 const portfolioEarnings = {
-  totalNetToDate,
+  // ----------------------------------
+  // KPI 1 (AUTHORITATIVE)
+  // ----------------------------------
+  totalNetToDate: netEarningsToDateCompletedMonths,
   totalFeesToDate,
 
-  // KPI 3 (AUTHORITATIVE)
+  // ----------------------------------
+  // KPI 3
+  // ----------------------------------
   avgMonthlyNet,
   monthsCounted,
   kpi3Series,
   kpi3Rows,
 
+  // ----------------------------------
   // Phase 4 placeholders
-  totalNetProjected: totalNetToDate,
+  // ----------------------------------
+  totalNetProjected: netEarningsToDateCompletedMonths,
   totalFeesProjected: totalFeesToDate,
   projectedAvgMonthlyNet: 0
 };
+
 
 
   // ======================================================
