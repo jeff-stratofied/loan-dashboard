@@ -615,18 +615,6 @@ loansWithAmort.forEach(l => {
   }
 });
 
-  // ======================================================
-// USER SCOPING (AUTHORITATIVE FOR EARNINGS)
-// ======================================================
-
-// NOTE: earnings KPIs must only include loans owned by the active user
-// Default user is normalized in loadLoans() as l.user || "jeff"
-const ACTIVE_USER = "jeff"; // 🔒 later this comes from auth / URL / session
-
-const loansOwnedByUser = loansWithAmort.filter(
-  loan => loan.user === ACTIVE_USER
-);
-
   const TODAY = getStandardToday();
 
 const CURRENT_MONTH_START = new Date(
@@ -805,7 +793,7 @@ const monthlyByLoan = {};
 // shape: { "YYYY-M": { loanId: netAmount } }
 
 
-loansOwnedByUser.forEach(loan => {
+loansWithAmort.forEach(loan => {
   const purchase = new Date(loan.purchaseDate);
 
   // Ownership starts at FIRST of purchase month
@@ -921,7 +909,7 @@ const kpi3Series = Object.keys(monthlyTotals)
 // --------------------------------------
 // KPI 3 TABLE — per-loan avg monthly net
 // --------------------------------------
-const kpi3Rows = loansOwnedByUser
+const kpi3Rows = loansWithAmort
   .map(loan => {
     const loanKey = loan.loanId;
     const loanView = loanEarnings[loanKey];
@@ -968,7 +956,7 @@ const kpi3Rows = loansOwnedByUser
 // --------------------------------------
 // KPI 1 totals (already correct)
 // --------------------------------------
-loansOwnedByUser.forEach(loan => {
+loansWithAmort.forEach(loan => {
   const l = loanEarnings[loan.loanId];
   if (!l) return;
 
