@@ -2672,7 +2672,7 @@ function renderKpi1Table(rows, containerId) {
     <table class="kpi1-table">
       <thead>
         <tr>
-          <th style="width:44px">Loan On/Off</th>
+          <th style="width:44px">Loan</th>
           <th>Loan</th>
           <th>Net Earnings</th>
           <th>Principal</th>
@@ -2682,19 +2682,31 @@ function renderKpi1Table(rows, containerId) {
       </thead>
       <tbody>
         ${safeRows.map(l => {
+          // 🔑 CANONICAL KEY — must match chart rects
           const loanId = String(l.loanId ?? l.id ?? "");
-          const color = (window.KPI_COLOR_MAP && window.KPI_COLOR_MAP[loanId]) ? window.KPI_COLOR_MAP[loanId] : "#64748b";
+          const color =
+            (window.KPI_COLOR_MAP && window.KPI_COLOR_MAP[loanId]) ||
+            "#64748b";
 
-          // ✅ ENGINE SHAPE (net/principal/interest/fees) with fallback
-          const net = Number(l.net ?? l.netEarnings ?? 0);
-          const principal = Number(l.principal ?? l.cumPrincipal ?? 0);
-          const interest = Number(l.interest ?? l.cumInterest ?? 0);
-          const fees = Number(l.fees ?? l.cumFees ?? 0);
+          // ✅ ENGINE SHAPE (authoritative)
+          const net = Number(l.net ?? 0);
+          const principal = Number(l.principal ?? 0);
+          const interest = Number(l.interest ?? 0);
+          const fees = Number(l.fees ?? 0);
 
           return `
             <tr data-loan-id="${loanId}">
               <td>
-                <div class="loan-swatch" data-loan-id="${loanId}" style="background:${color}"></div>
+                <div
+                  class="loan-swatch"
+                  data-loan-id="${loanId}"
+                  style="
+                    width:10px;
+                    height:10px;
+                    border-radius:2px;
+                    background:${color};
+                  "
+                ></div>
               </td>
 
               <td>
@@ -2723,22 +2735,39 @@ function renderKpi1Table(rows, containerId) {
   if (!table) return;
 
   // ------------------------------------
-  // Table ↔ chart hover wiring
+  // Table ↔ chart hover wiring (authoritative)
   // ------------------------------------
   table.querySelectorAll("tbody tr").forEach(tr => {
     const loanId = tr.dataset.loanId;
+    if (!loanId) return;
 
     tr.addEventListener("mouseenter", () => {
-      highlightLoanInKpiChart(document.getElementById("drawerChartArea"), loanId);
-      highlightKpiRow(table, loanId);
+      highlightLoanInKpiChart(
+        document.getElementById("drawerChartArea"),
+        loanId
+      );
+
+      // dim all other rows
+      table.querySelectorAll("tbody tr").forEach(r => {
+        r.classList.toggle(
+          "dimmed",
+          r.dataset.loanId !== loanId
+        );
+      });
     });
 
     tr.addEventListener("mouseleave", () => {
-      clearKpiChartHighlight(document.getElementById("drawerChartArea"));
-      clearKpiRowHighlight(table);
+      clearKpiChartHighlight(
+        document.getElementById("drawerChartArea")
+      );
+
+      table.querySelectorAll("tbody tr").forEach(r => {
+        r.classList.remove("dimmed");
+      });
     });
   });
 }
+
 
 
 
