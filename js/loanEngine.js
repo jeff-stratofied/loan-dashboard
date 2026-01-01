@@ -615,6 +615,22 @@ loansWithAmort.forEach(l => {
   }
 });
 
+// --------------------------------------
+// Canonical user-filtered loan set
+// --------------------------------------
+const loansOwnedByUser = activeUser
+  ? loansWithAmort.filter(loan => loan.user === activeUser)
+  : loansWithAmort;
+
+ 
+ // --------------------------------------
+// Filter loans by active user (AUTHORITATIVE)
+// --------------------------------------
+const loansOwnedByUser = activeUser
+  ? loansWithAmort.filter(loan => loan.user === activeUser)
+  : loansWithAmort;
+
+
   const TODAY = getStandardToday();
 
 const CURRENT_MONTH_START = new Date(
