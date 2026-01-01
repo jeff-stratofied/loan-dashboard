@@ -1982,6 +1982,10 @@ function renderLoanTiles(loansList) {
 
 async function initPage() {
 
+// 🔑 DEFINE USER FIRST (authoritative)
+  const userParam =
+    new URLSearchParams(window.location.search).get("user") || "jeff";
+  
   // ------------------------------------
   // UI references
   // ------------------------------------
@@ -2105,10 +2109,11 @@ buildLoanColorMap(loansForUser);
   // ------------------------------------
   // URL-driven behavior (embed / deep link)
   // ------------------------------------
-  const params   = new URLSearchParams(window.location.search);
-  const openParam = params.get("open");
-  const isEmbed   = params.get("embed") === "true";
-  const userParam = params.get("user") || "jeff";
+const params   = new URLSearchParams(window.location.search);
+const openParam = params.get("open");
+const isEmbed   = params.get("embed") === "true";
+// ❌ REMOVE userParam here — already defined
+
 
   if (openParam === "kpi2") {
     currentLoan = null;
