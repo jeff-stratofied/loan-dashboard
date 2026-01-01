@@ -1845,61 +1845,40 @@ function createKpi1StackedBarChart(containerEl, series) {
   
 
 function openKpi1() {
+  currentMode = "kpi1";
   currentLoan = null;
-  currentMode = "kpi";
-
-  resetDrawerContent();
-
-  drawerTitle.textContent = "Total Net Earnings to Date";
-  drawerSub.textContent = "Portfolio-level earnings across all loans.";
-
-  drawerPrimaryTitle.textContent = "Net Earnings to Date";
-  drawerSecondaryTitle.textContent = "Total Fees to Date";
-
-  const portfolio = views?.portfolioEarnings || {};
-
-  drawerPrimary.textContent =
-    formatCurrency(portfolio.totalNetToDate ?? 0);
-
-  drawerSecondary.textContent =
-    formatCurrency(portfolio.totalFeesToDate ?? 0);
-
-  // ----------------------------------
-  // KPI-1 chart + table (ENGINE-DRIVEN)
-  // ----------------------------------
-  const series = portfolio.kpi1Series || [];
-const rows   = portfolio.kpi1Rows   || [];
-
-  // Always clear chart area before rendering
-  drawerChartArea.innerHTML = "";
-
-  // Guard: no data
-  if (!series.length) {
-    drawerChartArea.innerHTML =
-      `<div class="empty-state">No earnings data available.</div>`;
-    drawerExtra.innerHTML = "";
-    openDrawer();
-    return;
-  }
-
-  // Render stacked chart
-  createKpi1StackedBarChart(
-    drawerChartArea,
-    series          // 🔑 DO NOT pass loansForUser here
-  );
-
-  // Render table container
-  drawerExtra.innerHTML =
-    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-
-  // Render table
-  renderKpi1Table(
-    series,
-    "drawerKpiTable"
-  );
 
   openDrawer();
+
+  drawerTitle.textContent = "Total Net Earnings to Date";
+  drawerSub.textContent =
+    "Portfolio-level earnings across all loans.";
+
+  // -----------------------------
+  // KPI1 DATA (ENGINE)
+  // -----------------------------
+  const series = views?.kpi1Series || [];
+
+  // 🔑 REQUIRED: expose to chart renderer
+  window.__KPI1_SERIES__ = series;
+
+  // -----------------------------
+  // Chart
+  // -----------------------------
+  createKpi1StackedBarChart(
+    document.getElementById("drawerChartArea"),
+    series
+  );
+
+  // -----------------------------
+  // Table
+  // -----------------------------
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpi1Table"></div>`;
+
+  renderKpi1Table(series, "drawerKpi1Table");
 }
+
 
 
 function openKpi2() {
