@@ -787,23 +787,25 @@ let totalFeesToDate = 0;
 const monthlyTotals = {}; // key = "YYYY-M"
 
 loansOwnedByUser.forEach(loan => {
-const purchase = new Date(loan.purchaseDate);
+  const purchase = new Date(loan.purchaseDate);
 
-// Ownership starts at FIRST of purchase month
-const purchase = new Date(loan.purchaseDate);
+  // Ownership starts at FIRST of purchase month
+  const purchaseMonth = new Date(
+    purchase.getFullYear(),
+    purchase.getMonth(),
+    1
+  );
 
-// Ownership starts at FIRST of purchase month
-const purchaseMonth = new Date(
-  purchase.getFullYear(),
-  purchase.getMonth(),
-  1
-);
+  loan.amort.schedule.forEach(r => {
+    const d = new Date(r.loanDate);
 
-const d = new Date(r.loanDate);
+    // Must be owned (month-based)
+    if (d < purchaseMonth) return;
 
-// Must be owned (month-based)
-if (d < purchaseMonth) return;
+    // Must not be in the future
+    if (d > TODAY) return;
 
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
 
 
     // Must not be in the future
