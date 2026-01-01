@@ -1794,63 +1794,21 @@ openDrawerBase();
 // ]
 // --------------------------------------------------
 function createKpi1StackedBarChart(containerEl, series) {
-  window.__KPI1_SERIES__ = series;
-
-  // buildKpiStackedChart expects an element id
-  const tempId = "kpi1Chart__temp";
-  containerEl.innerHTML = `<div id="${tempId}" style="width:100%;height:100%"></div>`;
-
-  // Convert engine series -> "data[]" items that look like old loans
-  const data = (series || []).map(m => {
-    const monthDate = (m.monthDate instanceof Date) ? m.monthDate : new Date(m.monthDate);
-    const earningsSchedule = [{
-      // what buildKpiStackedChart reads inside tooltip aggregator:
-      cumPrincipal: m.totals?.principal ?? 0,
-      cumInterest:  m.totals?.interest ?? 0,
-      cumFees:      m.totals?.fees ?? 0,
-      netEarnings:  m.totals?.net ?? 0,
-      ownershipMonthIndex: 1
-    }];
-
-    return {
-      loanStartDate: monthDate.toISOString().slice(0,10),
-      earningsSchedule,
-      // stash real contributions for this month (we’ll use them in valueGetter)
-      __kpi1Month: m
-    };
-  });
-
-  // valueGetter is called per "loan" per month index.
-  // We'll return the *stacked* value we want for that loan in that month,
-  // but buildKpiStackedChart’s "data" is month-centric, not loan-centric.
-  // So we’ll override inside buildKpiStackedChart by reading __kpi1Month.
-  buildKpiStackedChart(
-    tempId,
-    data,
-    (row, month, pseudoLoan) => {
-      // month index == i+1 in the old function; we need the contributions list
-      // from this month bucket.
-      const bucket = pseudoLoan.__kpi1Month;
-      // We return 0 here; actual stacks are drawn from bucket.contributions
-      // after we patch buildKpiStackedChart below.
-      return 0;
-    },
-    true,
-    "kpi1"
-  );
-
-  // After chart renders, we’ll swap in real stacks by calling patched logic.
+  window.__KPI1_SERIES__ = Array.isArray(series) ? series : [];
+  // force render into the existing drawer chart container
+  buildKpiStackedChart("drawerChartArea", null, null, true, "kpi1");
 }
+
 
   
 
 function openKpi1() {
-// 🔒 GUARD: engine not ready yet
-  if (!views || !views.portfolioEarnings) {
+  // 🔒 GUARD: engine not ready yet
+  if (!portfolioViews || !portfolioViews.portfolioEarnings) {
     console.warn("KPI1 opened before engine initialization");
     return;
   }
-  
+
   currentMode = "kpi1";
   currentLoan = null;
 
@@ -1863,8 +1821,10 @@ function openKpi1() {
   // -----------------------------
   // KPI1 DATA (ENGINE)
   // -----------------------------
-  const series = views?.portfolioEarnings?.kpi1Series || [];
+  const portfolio = portfolioViews.portfolioEarnings;
 
+  const series = portfolio.kpi1Series || [];
+  const rows   = portfolio.kpi1Rows   || [];
 
   // 🔑 REQUIRED: expose to chart renderer
   window.__KPI1_SERIES__ = series;
@@ -1883,8 +1843,9 @@ function openKpi1() {
   drawerExtra.innerHTML =
     `<div class="amort-wrap" id="drawerKpi1Table"></div>`;
 
-  renderKpi1Table(series, "drawerKpi1Table");
+  renderKpi1Table(rows, "drawerKpi1Table");
 }
+
 
 
 
