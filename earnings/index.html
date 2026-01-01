@@ -1239,6 +1239,14 @@ return nf * base;
 }
 
 function buildKpiStackedChart(containerId, _data, _valueGetter, showCurrentLine = true, mode = null) {
+console.group("🟩 KPI CHART DEBUG");
+console.log("mode =", mode);
+console.log("containerId =", containerId);
+console.log("window.__KPI1_SERIES__ =", window.__KPI1_SERIES__);
+console.log("series length =", window.__KPI1_SERIES__?.length);
+console.groupEnd();
+
+  
   const container = document.getElementById(containerId);
   if (!container) return;
 
@@ -1803,12 +1811,24 @@ function createKpi1StackedBarChart(containerEl, series) {
   
 
 function openKpi1() {
+console.group("🟦 KPI1 DEBUG: openKpi1()");
+console.log("openKpi1 called");
+console.log("views =", views);
+console.groupEnd();
+
+  
   // 🔒 GUARD: engine not ready yet
   if (!views || !views.portfolioEarnings) {
-    console.warn("KPI1 opened before engine initialization");
+console.group("🟦 KPI1 DEBUG: portfolioEarnings");
+console.log("portfolioEarnings =", views.portfolioEarnings);
+console.log("keys =", Object.keys(views.portfolioEarnings || {}));
+console.groupEnd();
+
     return;
   }
 
+
+  
   currentMode = "kpi1";
   currentLoan = null;
 
@@ -1825,6 +1845,14 @@ function openKpi1() {
 
   const series = portfolio.kpi1Series || [];
   const rows   = portfolio.kpi1Rows   || [];
+
+  console.group("🟦 KPI1 DEBUG: data");
+console.log("kpi1Series length =", series.length);
+console.log("kpi1Series sample =", series[0]);
+console.log("kpi1Rows length =", rows.length);
+console.log("kpi1Rows sample =", rows[0]);
+console.groupEnd();
+
 
   // 🔑 REQUIRED: expose to chart renderer
   window.__KPI1_SERIES__ = series;
@@ -2511,6 +2539,12 @@ container.innerHTML = html;
 }
 
 function renderKpi1Table(rows, containerId) {
+console.group("🟪 KPI1 TABLE DEBUG");
+console.log("rows =", rows);
+console.log("row count =", rows?.length);
+console.groupEnd();
+
+  
   const el = document.getElementById(containerId);
   if (!el) return;
 
