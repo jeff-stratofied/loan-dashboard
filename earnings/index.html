@@ -1804,7 +1804,7 @@ function createKpi1StackedBarChart(containerEl, series) {
 
 function openKpi1() {
   // 🔒 GUARD: engine not ready yet
-  if (!portfolioViews || !portfolioViews.portfolioEarnings) {
+  if (!views || !views.portfolioEarnings) {
     console.warn("KPI1 opened before engine initialization");
     return;
   }
@@ -1821,7 +1821,7 @@ function openKpi1() {
   // -----------------------------
   // KPI1 DATA (ENGINE)
   // -----------------------------
-  const portfolio = portfolioViews.portfolioEarnings;
+  const portfolio = views.portfolioEarnings;
 
   const series = portfolio.kpi1Series || [];
   const rows   = portfolio.kpi1Rows   || [];
@@ -1845,6 +1845,7 @@ function openKpi1() {
 
   renderKpi1Table(rows, "drawerKpi1Table");
 }
+
 
 
 
