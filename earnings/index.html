@@ -1485,6 +1485,51 @@ svg.addEventListener("mousemove", handleMove);
 svg.addEventListener("mouseleave", handleLeave);
 }
 
+function createKpi1StackedBarChart(container, series, loans) {
+  container.innerHTML = "";
+  if (!series.length) return;
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const w = container.clientWidth || 700;
+  const h = container.clientHeight || 240;
+
+  const padL = 60, padR = 20, padT = 20, padB = 52;
+  const usableW = w - padL - padR;
+  const usableH = h - padT - padB;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+
+  const maxVal = Math.max(...series.map(d => d.total));
+  const scaleY = usableH / maxVal;
+  const barW = usableW / series.length;
+
+  series.forEach((m, i) => {
+    let yCursor = h - padB;
+
+    Object.entries(m.byLoan).forEach(([loanId, val], idx) => {
+      const barH = val * scaleY;
+      const rect = document.createElementNS(svgNS, "rect");
+
+      rect.setAttribute("x", padL + i * barW);
+      rect.setAttribute("y", yCursor - barH);
+      rect.setAttribute("width", barW - 2);
+      rect.setAttribute("height", barH);
+
+      rect.setAttribute("fill", KPI_COLOR_MAP[loanId]);
+      rect.dataset.loanId = loanId;
+
+      svg.appendChild(rect);
+      yCursor -= barH;
+    });
+  });
+
+  container.appendChild(svg);
+}
+
+  
 function renderKpi4AvgLineChart(container, rows) {
   // --------------------------------------------------
   // Phase 3: UI-only placeholder
@@ -1659,11 +1704,29 @@ function openKpi1() {
   drawerSecondary.textContent =
     formatCurrency(portfolio.totalFeesToDate ?? 0);
 
-  // Chart + table will be engine-provided in later phase
-  drawerExtra.innerHTML =
-    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+// -------------------------------
+// KPI-1 chart + table (ENGINE-DRIVEN)
+// -------------------------------
+const series = portfolio.kpi1Series || [];
 
-  openDrawer();
+// Render stacked chart
+createKpi1StackedBarChart(
+  drawerChartArea,
+  series,
+  loansForUser
+);
+
+// Render table
+drawerExtra.innerHTML =
+  `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+
+renderKpi1Table(
+  series,
+  "drawerKpiTable"
+);
+
+openDrawer();
+
 }
 
 function openKpi2() {
@@ -2373,74 +2436,89 @@ html += `</tbody></table>`;
 container.innerHTML = html;
 }
 
-function renderKPI1Table(data, containerId = "kpi1Table") {
-  // --------------------------------------------------
-  // Phase 3: UI-only placeholder
-  // KPI1 table rows will be engine-provided
-  // --------------------------------------------------
+function renderKPI1Table(series, containerId = "kpi1Table") {
+  const container = document.getElementById(containerId);
+  if (!container) return;
 
-  const rows = (data || []).map(l => {
-    const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
+  // ----------------------------------
+  // Aggregate net earnings by loan
+  // ----------------------------------
+  const totalsByLoan = {};
 
-    return {
-      loanId: l.loanId,
-      cells: [
-        `<div
-          class="loan-swatch"
-          style="
-            width:10px;
-            height:10px;
-            border-radius:2px;
-            background:${color};
-            margin:4px auto;
-            opacity:0.5;
-          "
-        ></div>`,
-
-        `<div>
-          <div style="font-weight:600;color:${color};">
-            ${l.loanName}
-          </div>
-          <div style="font-size:12px;line-height:1.2;margin-top:2px;color:${color};opacity:0.85;">
-            ${l.school || ""}
-          </div>
-        </div>`
-      ]
-    };
+  series.forEach(m => {
+    Object.entries(m.byLoan || {}).forEach(([loanId, val]) => {
+      totalsByLoan[loanId] =
+        (totalsByLoan[loanId] || 0) + val;
+    });
   });
 
-  renderKpiTable(
-    containerId,
-    [
-      "Loan",
-      "Loan"
-    ],
-    rows
-  );
+  const rows = Object.entries(totalsByLoan)
+    .sort((a, b) => b[1] - a[1])
+    .map(([loanId, net]) => {
+      const color = window.KPI_COLOR_MAP?.[loanId] || "#64748b";
 
-  const table = document.getElementById(containerId);
-  if (!table) return;
+      return `
+        <tr data-loan-id="${loanId}">
+          <td>
+            <div style="display:flex;gap:8px;align-items:center">
+              <div
+                style="
+                  width:10px;
+                  height:10px;
+                  border-radius:2px;
+                  background:${color};
+                  opacity:0.6;
+                "
+              ></div>
+              <span style="font-weight:600;color:${color}">
+                ${loanId}
+              </span>
+            </div>
+          </td>
+          <td style="font-weight:600">
+            ${formatCurrency(net)}
+          </td>
+        </tr>
+      `;
+    });
 
-  table.classList.add("kpi1-table");
+  // ----------------------------------
+  // Render table
+  // ----------------------------------
+  container.innerHTML = `
+    <table class="kpi1-table">
+      <thead>
+        <tr>
+          <th>Loan</th>
+          <th>Net Earnings</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.join("")}
+      </tbody>
+    </table>
+  `;
 
-  // ------------------------------------
-// KPI-1 table → chart hover wiring
-// ------------------------------------
-table.querySelectorAll("tbody tr").forEach(row => {
-  const loanId = row.dataset.loanId;
+  const table = container.querySelector("table");
 
-  row.addEventListener("mouseenter", () => {
-    highlightLoanInKpiChart(drawerChartArea, loanId);
-    highlightKpiRow(table, loanId);
+  // ----------------------------------
+  // KPI-1 table → chart hover wiring
+  // ----------------------------------
+  table.querySelectorAll("tbody tr").forEach(row => {
+    const loanId = row.dataset.loanId;
+
+    row.addEventListener("mouseenter", () => {
+      highlightLoanInKpiChart(drawerChartArea, loanId);
+      highlightKpiRow(table, loanId);
+    });
+
+    row.addEventListener("mouseleave", () => {
+      clearKpiChartHighlight(drawerChartArea);
+      clearKpiRowHighlight(table);
+    });
   });
-
-  row.addEventListener("mouseleave", () => {
-    clearKpiChartHighlight(drawerChartArea);
-    clearKpiRowHighlight(table);
-  });
-});
-
 }
+
 
 
 function toggleLoanVisibility(loanId) {
