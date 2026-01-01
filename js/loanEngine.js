@@ -807,38 +807,33 @@ loansOwnedByUser.forEach(loan => {
 
     const key = `${d.getFullYear()}-${d.getMonth()}`;
 
+    // ----------------------------------
+    // KPI-3 income logic (NO prepayments)
+    // ----------------------------------
+    const scheduledPrincipal =
+      Number(r.payment ?? 0) - Number(r.interest ?? 0);
 
-    // Must not be in the future
-    if (d > TODAY) return;
+    const paymentReceived =
+      Math.max(0, scheduledPrincipal) +
+      Number(r.interest ?? 0);
 
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    let net;
 
-// KPI-3 income = scheduled principal + interest only (NO prepayments)
-const scheduledPrincipal =
-  Number(r.payment ?? 0) - Number(r.interest ?? 0);
-
-const paymentReceived =
-  Math.max(0, scheduledPrincipal) +
-  Number(r.interest ?? 0);
-
-
-let net;
-
-if (paymentReceived > 0) {
-  // Borrower paid → owner receives payment minus servicing fee
-  net = paymentReceived - Number(r.monthlyBalanceFee ?? 0);
-} else {
-  // No borrower payment → owner still pays fees (negative income)
-  net = -(
-    Number(r.monthlyBalanceFee ?? 0) +
-    Number(r.upfrontFeeThisMonth ?? 0)
-  );
-}
-
+    if (paymentReceived > 0) {
+      // Borrower paid → owner receives payment minus servicing fee
+      net = paymentReceived - Number(r.monthlyBalanceFee ?? 0);
+    } else {
+      // No borrower payment → owner still pays fees (negative income)
+      net = -(
+        Number(r.monthlyBalanceFee ?? 0) +
+        Number(r.upfrontFeeThisMonth ?? 0)
+      );
+    }
 
     monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
   });
 });
+
 
 // --------------------------------------
 // KPI 3 — derived values
