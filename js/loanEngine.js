@@ -916,53 +916,6 @@ kpi1Series.forEach(row => {
 });
 
 
-let cumPrincipal = 0;
-let cumInterest  = 0;
-let cumFees      = 0; // negative
-let cumTotal     = 0;
-
-const kpi1Series = monthKeys.map(key => {
-  const mp = Number(monthlyTotals[key]?.principal || 0);
-const mi = Number(monthlyTotals[key]?.interest  || 0);
-const mf = Number(monthlyTotals[key]?.fees      || 0);
-const mn = Number(monthlyTotals[key]?.net       || 0);
-
-
-// --------------------------------------
-// KPI 1 — Net Earnings to Date
-// (COMPLETED MONTHS — matches KPI 3 endpoint)
-// --------------------------------------
-const netEarningsToDateCompletedMonths = kpi1Series.length
-  ? kpi1Series[kpi1Series.length - 1].total
-  : 0;
-
- 
-  // ----------------------------------
-  // CUMULATIVE portfolio values
-  // (tooltip only)
-  // ----------------------------------
-  cumPrincipal += mp;
-  cumInterest  += mi;
-  cumFees      += mf;
-  cumTotal     += mn;
-
-  const [y, m] = key.split("-").map(Number);
-
-  return {
-    date: new Date(y, m, 1),
-
-    // Tooltip values (portfolio-level, cumulative)
-    principal: cumPrincipal,
-    interest:  cumInterest,
-    fees:      cumFees,
-    total:     cumTotal,
-
-    // Chart values (MONTHLY, per-loan net)
-    byLoan: { ...(monthlyByLoan[key] || {}) }
-  };
-});
-
-
 // --------------------------------------
 // KPI 1 — table rows (per-loan cumulative)
 // --------------------------------------
