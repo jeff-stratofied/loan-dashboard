@@ -1238,6 +1238,151 @@ else nf = 10;
 return nf * base;
 }
 
+function buildKpiStackedChart(containerId, _data, _valueGetter, showCurrentLine = true, mode = null) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  // ==========================================
+  // KPI1 — ENGINE-DRIVEN SERIES ONLY
+  // ==========================================
+  if (mode !== "kpi1" || !Array.isArray(window.__KPI1_SERIES__)) {
+    container.innerHTML =
+      `<div class="empty-state">No earnings data available.</div>`;
+    return;
+  }
+
+  const series = window.__KPI1_SERIES__;
+  if (!series.length) {
+    container.innerHTML =
+      `<div class="empty-state">No earnings data available.</div>`;
+    return;
+  }
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const rect = container.getBoundingClientRect();
+  const w = Math.max(360, rect.width || 700);
+  const h = 260;
+
+  const padL = 60, padR = 20, padT = 20, padB = 52;
+  const usableH = h - padT - padB;
+  const usableW = w - padL - padR;
+
+  // ------------------------------------------
+  // Build months (authoritative KPI1 shape)
+  // ------------------------------------------
+  const months = series.map((m, idx) => {
+    const monthDate =
+      m.monthDate instanceof Date ? m.monthDate : new Date(m.monthDate);
+
+    const contributions = (m.contributions || []).map((c, loanIndex) => ({
+      loanId: String(c.loanId),
+      value: Number(c.net || 0),
+      principal: Number(c.principal || 0),
+      interest: Number(c.interest || 0),
+      fees: Number(c.fees || 0),
+      color:
+        c.color ||
+        KPI_COLOR_MAP?.[c.loanId] ||
+        `var(--accent${(loanIndex % 5) + 1})`
+    }));
+
+    const posTotal = contributions.reduce(
+      (s, c) => c.value > 0 ? s + c.value : s, 0
+    );
+    const negTotal = contributions.reduce(
+      (s, c) => c.value < 0 ? s + c.value : s, 0
+    );
+
+    return { monthDate, contributions, posTotal, negTotal };
+  });
+
+  const maxVal = Math.max(1, ...months.map(m => m.posTotal));
+  const minVal = Math.min(0, ...months.map(m => m.negTotal));
+  const range = maxVal - minVal || 1;
+
+  const scaleY = usableH / range;
+  const yZero = padT + maxVal * scaleY;
+
+  const barW = usableW / months.length;
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.style.width = "100%";
+  svg.style.height = "100%";
+
+  // ------------------------------------------
+  // Y grid + labels
+  // ------------------------------------------
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + i * (usableH / 4);
+    const val = maxVal - (range * i / 4);
+
+    const line = document.createElementNS(svgNS, "line");
+    line.setAttribute("x1", padL);
+    line.setAttribute("x2", w - padR);
+    line.setAttribute("y1", y);
+    line.setAttribute("y2", y);
+    line.setAttribute("stroke", "var(--grid-light)");
+    svg.appendChild(line);
+
+    const lbl = document.createElementNS(svgNS, "text");
+    lbl.textContent = formatCurrency(val);
+    lbl.setAttribute("x", padL - 8);
+    lbl.setAttribute("y", y + 4);
+    lbl.setAttribute("font-size", "11");
+    lbl.setAttribute("text-anchor", "end");
+    lbl.setAttribute("fill", "var(--text)");
+    svg.appendChild(lbl);
+  }
+
+  // ------------------------------------------
+  // Bars
+  // ------------------------------------------
+  months.forEach((m, idx) => {
+    let yPos = yZero;
+    let yNeg = yZero;
+
+    m.contributions.forEach(c => {
+      const hVal = Math.abs(c.value) * scaleY;
+      if (!hVal) return;
+
+      const r = document.createElementNS(svgNS, "rect");
+      r.setAttribute("x", padL + idx * barW + 2);
+      r.setAttribute("width", Math.max(2, barW - 4));
+      r.setAttribute("fill", c.color);
+      r.dataset.loanId = c.loanId;
+
+      if (c.value >= 0) {
+        yPos -= hVal;
+        r.setAttribute("y", yPos);
+      } else {
+        r.setAttribute("y", yNeg);
+        yNeg += hVal;
+      }
+
+      r.setAttribute("height", hVal);
+      svg.appendChild(r);
+    });
+
+    if (idx % 3 === 0) {
+      const lbl = document.createElementNS(svgNS, "text");
+      lbl.textContent = formatMonthYear(m.monthDate);
+      lbl.setAttribute("x", padL + idx * barW + barW / 2);
+      lbl.setAttribute("y", h - 14);
+      lbl.setAttribute("font-size", "11");
+      lbl.setAttribute("text-anchor", "middle");
+      lbl.setAttribute("fill", "var(--text)");
+      svg.appendChild(lbl);
+    }
+  });
+
+  container.appendChild(svg);
+}
+
+
+  
 function createKpiStackedChart(container) {
   container.innerHTML = `
     <div style="padding:24px;color:var(--muted);text-align:center">
@@ -1649,6 +1794,8 @@ openDrawerBase();
 // ]
 // --------------------------------------------------
 function createKpi1StackedBarChart(containerEl, series) {
+  window.__KPI1_SERIES__ = series;
+
   // buildKpiStackedChart expects an element id
   const tempId = "kpi1Chart__temp";
   containerEl.innerHTML = `<div id="${tempId}" style="width:100%;height:100%"></div>`;
