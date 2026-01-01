@@ -622,14 +622,6 @@ const loansOwnedByUser = activeUser
   ? loansWithAmort.filter(loan => loan.user === activeUser)
   : loansWithAmort;
 
- 
- // --------------------------------------
-// Filter loans by active user (AUTHORITATIVE)
-// --------------------------------------
-const loansOwnedByUser = activeUser
-  ? loansWithAmort.filter(loan => loan.user === activeUser)
-  : loansWithAmort;
-
 
   const TODAY = getStandardToday();
 
@@ -809,7 +801,7 @@ const monthlyByLoan = {};
 // shape: { "YYYY-M": { loanId: netAmount } }
 
 
-loansWithAmort.forEach(loan => {
+loansOwnedByUser.forEach(loan => {
   const purchase = new Date(loan.purchaseDate);
 
   // Ownership starts at FIRST of purchase month
@@ -882,7 +874,8 @@ monthlyByLoan[key][loan.loanId] =
 const monthsCounted = Object.keys(monthlyTotals).length;
 
 const totalNetAcrossMonths =
-  Object.values(monthlyTotals).reduce((sum, v) => sum + v, 0);
+  Object.values(monthlyTotals).reduce((sum, v) => sum + v.net, 0);
+
 
 const avgMonthlyNet =
   monthsCounted > 0
@@ -997,7 +990,7 @@ const kpi3Series = Object.keys(monthlyTotals)
     const [year, month] = key.split("-").map(Number);
     return {
       date: new Date(year, month, 1),
-      avg: monthlyTotals[key]
+      avg: monthlyTotals[key].net
     };
   });
 
@@ -1061,7 +1054,7 @@ loansWithAmort.forEach(loan => {
 });
 
 const portfolioEarnings = {
-  totalNetToDate: netEarningsToDateCompletedMonths,
+  totalNetToDate: totalNetAcrossMonths,
   totalFeesToDate,
 
   avgMonthlyNet,
@@ -1071,7 +1064,7 @@ const portfolioEarnings = {
   kpi3Series,
   kpi3Rows,
 
-  totalNetProjected: netEarningsToDateCompletedMonths,
+  totalNetProjected: totalNetAcrossMonths,
   totalFeesProjected: totalFeesToDate,
   projectedAvgMonthlyNet: 0
 };
