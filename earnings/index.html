@@ -1845,6 +1845,12 @@ function createKpi1StackedBarChart(containerEl, series) {
   
 
 function openKpi1() {
+// 🔒 GUARD: engine not ready yet
+  if (!views || !views.portfolioEarnings) {
+    console.warn("KPI1 opened before engine initialization");
+    return;
+  }
+  
   currentMode = "kpi1";
   currentLoan = null;
 
