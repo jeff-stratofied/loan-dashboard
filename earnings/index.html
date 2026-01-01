@@ -2043,6 +2043,14 @@ function renderLoanTiles(loansList) {
   });
 }
 
+  function filterLoansByUser(loans, user) {
+  return (loans || []).filter(l =>
+    l.user === user ||
+    l.owner === user ||
+    l.assignedUser === user
+  );
+}
+
 
 async function initPage() {
 
@@ -2063,10 +2071,18 @@ async function initPage() {
 const rawLoans = await loadLoans(PAGE_USER);
 const normalizedLoans = rawLoans || [];
 
-const loansWithAmort = attachSchedules(normalizedLoans);
+// ------------------------------------
+// 🔑 AUTHORITATIVE USER FILTER (ONCE)
+// ------------------------------------
+const ownedLoans = filterLoansByUser(normalizedLoans, PAGE_USER);
 
+// Attach schedules ONLY to owned loans
+const loansWithAmort = attachSchedules(ownedLoans);
+
+// Everything downstream uses owned loans only
 views = buildPortfolioViews(loansWithAmort);
 loansForUser = loansWithAmort;
+
 
   // ------------------------------------
 // KPI color map (REQUIRED for KPI-1)
