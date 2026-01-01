@@ -1013,6 +1013,11 @@ let currentMode = 'portfolio';
 
 let PORTFOLIO_START = null;
 
+// =====================================================
+// KPI1 — Loan On / Off visibility state (GLOBAL)
+// =====================================================
+window.hiddenLoans = new Set();
+
 
 const earlyParams = new URLSearchParams(window.location.search);
 if (earlyParams.get('embed') === 'true') {
@@ -2690,7 +2695,7 @@ function renderKpi1Table(rows, containerId) {
     <table class="kpi1-table">
       <thead>
         <tr>
-          <th style="width:44px">Loan</th>
+          <th style="width:80px">Loan On/Off</th>
           <th>Loan</th>
           <th>Net Earnings</th>
           <th>Principal</th>
@@ -2716,15 +2721,19 @@ function renderKpi1Table(rows, containerId) {
             <tr data-loan-id="${loanId}">
               <td>
                 <div
-                  class="loan-swatch"
-                  data-loan-id="${loanId}"
-                  style="
-                    width:10px;
-                    height:10px;
-                    border-radius:2px;
-                    background:${color};
-                  "
-                ></div>
+  class="loan-swatch"
+  data-loan-id="${loanId}"
+  data-active="true"
+  title="Toggle loan on/off"
+  style="
+    width:14px;
+    height:14px;
+    border-radius:3px;
+    background:${color};
+    cursor:pointer;
+  "
+></div>
+
               </td>
 
               <td>
@@ -2784,6 +2793,31 @@ function renderKpi1Table(rows, containerId) {
       });
     });
   });
+
+  // ------------------------------------
+// KPI1 — Loan ON/OFF toggle (swatch click)
+// ------------------------------------
+table.querySelectorAll(".loan-swatch").forEach(swatch => {
+  const loanId = swatch.dataset.loanId;
+  if (!loanId) return;
+
+  swatch.style.cursor = "pointer";
+
+  swatch.addEventListener("click", (e) => {
+    e.stopPropagation(); // ⛔ prevent row hover
+
+    if (window.hiddenLoans.has(loanId)) {
+      window.hiddenLoans.delete(loanId);
+      swatch.style.opacity = "1";
+    } else {
+      window.hiddenLoans.add(loanId);
+      swatch.style.opacity = "0.25";
+    }
+
+    redrawKpi1Chart();
+  });
+});
+
 }
 
 
