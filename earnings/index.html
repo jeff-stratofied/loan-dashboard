@@ -817,8 +817,15 @@ html[data-theme="dark"] .legend .sw {
 
 .kpi1-table tbody tr.dimmed,
 .kpi2-table tbody tr.dimmed {
-  opacity: 0.25;
+  opacity: 0.35;
 }
+
+/* keep swatches visible even when row is dimmed */
+.kpi1-table tbody tr.dimmed .loan-swatch,
+.kpi2-table tbody tr.dimmed .loan-swatch {
+  opacity: 1 !important;
+}
+
 
     /* ============================================================
    EMBED MODE — UNIFIED DRAWER LAYOUT (ALIGN ALL IFRAMES)
@@ -1109,12 +1116,15 @@ const KPI_PALETTE = [
 ];
 
 function buildLoanColorMap(sortedLoans) {
-const map = {};
-sortedLoans.forEach((loan, idx) => {
-map[loan.loanId] = KPI_PALETTE[idx % KPI_PALETTE.length];
-});
-window.KPI_COLOR_MAP = map;
+  const map = {};
+  (sortedLoans || []).forEach((loan, idx) => {
+    const key = String(loan.loanId ?? loan.id ?? "");
+    if (!key) return;
+    map[key] = KPI_PALETTE[idx % KPI_PALETTE.length];
+  });
+  window.KPI_COLOR_MAP = map;
 }
+
 
 document.querySelectorAll(".kpi").forEach(tile => {
 tile.addEventListener("click", () => {
@@ -1387,6 +1397,113 @@ console.groupEnd();
   });
 
   container.appendChild(svg);
+
+    // ==========================================================
+  // KPI1 CHART HOVER (tooltip + vertical cursor line)
+  // ==========================================================
+  container.style.position = "relative";
+
+  const tooltip = document.createElement("div");
+  tooltip.style.cssText = `
+    position:absolute;
+    pointer-events:none;
+    background:rgba(15,23,42,.92);
+    color:#fff;
+    padding:10px 12px;
+    border-radius:10px;
+    font-size:12px;
+    line-height:1.25;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+    opacity:0;
+    transform:translateY(-4px);
+    transition:opacity .08s ease, transform .08s ease;
+    z-index:50;
+    white-space:nowrap;
+  `;
+  container.appendChild(tooltip);
+
+  const vLine = document.createElementNS(svgNS, "line");
+  vLine.setAttribute("y1", "0");
+  vLine.setAttribute("y2", String(h));
+  vLine.setAttribute("stroke", "#64748b");
+  vLine.setAttribute("stroke-width", "1.25");
+  vLine.setAttribute("stroke-dasharray", "4,3");
+  vLine.setAttribute("opacity", "0");
+  svg.appendChild(vLine);
+
+  function showTooltip(x, y, lines) {
+    tooltip.innerHTML = lines.map(s => `<div>${s}</div>`).join("");
+    const pad = 12;
+
+    // place tooltip near cursor, clamp to container
+    const rect = container.getBoundingClientRect();
+    const tw = tooltip.offsetWidth || 220;
+    const th = tooltip.offsetHeight || 80;
+
+    let left = x + pad;
+    let top = y - th - pad;
+
+    left = Math.max(8, Math.min((w - tw - 8), left));
+    top = Math.max(8, Math.min((h - th - 8), top));
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.opacity = "1";
+    tooltip.style.transform = "translateY(0)";
+  }
+
+  function hideTooltip() {
+    tooltip.style.opacity = "0";
+    tooltip.style.transform = "translateY(-4px)";
+  }
+
+  function getMonthIndexFromX(mouseX) {
+    const idx = Math.floor((mouseX - padL) / barW);
+    return Math.max(0, Math.min(months.length - 1, idx));
+  }
+
+  svg.addEventListener("mousemove", (e) => {
+    const r = svg.getBoundingClientRect();
+    const mouseX = ((e.clientX - r.left) / r.width) * w;
+    const mouseY = ((e.clientY - r.top) / r.height) * h;
+
+    if (mouseX < padL || mouseX > (w - padR)) {
+      vLine.setAttribute("opacity", "0");
+      hideTooltip();
+      return;
+    }
+
+    const idx = getMonthIndexFromX(mouseX);
+    const m = months[idx];
+
+    // vertical guide line at center of the bar
+    const cx = padL + idx * barW + barW / 2;
+    vLine.setAttribute("x1", String(cx));
+    vLine.setAttribute("x2", String(cx));
+    vLine.setAttribute("opacity", "1");
+
+    // portfolio totals for that month (cumulative)
+    const principal = m.contributions.reduce((s,c) => s + (c.principal || 0), 0);
+    const interest  = m.contributions.reduce((s,c) => s + (c.interest || 0), 0);
+    const fees      = m.contributions.reduce((s,c) => s + (c.fees || 0), 0);
+    const net       = m.contributions.reduce((s,c) => s + (c.value || 0), 0);
+
+    const lines = [
+      `Date: ${formatMonthYear(m.monthDate)}`,
+      `Principal: ${formatCurrency(principal)}`,
+      `Interest: ${formatCurrency(interest)}`,
+      `Fees: -${formatCurrency(Math.abs(fees))}`,
+      `Cumulative Net: ${formatCurrency(net)}`
+    ];
+
+    showTooltip(mouseX, mouseY, lines);
+  });
+
+  svg.addEventListener("mouseleave", () => {
+    vLine.setAttribute("opacity", "0");
+    hideTooltip();
+  });
+
 }
 
 
@@ -2547,10 +2664,13 @@ function renderKpi1Table(rows, containerId) {
   const el = document.getElementById(containerId);
   if (!el) return;
 
+  const safeRows = Array.isArray(rows) ? rows : [];
+
   el.innerHTML = `
     <table class="kpi1-table">
       <thead>
         <tr>
+          <th style="width:44px">Loan On/Off</th>
           <th>Loan</th>
           <th>Net Earnings</th>
           <th>Principal</th>
@@ -2559,39 +2679,33 @@ function renderKpi1Table(rows, containerId) {
         </tr>
       </thead>
       <tbody>
-        ${(rows || []).map(l => {
-          const loanId = l.loanId;
-          const color = KPI_COLOR_MAP?.[loanId] || "#64748b";
+        ${safeRows.map(l => {
+          const loanId = String(l.loanId ?? l.id ?? "");
+          const color = (window.KPI_COLOR_MAP && window.KPI_COLOR_MAP[loanId]) ? window.KPI_COLOR_MAP[loanId] : "#64748b";
 
-          // 🔑 FIX: use engine field names, not legacy ones
-          const net = Number(l.net ?? 0);
-          const principal = Number(l.principal ?? 0);
-          const interest = Number(l.interest ?? 0);
-          const fees = Number(l.fees ?? 0);
+          // ✅ ENGINE SHAPE (net/principal/interest/fees) with fallback
+          const net = Number(l.net ?? l.netEarnings ?? 0);
+          const principal = Number(l.principal ?? l.cumPrincipal ?? 0);
+          const interest = Number(l.interest ?? l.cumInterest ?? 0);
+          const fees = Number(l.fees ?? l.cumFees ?? 0);
 
           return `
             <tr data-loan-id="${loanId}">
               <td>
-                <div style="display:flex;gap:10px;align-items:flex-start">
-                  <div
-                    style="
-                      width:10px;
-                      height:10px;
-                      border-radius:2px;
-                      background:${color};
-                      margin-top:4px;
-                    "
-                  ></div>
-                  <div>
-                    <div style="font-weight:600;color:${color}">
-                      ${l.loanName}
-                    </div>
-                    <div style="font-size:12px;color:${color};opacity:.8">
-                      ${l.school || ""}
-                    </div>
+                <div class="loan-swatch" data-loan-id="${loanId}" style="background:${color}"></div>
+              </td>
+
+              <td>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <div class="loan-name" style="font-weight:700;color:${color}">
+                    ${l.loanName ?? l.name ?? "Loan"}
+                  </div>
+                  <div class="loan-school" style="font-size:12px;color:var(--muted)">
+                    ${l.school || ""}
                   </div>
                 </div>
               </td>
+
               <td>${formatCurrency(net)}</td>
               <td>${formatCurrency(principal)}</td>
               <td>${formatCurrency(interest)}</td>
@@ -2604,26 +2718,25 @@ function renderKpi1Table(rows, containerId) {
   `;
 
   const table = el.querySelector("table");
+  if (!table) return;
 
   // ------------------------------------
   // Table ↔ chart hover wiring
   // ------------------------------------
-  table.querySelectorAll("tbody tr").forEach(row => {
-    const loanId = row.dataset.loanId;
+  table.querySelectorAll("tbody tr").forEach(tr => {
+    const loanId = tr.dataset.loanId;
 
-    row.addEventListener("mouseenter", () => {
-      highlightLoanInKpiChart(drawerChartArea, loanId);
+    tr.addEventListener("mouseenter", () => {
+      highlightLoanInKpiChart(document.getElementById("drawerChartArea"), loanId);
       highlightKpiRow(table, loanId);
     });
 
-    row.addEventListener("mouseleave", () => {
-      clearKpiChartHighlight(drawerChartArea);
+    tr.addEventListener("mouseleave", () => {
+      clearKpiChartHighlight(document.getElementById("drawerChartArea"));
       clearKpiRowHighlight(table);
     });
   });
 }
-
-
 
 
 
