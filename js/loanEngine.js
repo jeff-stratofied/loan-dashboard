@@ -813,19 +813,12 @@ loansWithAmort.forEach(loan => {
 if (d >= CURRENT_MONTH_START) return;
 
 
-    const key = `${d.getFullYear()}-${d.getMonth()}`;
+const key = `${d.getFullYear()}-${d.getMonth()}`;
 
-    // ----------------------------------
-    // KPI-3 income logic (NO prepayments)
-    // ----------------------------------
-    const scheduledPrincipal =
-      Number(r.payment ?? 0) - Number(r.interest ?? 0);
-
-    const paymentReceived =
-      Math.max(0, scheduledPrincipal) +
-      Number(r.interest ?? 0);
-
-    const principal = Number(r.principalPaid ?? 0);
+// ----------------------------------
+// KPI-3 income logic (NO prepayments)
+// ----------------------------------
+const principal = Number(r.principalPaid ?? 0);
 const interest  = Number(r.interest ?? 0);
 
 // fees are cash OUT, keep as NEGATIVE so tooltip shows "-$..."
@@ -834,26 +827,36 @@ const fees = -(
   Number(r.upfrontFeeThisMonth ?? 0)
 );
 
-// Net = principal + interest + fees (fees already negative)
+// Net = principal + interest + fees
 const net = principal + interest + fees;
 
+// ----------------------------------
+// Initialize month bucket ONCE
+// ----------------------------------
+if (!monthlyTotals[key]) {
+  monthlyTotals[key] = {
+    principal: 0,
+    interest: 0,
+    fees: 0,
+    net: 0
+  };
+}
 
-     // ----------------------------------
-    // KPI 1 / KPI 3 — per-loan breakdown
-    // ----------------------------------
-    if (!monthlyByLoan[key]) monthlyByLoan[key] = {};
-    monthlyByLoan[key][loan.loanId] =
-      (monthlyByLoan[key][loan.loanId] || 0) + net;
+// ----------------------------------
+// KPI-3 portfolio totals
+// ----------------------------------
+monthlyTotals[key].principal += principal;
+monthlyTotals[key].interest  += interest;
+monthlyTotals[key].fees      += fees;
+monthlyTotals[key].net       += net;
 
-   
-    monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
+// ----------------------------------
+// KPI-1 / KPI-3 per-loan breakdown
+// ----------------------------------
+if (!monthlyByLoan[key]) monthlyByLoan[key] = {};
+monthlyByLoan[key][loan.loanId] =
+  (monthlyByLoan[key][loan.loanId] || 0) + net;
 
-   monthlyPrincipal[key] = (monthlyPrincipal[key] || 0) + principal;
-monthlyInterest[key]  = (monthlyInterest[key]  || 0) + interest;
-monthlyFees[key]      = (monthlyFees[key]      || 0) + fees;
-
-  });
-});
 
 
 // --------------------------------------
