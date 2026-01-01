@@ -1000,4 +1000,119 @@ const portfolioEarnings = {
     portfolioEarnings,
     loanEarnings
   };
+
+// ======================================================
+// KPI 1 — portfolio cumulative-by-month series (for chart)
+// and per-loan current totals (for table)
+// ======================================================
+portfolioEarnings.kpi1Series = [];
+portfolioEarnings.kpi1Rows = [];
+
+// Build a sorted list of ownership months we actually have data for
+const monthKeys = Object.keys(monthlyTotals)
+  .sort((a, b) => {
+    const [ay, am] = a.split("-").map(Number);
+    const [by, bm] = b.split("-").map(Number);
+    return ay !== by ? ay - by : am - bm;
+  });
+
+// CUMULATIVE running totals per loanId
+const runningByLoan = {}; // { loanId: { principal, interest, fees, net } }
+
+// Helper to format "YYYY-M" key -> Date(first of month)
+const keyToDate = (k) => {
+  const [y, m] = k.split("-").map(Number);
+  return new Date(y, m, 1);
+};
+
+monthKeys.forEach((k) => {
+  const monthDate = keyToDate(k);
+
+  const contributions = [];
+  let totPrincipal = 0, totInterest = 0, totFees = 0, totNet = 0;
+
+  loansOwnedByUser.forEach((loan) => {
+    const loanId = loan.loanId || loan.id;
+
+    if (!runningByLoan[loanId]) {
+      runningByLoan[loanId] = { principal: 0, interest: 0, fees: 0, net: 0 };
+    }
+
+    // monthlyByLoan[k][loanId] is the NET for that loan in that month
+    // but we also need principal/interest/fees cumulatives for tooltip/table.
+    // We can derive month principal/interest/fees from the amort schedule rows
+    // for that month by summing rows whose loanDate month matches.
+    // Your amort rows already exist at loan.amort.schedule.
+    let monthP = 0, monthI = 0, monthF = 0, monthNet = 0;
+
+    if (loan.amort?.schedule?.length) {
+      loan.amort.schedule.forEach((r) => {
+        const d = new Date(r.loanDate);
+        const rk = `${d.getFullYear()}-${d.getMonth()}`;
+        if (rk !== k) return;
+
+        // NOTE: use the exact field names your schedule rows carry
+        monthP += Number(r.principalPaid || r.principal || 0);
+        monthI += Number(r.interestPaid || r.interest || 0);
+        monthF += Number(r.feesPaid || r.fees || r.fee || 0);
+
+        // "net" is principal + interest - fees
+        monthNet += (Number(r.principalPaid || r.principal || 0) +
+                     Number(r.interestPaid || r.interest || 0) -
+                     Number(r.feesPaid || r.fees || r.fee || 0));
+      });
+    }
+
+    runningByLoan[loanId].principal += monthP;
+    runningByLoan[loanId].interest  += monthI;
+    runningByLoan[loanId].fees      += monthF;
+    runningByLoan[loanId].net       += monthNet;
+
+    contributions.push({
+      loanId,
+      loanName: loan.loanName || loan.name || loanId,
+      school: loan.school || "",
+      // KPI1 chart uses "value" as the stacked bar height (cumulative net)
+      value: runningByLoan[loanId].net,
+
+      // include components for table/tooltip
+      principal: runningByLoan[loanId].principal,
+      interest: runningByLoan[loanId].interest,
+      fees: runningByLoan[loanId].fees,
+      net: runningByLoan[loanId].net
+    });
+
+    totPrincipal += runningByLoan[loanId].principal;
+    totInterest  += runningByLoan[loanId].interest;
+    totFees      += runningByLoan[loanId].fees;
+    totNet       += runningByLoan[loanId].net;
+  });
+
+  portfolioEarnings.kpi1Series.push({
+    monthDate,
+    contributions,
+    totals: {
+      principal: totPrincipal,
+      interest: totInterest,
+      fees: totFees,
+      net: totNet
+    }
+  });
+});
+
+// KPI1 table rows = last month’s cumulative per loan
+const last = portfolioEarnings.kpi1Series[portfolioEarnings.kpi1Series.length - 1];
+if (last?.contributions?.length) {
+  portfolioEarnings.kpi1Rows = last.contributions.map((c) => ({
+    loanId: c.loanId,
+    loanName: c.loanName,
+    school: c.school,
+    net: c.net,
+    principal: c.principal,
+    interest: c.interest,
+    fees: c.fees
+  }));
+}
+
+ 
 }
