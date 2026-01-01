@@ -1863,7 +1863,8 @@ function openKpi1() {
   // -----------------------------
   // KPI1 DATA (ENGINE)
   // -----------------------------
-  const series = views?.kpi1Series || [];
+  const series = views?.portfolioEarnings?.kpi1Series || [];
+
 
   // 🔑 REQUIRED: expose to chart renderer
   window.__KPI1_SERIES__ = series;
