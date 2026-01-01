@@ -1487,11 +1487,11 @@ svg.addEventListener("mouseleave", handleLeave);
 
 function createKpi1StackedBarChart(container, series) {
   container.innerHTML = "";
-  if (!series || !series.length) return;
+  if (!series?.length) return;
 
   const svgNS = "http://www.w3.org/2000/svg";
   const w = container.clientWidth || 720;
-  const h = container.clientHeight || 240;
+  const h = 240;
 
   const padL = 60, padR = 20, padT = 20, padB = 52;
   const usableW = w - padL - padR;
@@ -1499,135 +1499,58 @@ function createKpi1StackedBarChart(container, series) {
 
   const svg = document.createElementNS(svgNS, "svg");
   svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.setAttribute("width", "100%");
-  svg.setAttribute("height", "100%");
+  svg.style.width = "100%";
+  svg.style.height = "100%";
 
-  // ----------------------------------
-  // Y scale (MATCH KPI-3)
-  // ----------------------------------
-  const maxValRaw = Math.max(...series.map(d => d.total));
-  const maxVal = niceAxisMax(maxValRaw);
+  const maxVal = Math.max(...series.map(m => m.total));
   const scaleY = usableH / maxVal;
-
-  // ----------------------------------
-  // Grid + Y labels
-  // ----------------------------------
-  for (let i = 0; i <= 4; i++) {
-    const y = padT + i * (usableH / 4);
-    const val = maxVal - (maxVal * i / 4);
-
-    const line = document.createElementNS(svgNS, "line");
-    line.setAttribute("x1", padL);
-    line.setAttribute("x2", w - padR);
-    line.setAttribute("y1", y);
-    line.setAttribute("y2", y);
-    line.setAttribute("stroke", "var(--grid-light)");
-    svg.appendChild(line);
-
-    const lbl = document.createElementNS(svgNS, "text");
-    lbl.textContent = formatCurrency(val);
-    lbl.setAttribute("x", padL - 8);
-    lbl.setAttribute("y", y + 4);
-    lbl.setAttribute("font-size", "11");
-    lbl.setAttribute("text-anchor", "end");
-    lbl.setAttribute("fill", "var(--text)");
-    svg.appendChild(lbl);
-  }
-
-  // ----------------------------------
-  // Bars
-  // ----------------------------------
   const barW = usableW / series.length;
 
-  series.forEach((m, i) => {
+  series.forEach((month, i) => {
     let yCursor = h - padB;
 
-    Object.entries(m.byLoan).forEach(([loanId, val]) => {
-      const barH = val * scaleY;
-      if (barH <= 0) return;
+    Object.entries(month.byLoan).forEach(([loanId, val]) => {
+      if (val === 0) return;
 
+      const barH = val * scaleY;
       const rect = document.createElementNS(svgNS, "rect");
+
       rect.setAttribute("x", padL + i * barW);
       rect.setAttribute("y", yCursor - barH);
       rect.setAttribute("width", barW - 2);
       rect.setAttribute("height", barH);
-      rect.setAttribute("fill", KPI_COLOR_MAP[loanId] || "#64748b");
+      rect.setAttribute("fill", KPI_COLOR_MAP[loanId]);
       rect.dataset.loanId = loanId;
-
-      rect.style.opacity = "1";
-rect.setAttribute("data-stack", "kpi1");
-
 
       svg.appendChild(rect);
       yCursor -= barH;
     });
   });
 
-  // ----------------------------------
-  // X axis labels (MATCH KPI-3)
-  // ----------------------------------
-  const stepX = usableW / Math.max(1, series.length - 1);
-  for (let i = 0; i < series.length; i += 4) {
-    const x = padL + i * stepX;
-
-    const tick = document.createElementNS(svgNS, "line");
-    tick.setAttribute("x1", x);
-    tick.setAttribute("x2", x);
-    tick.setAttribute("y1", h - padB);
-    tick.setAttribute("y2", h - padB + 6);
-    tick.setAttribute("stroke", "var(--grid-light)");
-    svg.appendChild(tick);
-
-    const lbl = document.createElementNS(svgNS, "text");
-    lbl.textContent = formatMonthYear(series[i].date);
-    lbl.setAttribute("x", x);
-    lbl.setAttribute("y", h - padB + 18);
-    lbl.setAttribute("font-size", "11");
-    lbl.setAttribute("text-anchor", "middle");
-    lbl.setAttribute("fill", "var(--text)");
-    svg.appendChild(lbl);
-  }
-
-  // ----------------------------------
-  // Hover / tooltip (MATCH EXAMPLE)
-  // ----------------------------------
-  function idxFromClientX(clientX) {
-    const rect = svg.getBoundingClientRect();
-    const x = ((clientX - rect.left) / rect.width) * w;
-    const t = (x - padL) / barW;
-    return Math.max(0, Math.min(series.length - 1, Math.floor(t)));
-  }
-
+  // ---- hover tooltip (MATCH OLD KPI-1) ----
   svg.addEventListener("mousemove", e => {
-    const idx = idxFromClientX(e.clientX);
+    const idx = Math.floor(
+      (e.offsetX - padL) / barW
+    );
     const m = series[idx];
     if (!m) return;
 
-    let principal = 0;
-    let interest  = 0;
-    let fees      = 0;
+    setMiniTooltipContent([
+      `Date: ${formatMonthYear(m.date)}`,
+      `Principal: ${formatCurrency(m.principal)}`,
+      `Interest: ${formatCurrency(m.interest)}`,
+      `Fees: ${formatCurrency(m.fees)}`,
+      `Cumulative Net: ${formatCurrency(m.total)}`
+    ]);
 
-    // Engine already computed net; tooltip format matches screenshot
-  Object.values(m.byLoan).forEach(v => {
-    if (v > 0) principal += v;
-    else fees += v;
+    positionMiniTooltip(e.clientX, e.clientY, 6);
   });
 
-  setMiniTooltipContent([
-    `Date: ${formatMonthYear(m.date)}`,
-    `Principal: ${formatCurrency(principal)}`,
-    `Interest: —`,
-    `Fees: ${formatCurrency(fees)}`,
-    `Cumulative Net: ${formatCurrency(m.total)}`
-  ]);
+  svg.addEventListener("mouseleave", hideMiniTooltip);
 
-  positionMiniTooltip(e.clientX, e.clientY, 8);
-});
-
-svg.addEventListener("mouseleave", hideMiniTooltip);
-
-container.appendChild(svg);
+  container.appendChild(svg);
 }
+
 
 
 
@@ -2572,57 +2495,23 @@ container.innerHTML = html;
 }
 
 function renderKpi1Table(series, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+  const el = document.getElementById(containerId);
+  if (!el) return;
 
   const totals = {};
 
   series.forEach(m => {
-    Object.entries(m.byLoan || {}).forEach(([loanId, net]) => {
+    Object.entries(m.byLoan).forEach(([loanId, net]) => {
       if (!totals[loanId]) {
-        totals[loanId] = {
-          net: 0,
-          principal: 0,
-          interest: 0,
-          fees: 0
-        };
+        totals[loanId] = { net: 0, principal: 0, interest: 0, fees: 0 };
       }
-
       totals[loanId].net += net;
       if (net > 0) totals[loanId].principal += net;
       else totals[loanId].fees += net;
     });
   });
 
-  const rows = loansForUser.map(loan => {
-    const loanId = loan.loanId;
-    const t = totals[loanId] || {};
-    const color = KPI_COLOR_MAP[loanId] || "#64748b";
-
-    return `
-      <tr data-loan-id="${loanId}">
-        <td>
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <div style="width:10px;height:10px;border-radius:2px;background:${color};margin-top:4px"></div>
-            <div>
-              <div style="font-weight:600;color:${color}">
-                ${loan.loanName}
-              </div>
-              <div style="font-size:12px;color:${color};opacity:.8">
-                ${loan.school || ""}
-              </div>
-            </div>
-          </div>
-        </td>
-        <td>${formatCurrency(t.net || 0)}</td>
-        <td>${formatCurrency(t.principal || 0)}</td>
-        <td>${formatCurrency(t.interest || 0)}</td>
-        <td>${formatCurrency(t.fees || 0)}</td>
-      </tr>
-    `;
-  });
-
-  container.innerHTML = `
+  el.innerHTML = `
     <table class="kpi1-table">
       <thead>
         <tr>
@@ -2634,29 +2523,45 @@ function renderKpi1Table(series, containerId) {
         </tr>
       </thead>
       <tbody>
-        ${rows.join("")}
+        ${loansForUser.map(l => {
+          const t = totals[l.loanId] || {};
+          const color = KPI_COLOR_MAP[l.loanId];
+          return `
+            <tr data-loan-id="${l.loanId}">
+              <td>
+                <div style="display:flex;gap:10px">
+                  <div style="width:10px;height:10px;background:${color};border-radius:2px;margin-top:4px"></div>
+                  <div>
+                    <div style="font-weight:600;color:${color}">${l.loanName}</div>
+                    <div style="font-size:12px;color:${color};opacity:.8">${l.school}</div>
+                  </div>
+                </div>
+              </td>
+              <td>${formatCurrency(t.net || 0)}</td>
+              <td>${formatCurrency(t.principal || 0)}</td>
+              <td>${formatCurrency(t.interest || 0)}</td>
+              <td>${formatCurrency(t.fees || 0)}</td>
+            </tr>
+          `;
+        }).join("")}
       </tbody>
     </table>
   `;
 
-  const table = container.querySelector("table");
-
-  table.querySelectorAll("tbody tr").forEach(row => {
+  el.querySelectorAll("tbody tr").forEach(row => {
     const loanId = row.dataset.loanId;
 
     row.addEventListener("mouseenter", () => {
       highlightLoanInKpiChart(drawerChartArea, loanId);
-      highlightKpiRow(table, loanId);
+      highlightKpiRow(el.querySelector("table"), loanId);
     });
 
     row.addEventListener("mouseleave", () => {
       clearKpiChartHighlight(drawerChartArea);
-      clearKpiRowHighlight(table);
+      clearKpiRowHighlight(el.querySelector("table"));
     });
   });
 }
-
-
 
 
 
