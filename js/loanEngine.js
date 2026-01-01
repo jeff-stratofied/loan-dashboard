@@ -607,7 +607,7 @@ export function attachSchedules(loans) {
 // and any shared timelines will be added during PHASE C.
 //
 
-export function buildPortfolioViews(loansWithAmort, activeUser = null) {
+export function buildPortfolioViews(loansWithAmort) {
 
 loansWithAmort.forEach(l => {
   if (!l.amort || !Array.isArray(l.amort.schedule)) {
@@ -615,13 +615,17 @@ loansWithAmort.forEach(l => {
   }
 });
 
-// --------------------------------------
-// Canonical user-filtered loan set
-// --------------------------------------
-const loansOwnedByUser = activeUser
-  ? loansWithAmort.filter(loan => loan.user === activeUser)
-  : loansWithAmort;
+  // ======================================================
+// USER SCOPING (AUTHORITATIVE FOR EARNINGS)
+// ======================================================
 
+// NOTE: earnings KPIs must only include loans owned by the active user
+// Default user is normalized in loadLoans() as l.user || "jeff"
+const ACTIVE_USER = "jeff"; // 🔒 later this comes from auth / URL / session
+
+const loansOwnedByUser = loansWithAmort.filter(
+  loan => loan.user === ACTIVE_USER
+);
 
   const TODAY = getStandardToday();
 
@@ -794,13 +798,6 @@ let totalFeesToDate = 0;
 // --------------------------------------
 const monthlyTotals = {}; // key = "YYYY-M"
 
- // --------------------------------------
-// KPI 1 / KPI 3 — per-loan monthly breakdown
-// --------------------------------------
-const monthlyByLoan = {}; 
-// shape: { "YYYY-M": { loanId: netAmount } }
-
-
 loansOwnedByUser.forEach(loan => {
   const purchase = new Date(loan.purchaseDate);
 
@@ -821,52 +818,35 @@ loansOwnedByUser.forEach(loan => {
 if (d >= CURRENT_MONTH_START) return;
 
 
-const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
 
-// ----------------------------------
-// KPI-3 income logic (NO prepayments)
-// ----------------------------------
-const principal = Number(r.principalPaid ?? 0);
-const interest  = Number(r.interest ?? 0);
+    // ----------------------------------
+    // KPI-3 income logic (NO prepayments)
+    // ----------------------------------
+    const scheduledPrincipal =
+      Number(r.payment ?? 0) - Number(r.interest ?? 0);
 
-// fees are cash OUT, keep as NEGATIVE so tooltip shows "-$..."
-const fees = -(
-  Number(r.monthlyBalanceFee ?? 0) +
-  Number(r.upfrontFeeThisMonth ?? 0)
-);
+    const paymentReceived =
+      Math.max(0, scheduledPrincipal) +
+      Number(r.interest ?? 0);
 
-// Net = principal + interest + fees
-const net = principal + interest + fees;
+    let net;
 
-// ----------------------------------
-// Initialize month bucket ONCE
-// ----------------------------------
-if (!monthlyTotals[key]) {
-  monthlyTotals[key] = {
-    principal: 0,
-    interest: 0,
-    fees: 0,
-    net: 0
-  };
-}
+    if (paymentReceived > 0) {
+      // Borrower paid → owner receives payment minus servicing fee
+      net = paymentReceived - Number(r.monthlyBalanceFee ?? 0);
+    } else {
+      // No borrower payment → owner still pays fees (negative income)
+      net = -(
+        Number(r.monthlyBalanceFee ?? 0) +
+        Number(r.upfrontFeeThisMonth ?? 0)
+      );
+    }
 
-// ----------------------------------
-// KPI-3 portfolio totals
-// ----------------------------------
-monthlyTotals[key].principal += principal;
-monthlyTotals[key].interest  += interest;
-monthlyTotals[key].fees      += fees;
-monthlyTotals[key].net       += net;
+    monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
+  });
+});
 
-// ----------------------------------
-// KPI-1 / KPI-3 per-loan breakdown
-// ----------------------------------
-if (!monthlyByLoan[key]) monthlyByLoan[key] = {};
-monthlyByLoan[key][loan.loanId] =
-  (monthlyByLoan[key][loan.loanId] || 0) + net;
-
-  }); // ← closes loan.amort.schedule.forEach
-});   // ← closes loansWithAmort.forEach
 
 // --------------------------------------
 // KPI 3 — derived values
@@ -874,109 +854,13 @@ monthlyByLoan[key][loan.loanId] =
 const monthsCounted = Object.keys(monthlyTotals).length;
 
 const totalNetAcrossMonths =
-  Object.values(monthlyTotals).reduce((sum, v) => sum + v.net, 0);
-
+  Object.values(monthlyTotals).reduce((sum, v) => sum + v, 0);
 
 const avgMonthlyNet =
   monthsCounted > 0
     ? totalNetAcrossMonths / monthsCounted
     : 0;
 
-// --------------------------------------
-// Canonical sorted month keys (YYYY-M)
-// --------------------------------------
-const monthKeys = Object.keys(monthlyTotals).sort((a, b) => {
-  const [ay, am] = a.split("-").map(Number);
-  const [by, bm] = b.split("-").map(Number);
-  return ay !== by ? ay - by : am - bm;
-});
-
- 
-// --------------------------------------
-// KPI 1 — stacked monthly series (AUTHORITATIVE)
-// --------------------------------------
-
-const kpi1Series = monthKeys.map(key => {
-  const [y, m] = key.split("-").map(Number);
-
-  const principal = Number(monthlyTotals[key]?.principal || 0);
-  const interest  = Number(monthlyTotals[key]?.interest  || 0);
-  const fees      = Number(monthlyTotals[key]?.fees      || 0);
-  const net       = Number(monthlyTotals[key]?.net       || 0);
-
-  return {
-    date: new Date(y, m, 1),
-
-    // monthly values
-    principal,
-    interest,
-    fees,
-    net,
-
-    // cumulative (filled in next pass)
-    total: 0,
-
-    // stacked bars (per-loan net)
-    byLoan: { ...(monthlyByLoan[key] || {}) }
-  };
-});
-
-
-// --------------------------------------
-// KPI 1 — cumulative totals (SECOND PASS)
-// --------------------------------------
-
-let runningTotal = 0;
-
-kpi1Series.forEach(row => {
-  runningTotal += row.net;
-  row.total = runningTotal;
-});
-
-
-// --------------------------------------
-// KPI 1 — table rows (per-loan cumulative)
-// --------------------------------------
-const kpi1Rows = loansOwnedByUser.map(loan => {
-  const purchase = new Date(loan.purchaseDate);
-
-  // Ownership starts at FIRST of purchase month
-  const purchaseMonth = new Date(
-    purchase.getFullYear(),
-    purchase.getMonth(),
-    1
-  );
-
-  let p = 0, i = 0, f = 0; // f negative
-
-  loan.amort.schedule.forEach(r => {
-    const d = new Date(r.loanDate);
-
-    if (d < purchaseMonth) return;
-    if (d >= CURRENT_MONTH_START) return;
-
-    p += Number(r.principalPaid ?? 0);
-    i += Number(r.interest ?? 0);
-    f += -(
-      Number(r.monthlyBalanceFee ?? 0) +
-      Number(r.upfrontFeeThisMonth ?? 0)
-    );
-  });
-
-  return {
-    loanId: loan.loanId,
-    loanName: loan.loanName,
-    school: loan.school,
-    netEarnings: p + i + f,
-    principal: p,
-    interest: i,
-    fees: f
-  };
-});
-
-
-
- 
 // --------------------------------------
 // KPI 3 SERIES — avg net per calendar month
 // --------------------------------------
@@ -990,14 +874,17 @@ const kpi3Series = Object.keys(monthlyTotals)
     const [year, month] = key.split("-").map(Number);
     return {
       date: new Date(year, month, 1),
-      avg: monthlyTotals[key].net
+      avg: monthlyTotals[key]
     };
   });
 
 // --------------------------------------
 // KPI 3 TABLE — per-loan avg monthly net
 // --------------------------------------
-const kpi3Rows = loansWithAmort
+// --------------------------------------
+// KPI 3 TABLE — per-loan avg monthly net
+// --------------------------------------
+const kpi3Rows = loansOwnedByUser
   .map(loan => {
     const loanKey = loan.loanId;
     const loanView = loanEarnings[loanKey];
@@ -1044,32 +931,29 @@ const kpi3Rows = loansWithAmort
 // --------------------------------------
 // KPI 1 totals (already correct)
 // --------------------------------------
-loansWithAmort.forEach(loan => {
+loansOwnedByUser.forEach(loan => {
   const l = loanEarnings[loan.loanId];
   if (!l) return;
 
   totalNetToDate  += Number(l.current.netEarnings ?? 0);
-
   totalFeesToDate += Number(l.feesToDate ?? 0);
 });
 
 const portfolioEarnings = {
-  totalNetToDate: totalNetAcrossMonths,
+  totalNetToDate,
   totalFeesToDate,
 
+  // KPI 3 (AUTHORITATIVE)
   avgMonthlyNet,
   monthsCounted,
-
-  kpi1Series,      // ✅ ADD
   kpi3Series,
   kpi3Rows,
 
-  totalNetProjected: totalNetAcrossMonths,
+  // Phase 4 placeholders
+  totalNetProjected: totalNetToDate,
   totalFeesProjected: totalFeesToDate,
   projectedAvgMonthlyNet: 0
 };
-
-
 
 
   // ======================================================
