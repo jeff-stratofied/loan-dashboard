@@ -966,7 +966,7 @@ const kpi1MonthMap = {}; // { "2024-0": { monthDate, byLoan } }
 const runningByLoan = {}; // loanId -> { net, principal, interest, fees }
 
 loansOwnedByUser.forEach(loan => {
-  runningByLoan[loan.loanId] = {
+  runningByLoan[loan.id] = {
     net: 0,
     principal: 0,
     interest: 0,
@@ -976,7 +976,7 @@ loansOwnedByUser.forEach(loan => {
 
 // Walk schedules month-by-month, calendar aligned
 loansOwnedByUser.forEach(loan => {
-  const loanId   = loan.loanId;
+  const loanId = loan.id;
   const loanName = loan.loanName;
   const school   = loan.school;
 
@@ -993,6 +993,10 @@ loansOwnedByUser.forEach(loan => {
 
     // Only count months owned
     if (monthDate < purchaseMonth) return;
+
+   // Only count COMPLETED months (no current / future)
+if (monthDate >= CURRENT_MONTH_START) return;
+
 
     const key = `${monthDate.getFullYear()}-${monthDate.getMonth()}`;
 
@@ -1015,17 +1019,37 @@ loansOwnedByUser.forEach(loan => {
     runningByLoan[loanId].net       += net;
 
     kpi1MonthMap[key].byLoan[loanId] = {
-      loanId,
-      loanName,
-      school,
-      principal: runningByLoan[loanId].principal,
-      interest:  runningByLoan[loanId].interest,
-      fees:      runningByLoan[loanId].fees,
-      net:       runningByLoan[loanId].net
-    };
+  loanId,
+  loanName,
+  school,
+  principal: runningByLoan[loanId].principal,
+  interest:  runningByLoan[loanId].interest,
+  fees:      runningByLoan[loanId].fees,
+  net:       runningByLoan[loanId].net
+};
+
   });
 });
 
+// Ensure every month includes ALL loans (carry forward zeros)
+Object.values(kpi1MonthMap).forEach(m => {
+  loansOwnedByUser.forEach(loan => {
+    const id = loan.id;
+    if (!m.byLoan[id]) {
+      m.byLoan[id] = {
+        loanId: id,
+        loanName: loan.loanName,
+        school: loan.school,
+        principal: runningByLoan[id]?.principal ?? 0,
+        interest:  runningByLoan[id]?.interest ?? 0,
+        fees:      runningByLoan[id]?.fees ?? 0,
+        net:       runningByLoan[id]?.net ?? 0
+      };
+    }
+  });
+});
+
+ 
 // Build ordered KPI-1 series
 const kpi1Series = Object.values(kpi1MonthMap)
   .sort((a, b) => a.monthDate - b.monthDate)
