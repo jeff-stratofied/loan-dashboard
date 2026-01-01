@@ -636,8 +636,12 @@ const CURRENT_MONTH_START = new Date(
 );
 
   
-  const TODAY = new Date();
-  const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
+ const nextMonthDate = new Date(
+  TODAY.getFullYear(),
+  TODAY.getMonth() + 1,
+  1
+);
+
 
   // ======================================================
   // 1) NEXT-MONTH EXPECTED INCOME (AMORT PAGE)
