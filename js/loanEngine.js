@@ -627,6 +627,14 @@ const loansOwnedByUser = loansWithAmort.filter(
   loan => loan.user === ACTIVE_USER
 );
 
+  const TODAY = getStandardToday();
+
+const CURRENT_MONTH_START = new Date(
+  TODAY.getFullYear(),
+  TODAY.getMonth(),
+  1
+);
+
   
   const TODAY = new Date();
   const nextMonthDate = new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1);
@@ -802,8 +810,9 @@ loansOwnedByUser.forEach(loan => {
     // Must be owned (month-based)
     if (d < purchaseMonth) return;
 
-    // Must not be in the future
-    if (d > TODAY) return;
+    // Only count COMPLETED months
+if (d >= CURRENT_MONTH_START) return;
+
 
     const key = `${d.getFullYear()}-${d.getMonth()}`;
 
