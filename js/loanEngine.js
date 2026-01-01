@@ -857,7 +857,8 @@ if (!monthlyByLoan[key]) monthlyByLoan[key] = {};
 monthlyByLoan[key][loan.loanId] =
   (monthlyByLoan[key][loan.loanId] || 0) + net;
 
-
+  }); // ← closes loan.amort.schedule.forEach
+});   // ← closes loansWithAmort.forEach
 
 // --------------------------------------
 // KPI 3 — derived values
