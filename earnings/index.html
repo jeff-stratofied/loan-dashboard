@@ -2422,6 +2422,24 @@ function renderKPI1Table(data, containerId = "kpi1Table") {
   if (!table) return;
 
   table.classList.add("kpi1-table");
+
+  // ------------------------------------
+// KPI-1 table → chart hover wiring
+// ------------------------------------
+table.querySelectorAll("tbody tr").forEach(row => {
+  const loanId = row.dataset.loanId;
+
+  row.addEventListener("mouseenter", () => {
+    highlightLoanInKpiChart(drawerChartArea, loanId);
+    highlightKpiRow(table, loanId);
+  });
+
+  row.addEventListener("mouseleave", () => {
+    clearKpiChartHighlight(drawerChartArea);
+    clearKpiRowHighlight(table);
+  });
+});
+
 }
 
 
