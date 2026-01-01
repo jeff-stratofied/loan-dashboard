@@ -1958,6 +1958,11 @@ const loansWithAmort = attachSchedules(normalizedLoans);
 views = buildPortfolioViews(loansWithAmort);
 loansForUser = loansWithAmort;
 
+  // ------------------------------------
+// KPI color map (REQUIRED for KPI-1)
+// ------------------------------------
+buildLoanColorMap(loansForUser);
+
   
   // ------------------------------------
   // Populate filter dropdowns (UI-only)
