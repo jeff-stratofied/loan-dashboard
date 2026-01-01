@@ -873,14 +873,6 @@ const avgMonthlyNet =
     ? totalNetAcrossMonths / monthsCounted
     : 0;
 
-// --------------------------------------
-// KPI 1 — Net Earnings to Date
-// (COMPLETED MONTHS — matches KPI 3 endpoint)
-// --------------------------------------
-const netEarningsToDateCompletedMonths = kpi1Series.length
-  ? kpi1Series[kpi1Series.length - 1].total
-  : 0;
-
 
 // --------------------------------------
 // KPI 1 — stacked monthly series
@@ -903,6 +895,15 @@ const kpi1Series = monthKeys.map(key => {
   const mf = Number(monthlyFees[key]      || 0);
   const mn = Number(monthlyTotals[key]    || 0);
 
+// --------------------------------------
+// KPI 1 — Net Earnings to Date
+// (COMPLETED MONTHS — matches KPI 3 endpoint)
+// --------------------------------------
+const netEarningsToDateCompletedMonths = kpi1Series.length
+  ? kpi1Series[kpi1Series.length - 1].total
+  : 0;
+
+ 
   // ----------------------------------
   // CUMULATIVE portfolio values
   // (tooltip only)
