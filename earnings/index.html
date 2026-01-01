@@ -1554,6 +1554,10 @@ function createKpi1StackedBarChart(container, series) {
       rect.setAttribute("fill", KPI_COLOR_MAP[loanId] || "#64748b");
       rect.dataset.loanId = loanId;
 
+      rect.style.opacity = "1";
+rect.setAttribute("data-stack", "kpi1");
+
+
       svg.appendChild(rect);
       yCursor -= barH;
     });
@@ -2571,19 +2575,29 @@ function renderKpi1Table(series, containerId) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const totalsByLoan = {};
+  const totals = {};
 
   series.forEach(m => {
-    Object.entries(m.byLoan).forEach(([loanId, val]) => {
-      totalsByLoan[loanId] =
-        (totalsByLoan[loanId] || 0) + val;
+    Object.entries(m.byLoan || {}).forEach(([loanId, net]) => {
+      if (!totals[loanId]) {
+        totals[loanId] = {
+          net: 0,
+          principal: 0,
+          interest: 0,
+          fees: 0
+        };
+      }
+
+      totals[loanId].net += net;
+      if (net > 0) totals[loanId].principal += net;
+      else totals[loanId].fees += net;
     });
   });
 
   const rows = loansForUser.map(loan => {
     const loanId = loan.loanId;
+    const t = totals[loanId] || {};
     const color = KPI_COLOR_MAP[loanId] || "#64748b";
-    const net = totalsByLoan[loanId] || 0;
 
     return `
       <tr data-loan-id="${loanId}">
@@ -2600,9 +2614,10 @@ function renderKpi1Table(series, containerId) {
             </div>
           </div>
         </td>
-        <td style="font-weight:600">
-          ${formatCurrency(net)}
-        </td>
+        <td>${formatCurrency(t.net || 0)}</td>
+        <td>${formatCurrency(t.principal || 0)}</td>
+        <td>${formatCurrency(t.interest || 0)}</td>
+        <td>${formatCurrency(t.fees || 0)}</td>
       </tr>
     `;
   });
@@ -2613,6 +2628,9 @@ function renderKpi1Table(series, containerId) {
         <tr>
           <th>Loan</th>
           <th>Net Earnings</th>
+          <th>Principal</th>
+          <th>Interest</th>
+          <th>Fees</th>
         </tr>
       </thead>
       <tbody>
@@ -2637,6 +2655,7 @@ function renderKpi1Table(series, containerId) {
     });
   });
 }
+
 
 
 
