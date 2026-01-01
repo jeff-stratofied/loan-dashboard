@@ -1528,6 +1528,24 @@ el.dataset.loanId === loanId ? "1" : "0.15";
 });
 }
 
+function redrawKpi1Chart() {
+  if (!window.__KPI1_SERIES__) return;
+
+  const filteredSeries = window.__KPI1_SERIES__.map(m => ({
+    ...m,
+    contributions: (m.contributions || []).filter(
+      c => !window.hiddenLoans?.has(String(c.loanId))
+    )
+  }));
+
+  const container = document.getElementById("drawerChartArea");
+  if (!container) return;
+
+  container.innerHTML = "";
+  createKpi1StackedBarChart(container, filteredSeries);
+}
+
+  
 function clearKpiChartHighlight(container) {
 if (!container) return;
 
