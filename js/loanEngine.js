@@ -7,7 +7,7 @@
 // -------------------------------
 
 import { loadLoans as fetchLoans } from "./loadLoans.js";
-
+ 
 // ===============================
 // UNIVERSAL LOAD + NORMALIZE
 // ===============================
