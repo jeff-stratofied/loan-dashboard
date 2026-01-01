@@ -2441,7 +2441,8 @@ html += `</tbody></table>`;
 container.innerHTML = html;
 }
 
-function renderKPI1Table(series, containerId = "kpi1Table") {
+function renderKpi1Table(series, containerId = "kpi1Table") {
+
   const container = document.getElementById(containerId);
   if (!container) return;
 
