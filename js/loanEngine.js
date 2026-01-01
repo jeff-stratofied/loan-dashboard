@@ -890,10 +890,11 @@ let cumFees      = 0; // negative
 let cumTotal     = 0;
 
 const kpi1Series = monthKeys.map(key => {
-  const mp = Number(monthlyPrincipal[key] || 0);
-  const mi = Number(monthlyInterest[key]  || 0);
-  const mf = Number(monthlyFees[key]      || 0);
-  const mn = Number(monthlyTotals[key]    || 0);
+  const mp = Number(monthlyTotals[key]?.principal || 0);
+const mi = Number(monthlyTotals[key]?.interest  || 0);
+const mf = Number(monthlyTotals[key]?.fees      || 0);
+const mn = Number(monthlyTotals[key]?.net       || 0);
+
 
 // --------------------------------------
 // KPI 1 — Net Earnings to Date
