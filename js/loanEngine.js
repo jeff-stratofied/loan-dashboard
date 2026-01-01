@@ -955,6 +955,104 @@ const portfolioEarnings = {
   projectedAvgMonthlyNet: 0
 };
 
+ // ======================================================
+// KPI 1 — CUMULATIVE NET EARNINGS (STACKED BY LOAN)
+// ======================================================
+
+// Map of YYYY-M -> per-loan cumulative totals
+const kpi1MonthMap = {}; // { "2024-0": { monthDate, byLoan } }
+
+// Track running cumulative totals per loan
+const runningByLoan = {}; // loanId -> { net, principal, interest, fees }
+
+loansOwnedByUser.forEach(loan => {
+  runningByLoan[loan.loanId] = {
+    net: 0,
+    principal: 0,
+    interest: 0,
+    fees: 0
+  };
+});
+
+// Walk schedules month-by-month, calendar aligned
+loansOwnedByUser.forEach(loan => {
+  const loanId   = loan.loanId;
+  const loanName = loan.loanName;
+  const school   = loan.school;
+
+  const purchase = new Date(loan.purchaseDate);
+  const purchaseMonth = new Date(
+    purchase.getFullYear(),
+    purchase.getMonth(),
+    1
+  );
+
+  loan.amort.schedule.forEach(r => {
+    const d = new Date(r.loanDate);
+    const monthDate = new Date(d.getFullYear(), d.getMonth(), 1);
+
+    // Only count months owned
+    if (monthDate < purchaseMonth) return;
+
+    const key = `${monthDate.getFullYear()}-${monthDate.getMonth()}`;
+
+    if (!kpi1MonthMap[key]) {
+      kpi1MonthMap[key] = {
+        monthDate,
+        byLoan: {}
+      };
+    }
+
+    // Increment running totals
+    const principal = Number(r.principalPaid ?? 0);
+    const interest  = Number(r.interest ?? 0);
+    const fees      = Number(r.feeThisMonth ?? 0);
+    const net       = principal + interest - fees;
+
+    runningByLoan[loanId].principal += principal;
+    runningByLoan[loanId].interest  += interest;
+    runningByLoan[loanId].fees      += fees;
+    runningByLoan[loanId].net       += net;
+
+    kpi1MonthMap[key].byLoan[loanId] = {
+      loanId,
+      loanName,
+      school,
+      principal: runningByLoan[loanId].principal,
+      interest:  runningByLoan[loanId].interest,
+      fees:      runningByLoan[loanId].fees,
+      net:       runningByLoan[loanId].net
+    };
+  });
+});
+
+// Build ordered KPI-1 series
+const kpi1Series = Object.values(kpi1MonthMap)
+  .sort((a, b) => a.monthDate - b.monthDate)
+  .map(m => ({
+    monthDate: m.monthDate,
+    contributions: Object.values(m.byLoan)
+  }));
+
+// KPI-1 table rows = last cumulative values per loan
+const lastMonth = kpi1Series[kpi1Series.length - 1];
+
+const kpi1Rows = lastMonth
+  ? lastMonth.contributions.map(c => ({
+      loanId: c.loanId,
+      loanName: c.loanName,
+      school: c.school,
+      net: c.net,
+      principal: c.principal,
+      interest: c.interest,
+      fees: c.fees
+    }))
+  : [];
+
+// Attach to portfolioEarnings (AUTHORITATIVE)
+portfolioEarnings.kpi1Series = kpi1Series;
+portfolioEarnings.kpi1Rows   = kpi1Rows;
+
 
   // ======================================================
   // 5) AMORT KPIs (AMORT PAGE)
