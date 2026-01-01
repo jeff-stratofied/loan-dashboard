@@ -875,14 +875,46 @@ const avgMonthlyNet =
 
 
 // --------------------------------------
-// KPI 1 — stacked monthly series
+// KPI 1 — stacked monthly series (AUTHORITATIVE)
 // --------------------------------------
-const monthKeys = Object.keys(monthlyTotals)
-  .sort((a, b) => {
-    const [ay, am] = a.split("-").map(Number);
-    const [by, bm] = b.split("-").map(Number);
-    return ay !== by ? ay - by : am - bm;
-  });
+
+const kpi1Series = monthKeys.map(key => {
+  const [y, m] = key.split("-").map(Number);
+
+  const principal = Number(monthlyTotals[key]?.principal || 0);
+  const interest  = Number(monthlyTotals[key]?.interest  || 0);
+  const fees      = Number(monthlyTotals[key]?.fees      || 0);
+  const net       = Number(monthlyTotals[key]?.net       || 0);
+
+  return {
+    date: new Date(y, m, 1),
+
+    // monthly values
+    principal,
+    interest,
+    fees,
+    net,
+
+    // cumulative (filled in next pass)
+    total: 0,
+
+    // stacked bars (per-loan net)
+    byLoan: { ...(monthlyByLoan[key] || {}) }
+  };
+});
+
+
+// --------------------------------------
+// KPI 1 — cumulative totals (SECOND PASS)
+// --------------------------------------
+
+let runningTotal = 0;
+
+kpi1Series.forEach(row => {
+  runningTotal += row.net;
+  row.total = runningTotal;
+});
+
 
 let cumPrincipal = 0;
 let cumInterest  = 0;
