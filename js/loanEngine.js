@@ -607,7 +607,7 @@ export function attachSchedules(loans) {
 // and any shared timelines will be added during PHASE C.
 //
 
-export function buildPortfolioViews(loansWithAmort) {
+export function buildPortfolioViews(loansWithAmort, activeUser = null) {
 
 loansWithAmort.forEach(l => {
   if (!l.amort || !Array.isArray(l.amort.schedule)) {
@@ -825,18 +825,18 @@ if (d >= CURRENT_MONTH_START) return;
       Math.max(0, scheduledPrincipal) +
       Number(r.interest ?? 0);
 
-    let net;
+    const principal = Number(r.principalPaid ?? 0);
+const interest  = Number(r.interest ?? 0);
 
-    if (paymentReceived > 0) {
-      // Borrower paid → owner receives payment minus servicing fee
-      net = paymentReceived - Number(r.monthlyBalanceFee ?? 0);
-    } else {
-      // No borrower payment → owner still pays fees (negative income)
-      net = -(
-        Number(r.monthlyBalanceFee ?? 0) +
-        Number(r.upfrontFeeThisMonth ?? 0)
-      );
-    }
+// fees are cash OUT, keep as NEGATIVE so tooltip shows "-$..."
+const fees = -(
+  Number(r.monthlyBalanceFee ?? 0) +
+  Number(r.upfrontFeeThisMonth ?? 0)
+);
+
+// Net = principal + interest + fees (fees already negative)
+const net = principal + interest + fees;
+
 
      // ----------------------------------
     // KPI 1 / KPI 3 — per-loan breakdown
@@ -847,6 +847,11 @@ if (d >= CURRENT_MONTH_START) return;
 
    
     monthlyTotals[key] = (monthlyTotals[key] || 0) + net;
+
+   monthlyPrincipal[key] = (monthlyPrincipal[key] || 0) + principal;
+monthlyInterest[key]  = (monthlyInterest[key]  || 0) + interest;
+monthlyFees[key]      = (monthlyFees[key]      || 0) + fees;
+
   });
 });
 
@@ -868,25 +873,99 @@ const avgMonthlyNet =
 // KPI 1 — Net Earnings to Date
 // (COMPLETED MONTHS — matches KPI 3 endpoint)
 // --------------------------------------
-const netEarningsToDateCompletedMonths = totalNetAcrossMonths;
+const netEarningsToDateCompletedMonths = kpi1Series.length
+  ? kpi1Series[kpi1Series.length - 1].total
+  : 0;
 
- // --------------------------------------
+
+// --------------------------------------
 // KPI 1 — stacked monthly series
 // --------------------------------------
-const kpi1Series = Object.keys(monthlyTotals)
+const monthKeys = Object.keys(monthlyTotals)
   .sort((a, b) => {
     const [ay, am] = a.split("-").map(Number);
     const [by, bm] = b.split("-").map(Number);
     return ay !== by ? ay - by : am - bm;
-  })
-  .map(key => ({
-    date: (() => {
-      const [y, m] = key.split("-").map(Number);
-      return new Date(y, m, 1);
-    })(),
-    total: monthlyTotals[key],
-    byLoan: monthlyByLoan[key] || {}
-  }));
+  });
+
+let cumPrincipal = 0;
+let cumInterest  = 0;
+let cumFees      = 0; // negative
+let cumTotal     = 0;
+
+const kpi1Series = monthKeys.map(key => {
+  const mp = Number(monthlyPrincipal[key] || 0);
+  const mi = Number(monthlyInterest[key]  || 0);
+  const mf = Number(monthlyFees[key]      || 0);
+  const mn = Number(monthlyTotals[key]    || 0);
+
+  // ----------------------------------
+  // CUMULATIVE portfolio values
+  // (tooltip only)
+  // ----------------------------------
+  cumPrincipal += mp;
+  cumInterest  += mi;
+  cumFees      += mf;
+  cumTotal     += mn;
+
+  const [y, m] = key.split("-").map(Number);
+
+  return {
+    date: new Date(y, m, 1),
+
+    // Tooltip values (portfolio-level, cumulative)
+    principal: cumPrincipal,
+    interest:  cumInterest,
+    fees:      cumFees,
+    total:     cumTotal,
+
+    // Chart values (MONTHLY, per-loan net)
+    byLoan: { ...(monthlyByLoan[key] || {}) }
+  };
+});
+
+
+// --------------------------------------
+// KPI 1 — table rows (per-loan cumulative)
+// --------------------------------------
+const kpi1Rows = loansOwnedByUser.map(loan => {
+  const purchase = new Date(loan.purchaseDate);
+
+  // Ownership starts at FIRST of purchase month
+  const purchaseMonth = new Date(
+    purchase.getFullYear(),
+    purchase.getMonth(),
+    1
+  );
+
+  let p = 0, i = 0, f = 0; // f negative
+
+  loan.amort.schedule.forEach(r => {
+    const d = new Date(r.loanDate);
+
+    if (d < purchaseMonth) return;
+    if (d >= CURRENT_MONTH_START) return;
+
+    p += Number(r.principalPaid ?? 0);
+    i += Number(r.interest ?? 0);
+    f += -(
+      Number(r.monthlyBalanceFee ?? 0) +
+      Number(r.upfrontFeeThisMonth ?? 0)
+    );
+  });
+
+  return {
+    loanId: loan.loanId,
+    loanName: loan.loanName,
+    school: loan.school,
+    netEarnings: p + i + f,
+    principal: p,
+    interest: i,
+    fees: f
+  };
+});
+
+
 
  
 // --------------------------------------
