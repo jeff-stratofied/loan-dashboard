@@ -1604,8 +1604,27 @@ function createKpi1StackedBarChart(container, series) {
     let fees      = 0;
 
     // Engine already computed net; tooltip format matches screenshot
-    Object.values(m.byLoan).forEach(v => {
-      if (v > 0) pr
+  Object.values(m.byLoan).forEach(v => {
+    if (v > 0) principal += v;
+    else fees += v;
+  });
+
+  setMiniTooltipContent([
+    `Date: ${formatMonthYear(m.date)}`,
+    `Principal: ${formatCurrency(principal)}`,
+    `Interest: —`,
+    `Fees: ${formatCurrency(fees)}`,
+    `Cumulative Net: ${formatCurrency(m.total)}`
+  ]);
+
+  positionMiniTooltip(e.clientX, e.clientY, 8);
+});
+
+svg.addEventListener("mouseleave", hideMiniTooltip);
+
+container.appendChild(svg);
+}
+
 
 
   
