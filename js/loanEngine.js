@@ -873,7 +873,16 @@ const avgMonthlyNet =
     ? totalNetAcrossMonths / monthsCounted
     : 0;
 
+// --------------------------------------
+// Canonical sorted month keys (YYYY-M)
+// --------------------------------------
+const monthKeys = Object.keys(monthlyTotals).sort((a, b) => {
+  const [ay, am] = a.split("-").map(Number);
+  const [by, bm] = b.split("-").map(Number);
+  return ay !== by ? ay - by : am - bm;
+});
 
+ 
 // --------------------------------------
 // KPI 1 — stacked monthly series (AUTHORITATIVE)
 // --------------------------------------
