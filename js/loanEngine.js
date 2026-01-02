@@ -152,7 +152,8 @@ export function getPortfolioStartDate(loans = []) {
     .map(l => {
       const d = l.loanStartDate || l.purchaseDate;
       if (!d) return null;
-      const dt = new Date(d);
+      const dt = new Date(d + "T00:00:00");
+
       return Number.isFinite(dt.getTime()) ? dt : null;
     })
     .filter(Boolean);
