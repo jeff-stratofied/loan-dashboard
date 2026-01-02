@@ -1084,8 +1084,10 @@ import {
   formatMonthYear,
   getStandardToday,
   getPortfolioStartDate,
-  getCurrentScheduleIndex
+  getCurrentScheduleIndex,
+  buildAmortSchedule
 } from "../js/loanEngine.js";
+
 
 
 
@@ -1189,83 +1191,6 @@ bar.setAttribute("data-stack-group", groupId);
 bar.setAttribute("data-stack-index", index);
 }
 
-function calcAmort(principal, annualRate, termYears, graceYears, events = []) {
-  const monthlyRate = annualRate / 12;
-  const graceMonths = Math.round(graceYears * 12);
-  let balance = principal;
-  const schedule = [];
-
-  // Sort events by date for chronological processing
-  const sortedEvents = events.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-  let eventIdx = 0;
-  let monthIndex = 1; // 1-based month counter
-  let remainingRepayMonths = Math.round(termYears * 12);
-
-  // Grace months: interest capitalizes, payment=0
-  for (let m = 0; m < graceMonths; m++) {
-    const interest = +(balance * monthlyRate).toFixed(2);
-    balance = +(balance + interest).toFixed(2);
-    schedule.push({
-      monthIndex: monthIndex++,
-      payment: 0,
-      principalPaid: 0,
-      interest,
-      balance
-    });
-  }
-
-  // Compute payment on post-grace balance (initial, before deferrals)
-  const initialPayment = monthlyRate === 0
-    ? +(balance / remainingRepayMonths).toFixed(2)
-    : +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -remainingRepayMonths))).toFixed(2);
-
-  // Repayment loop with dynamic deferral insertion
-  while (remainingRepayMonths > 0) {
-    // Check for deferral at current month
-    let isDeferral = false;
-    while (eventIdx < sortedEvents.length && sortedEvents[eventIdx].type === 'deferral') {
-      const e = sortedEvents[eventIdx];
-      const eventMonth = monthIndex; // Check if this is the start month (assume date aligns to monthIndex)
-      if (e.date && new Date(e.date).getMonth() + 1 === eventMonth % 12) { // Simple month match; refine if needed
-        // Insert deferral months: $0 payment/principal, capitalize interest
-        for (let d = 0; d < e.months; d++) {
-          const interest = +(balance * monthlyRate).toFixed(2);
-          balance = +(balance + interest).toFixed(2);
-          schedule.push({
-            monthIndex: monthIndex++,
-            payment: 0,
-            principalPaid: 0,
-            interest,
-            balance,
-            isDeferred: true // Flag for earningsSchedule
-          });
-        }
-        isDeferral = true;
-        eventIdx++; // Move to next event
-      } else {
-        break; // Event not yet
-      }
-    }
-
-    if (!isDeferral) {
-      // Regular repayment month
-      const interest = +(balance * monthlyRate).toFixed(2);
-      const principalPaid = +Math.min(balance, +(initialPayment - interest).toFixed(2));
-      balance = +(Math.max(0, balance - principalPaid).toFixed(2));
-      schedule.push({
-        monthIndex: monthIndex++,
-        payment: +initialPayment.toFixed(2),
-        principalPaid,
-        interest,
-        balance
-      });
-      remainingRepayMonths--;
-    }
-  }
-
-  return { payment: initialPayment, schedule };
-}
 
 let loansWithEarnings = [];
 
@@ -1347,13 +1272,18 @@ monthlyFeeStart,
 monthlyFee
 };
 
-const amort = calcAmort(
-  normalizedLoan.balanceForAmort,
-  normalizedLoan.nominalRate,
-  normalizedLoan.termYears,
-  normalizedLoan.graceYears,
-  raw.events || []  // Pass raw events array
-);
+const amortSchedule = buildAmortSchedule({
+  principal: normalizedLoan.balanceForAmort,
+  nominalRate: normalizedLoan.nominalRate,
+  termYears: normalizedLoan.termYears,
+  graceYears: normalizedLoan.graceYears,
+  loanStartDate: normalizedLoan.loanStartDate,
+  purchaseDate: normalizedLoan.purchaseDate,
+  events: raw.events || []
+});
+
+const amort = { schedule: amortSchedule };
+
 
 const loanStart = new Date(normalizedLoan.loanStartDate);
 const purchaseDt = new Date(normalizedLoan.purchaseDate);
@@ -1419,10 +1349,8 @@ const earningsSchedule = amort.schedule.map(row => {
       ? `${row.ownershipDate.getFullYear()}-${row.ownershipDate.getMonth()}`
       : null;
 
-  const isDeferralMonth =
-  row.deferral === true ||
-  row.isDeferred === true ||
-  (row.payment === 0 && row.principalPaid === 0 && row.interest > 0);
+const isDeferralMonth = row.isDeferred === true;
+
 
 
   // ⛔ Stop earnings at default
@@ -1467,11 +1395,12 @@ let principalThisMonth = 0;
 let interestThisMonth  = 0;
 let feesThisMonth      = 0;
 
-if (row.isOwned && !isDeferralMonth) {
+if (row.isOwned && !row.isDeferred) {
   principalThisMonth = row.principalPaid;
   interestThisMonth  = row.interest;
   feesThisMonth      = feeThisMonth;
 }
+
 
 // Accumulate ONCE
 cumPrincipal = +(cumPrincipal + principalThisMonth).toFixed(2);
