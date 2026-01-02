@@ -1352,11 +1352,10 @@ ownershipDate
 };
 });
 
+  let prevNetEarnings = 0;
 let cumPrincipal = 0;
 let cumInterest  = 0;
 let cumFees      = 0;
-let prevNetEarnings = 0;
-
 
 const termMonths = Math.max(
 1,
@@ -1432,26 +1431,46 @@ if (row.isOwned && !isDeferralMonth) {
 }
 
 
-const netEarnings = isDeferralMonth
-  ? prevNetEarnings
-  : +(cumPrincipal + cumInterest - cumFees).toFixed(2);
+let netEarnings;
+
+if (isDeferralMonth) {
+  // 🚫 NO earnings during deferral
+  netEarnings = prevNetEarnings;
+
+  // Explicitly DO NOT accumulate
+  // principal, interest, or fees
+} else {
+  if (row.isOwned) {
+    cumFees      = +(cumFees + feeThisMonth).toFixed(2);
+    cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
+    cumInterest  = +(cumInterest  + row.interest).toFixed(2);
+  }
+
+  netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
+}
+
+prevNetEarnings = netEarnings;
+
 
 prevNetEarnings = netEarnings;
 
 return {
   ...row,
-  feeThisMonth,
+  feeThisMonth: isDeferralMonth ? 0 : feeThisMonth,
   cumPrincipal,
   cumInterest,
   cumFees,
   netEarnings,
-  interestPaid: row.interest,
-  principalPaid: row.principalPaid,
+  interestPaid: isDeferralMonth ? 0 : row.interest,
+  principalPaid: isDeferralMonth ? 0 : row.principalPaid,
   loanDate: row.loanDate,
-  ownershipDate: row.ownershipDate
+  ownershipDate: row.ownershipDate,
+  isDeferralMonth
 };
 
-}).filter(r => r && r.isOwned);
+
+}).filter(r => r && r.ownershipDate);
+
 
 const byMonth = new Map();
 
