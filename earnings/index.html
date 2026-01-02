@@ -1355,6 +1355,8 @@ ownershipDate
 let cumPrincipal = 0;
 let cumInterest  = 0;
 let cumFees      = 0;
+let prevNetEarnings = 0;
+
 
 const termMonths = Math.max(
 1,
@@ -1434,19 +1436,21 @@ const netEarnings = isDeferralMonth
   ? prevNetEarnings
   : +(cumPrincipal + cumInterest - cumFees).toFixed(2);
 
+prevNetEarnings = netEarnings;
 
 return {
-...row,
-feeThisMonth,
-cumPrincipal,
-cumInterest,
-cumFees,
-netEarnings,
-interestPaid: row.interest,
-principalPaid: row.principalPaid,
-loanDate: row.loanDate,
-ownershipDate: row.ownershipDate
+  ...row,
+  feeThisMonth,
+  cumPrincipal,
+  cumInterest,
+  cumFees,
+  netEarnings,
+  interestPaid: row.interest,
+  principalPaid: row.principalPaid,
+  loanDate: row.loanDate,
+  ownershipDate: row.ownershipDate
 };
+
 }).filter(r => r && r.isOwned);
 
 const byMonth = new Map();
