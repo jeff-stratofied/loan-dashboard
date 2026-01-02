@@ -177,6 +177,41 @@ export function getStandardToday() {
   return d;
 }
 
+// ===============================
+// Current schedule index (per-loan)
+// ===============================
+//
+// Returns a 1-based index into amort.schedule
+// Clamped to schedule length
+//
+export function getCurrentScheduleIndex(loan, asOf = new Date()) {
+  if (!loan?.amort?.schedule?.length) return 1;
+
+  const purchase = new Date(loan.purchaseDate + "T00:00:00");
+
+  // Normalize to month boundary
+  const purchaseMonth = new Date(
+    purchase.getFullYear(),
+    purchase.getMonth(),
+    1
+  );
+
+  const asOfMonth = new Date(
+    asOf.getFullYear(),
+    asOf.getMonth(),
+    1
+  );
+
+  const months =
+    (asOfMonth.getFullYear() - purchaseMonth.getFullYear()) * 12 +
+    (asOfMonth.getMonth() - purchaseMonth.getMonth()) + 1;
+
+  return Math.min(
+    Math.max(1, months),
+    loan.amort.schedule.length
+  );
+}
+
 
 // -------------------------------
 // Canonical amort display date
