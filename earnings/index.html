@@ -1079,12 +1079,13 @@ html[data-theme="dark"] .legend .sw {
 <script type="module">
 import {
   addMonths,
+  monthDiff,
   formatDate,
   formatMonthYear,
   getStandardToday,
-  getPortfolioStartDate,
-  getCurrentScheduleIndex
+  getPortfolioStartDate
 } from "../js/loanEngine.js";
+
 
 let currentLoan = null;
 let currentMode = 'portfolio';
