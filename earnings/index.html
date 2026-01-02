@@ -1187,49 +1187,82 @@ bar.setAttribute("data-stack-group", groupId);
 bar.setAttribute("data-stack-index", index);
 }
 
-function calcAmort(principal, annualRate, termYears, graceYears){
-const monthlyRate = annualRate / 12;
-const totalMonths = Math.round((termYears + graceYears) * 12);
-const graceMonths = Math.round(graceYears * 12);
-const repayMonths = Math.max(1, totalMonths - graceMonths);
+function calcAmort(principal, annualRate, termYears, graceYears, events = []) {
+  const monthlyRate = annualRate / 12;
+  const graceMonths = Math.round(graceYears * 12);
+  let balance = principal;
+  const schedule = [];
 
-let balance = principal;
-const schedule = [];
+  // Sort events by date for chronological processing
+  const sortedEvents = events.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-for (let m = 1; m <= graceMonths; m++) {
-const interest = +(balance * monthlyRate).toFixed(2);
-balance = +(balance + interest).toFixed(2);
-schedule.push({
-monthIndex: m,
-payment: 0,
-principalPaid: 0,
-interest,
-balance
-});
-}
+  let eventIdx = 0;
+  let monthIndex = 1; // 1-based month counter
+  let remainingRepayMonths = Math.round(termYears * 12);
 
-const payment = monthlyRate === 0
-? +(balance / repayMonths).toFixed(2)
-: +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -repayMonths))).toFixed(2);
+  // Grace months: interest capitalizes, payment=0
+  for (let m = 0; m < graceMonths; m++) {
+    const interest = +(balance * monthlyRate).toFixed(2);
+    balance = +(balance + interest).toFixed(2);
+    schedule.push({
+      monthIndex: monthIndex++,
+      payment: 0,
+      principalPaid: 0,
+      interest,
+      balance
+    });
+  }
 
-for (let m = 1; m <= repayMonths; m++) {
-const interest = +(balance * monthlyRate).toFixed(2);
-const principalPaid = +Math.min(
-balance,
-+(payment - interest).toFixed(2)
-);
-balance = +(Math.max(0, balance - principalPaid).toFixed(2));
+  // Compute payment on post-grace balance (initial, before deferrals)
+  const initialPayment = monthlyRate === 0
+    ? +(balance / remainingRepayMonths).toFixed(2)
+    : +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -remainingRepayMonths))).toFixed(2);
 
-schedule.push({
-monthIndex: graceMonths + m,
-payment: +payment.toFixed(2),
-principalPaid,
-interest,
-balance
-});
-}
+  // Repayment loop with dynamic deferral insertion
+  while (remainingRepayMonths > 0) {
+    // Check for deferral at current month
+    let isDeferral = false;
+    while (eventIdx < sortedEvents.length && sortedEvents[eventIdx].type === 'deferral') {
+      const e = sortedEvents[eventIdx];
+      const eventMonth = monthIndex; // Check if this is the start month (assume date aligns to monthIndex)
+      if (e.date && new Date(e.date).getMonth() + 1 === eventMonth % 12) { // Simple month match; refine if needed
+        // Insert deferral months: $0 payment/principal, capitalize interest
+        for (let d = 0; d < e.months; d++) {
+          const interest = +(balance * monthlyRate).toFixed(2);
+          balance = +(balance + interest).toFixed(2);
+          schedule.push({
+            monthIndex: monthIndex++,
+            payment: 0,
+            principalPaid: 0,
+            interest,
+            balance,
+            isDeferred: true // Flag for earningsSchedule
+          });
+        }
+        isDeferral = true;
+        eventIdx++; // Move to next event
+      } else {
+        break; // Event not yet
+      }
+    }
 
-return { payment, schedule };
+    if (!isDeferral) {
+      // Regular repayment month
+      const interest = +(balance * monthlyRate).toFixed(2);
+      const principalPaid = +Math.min(balance, +(initialPayment - interest).toFixed(2));
+      balance = +(Math.max(0, balance - principalPaid).toFixed(2));
+      schedule.push({
+        monthIndex: monthIndex++,
+        payment: +initialPayment.toFixed(2),
+        principalPaid,
+        interest,
+        balance
+      });
+      remainingRepayMonths--;
+    }
+  }
+
+  return { payment: initialPayment, schedule };
 }
 
 let loansWithEarnings = [];
@@ -1313,10 +1346,11 @@ monthlyFee
 };
 
 const amort = calcAmort(
-normalizedLoan.balanceForAmort,
-normalizedLoan.nominalRate,
-normalizedLoan.termYears,
-normalizedLoan.graceYears
+  normalizedLoan.balanceForAmort,
+  normalizedLoan.nominalRate,
+  normalizedLoan.termYears,
+  normalizedLoan.graceYears,
+  raw.events || []  // Pass raw events array
 );
 
 const loanStart = new Date(normalizedLoan.loanStartDate);
@@ -4495,14 +4529,12 @@ months > 0 ? Number(last.netEarnings || 0) / months : 0;
 const projectedNet = Number(last.netEarnings || 0);
 
 let maturity = "";
-try {
-const d = new Date(l.purchaseDate);
-const totalMonths = Math.round(
-(Number(l.termYears || 0) + Number(l.graceYears || 0)) * 12
-);
-d.setMonth(d.getMonth() + totalMonths);
-maturity = d.toISOString().slice(0, 10);
-} catch {}
+const sched = l.earningsSchedule || [];
+if (sched.length) {
+  const last = sched[sched.length - 1];
+  const lastDate = new Date(last.ownershipDate);  // Use ownershipDate from schedule
+  maturity = lastDate.toISOString().slice(0, 10);
+}
 
 return {
 loanId: l.loanId,
