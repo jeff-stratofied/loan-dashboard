@@ -3229,7 +3229,7 @@ function renderLoanTiles(loansList) {
           if (eventType === "prepayment") {
             lines.push(
               "Prepayment",
-              `Date: ${formatDate(new Date(event.date))}`,
+              `Date: ${formatDate(new Date(event.date + "T00:00:00"))}`,
               `Amount: ${formatCurrency(event.amount)}`
             );
           }
@@ -3272,7 +3272,7 @@ const defDate = new Date(y, m - 1, d);
           if (eventType === "deferral") {
             lines.push(
               "Deferral",
-              `Start: ${formatMonthYear(new Date(event.startDate))}`,
+              `Start: ${formatMonthYear(new Date(event.startDate + "T00:00:00"))}`,
               `Months: ${event.months}`
             );
           }
@@ -3530,6 +3530,42 @@ function openLoanDrawer(loan){
     if (r.deferral || r.isDeferred) eventByMonthKey[key].deferral = true;
     if (r.defaulted)               eventByMonthKey[key].default  = true;
     if ((r.prepayment ?? 0) > 0)   eventByMonthKey[key].prepayment = true;
+  });
+
+    // --------------------------------------------------
+  // ALSO merge raw events (prepay/default/deferral) into the same month-key map
+  // This guarantees table shading even if the schedule flags are missing/inconsistent.
+  // --------------------------------------------------
+  (loan?.events || []).forEach(e => {
+    if (!e || !e.type) return;
+
+    // --- Prepayment + Default: single month ---
+    if ((e.type === "prepayment" || e.type === "default") && e.date) {
+      const dt = new Date(e.date + "T00:00:00");
+      const k = `${dt.getFullYear()}-${dt.getMonth()}`;
+
+      if (!eventByMonthKey[k]) {
+        eventByMonthKey[k] = { deferral: false, default: false, prepayment: false };
+      }
+
+      if (e.type === "prepayment") eventByMonthKey[k].prepayment = true;
+      if (e.type === "default")    eventByMonthKey[k].default = true;
+    }
+
+    // --- Deferral: spans N months starting startDate ---
+    if (e.type === "deferral" && e.startDate && Number(e.months) > 0) {
+      const start = new Date(e.startDate + "T00:00:00");
+
+      for (let i = 0; i < Number(e.months); i++) {
+        const dt = new Date(start.getFullYear(), start.getMonth() + i, 1);
+        const k = `${dt.getFullYear()}-${dt.getMonth()}`;
+
+        if (!eventByMonthKey[k]) {
+          eventByMonthKey[k] = { deferral: false, default: false, prepayment: false };
+        }
+        eventByMonthKey[k].deferral = true;
+      }
+    }
   });
 
   
