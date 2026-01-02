@@ -1678,13 +1678,27 @@ resetBtn.addEventListener("click", () => {
       currentMode = null;
     }
 
-    function formatCurrency(val) {
-      const n = Number(val) || 0;
-      return `$${n.toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      })}`;
-    }
+    // ==============================
+// Date formatting helpers
+// (MATCH Earnings page exactly)
+// ==============================
+function formatDate(d) {
+  if (!(d instanceof Date)) return "";
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  });
+}
+
+function formatMonthYear(d) {
+  if (!(d instanceof Date)) return "";
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    year: "numeric"
+  });
+}
+
 
  /* delete
   function highlightLoanInDistributionChart(loanId) {
