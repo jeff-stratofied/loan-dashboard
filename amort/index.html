@@ -244,7 +244,7 @@
       flex-wrap: wrap;
     }
     
-    .loan-badge {
+ .loan-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -255,12 +255,14 @@
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  cursor: pointer;                 /* 🔑 */
-  .tooltip {
-  transform: translate(-50%, -130%);
+  cursor: pointer;
 }
 
-    }
+/* MATCH EARNINGS TOOLTIP POSITIONING */
+.tooltip {
+  transform: translate(-50%, -120%);
+}
+
 
     
     .loan-badge.default {
@@ -1091,23 +1093,16 @@ function buildEventBadges(events = []) {
   return `
     <div class="loan-badges">
       ${events.map(e => {
-        const date = e.date
-          ? new Date(e.date).toLocaleDateString(undefined, {
-              month: "short",
-              year: "numeric"
-            })
-          : "";
-
         if (e.type === "default") {
-          return `<span class="loan-badge default" title="Default • ${date}">⚠️ Default</span>`;
+          return `<span class="loan-badge default">⚠️ Default</span>`;
         }
 
         if (e.type === "deferral") {
-          return `<span class="loan-badge deferral" title="Deferral • ${date}">⏸ Deferral</span>`;
+          return `<span class="loan-badge deferral">⏸ Deferral</span>`;
         }
 
         if (e.type === "prepayment") {
-          return `<span class="loan-badge prepayment" title="Prepayment • ${date}">💰 Prepay</span>`;
+          return `<span class="loan-badge prepayment">💰 Prepay</span>`;
         }
 
         return "";
@@ -1115,6 +1110,7 @@ function buildEventBadges(events = []) {
     </div>
   `;
 }
+
 
   
    /* ============================
