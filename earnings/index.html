@@ -4529,9 +4529,9 @@ months > 0 ? Number(last.netEarnings || 0) / months : 0;
 const projectedNet = Number(last.netEarnings || 0);
 
 let maturity = "";
-const sched = l.earningsSchedule || [];
-if (sched.length) {
-  const last = sched[sched.length - 1];
+const earningsSched = l.earningsSchedule || [];
+if (earningsSched.length) {
+  const last = earningsSched[earningsSched.length - 1];
   const lastDate = new Date(last.ownershipDate);  // Use ownershipDate from schedule
   maturity = lastDate.toISOString().slice(0, 10);
 }
