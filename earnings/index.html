@@ -1079,13 +1079,12 @@ html[data-theme="dark"] .legend .sw {
 <script type="module">
 import {
   addMonths,
-  monthDiff,
   formatDate,
   formatMonthYear,
   getStandardToday,
-  getPortfolioStartDate
+  getPortfolioStartDate,
+  getCurrentScheduleIndex
 } from "../js/loanEngine.js";
-
 
 let currentLoan = null;
 let currentMode = 'portfolio';
@@ -1589,15 +1588,9 @@ const atEnd = sched[lastIdx];
 projectedNetTotal += Number(atEnd.netEarnings || 0);
 projectedMonthsTotal += sched.length;
 
-const purchase = new Date(l.purchaseDate || l.loanStartDate);
-purchase.setHours(0, 0, 0, 0);
-
-const diffRaw = monthDiff(purchase, TODAY);
-const diff = Number.isFinite(diffRaw) ? Math.max(0, diffRaw) : 0;
-
-const currentIdx = Math.max(0, Math.min(diff, lastIdx));
-
+const currentIdx = getCurrentScheduleIndex(l) - 1;
 const atCurrent = sched[currentIdx];
+
 
 totalNetToDate += Number(atCurrent?.netEarnings || 0);
 totalFeesToDate += Number(atCurrent?.cumFees || 0);
@@ -1605,7 +1598,11 @@ totalFeesToDate += Number(atCurrent?.cumFees || 0);
 totalNetProjected += Number(atEnd.netEarnings || 0);
 totalFeesProjected += Number(atEnd.cumFees || 0);
 
-monthsCounted = Math.max(monthsCounted, Math.min(diff, sched.length));
+monthsCounted = Math.max(
+  monthsCounted,
+  getCurrentScheduleIndex(l)
+);
+
 });
 
 const projectedAvgMonthlyNet =
@@ -1661,24 +1658,18 @@ console.warn("Unknown KPI tile:", type);
 });
 
 function getCurrentEarningsRow(loan) {
+  const sched = loan.earningsSchedule || [];
+  if (!sched.length) {
+    return {
+      row: { netEarnings: 0, cumPrincipal: 0, cumInterest: 0, cumFees: 0 },
+      idx: 0
+    };
+  }
 
-
-const sched = loan.earningsSchedule || [];
-if (!sched.length) {
-return { row: { netEarnings:0, cumPrincipal:0, cumInterest:0, cumFees:0 }, idx: 0 };
+  const idx = getCurrentScheduleIndex(loan) - 1;
+  return { row: sched[idx], idx };
 }
 
-const purchase = new Date(loan.purchaseDate || loan.loanStartDate);
-purchase.setHours(0, 0, 0, 0);
-
-const lastIdx = sched.length - 1;
-
-const diffRaw = monthDiff(purchase, TODAY);
-const diff = Number.isFinite(diffRaw) ? Math.max(1, diffRaw) : 1;
-
-const idx = Math.max(0, Math.min(diff - 1, lastIdx));
-return { row: sched[idx], idx };
-}
 
 let miniHtmlTooltip = null;
 function getMiniHtmlTooltip() {
@@ -1815,18 +1806,13 @@ svg.appendChild(rFee);
 
 
 
-const firstOwnDate = new Date(loan.purchaseDate);
-const lastOwnDate  = new Date(data[data.length - 1].ownershipDate);
+const totalOwnedMonths = data.length - 1;
+const ownedMonthsToToday =
+  Math.min(
+    totalOwnedMonths,
+    getCurrentScheduleIndex(loan) - 1
+  );
 
-let totalOwnedMonths = monthDiff(firstOwnDate, lastOwnDate);
-if (!Number.isFinite(totalOwnedMonths) || totalOwnedMonths <= 0) {
-totalOwnedMonths = data.length - 1;
-}
-
-let ownedMonthsToToday = monthDiff(firstOwnDate, TODAY);
-if (!Number.isFinite(ownedMonthsToToday)) ownedMonthsToToday = 0;
-
-ownedMonthsToToday = Math.max(0, Math.min(ownedMonthsToToday, totalOwnedMonths));
 
 const ratio = totalOwnedMonths > 0 ? (ownedMonthsToToday / totalOwnedMonths) : 0;
 const currentX = padL + ratio * (w - padL - padR);
@@ -2061,17 +2047,17 @@ svg.appendChild(lbl);
 });
 
 
-
 const firstDate = rows[0]?.date;
 const lastDate  = rows[rows.length - 1]?.date;
 
 if (firstDate && lastDate) {
-const totalMonths = monthDiff(firstDate, lastDate);
-let monthsToToday = monthDiff(firstDate, TODAY);
-
-if (!Number.isFinite(monthsToToday)) monthsToToday = 0;
-
-monthsToToday = Math.max(0, Math.min(monthsToToday, totalMonths));
+const totalMonths = rows.length - 1;
+const monthsToToday = Math.min(
+  totalMonths,
+  Math.max(
+    ...loansWithEarnings.map(l => getCurrentScheduleIndex(l) - 1)
+  )
+);
 
 const ratio = totalMonths > 0 ? monthsToToday / totalMonths : 0;
 const todayX = padL + ratio * (w - padL - padR);
