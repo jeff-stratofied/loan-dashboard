@@ -1460,35 +1460,27 @@ const monthlyBalanceFee =
 
 const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
 
+// --------------------------------------
+// AUTHORITATIVE EARNINGS LOGIC
+// --------------------------------------
+let principalThisMonth = 0;
+let interestThisMonth  = 0;
+let feesThisMonth      = 0;
+
 if (row.isOwned && !isDeferralMonth) {
-  cumFees      = +(cumFees + feeThisMonth).toFixed(2);
-  cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
-  cumInterest  = +(cumInterest  + row.interest).toFixed(2);
+  principalThisMonth = row.principalPaid;
+  interestThisMonth  = row.interest;
+  feesThisMonth      = feeThisMonth;
 }
 
+// Accumulate ONCE
+cumPrincipal = +(cumPrincipal + principalThisMonth).toFixed(2);
+cumInterest  = +(cumInterest  + interestThisMonth).toFixed(2);
+cumFees      = +(cumFees      + feesThisMonth).toFixed(2);
 
-let netEarnings;
-
-if (isDeferralMonth) {
-  // 🚫 NO earnings during deferral
-  netEarnings = prevNetEarnings;
-
-  // Explicitly DO NOT accumulate
-  // principal, interest, or fees
-} else {
-  if (row.isOwned) {
-    cumFees      = +(cumFees + feeThisMonth).toFixed(2);
-    cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
-    cumInterest  = +(cumInterest  + row.interest).toFixed(2);
-  }
-
-  netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
-}
-
+const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
 prevNetEarnings = netEarnings;
 
-
-prevNetEarnings = netEarnings;
 
 return {
   ...row,
