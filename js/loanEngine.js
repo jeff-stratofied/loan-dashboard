@@ -713,7 +713,7 @@ export function buildPortfolioViews(loansWithAmort) {
 // 3) Earnings Timeline (PROJECTED AS-OF)
 // ----------------------------------------------
 //
-// netEarnings = earned so far
+// netEarnings = earned so far (cumulative)
 // projectedNet = earned + remaining lifetime
 // ----------------------------------------------
 
@@ -721,21 +721,46 @@ const earningsSeries = {};
 const earningsKpis = {};
 
 loansWithAmort.forEach(loan => {
-  const purchase = new Date(loan.purchaseDate);
+  const purchase = new Date(loan.purchaseDate + "T00:00:00");
 
   let cumPrincipal = 0;
   let cumInterest  = 0;
   let cumFees      = 0;
 
+  // NEW: previous cumulatives (for incrementals)
+  let prevCumPrincipal = 0;
+  let prevCumInterest  = 0;
+  let prevCumFees      = 0;
+
   // --- build earned-to-date series first
   const earnedSeries = loan.amort.schedule
     .filter(r => r.loanDate >= purchase)
     .map(r => {
+
+      // 🔒 AUTHORITATIVE DEFERRAL RULE
+      const isDeferred = r.isDeferred === true;
+
+      // Fees may exist elsewhere; suppress during deferral
+      const feeThisMonth = isDeferred
+        ? 0
+        : Number(r.feeThisMonth ?? 0);
+
+      // Accumulate cumulatives
       cumPrincipal += r.principalPaid;
       cumInterest  += r.interest;
+      cumFees      += feeThisMonth;
 
-      const feeThisMonth = Number(r.feeThisMonth ?? 0);
-      cumFees += feeThisMonth;
+      // ✅ Incrementals (this is the key fix)
+      const monthlyPrincipal = cumPrincipal - prevCumPrincipal;
+      const monthlyInterest  = cumInterest  - prevCumInterest;
+      const monthlyFees      = cumFees      - prevCumFees;
+      const monthlyNet       =
+        monthlyPrincipal + monthlyInterest - monthlyFees;
+
+      // Advance previous trackers
+      prevCumPrincipal = cumPrincipal;
+      prevCumInterest  = cumInterest;
+      prevCumFees      = cumFees;
 
       return {
         loanDate: r.loanDate,
@@ -745,11 +770,19 @@ loansWithAmort.forEach(loan => {
         principalPaid: r.principalPaid,
         interest: r.interest,
         balance: r.balance,
+        isDeferred,
 
+        // cumulative (unchanged behavior)
         cumPrincipal,
         cumInterest,
         cumFees,
-        netEarnings: cumPrincipal + cumInterest - cumFees
+        netEarnings: cumPrincipal + cumInterest - cumFees,
+
+        // NEW: incremental fields (used by table)
+        monthlyPrincipal,
+        monthlyInterest,
+        monthlyFees,
+        monthlyNet
       };
     });
 
