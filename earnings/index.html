@@ -3235,7 +3235,9 @@ function renderLoanTiles(loansList) {
           }
 
           if (eventType === "default") {
-            const defDate = new Date(event.date);
+            const [y, m, d] = event.date.split("-").map(Number);
+const defDate = new Date(y, m - 1, d);
+
             const schedule = loan.amort?.schedule || [];
             let balanceAtDefault = 0;
 
@@ -3598,15 +3600,15 @@ const tbody = document.getElementById("earningsBody");
 loan.earningsSchedule.forEach(r => {
   const tr = document.createElement("tr");
 
-  // ------------------------------------
-  // EVENT SHADING (FROM AMORT — AUTHORITATIVE)
-  // ------------------------------------
-  const d = r.loanDate instanceof Date
-    ? r.loanDate
-    : new Date(r.loanDate);
+// ------------------------------------
+// EVENT SHADING (FROM AMORT — AUTHORITATIVE)
+// ------------------------------------
+const d = r.ownershipDate instanceof Date
+  ? r.ownershipDate
+  : new Date(r.ownershipDate);
 
-  const key = `${d.getFullYear()}-${d.getMonth()}`;
-  const flags = eventByMonthKey[key];
+const key = `${d.getFullYear()}-${d.getMonth()}`;
+const flags = eventByMonthKey[key];
 
   // Priority must match amort
   if (flags?.default) {
