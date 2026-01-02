@@ -3623,13 +3623,23 @@ const atEnd = hasSchedule ? loan.earningsSchedule[lastIdx] : fallbackRow;
 
 drawerTitle.textContent = loan.loanName;
 
+let maturityDate = "-";
+if (loan.amort?.schedule?.length) {
+  const last = loan.amort.schedule[loan.amort.schedule.length - 1];
+  if (last?.loanDate) {
+    maturityDate = formatDate(new Date(last.loanDate));
+  }
+}
+
 drawerSub.innerHTML = `
-<div>${loan.school}</div>
-<div>
-Purchased ${loan.purchaseDate}
-• Orig Loan Amt ${formatCurrency(loan.purchasePrice)}
-</div>
+  <div>${loan.school}</div>
+  <div>
+    Purchased ${loan.purchaseDate}
+    • Matures ${maturityDate}
+    • Orig Loan Amt ${formatCurrency(loan.purchasePrice)}
+  </div>
 `;
+
 
 drawerPrimaryTitle.textContent = "Net Earnings to Date";
 drawerPrimary.textContent = `$${atCurrent.netEarnings.toFixed(2)}`;
