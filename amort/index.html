@@ -1691,6 +1691,19 @@ function formatDate(d) {
   });
 }
 
+// ==============================
+// Currency formatting helper
+// (MATCH Earnings page exactly)
+// ==============================
+function formatCurrency(val) {
+  const n = Number(val) || 0;
+  return `$${n.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })}`;
+}
+
+  
 function formatMonthYear(d) {
   if (!(d instanceof Date)) return "";
   return d.toLocaleDateString(undefined, {
