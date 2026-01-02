@@ -645,6 +645,25 @@ html[data-theme="dark"] .close-btn {
 }
 
 /* ============================================
+   EVENT ROW SHADING (MATCH AMORT EXACTLY)
+   ============================================ */
+
+tr.event-prepayment td {
+  background: rgba(34, 197, 94, 0.16);
+}
+
+tr.event-deferral td {
+  background: rgba(234, 179, 8, 0.20);
+}
+
+tr.event-default td {
+  background: rgba(239, 68, 68, 0.20);
+  font-weight: 600;
+}
+
+
+    
+/* ============================================
    FIX: Make earnings drawer tables match amort
    ============================================ */
 
@@ -3485,6 +3504,33 @@ closeDrawer();
 });
 
 function openLoanDrawer(loan){
+  // --------------------------------------------------
+  // EVENT LOOKUP (AUTHORITATIVE FROM AMORT)
+  // key: "YYYY-M" → { deferral, default, prepayment }
+  // --------------------------------------------------
+  const eventByMonthKey = {};
+
+  (loan?.amort?.schedule || []).forEach(r => {
+    const d = r.loanDate instanceof Date
+      ? r.loanDate
+      : new Date(r.loanDate);
+
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+
+    if (!eventByMonthKey[key]) {
+      eventByMonthKey[key] = {
+        deferral: false,
+        default: false,
+        prepayment: false
+      };
+    }
+
+    if (r.deferral || r.isDeferred) eventByMonthKey[key].deferral = true;
+    if (r.defaulted)               eventByMonthKey[key].default  = true;
+    if ((r.prepayment ?? 0) > 0)   eventByMonthKey[key].prepayment = true;
+  });
+
+  
 currentLoan = loan;
 resetDrawerContent();
 const hasSchedule = loan.earningsSchedule.length > 0;
@@ -3529,19 +3575,6 @@ loan.earningsSchedule,
 loan
 );
 
-let rowsHtml = "";
-loan.earningsSchedule.forEach(r => {
-rowsHtml += `
-<tr>
-      <td>${formatDate(r.loanDate)}</td>
-      <td style="text-align:right">${formatCurrency(r.cumPrincipal)}</td>
-      <td style="text-align:right">${formatCurrency(r.cumInterest)}</td>
-      <td style="text-align:right">-${formatCurrency(r.cumFees)}</td>
-      <td style="text-align:right">${formatCurrency(r.netEarnings)}</td>
-    </tr>
-`;
-});
-
 drawerExtra.innerHTML = `
 <h3 style="margin-top:12px;margin-bottom:8px;">Earnings Breakdown by Month</h3>
 <div class="amort-wrap">
@@ -3555,13 +3588,46 @@ drawerExtra.innerHTML = `
     <th style="text-align:right">Net Earnings</th>
   </tr>
 </thead>
-
-<tbody>
-${rowsHtml}
-</tbody>
+<tbody id="earningsBody"></tbody>
 </table>
 </div>
 `;
+
+const tbody = document.getElementById("earningsBody");
+
+loan.earningsSchedule.forEach(r => {
+  const tr = document.createElement("tr");
+
+  // ------------------------------------
+  // EVENT SHADING (FROM AMORT — AUTHORITATIVE)
+  // ------------------------------------
+  const d = r.loanDate instanceof Date
+    ? r.loanDate
+    : new Date(r.loanDate);
+
+  const key = `${d.getFullYear()}-${d.getMonth()}`;
+  const flags = eventByMonthKey[key];
+
+  // Priority must match amort
+  if (flags?.default) {
+    tr.classList.add("event-default");
+  } else if (flags?.deferral) {
+    tr.classList.add("event-deferral");
+  } else if (flags?.prepayment) {
+    tr.classList.add("event-prepayment");
+  }
+
+  tr.innerHTML = `
+    <td>${formatDate(d)}</td>
+    <td style="text-align:right">${formatCurrency(r.cumPrincipal)}</td>
+    <td style="text-align:right">${formatCurrency(r.cumInterest)}</td>
+    <td style="text-align:right">-${formatCurrency(r.cumFees)}</td>
+    <td style="text-align:right">${formatCurrency(r.netEarnings)}</td>
+  `;
+
+  tbody.appendChild(tr);
+});
+
 openDrawerBase();
 }
 
