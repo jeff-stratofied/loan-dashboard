@@ -145,6 +145,14 @@ export function formatMonthYear(date) {
 }
 
 // ===============================
+// Deferral helper (AUTHORITATIVE)
+// ===============================
+export function isDeferredMonth(row) {
+  return row?.isDeferred === true;
+}
+
+
+// ===============================
 // Standard portfolio start date
 // ===============================
 export function getPortfolioStartDate(loans = []) {
