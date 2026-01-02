@@ -1397,7 +1397,11 @@ let interestThisMonth  = 0;
 let feesThisMonth      = 0;
 
 if (row.isOwned && !isDeferredMonth(row)) {
-  principalThisMonth = row.principalPaid;
+  const scheduledPrincipal =
+  Math.max(0, row.principalPaid - (row.prepayment || 0));
+
+principalThisMonth = scheduledPrincipal;
+
   interestThisMonth  = row.interest;
   feesThisMonth      = feeThisMonth;
 }
