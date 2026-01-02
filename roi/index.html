@@ -1025,23 +1025,34 @@ function buildGlobalDatesFromLoans(loans) {
 
 function getLoanEventBadges(loan) {
   const badges = [];
-
-  if (!Array.isArray(loan.events)) return badges;
+  if (!Array.isArray(loan.events) || loan.events.length === 0) return badges;
 
   const types = new Set(loan.events.map(e => e.type));
 
-  if (types.has("default")) {
-    badges.push({ type: "default", label: "Defaulted" });
-  }
-  if (types.has("deferral")) {
-    badges.push({ type: "deferral", label: "Deferral" });
-  }
   if (types.has("prepayment")) {
-    badges.push({ type: "prepayment", label: "Prepayment" });
+    badges.push({
+      type: "prepayment",
+      label: "💰 Prepay"
+    });
+  }
+
+  if (types.has("deferral")) {
+    badges.push({
+      type: "deferral",
+      label: "⏸ Deferral"
+    });
+  }
+
+  if (types.has("default")) {
+    badges.push({
+      type: "default",
+      label: "⚠️ Default"
+    });
   }
 
   return badges;
 }
+
 
 function getEventRowClass(loan, row) {
   if (!row || !row.displayDate) return "";
