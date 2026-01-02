@@ -1085,11 +1085,9 @@ import {
   getStandardToday,
   getPortfolioStartDate,
   getCurrentScheduleIndex,
-  buildAmortSchedule
+  buildAmortSchedule,
+  isDeferredMonth
 } from "../js/loanEngine.js";
-
-
-
 
 let currentLoan = null;
 let currentMode = 'portfolio';
@@ -1350,9 +1348,7 @@ const earningsSchedule = amort.schedule.map(row => {
       ? `${row.ownershipDate.getFullYear()}-${row.ownershipDate.getMonth()}`
       : null;
 
-const isDeferralMonth = row.isDeferred === true;
-
-
+const isDeferralMonth = isDeferredMonth(row);
 
   // ⛔ Stop earnings at default
   if (defaultMonthKey && monthKey === defaultMonthKey) {
@@ -1396,11 +1392,12 @@ let principalThisMonth = 0;
 let interestThisMonth  = 0;
 let feesThisMonth      = 0;
 
-if (row.isOwned && !row.isDeferred) {
+if (row.isOwned && !isDeferredMonth(row)) {
   principalThisMonth = row.principalPaid;
   interestThisMonth  = row.interest;
   feesThisMonth      = feeThisMonth;
 }
+
 
 
 // Accumulate ONCE
