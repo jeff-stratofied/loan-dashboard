@@ -245,17 +245,23 @@
     }
     
     .loan-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 6px;
-      font-size: 11px;
-      font-weight: 600;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;                 /* 🔑 */
+  .tooltip {
+  transform: translate(-50%, -130%);
+}
+
     }
+
     
     .loan-badge.default {
       background: rgba(239, 68, 68, 0.12);
@@ -1259,7 +1265,12 @@ if (Array.isArray(loan.events) && loan.events.length > 0) {
       }
 
       setMiniTooltipContent(lines);
-      positionMiniTooltip(e.clientX, e.clientY, 12);
+      positionMiniTooltip(
+  e.clientX,
+  e.clientY - 8,
+  16
+);
+
     });
 
     badge.addEventListener("mouseleave", hideMiniTooltip);
