@@ -1305,7 +1305,7 @@ console.groupEnd();
 
     const contributions = (m.contributions || []).map((c, loanIndex) => ({
       loanId: String(c.loanId),
-      value: Number(c.net || 0),
+      monthlyNet: Number(c.net || 0),
       principal: Number(c.principal || 0),
       interest: Number(c.interest || 0),
       fees: Number(c.fees || 0),
@@ -1372,7 +1372,7 @@ console.groupEnd();
     let yNeg = yZero;
 
     m.contributions.forEach(c => {
-      const hVal = Math.abs(c.value) * scaleY;
+      const hVal = Math.abs(c.monthlyNet) * scaleY;
       if (!hVal) return;
 
       const r = document.createElementNS(svgNS, "rect");
@@ -1493,11 +1493,23 @@ const mouseY = (e.clientY - r.top)  * (h / r.height);
     vLine.setAttribute("x2", String(cx));
     vLine.setAttribute("opacity", "1");
 
-    // portfolio totals for that month (cumulative)
-    const principal = m.contributions.reduce((s,c) => s + (c.principal || 0), 0);
-    const interest  = m.contributions.reduce((s,c) => s + (c.interest || 0), 0);
-    const fees      = m.contributions.reduce((s,c) => s + (c.fees || 0), 0);
-    const net       = m.contributions.reduce((s,c) => s + (c.value || 0), 0);
+    // ------------------------------------------
+// KPI-1 tooltip — CUMULATIVE TO DATE (CORRECT)
+// ------------------------------------------
+let principal = 0;
+let interest  = 0;
+let fees      = 0;
+let net       = 0;
+
+for (let i = 0; i <= idx; i++) {
+  months[i].contributions.forEach(c => {
+    principal += Number(c.principal || 0);
+    interest  += Number(c.interest || 0);
+    fees      += Number(c.fees || 0);
+    net += Number(c.monthlyNet || 0); // monthly net summed to date
+  });
+}
+
 
     const lines = [
       `Date: ${formatMonthYear(m.monthDate)}`,
