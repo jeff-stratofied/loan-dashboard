@@ -1285,8 +1285,9 @@ const amortSchedule = buildAmortSchedule({
 const amort = { schedule: amortSchedule };
 
 
-const loanStart = new Date(normalizedLoan.loanStartDate);
-const purchaseDt = new Date(normalizedLoan.purchaseDate);
+const loanStart  = new Date(normalizedLoan.loanStartDate + "T00:00:00");
+const purchaseDt = new Date(normalizedLoan.purchaseDate + "T00:00:00");
+
 const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
 const monthsSinceStart = Number.isFinite(monthsSinceStartRaw) ? monthsSinceStartRaw : 0;
 
@@ -3600,8 +3601,15 @@ currentLoan = loan;
 resetDrawerContent();
 const hasSchedule = loan.earningsSchedule.length > 0;
 const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
-const fallbackRow = { netEarnings: 0, cumFees: 0, ownershipDate: new Date(loan.loanStartDate), loanDate: new Date(loan.loanStartDate) };
-const loanStart = new Date(loan.loanStartDate);
+const fallbackRow = {
+  netEarnings: 0,
+  cumFees: 0,
+  ownershipDate: new Date(loan.loanStartDate + "T00:00:00"),
+  loanDate: new Date(loan.loanStartDate + "T00:00:00")
+};
+
+const loanStart = new Date(loan.loanStartDate + "T00:00:00");
+
 
 const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
 const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
