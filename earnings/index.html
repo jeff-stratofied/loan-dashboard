@@ -1538,21 +1538,30 @@ el.dataset.loanId === loanId ? "1" : "0.15";
 }
 
 function redrawKpi1Chart() {
-  if (!window.__KPI1_SERIES__) return;
+  const original = window.__KPI1_SERIES_ORIGINAL__;
+  if (!Array.isArray(original)) return;
 
-  const filteredSeries = window.__KPI1_SERIES__.map(m => ({
+  const filtered = original.map(m => ({
     ...m,
     contributions: (m.contributions || []).filter(
-      c => !window.hiddenLoans?.has(String(c.loanId))
+      c => !window.hiddenLoans.has(String(c.loanId))
     )
   }));
 
+  // Render without mutating engine state
   const container = document.getElementById("drawerChartArea");
   if (!container) return;
 
   container.innerHTML = "";
-  createKpi1StackedBarChart(container, filteredSeries);
+
+  // TEMPORARILY render filtered view
+  window.__KPI1_SERIES__ = filtered;
+  buildKpiStackedChart("drawerChartArea", null, null, true, "kpi1");
+
+  // RESTORE original immediately
+  window.__KPI1_SERIES__ = original;
 }
+
 
   
 function clearKpiChartHighlight(container) {
@@ -2000,8 +2009,9 @@ console.log("kpi1Rows sample =", rows[0]);
 console.groupEnd();
 
 
-  // 🔑 REQUIRED: expose to chart renderer
-  window.__KPI1_SERIES__ = series;
+// 🔒 Preserve original engine series (never mutate)
+window.__KPI1_SERIES_ORIGINAL__ = series;
+
 
   // -----------------------------
   // Chart
