@@ -2735,14 +2735,12 @@ contributions: []
 monthly.get(key).contributions.push({
 loanId: loan.loanId,
 
-principal: r.principalPaid ?? 0,
+principal: Number(r.monthlyPrincipal ?? 0),
 interest:  r.interestPaid  ?? 0,
 fees:      r.feeThisMonth  ?? 0,
 
-monthlyNet:
-(r.principalPaid ?? 0) +
-(r.interestPaid ?? 0) -
-(r.feeThisMonth ?? 0),
+monthlyNet: Number(r.monthlyNet ?? 0),
+
 
 cumulativePrincipal: r.cumPrincipal ?? 0,
 cumulativeInterest:  r.cumInterest  ?? 0,
@@ -2751,7 +2749,8 @@ cumulativeNet:       r.netEarnings  ?? 0,
 
 net: r.netEarnings ?? 0,
 
-hasData: true
+hasData: Number(r.monthlyNet ?? 0) !== 0
+
 });
 
 });
