@@ -4212,126 +4212,135 @@ container.innerHTML = html;
 }
 
 function renderKPI1Table(data, containerId = "kpi1Table") {
-const rows = data.map(l => {
-const { row: atCur } = getCurrentEarningsRow(l);
-const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
 
-return {
-loanId: l.loanId,
-cells: [
+  const rows = data
+    .map(l => {
 
-`<div
-class="loan-swatch"
-data-loan-id="${l.loanId}"
-title="Toggle loan"
-style="
-width:10px;
-height:10px;
-border-radius:2px;
-background:${color};
-margin:4px auto;
-cursor:pointer;
-"
-></div>`,
+      // 🔴 CHANGED: safe resolver
+      const atCur = getSafeCurrentEarningsRow(l);
+      if (!atCur) return null;
 
-`<div>
-<div style="font-weight:600;color:${color};">
-${l.loanName}
-</div>
-<div style="font-size:12px;line-height:1.2;margin-top:2px;color:${color};opacity:0.85;">
-${l.school || ""}
-</div>
-</div>`,
+      const color = window.KPI_COLOR_MAP?.[l.loanId] || "#64748b";
 
-`<span style="color:var(--text)">${formatCurrency(atCur.netEarnings)}</span>`,
-`<span style="color:var(--text)">${formatCurrency(atCur.cumPrincipal)}</span>`,
-`<span style="color:var(--text)">${formatCurrency(atCur.cumInterest)}</span>`,
-`<span style="color:var(--text)">-${formatCurrency(atCur.cumFees)}</span>`
-]
-};
-});
+      return {
+        loanId: l.loanId,
+        cells: [
 
-renderKpiTable(
-containerId,
-[
-`<span title="Hover to highlight loan • Click swatch to toggle loan on/off">
-Loan On/Off
-</span>`,
-"Loan",
-"Net Earnings",
-"Principal",
-"Interest",
-"Fees"
-],
-rows
-);
+          `<div
+            class="loan-swatch"
+            data-loan-id="${l.loanId}"
+            title="Toggle loan"
+            style="
+              width:10px;
+              height:10px;
+              border-radius:2px;
+              background:${color};
+              margin:4px auto;
+              cursor:pointer;
+            "
+          ></div>`,
 
-const table = document.getElementById(containerId);
-if (!table) return;
+          `<div>
+            <div style="font-weight:600;color:${color};">
+              ${l.loanName}
+            </div>
+            <div style="font-size:12px;line-height:1.2;margin-top:2px;color:${color};opacity:0.85;">
+              ${l.school || ""}
+            </div>
+          </div>`,
 
-table.classList.add("kpi1-table");
+          `<span style="color:var(--text)">${formatCurrency(atCur.netEarnings)}</span>`,
+          `<span style="color:var(--text)">${formatCurrency(atCur.cumPrincipal)}</span>`,
+          `<span style="color:var(--text)">${formatCurrency(atCur.cumInterest)}</span>`,
+          `<span style="color:var(--text)">-${formatCurrency(atCur.cumFees)}</span>`
+        ]
+      };
+    })
+    .filter(Boolean);   // 🔴 IMPORTANT
 
-const chartRects = () =>
-document.querySelectorAll("#drawerChartArea svg rect[data-loan-id]");
+  renderKpiTable(
+    containerId,
+    [
+      `<span title="Hover to highlight loan • Click swatch to toggle loan on/off">
+        Loan On/Off
+      </span>`,
+      "Loan",
+      "Net Earnings",
+      "Principal",
+      "Interest",
+      "Fees"
+    ],
+    rows
+  );
 
-const setChartHighlight = (loanId) => {
-chartRects().forEach(r => {
-r.style.opacity = (r.dataset.loanId === loanId) ? "1" : "0.15";
-});
-};
+  // ⬇️ everything below stays EXACTLY the same ⬇️
+  const table = document.getElementById(containerId);
+  if (!table) return;
 
-const clearChartHighlight = () => {
-chartRects().forEach(r => {
-r.style.opacity = "";
-});
-};
+  table.classList.add("kpi1-table");
 
-const setRowHighlight = (loanId) => {
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-tr.classList.toggle("dimmed", tr.dataset.loanId !== loanId);
-});
-};
+  const chartRects = () =>
+    document.querySelectorAll("#drawerChartArea svg rect[data-loan-id]");
 
-const clearRowHighlight = () => {
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-tr.classList.remove("dimmed");
-});
-};
+  const setChartHighlight = (loanId) => {
+    chartRects().forEach(r => {
+      r.style.opacity = (r.dataset.loanId === loanId) ? "1" : "0.15";
+    });
+  };
 
-table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
-const loanId = tr.dataset.loanId;
+  const clearChartHighlight = () => {
+    chartRects().forEach(r => {
+      r.style.opacity = "";
+    });
+  };
 
-tr.addEventListener("mouseenter", () => {
-setRowHighlight(loanId);
-setChartHighlight(loanId);
-});
+  const setRowHighlight = (loanId) => {
+    table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
+      tr.classList.toggle("dimmed", tr.dataset.loanId !== loanId);
+    });
+  };
 
-tr.addEventListener("mouseleave", () => {
-clearRowHighlight();
-clearChartHighlight();
-});
-});
+  const clearRowHighlight = () => {
+    table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
+      tr.classList.remove("dimmed");
+    });
+  };
 
-table.querySelectorAll(".loan-swatch").forEach(sw => {
-const loanId = sw.dataset.loanId;
+  table.querySelectorAll("tbody tr[data-loan-id]").forEach(tr => {
+    const loanId = tr.dataset.loanId;
 
-if (hiddenLoans.has(loanId)) sw.style.opacity = "0.25";
+    tr.addEventListener("mouseenter", () => {
+      setRowHighlight(loanId);
+      setChartHighlight(loanId);
+    });
 
-sw.addEventListener("click", (e) => {
-e.stopPropagation();
+    tr.addEventListener("mouseleave", () => {
+      clearRowHighlight();
+      clearChartHighlight();
+    });
+  });
 
-if (hiddenLoans.has(loanId)) {
-hiddenLoans.delete(loanId);
-sw.style.opacity = "1";
-} else {
-hiddenLoans.add(loanId);
-sw.style.opacity = "0.25";
+  table.querySelectorAll(".loan-swatch").forEach(sw => {
+    const loanId = sw.dataset.loanId;
+
+    if (hiddenLoans.has(loanId)) sw.style.opacity = "0.25";
+
+    sw.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      if (hiddenLoans.has(loanId)) {
+        hiddenLoans.delete(loanId);
+        sw.style.opacity = "1";
+      } else {
+        hiddenLoans.add(loanId);
+        sw.style.opacity = "0.25";
+      }
+
+      openKpi1();
+    });
+  });
 }
 
-openKpi1();
-});
-});
-}
 
 function toggleLoanVisibility(loanId) {
 if (hiddenLoans.has(loanId)) {
@@ -4460,61 +4469,70 @@ openKpi2();
 }
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
-const rows = data.map(l => {
-const purchaseDate = l.purchaseDate
-? formatDate(new Date(l.purchaseDate))
-: "-";
 
-let maturityDate = "-";
-try {
-const pd = new Date(l.purchaseDate);
-const months = Math.round((l.termYears + l.graceYears) * 12);
-pd.setMonth(pd.getMonth() + months);
-maturityDate = formatDate(pd);
-} catch {}
+  const rows = data
+    .map(l => {
 
-const avgMonthly =
-kpis.monthsCounted > 0
-? (getCurrentEarningsRow(l).row.netEarnings / kpis.monthsCounted)
-: 0;
+      // 🔴 CHANGED: safe current earnings row
+      const atCur = getSafeCurrentEarningsRow(l);
+      if (!atCur) return null;
 
-return {
-loanId: l.loanId,
-cells: [
+      const purchaseDate = l.purchaseDate
+        ? formatDate(new Date(l.purchaseDate))
+        : "-";
 
-`
-<div>
-<div style="font-weight:600;">
-${l.loanName}
-</div>
-<div style="font-size:12px;color:var(--muted);margin-top:2px;">
-${l.school}
-</div>
-</div>
-`,
-formatCurrency(avgMonthly),
-purchaseDate,
-maturityDate
-]
-};
-});
+      // 🔴 CHANGED: maturity comes from schedule end
+      let maturityDate = "-";
+      if (l.amort?.schedule?.length) {
+        const last = l.amort.schedule[l.amort.schedule.length - 1];
+        if (last?.loanDate) {
+          maturityDate = formatDate(new Date(last.loanDate));
+        }
+      }
 
-renderKpiTable(
-containerId,
-[
-"Loan",
-"Avg Monthly Earnings To Date",
-"Purchase Date",
-"Maturity Date"
-],
-rows
-);
+      const avgMonthly =
+        kpis.monthsCounted > 0
+          ? atCur.netEarnings / kpis.monthsCounted
+          : 0;
 
-const table = document.getElementById(containerId);
-if (!table) return;
+      return {
+        loanId: l.loanId,
+        cells: [
+          `
+          <div>
+            <div style="font-weight:600;">
+              ${l.loanName}
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px;">
+              ${l.school}
+            </div>
+          </div>
+          `,
+          formatCurrency(avgMonthly),
+          purchaseDate,
+          maturityDate
+        ]
+      };
+    })
+    .filter(Boolean);
 
-table.classList.add("kpi3-table");
+  renderKpiTable(
+    containerId,
+    [
+      "Loan",
+      "Avg Monthly Earnings To Date",
+      "Purchase Date",
+      "Maturity Date"
+    ],
+    rows
+  );
+
+  const table = document.getElementById(containerId);
+  if (!table) return;
+
+  table.classList.add("kpi3-table");
 }
+
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
 const rows = data
