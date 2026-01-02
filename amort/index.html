@@ -1116,6 +1116,22 @@ function buildEventBadges(events = []) {
        ============================ */
     const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
+
+function setMiniTooltipContent(lines) {
+  tooltip.innerHTML = lines.join("<br>");
+  tooltip.style.display = "block";
+}
+
+function positionMiniTooltip(x, y, offset = 12) {
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top = `${y - offset}px`;
+}
+
+function hideMiniTooltip() {
+  tooltip.style.display = "none";
+}
+
+  
   grid.innerHTML = "";
     currentLoans.forEach((loan, idx) => {
       const tile = document.createElement('div');
@@ -1166,14 +1182,91 @@ ${buildEventBadges(loan.events || [])}
   </div>
 </div>
 
-
-
         <div class="chart-wrap">
           <div class="mini-label">Rate ${(loan.nominalRate * 100).toFixed(2)}%</div>
           <svg class="sparkline" viewBox="0 0 170 48" preserveAspectRatio="none" data-idx="${idx}" aria-hidden="true"></svg>
         </div>
       `;
 
+// -----------------------------
+// Badge hover (ROI-style)
+// -----------------------------
+if (Array.isArray(loan.events) && loan.events.length > 0) {
+  const badges = tile.querySelectorAll(".loan-badge");
+
+  badges.forEach(badge => {
+    badge.addEventListener("mouseenter", e => {
+      let eventType = null;
+      if (badge.classList.contains("prepayment")) eventType = "prepayment";
+      if (badge.classList.contains("default")) eventType = "default";
+      if (badge.classList.contains("deferral")) eventType = "deferral";
+      if (!eventType) return;
+
+      const event = loan.events.find(ev => ev.type === eventType);
+      if (!event) return;
+
+      const lines = [];
+
+      if (eventType === "prepayment") {
+        lines.push(
+          "Prepayment",
+          `Date: ${formatDate(new Date(event.date + "T00:00:00"))}`,
+          `Amount: ${formatCurrency(event.amount)}`
+        );
+      }
+
+      if (eventType === "default") {
+        const [y, m, d] = event.date.split("-").map(Number);
+        const defDate = new Date(y, m - 1, d);
+
+        const schedule = loan.amort?.schedule || [];
+        let balanceAtDefault = 0;
+
+        for (const row of schedule) {
+          if (
+            row.loanDate &&
+            row.loanDate.getFullYear() === defDate.getFullYear() &&
+            row.loanDate.getMonth() === defDate.getMonth()
+          ) {
+            balanceAtDefault = Number(row.balance || 0);
+            break;
+          }
+        }
+
+        const recovered = Number(
+          event.recovered ??
+          event.recoveredAmount ??
+          event.recoveryAmount ??
+          event.amountRecovered ??
+          event.recovery ??
+          0
+        );
+
+        lines.push(
+          "Default",
+          `Date: ${formatMonthYear(defDate)}`,
+          `Recovered: ${formatCurrency(recovered)}`,
+          `Remaining: ${formatCurrency(balanceAtDefault - recovered)}`
+        );
+      }
+
+      if (eventType === "deferral") {
+        lines.push(
+          "Deferral",
+          `Start: ${formatMonthYear(new Date(event.startDate + "T00:00:00"))}`,
+          `Months: ${event.months}`
+        );
+      }
+
+      setMiniTooltipContent(lines);
+      positionMiniTooltip(e.clientX, e.clientY, 12);
+    });
+
+    badge.addEventListener("mouseleave", hideMiniTooltip);
+  });
+}
+
+      
       // Important: stop propagation on click so the page-level click listener doesn't close the drawer immediately.
       tile.addEventListener('click', e => { e.stopPropagation(); openDrawerForLoan(loan); });
       tile.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrawerForLoan(loan); } });
