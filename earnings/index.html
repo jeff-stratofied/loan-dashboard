@@ -1382,6 +1382,12 @@ const earningsSchedule = amort.schedule.map(row => {
       ? `${row.ownershipDate.getFullYear()}-${row.ownershipDate.getMonth()}`
       : null;
 
+  const isDeferralMonth =
+  row.deferral === true ||
+  row.isDeferred === true ||
+  (row.payment === 0 && row.principalPaid === 0 && row.interest > 0);
+
+
   // ⛔ Stop earnings at default
   if (defaultMonthKey && monthKey === defaultMonthKey) {
     return {
@@ -1410,19 +1416,24 @@ row.isOwned && row.ownershipMonthIndex === 1
 
 const balance = Number(row.balance ?? 0);
 const monthlyBalanceFee =
-row.isOwned && balance > 0
-? +(balance * 0.00125).toFixed(2)
-: 0;
+  row.isOwned && !isDeferralMonth && balance > 0
+    ? +(balance * 0.00125).toFixed(2)
+    : 0;
+
 
 const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
 
-if (row.isOwned) {
-cumFees      = +(cumFees + feeThisMonth).toFixed(2);
-cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
-cumInterest  = +(cumInterest + row.interest).toFixed(2);
+if (row.isOwned && !isDeferralMonth) {
+  cumFees      = +(cumFees + feeThisMonth).toFixed(2);
+  cumPrincipal = +(cumPrincipal + row.principalPaid).toFixed(2);
+  cumInterest  = +(cumInterest  + row.interest).toFixed(2);
 }
 
-const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
+
+const netEarnings = isDeferralMonth
+  ? prevNetEarnings
+  : +(cumPrincipal + cumInterest - cumFees).toFixed(2);
+
 
 return {
 ...row,
