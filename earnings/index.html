@@ -3557,14 +3557,12 @@ function openLoanDrawer(loan){
     if ((r.prepayment ?? 0) > 0)   eventByMonthKey[key].prepayment = true;
   });
 
-    // --------------------------------------------------
-  // ALSO merge raw events (prepay/default/deferral) into the same month-key map
-  // This guarantees table shading even if the schedule flags are missing/inconsistent.
+  // --------------------------------------------------
+  // ALSO merge raw events (prepay/default/deferral)
   // --------------------------------------------------
   (loan?.events || []).forEach(e => {
     if (!e || !e.type) return;
 
-    // --- Prepayment + Default: single month ---
     if ((e.type === "prepayment" || e.type === "default") && e.date) {
       const dt = new Date(e.date + "T00:00:00");
       const k = `${dt.getFullYear()}-${dt.getMonth()}`;
@@ -3577,7 +3575,6 @@ function openLoanDrawer(loan){
       if (e.type === "default")    eventByMonthKey[k].default = true;
     }
 
-    // --- Deferral: spans N months starting startDate ---
     if (e.type === "deferral" && e.startDate && Number(e.months) > 0) {
       const start = new Date(e.startDate + "T00:00:00");
 
@@ -3593,123 +3590,117 @@ function openLoanDrawer(loan){
     }
   });
 
-  
-currentLoan = loan;
-resetDrawerContent();
-const hasSchedule = loan.earningsSchedule.length > 0;
-const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
-const fallbackRow = {
-  netEarnings: 0,
-  cumFees: 0,
-  ownershipDate: new Date(loan.loanStartDate + "T00:00:00"),
-  loanDate: new Date(loan.loanStartDate + "T00:00:00")
-};
+  currentLoan = loan;
+  resetDrawerContent();
 
-const loanStart = new Date(loan.loanStartDate + "T00:00:00");
+  const hasSchedule = loan.earningsSchedule.length > 0;
+  const lastIdx = hasSchedule ? loan.earningsSchedule.length - 1 : 0;
 
+  const fallbackRow = {
+    netEarnings: 0,
+    cumFees: 0,
+    ownershipDate: new Date(loan.loanStartDate + "T00:00:00"),
+    loanDate: new Date(loan.loanStartDate + "T00:00:00")
+  };
 
-const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
-const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
-? Math.max(1, diffMonthsFromStartRaw)
-: 1;
-const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
-const atCurrent = hasSchedule
-? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
-: fallbackRow;
-const atEnd = hasSchedule ? loan.earningsSchedule[lastIdx] : fallbackRow;
+  const loanStart = new Date(loan.loanStartDate + "T00:00:00");
 
-drawerTitle.textContent = loan.loanName;
+  const diffMonthsFromStartRaw = monthDiff(loanStart, TODAY);
+  const diffMonthsFromStart = Number.isFinite(diffMonthsFromStartRaw)
+    ? Math.max(1, diffMonthsFromStartRaw)
+    : 1;
 
-let maturityDate = "-";
-if (loan.amort?.schedule?.length) {
-  const last = loan.amort.schedule[loan.amort.schedule.length - 1];
-  if (last?.loanDate) {
-    maturityDate = formatDate(new Date(last.loanDate));
-  }
-}
+  const currentIdx = Math.max(0, Math.min(diffMonthsFromStart - 1, lastIdx));
+  const atCurrent = hasSchedule
+    ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
+    : fallbackRow;
 
-drawerSub.innerHTML = `
-  <div>${loan.school}</div>
-  <div>
-    Purchased ${loan.purchaseDate}
-    • Matures ${maturityDate}
-    • Orig Loan Amt ${formatCurrency(loan.purchasePrice)}
-  </div>
-`;
+  drawerTitle.textContent = loan.loanName;
 
-
-drawerPrimaryTitle.textContent = "Net Earnings to Date";
-drawerPrimary.textContent = `$${atCurrent.netEarnings.toFixed(2)}`;
-drawerSecondaryTitle.textContent = "Fees to Date";
-drawerSecondary.textContent = `$${atCurrent.cumFees.toFixed(2)}`;
-
-document.getElementById("drawerPrimaryTitle").textContent = "Net Earnings To Date";
-document.getElementById("drawerPrimary").textContent = `$${atCurrent.netEarnings.toLocaleString()}`;
-
-document.getElementById("drawerSecondaryTitle").textContent = "Fees To Date";
-document.getElementById("drawerSecondary").textContent = `$${atCurrent.cumFees.toLocaleString()}`;
-
-createDrawerStackedChart(
-drawerChartArea,
-loan.earningsSchedule,
-loan
-);
-
-drawerExtra.innerHTML = `
-<h3 style="margin-top:12px;margin-bottom:8px;">Earnings Breakdown by Month</h3>
-<div class="amort-wrap">
-<table>
-<thead>
-  <tr>
-    <th>Date</th>
-    <th style="text-align:right">Cumulative Principal</th>
-    <th style="text-align:right">Cumulative Interest</th>
-    <th style="text-align:right">Cumulative Fees</th>
-    <th style="text-align:right">Net Earnings</th>
-  </tr>
-</thead>
-<tbody id="earningsBody"></tbody>
-</table>
-</div>
-`;
-
-const tbody = document.getElementById("earningsBody");
-
-loan.earningsSchedule.forEach(r => {
-  const tr = document.createElement("tr");
-
-// ------------------------------------
-// EVENT SHADING (FROM AMORT — AUTHORITATIVE)
-// ------------------------------------
-const d = r.ownershipDate instanceof Date
-  ? r.ownershipDate
-  : new Date(r.ownershipDate);
-
-const key = `${d.getFullYear()}-${d.getMonth()}`;
-const flags = eventByMonthKey[key];
-
-  // Priority must match amort
-  if (flags?.default) {
-    tr.classList.add("event-default");
-  } else if (flags?.deferral) {
-    tr.classList.add("event-deferral");
-  } else if (flags?.prepayment) {
-    tr.classList.add("event-prepayment");
+  let maturityDate = "-";
+  if (loan.amort?.schedule?.length) {
+    const last = loan.amort.schedule[loan.amort.schedule.length - 1];
+    if (last?.loanDate) {
+      maturityDate = formatDate(new Date(last.loanDate));
+    }
   }
 
-  tr.innerHTML = `
-    <td>${formatDate(d)}</td>
-    <td style="text-align:right">${formatCurrency(r.cumPrincipal)}</td>
-    <td style="text-align:right">${formatCurrency(r.cumInterest)}</td>
-    <td style="text-align:right">-${formatCurrency(r.cumFees)}</td>
-    <td style="text-align:right">${formatCurrency(r.netEarnings)}</td>
+  drawerSub.innerHTML = `
+    <div>${loan.school}</div>
+    <div>
+      Purchased ${loan.purchaseDate}
+      • Matures ${maturityDate}
+      • Orig Loan Amt ${formatCurrency(loan.purchasePrice)}
+    </div>
   `;
 
-  tbody.appendChild(tr);
-});
+  drawerPrimaryTitle.textContent = "Net Earnings to Date";
+  drawerPrimary.textContent = `$${atCurrent.netEarnings.toFixed(2)}`;
 
-openDrawerBase();
+  drawerSecondaryTitle.textContent = "Fees to Date";
+  drawerSecondary.textContent = `$${atCurrent.cumFees.toFixed(2)}`;
+
+  createDrawerStackedChart(
+    drawerChartArea,
+    loan.earningsSchedule,
+    loan
+  );
+
+  // --------------------------------------------------
+  // 🔑 UPDATED TABLE (MONTHLY / INCREMENTAL)
+  // --------------------------------------------------
+  drawerExtra.innerHTML = `
+    <h3 style="margin-top:12px;margin-bottom:8px;">Earnings Breakdown by Month</h3>
+    <div class="amort-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th style="text-align:right">Principal</th>
+            <th style="text-align:right">Interest</th>
+            <th style="text-align:right">Fees</th>
+            <th style="text-align:right">Net Earnings</th>
+          </tr>
+        </thead>
+        <tbody id="earningsBody"></tbody>
+      </table>
+    </div>
+  `;
+
+  const tbody = document.getElementById("earningsBody");
+
+  loan.earningsSchedule.forEach(r => {
+    const tr = document.createElement("tr");
+
+    const d = r.ownershipDate instanceof Date
+      ? r.ownershipDate
+      : new Date(r.ownershipDate);
+
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    const flags = eventByMonthKey[key];
+
+    if (flags?.default) {
+      tr.classList.add("event-default");
+    } else if (flags?.deferral) {
+      tr.classList.add("event-deferral");
+    } else if (flags?.prepayment) {
+      tr.classList.add("event-prepayment");
+    }
+
+    tr.innerHTML = `
+      <td>${formatDate(d)}</td>
+      <td style="text-align:right">${formatCurrency(r.monthlyPrincipal)}</td>
+      <td style="text-align:right">${formatCurrency(r.monthlyInterest)}</td>
+      <td style="text-align:right">-${formatCurrency(r.monthlyFees)}</td>
+      <td style="text-align:right">${formatCurrency(r.monthlyNet)}</td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  openDrawerBase();
 }
+
 
 document.addEventListener("DOMContentLoaded", initPage);
 
