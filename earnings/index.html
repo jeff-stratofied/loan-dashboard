@@ -1321,6 +1321,10 @@ ownershipDate
 let cumPrincipal = 0;
 let cumInterest  = 0;
 let cumFees      = 0;
+  let prevCumPrincipal = 0;
+let prevCumInterest  = 0;
+let prevCumFees      = 0;
+
 
 const termMonths = Math.max(
 1,
@@ -1406,22 +1410,43 @@ cumInterest  = +(cumInterest  + interestThisMonth).toFixed(2);
 cumFees      = +(cumFees      + feesThisMonth).toFixed(2);
 
 const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
-prevNetEarnings = netEarnings;
+// --------------------------------------
+// MONTHLY (INCREMENTAL) EARNINGS
+// --------------------------------------
+const monthlyPrincipal = +(cumPrincipal - prevCumPrincipal).toFixed(2);
+const monthlyInterest  = +(cumInterest  - prevCumInterest).toFixed(2);
+const monthlyFees      = +(cumFees      - prevCumFees).toFixed(2);
+const monthlyNet       = +(monthlyPrincipal + monthlyInterest - monthlyFees).toFixed(2);
+
+// advance previous trackers
+prevCumPrincipal = cumPrincipal;
+prevCumInterest  = cumInterest;
+prevCumFees      = cumFees;
 
 
 return {
   ...row,
   feeThisMonth: isDeferralMonth ? 0 : feeThisMonth,
+
+  // cumulative (KPIs, charts)
   cumPrincipal,
   cumInterest,
   cumFees,
   netEarnings,
+
+  // incremental (drawer table)
+  monthlyPrincipal,
+  monthlyInterest,
+  monthlyFees,
+  monthlyNet,
+
   interestPaid: isDeferralMonth ? 0 : row.interest,
   principalPaid: isDeferralMonth ? 0 : row.principalPaid,
   loanDate: row.loanDate,
   ownershipDate: row.ownershipDate,
   isDeferralMonth
 };
+
 
 
 }).filter(r => r && r.ownershipDate);
