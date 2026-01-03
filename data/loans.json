@@ -216,7 +216,7 @@
     },
     {
       "loanName": "AMU 2024 8.50",
-      "user": "john",
+      "user": "nick",
       "visible": true,
       "school": "Ave Maria University",
       "loanStartDate": "2024-06-04",
@@ -238,7 +238,7 @@
     },
     {
       "loanName": "MICH 2024 9.00",
-      "user": "john",
+      "user": "nick",
       "visible": true,
       "school": "Michigan",
       "loanStartDate": "2024-07-31",
@@ -253,7 +253,7 @@
     },
     {
       "loanName": "MICH 2025 8.50",
-      "user": "john",
+      "user": "nick",
       "visible": true,
       "school": "Michigan",
       "loanStartDate": "2025-03-20",
@@ -275,7 +275,7 @@
     },
     {
       "loanName": "NYU 2025 8.70",
-      "user": "john",
+      "user": "nick",
       "visible": true,
       "school": "NYU",
       "loanStartDate": "2025-04-05",
@@ -290,7 +290,7 @@
     },
     {
       "loanName": "CMU 2024 9.00",
-      "user": "john",
+      "user": "nick",
       "visible": true,
       "school": "Carnegie Mellon",
       "loanStartDate": "2025-06-02",
@@ -305,7 +305,7 @@
     },
     {
       "loanName": "WCC 2014 5.00",
-      "user": "nick",
+      "user": "john",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2014-06-01",
@@ -320,7 +320,7 @@
     },
     {
       "loanName": "WCC 2017 5.00",
-      "user": "nick",
+      "user": "john",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2017-01-01",
@@ -335,7 +335,7 @@
     },
     {
       "loanName": "WCC 2017 5.50",
-      "user": "nick",
+      "user": "john",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2017-01-01",
@@ -357,7 +357,7 @@
     },
     {
       "loanName": "WCC 2017 6.00",
-      "user": "nick",
+      "user": "john",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2017-01-01",
