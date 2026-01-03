@@ -241,6 +241,23 @@ function getCanonicalMonthDate(purchaseDateStr, monthIndex) {
   return d;
 }
 
+function normalizeDate(d) {
+  if (!d) return "";
+
+  // If already ISO (YYYY-MM-DD), keep it
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+
+  // Handle MM/DD/YYYY
+  const m = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const [, mm, dd, yyyy] = m;
+    return `${yyyy}-${mm.padStart(2,"0")}-${dd.padStart(2,"0")}`;
+  }
+
+  console.warn("⚠️ Unrecognized date format:", d);
+  return d;
+}
+
 
 // -------------------------------
 // Core: Build amortization schedule
