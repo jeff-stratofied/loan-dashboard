@@ -1079,20 +1079,52 @@ function createBadgeTooltip(badge, text) {
     }
 
 function buildGlobalDatesFromLoans(loans) {
+  console.group("📅 [DEBUG] buildGlobalDatesFromLoans");
+
   const set = new Set();
 
   loans.forEach(l => {
-    if (!l.scheduleWithOwnership) return;
+    if (!l.scheduleWithOwnership) {
+      console.warn("Loan missing scheduleWithOwnership:", l.id);
+      return;
+    }
 
-    l.scheduleWithOwnership
-      .filter(r => r.isOwned && r.displayDate)
-      .forEach(r => set.add(+r.displayDate));
+    const ownedRows = l.scheduleWithOwnership
+      .filter(r => r.isOwned && r.displayDate);
+
+    const ownedDates = ownedRows.map(r => r.displayDate);
+    const lastOwned = ownedDates.at(-1);
+
+    const isDefaulted =
+      Array.isArray(l.events) &&
+      l.events.some(e => e.type === "default");
+
+    console.log(
+      `Loan ${l.id} (${l.name})`,
+      {
+        ownedMonths: ownedDates.length,
+        firstOwned: ownedDates[0],
+        lastOwned,
+        defaulted: isDefaulted
+      }
+    );
+
+    ownedDates.forEach(d => set.add(+d));
   });
 
-  return Array.from(set)
-    .sort((a, b) => a - b)
-    .map(ms => new Date(ms));
+  const dates = Array.from(set).sort((a, b) => a - b);
+
+  console.log("GLOBAL DATE DOMAIN", {
+    count: dates.length,
+    first: dates[0] ? new Date(dates[0]) : null,
+    last: dates.at(-1) ? new Date(dates.at(-1)) : null
+  });
+
+  console.groupEnd();
+
+  return dates.map(ms => new Date(ms));
 }
+
 
 function getLoanEventBadges(loan) {
   const badges = [];
@@ -1632,6 +1664,30 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   // Build a unified date axis
   // -------------------------
   const globalDates = opts.dates || [];
+
+console.group("📈 [DEBUG] createMultiSeriesChart");
+
+console.log("Global dates received:", {
+  count: globalDates.length,
+  first: globalDates[0],
+  last: globalDates.at(-1)
+});
+
+loanSeriesList.forEach(ls => {
+  const dates = ls.data.map(p => p.date);
+  console.log(
+    `Loan series ${ls.id}`,
+    {
+      points: dates.length,
+      first: dates[0],
+      last: dates.at(-1)
+    }
+  );
+});
+
+console.groupEnd();
+
+  
   if (!globalDates.length) {
     containerEl.appendChild(svg);
     return;
@@ -1709,23 +1765,62 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   // -----------------------------------
   // Loan lines (ALWAYS draw)
   // -----------------------------------
-  loanSeriesList.forEach(ls => {
-    const pts = ls.data
-      .filter(p => p.y != null)
-      .map(p => [dateToX(p.date), yScale(p.y)]);
+loanSeriesList.forEach(ls => {
+  // Raw data diagnostics
+  const rawDates = ls.data.map(p => p.date);
+  const rawYs = ls.data.map(p => p.y);
 
-    if (!pts.length) return;
+  console.group(`📉 [DEBUG] Loan series ${ls.id}`);
 
-    const path = document.createElementNS(svgNS, "path");
-    path.setAttribute("d", smoothPathFromPointsCubic(pts));
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", ls.color || "#888");
-    path.setAttribute("stroke-width", "1.2");
-    path.setAttribute("stroke-opacity", "0.9");
-    path.dataset.type = "loan";
-    path.dataset.loanId = String(ls.id);
-    svg.appendChild(path);
+  console.log("Raw series", {
+    points: ls.data.length,
+    firstDate: rawDates[0],
+    lastDate: rawDates.at(-1),
+    nonNullY: rawYs.filter(y => y != null).length
   });
+
+  // Points actually drawable in chart space
+  const pts = ls.data
+    .filter(p => p.y != null)
+    .map(p => {
+      const x = dateToX(p.date);
+      const y = yScale(p.y);
+      return [x, y];
+    });
+
+  console.log("Drawable points", {
+    count: pts.length,
+    pts
+  });
+
+  // 🔴 Critical signal: loan exists but cannot render
+  if (!pts.length) {
+    console.warn("⚠️ Loan skipped: no drawable points", ls.id);
+    console.groupEnd();
+    return;
+  }
+
+  if (pts.length < 2) {
+    console.warn("⚠️ Loan has <2 drawable points (path will collapse)", ls.id);
+  }
+
+  const pathD = smoothPathFromPointsCubic(pts);
+
+  console.log("SVG path D", pathD);
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute("d", pathD);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", ls.color || "#888");
+  path.setAttribute("stroke-width", "1.2");
+  path.setAttribute("stroke-opacity", "0.9");
+  path.dataset.type = "loan";
+  path.dataset.loanId = String(ls.id);
+  svg.appendChild(path);
+
+  console.groupEnd();
+});
+
 
   // -----------------------------------
   // Weighted line (OPTIONAL)
