@@ -1756,7 +1756,8 @@ const w = 170;
 const h = 48;
 const padL = 4, padR = 4, padT = 4, padB = 4;
 
-const data = earningsSchedule;
+const data = loan.displayEarningsTimeline || earningsSchedule;
+
 
 let maxAbs = 0;
 data.forEach(d => {
