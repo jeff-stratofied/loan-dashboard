@@ -1506,7 +1506,8 @@ return {
 const normalizedEarningsSchedule =
   earningsSchedule
     .slice()
-    .sort((a, b) => a.ownershipDate - b.ownershipDate);
+    .sort((a, b) => a.loanDate - b.loanDate);
+
 
 
 return {
@@ -1839,10 +1840,26 @@ svg.appendChild(rFee);
 
 
 // --- TODAY line based on ENGINE schedule index ---
-const currentIdx = Math.min(
-  data.length - 1,
-  Math.max(0, getCurrentScheduleIndex(loan) - 1)
-);
+// --- TODAY index based on calendar month (NOT ownership) ---
+const currentIdx = (() => {
+  const todayY = TODAY.getFullYear();
+  const todayM = TODAY.getMonth();
+
+  const idx = data.findIndex(d =>
+    d.loanDate &&
+    d.loanDate.getFullYear() === todayY &&
+    d.loanDate.getMonth() === todayM
+  );
+
+  // clamp safely
+  if (idx === -1) {
+    if (TODAY < data[0].loanDate) return 0;
+    return data.length - 1;
+  }
+
+  return idx;
+})();
+
 
 const ratio =
   data.length > 1
@@ -1887,8 +1904,7 @@ updateLens(lensInstance, x, y);
 
 const idx = Math.max(0, Math.min(data.length - 1, Math.floor((x - padL) / barW)));
 const row = data[idx];
-const loanStart = new Date(loan.loanStartDate);
-const tooltipDate = addMonths(loanStart, idx);
+const tooltipDate = row.loanDate;
 const tooltipLines = [
 `Date: ${formatDate(tooltipDate)}`,
 `Principal: $${row.cumPrincipal.toFixed(2)}`,
