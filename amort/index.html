@@ -829,6 +829,20 @@ const loanIdParam = Number(params.get("loanId")) || null;
   USER_LABELS[PAGE_USER] || "Unknown User";
 
    
+// =========================================
+// Contextual "Back to My Holdings" handling
+// =========================================
+const backRow = document.getElementById("backToHoldingsRow");
+const backBtn = document.getElementById("backToHoldingsBtn");
+
+// Show ONLY when user came from Reporting
+if (params.get("from") === "reporting") {
+  backRow.style.display = "block";
+
+  backBtn.addEventListener("click", () => {
+    history.back();
+  });
+}
 
     
 async function init() {
