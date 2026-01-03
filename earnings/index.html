@@ -1322,22 +1322,26 @@ raw.feeStartMonth ??
 );
 
 const normalizedLoan = {
-...raw,
-loanId,
-id,
-loanName: raw.loanName ?? `Loan ${loanId}`,
-school: raw.school ?? "No school listed",
-loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
-purchaseDate: raw.purchaseDate || "",
-purchasePrice,
-balanceForAmort,
-nominalRate,
-termYears,
-graceYears,
-upfrontFee,
-monthlyFeeStart,
-monthlyFee
+  ...raw,
+  loanId,
+  id,
+  loanName: raw.loanName ?? `Loan ${loanId}`,
+  school: raw.school ?? "No school listed",
+  loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
+  purchaseDate: raw.purchaseDate || "",
+  purchasePrice,
+  balanceForAmort,
+  nominalRate,
+  termYears,
+  graceYears,
+  upfrontFee,
+  monthlyFeeStart,
+  monthlyFee,
+
+  // 🔑 REQUIRED — preserve ownership
+  user: (raw.user ?? PAGE_USER).toLowerCase()
 };
+
 
 const amortSchedule = buildAmortSchedule({
   principal: normalizedLoan.balanceForAmort,
