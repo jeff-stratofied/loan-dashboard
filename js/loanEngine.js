@@ -805,6 +805,19 @@ loansWithAmort.forEach(loan => {
   });
 
 // -------------------------------------------------
+// DISPLAY timeline (INVESTOR VIEW)
+// Starts at first owned month
+// -------------------------------------------------
+
+const firstOwnedIdx = timeline.findIndex(r => r.isOwned === true);
+
+const displayTimeline =
+  firstOwnedIdx >= 0
+    ? timeline.slice(firstOwnedIdx)
+    : [];
+
+  
+// -------------------------------------------------
 // DISPLAY timeline (INVESTOR VIEW — starts at first owned month)
 // -------------------------------------------------
 
