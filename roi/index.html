@@ -745,12 +745,11 @@ tr.event-default td {
   opacity: 1 !important;
 }
 
-/* Optional: Prevent clipping in parents (add if fixed position alone doesn't work) */
-.grid,
-.drawer-body,
-.app {
-  overflow: visible !important;  /* Test; may need to toggle via JS on hover if it breaks layout */
+/* Allow tooltips to escape grid without breaking page scroll */
+.grid {
+  overflow: visible;
 }
+
     
   </style>
 </head>
