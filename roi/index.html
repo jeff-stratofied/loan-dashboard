@@ -2009,12 +2009,6 @@ svg.addEventListener("mouseleave", () => {
   vLine.setAttribute("x2", -9999);
 });
 
-window.__roiChartClearFocus = function () {
-  loanPaths.forEach(p => {
-    p.setAttribute("stroke-opacity", "0.9");
-    p.setAttribute("stroke-width", "1.2");
-  });
-};
 
   
   svg.appendChild(axis);
