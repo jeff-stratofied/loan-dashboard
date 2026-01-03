@@ -1750,63 +1750,42 @@ console.groupEnd();
     svg.appendChild(label);
   }
 
-  function smoothPathFromPointsCubic(points) {
-    if (points.length < 2) return "";
-    let d = `M ${points[0][0]} ${points[0][1]}`;
-    for (let i = 1; i < points.length; i++) {
-      const [x0, y0] = points[i - 1];
-      const [x1, y1] = points[i];
-      d += ` Q ${x0} ${y0}, ${(x0 + x1) / 2} ${(y0 + y1) / 2}`;
-    }
-    d += ` T ${points.at(-1)[0]} ${points.at(-1)[1]}`;
-    return d;
+function smoothPathFromPointsCubic(points, isTruncated = false) {
+  if (points.length < 2) return "";
+
+  let d = `M ${points[0][0]} ${points[0][1]}`;
+
+  for (let i = 1; i < points.length; i++) {
+    const [x0, y0] = points[i - 1];
+    const [x1, y1] = points[i];
+    d += ` Q ${x0} ${y0}, ${(x0 + x1) / 2} ${(y0 + y1) / 2}`;
   }
 
-  // -----------------------------------
-  // Loan lines (ALWAYS draw)
-  // -----------------------------------
+  // 🚫 DO NOT extend defaulted / truncated series
+  if (!isTruncated) {
+    d += ` T ${points.at(-1)[0]} ${points.at(-1)[1]}`;
+  }
+
+  return d;
+}
+
+
+
+// -----------------------------------
+// Loan lines (ALWAYS draw)
+// -----------------------------------
 loanSeriesList.forEach(ls => {
-  // Raw data diagnostics
-  const rawDates = ls.data.map(p => p.date);
-  const rawYs = ls.data.map(p => p.y);
-
-  console.group(`📉 [DEBUG] Loan series ${ls.id}`);
-
-  console.log("Raw series", {
-    points: ls.data.length,
-    firstDate: rawDates[0],
-    lastDate: rawDates.at(-1),
-    nonNullY: rawYs.filter(y => y != null).length
-  });
-
-  // Points actually drawable in chart space
   const pts = ls.data
     .filter(p => p.y != null)
-    .map(p => {
-      const x = dateToX(p.date);
-      const y = yScale(p.y);
-      return [x, y];
-    });
+    .map(p => [dateToX(p.date), yScale(p.y)]);
 
-  console.log("Drawable points", {
-    count: pts.length,
-    pts
-  });
+  if (!pts.length) return;
 
-  // 🔴 Critical signal: loan exists but cannot render
-  if (!pts.length) {
-    console.warn("⚠️ Loan skipped: no drawable points", ls.id);
-    console.groupEnd();
-    return;
-  }
+  // ✅ ADD THIS LINE
+  const isTruncated = ls.data.length < globalDates.length;
 
-  if (pts.length < 2) {
-    console.warn("⚠️ Loan has <2 drawable points (path will collapse)", ls.id);
-  }
-
-  const pathD = smoothPathFromPointsCubic(pts);
-
-  console.log("SVG path D", pathD);
+  // ✅ CHANGE THIS LINE
+  const pathD = smoothPathFromPointsCubic(pts, isTruncated);
 
   const path = document.createElementNS(svgNS, "path");
   path.setAttribute("d", pathD);
@@ -1817,9 +1796,8 @@ loanSeriesList.forEach(ls => {
   path.dataset.type = "loan";
   path.dataset.loanId = String(ls.id);
   svg.appendChild(path);
-
-  console.groupEnd();
 });
+
 
 
   // -----------------------------------
