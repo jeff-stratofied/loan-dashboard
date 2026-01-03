@@ -1402,18 +1402,6 @@ Math.round(normalizedLoan.termYears * 12)
 
 const balanceAtPurchase = amort.schedule[Math.max(0, monthsSinceStart - 1)]?.balance || 0;
 
-// --------------------------------------
-// DEFAULT CUTOFF (AUTHORITATIVE)
-// --------------------------------------
-let defaultMonthKey = null;
-
-(raw.events || []).forEach(e => {
-  if (e.type === "default" && e.date) {
-    const d = new Date(e.date + "T00:00:00");
-    defaultMonthKey = `${d.getFullYear()}-${d.getMonth()}`;
-  }
-});
-
   
 const earningsSchedule = amort.schedule.map(row => {
   const monthKey =
@@ -1423,22 +1411,6 @@ const earningsSchedule = amort.schedule.map(row => {
 
 const isDeferralMonth = isDeferredMonth(row);
 
-  // ⛔ Stop earnings at default
-  if (defaultMonthKey && monthKey === defaultMonthKey) {
-    return {
-      ...row,
-      feeThisMonth: 0,
-      cumPrincipal,
-      cumInterest,
-      cumFees,
-      netEarnings: cumPrincipal + cumInterest - cumFees,
-      isDefaultMonth: true
-    };
-  }
-
-  if (defaultMonthKey && monthKey && monthKey > defaultMonthKey) {
-    return null; // 🚫 drop all months after default
-  }
 
   // ---- existing logic continues unchanged ----
 
