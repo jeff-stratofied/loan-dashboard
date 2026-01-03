@@ -224,13 +224,59 @@
             background: var(--bg);
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2px;
-            max-width: 1600px;
-            margin: 0 auto;
+/* ----------------------------------
+   Reporting sub-navigation
+---------------------------------- */
+
+.reporting-subnav {
+  max-width: 1600px;
+  margin: 0 auto 10px;
+  padding: 0 50px;
+}
+
+.reporting-tabs {
+  display: flex;
+  gap: 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+        .reporting-tab {
+          position: relative;
+          padding: 14px 0;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          color: var(--muted);
         }
+        
+        .reporting-tab.active {
+          color: var(--text);
+        }
+        
+        .reporting-tab.active::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: -1px;
+          height: 2px;
+          background: var(--brand);
+          border-radius: 2px;
+        }
+        
+        .reporting-tab.inactive:hover {
+          color: var(--text);
+        }
+
+        
+               .grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2px;
+          max-width: 1600px;
+          margin: 6px auto 0; /* ⬅ pushes iframes down slightly */
+        }
+
 
         .iframe-tile {
             background: var(--card);
@@ -339,6 +385,13 @@
             </header>
 
             <main class="content">
+                <!-- Reporting sub-nav -->
+                <div class="reporting-subnav">
+                  <div class="reporting-tabs">
+                    <div class="reporting-tab inactive">Marketplace</div>
+                    <div class="reporting-tab active">My Holdings</div>
+                  </div>
+                </div>
                 <div class="grid">
                     <div class="iframe-tile top-tile">
                         <div class="iframe-header">
