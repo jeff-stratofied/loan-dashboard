@@ -1536,14 +1536,35 @@ function computeKPIs(list) {
       ? list.reduce((sum, loan) => sum + loan.nominalRate * loan.purchasePrice, 0) / totalPrincipal
       : 0;
 
-// Expected Monthly Income for "today" — PER LOAN (correct)
+// =====================================================
+// KPI 3 — Monthly Income (calendar-month aligned)
+// Matches chart + table exactly
+// =====================================================
+const now = new Date();
+const targetYear = now.getFullYear();
+const targetMonth = now.getMonth(); // 0-based
+
 const monthlyIncome = list.reduce((sum, loan) => {
-  const idx = getCurrentScheduleIndex(loan) - 1;
-  const pay = loan.amort.schedule[idx]?.payment || 0;
-  return sum + pay;
+  const schedule = loan.amort?.schedule || [];
+  if (!schedule.length) return sum;
+
+  // Anchor to FIRST of loan purchase month
+  const start = new Date(loan.loanStartDate + "T00:00:00");
+  const monthAnchor = new Date(start.getFullYear(), start.getMonth(), 1);
+
+  // Find schedule row that maps to current calendar month
+  const row = schedule.find(r => {
+    const d = new Date(monthAnchor);
+    d.setMonth(d.getMonth() + (r.monthIndex - 1));
+
+    return (
+      d.getFullYear() === targetYear &&
+      d.getMonth() === targetMonth
+    );
+  });
+
+  return sum + (row?.payment || 0);
 }, 0);
-
-
 
   // Total loan count
   const loanCount = list.length;
