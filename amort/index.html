@@ -1921,13 +1921,14 @@ loan.amort.schedule.forEach((r) => {
     rowDate.getMonth() === purchaseDate.getMonth();
 
   const tr = document.createElement("tr");
-  tr.innerHTML = `
-    <td style="text-align:left">${fmtDate(rowDate)}</td>
-    <td style="text-align:right">$${Number(r.payment).toFixed(2)}</td>
-    <td style="text-align:right">$${Number(r.principalPaid).toFixed(2)}</td>
-    <td style="text-align:right">$${Number(r.interest).toFixed(2)}</td>
-    <td style="text-align:right">$${Number(r.balance).toFixed(2)}</td>
-  `;
+tr.innerHTML = `
+  <td style="text-align:left">${fmtDate(rowDate)}</td>
+  <td style="text-align:right">${formatCurrency(r.payment)}</td>
+  <td style="text-align:right">${formatCurrency(r.principalPaid)}</td>
+  <td style="text-align:right">${formatCurrency(r.interest)}</td>
+  <td style="text-align:right">${formatCurrency(r.balance)}</td>
+`;
+
 
 // Apply event highlight (if any)
 const eventType = eventByMonth[r.monthIndex];
