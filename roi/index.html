@@ -2116,7 +2116,6 @@ function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
   // Draw loan lines ONLY (+ line hover tooltip)
   // -------------------------
   const loanById = new Map(currentLoans.map(l => [String(l.id ?? l.loanId), l]));
-  const loanPaths = [];
 
   function setActiveLoan(activeId){
     loanPaths.forEach(p => {
