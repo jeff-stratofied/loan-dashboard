@@ -3457,20 +3457,23 @@ const defDate = new Date(y, m - 1, d);
       });
     }
 
-    // -----------------------------
-    // Attach tile + mini chart
-    // -----------------------------
-    grid.appendChild(tile);
-    tile.addEventListener("click", () => openLoanDrawer(loan));
+// -----------------------------
+// Attach tile + mini chart
+// -----------------------------
+grid.appendChild(tile);
+tile.addEventListener("click", () => openLoanDrawer(loan));
 
-    const mini = tile.querySelector(".mini-chart");
-    if (mini) {
-      createMiniStackedEarningsSVG(
-  miniChart,
-  loan.displayEarningsTimeline || earningsSchedule,
-  loan
-);
-    }
+const mini = tile.querySelector(".mini-chart");
+if (mini) {
+  mini.innerHTML = "";
+
+  createMiniStackedEarningsSVG(
+    mini,
+    loan.displayEarningsTimeline || loan.earningsSchedule || [],
+    loan
+  );
+}
+
   });
 }
 
