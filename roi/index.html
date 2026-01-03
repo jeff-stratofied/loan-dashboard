@@ -3633,7 +3633,7 @@ if (EMBED_MODE) {
 
       const user = PAGE_USER || "jeff";
       window.top.location.href =
-        `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
+        `//loan-dashboard/roi/index.html?user=${user}&from=reporting&open=kpi2`;
     },
     { passive: true }
   );
@@ -3675,7 +3675,7 @@ const _IS_EMBED = _embedParams.get("embed") === "true";
 if (_IS_EMBED) {
   const user = PAGE_USER || "jeff";
   const targetUrl =
-    `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
+    `//loan-dashboard/roi/index.html?user=${user}&from=reporting&open=kpi2`;
 
   function redirectToFullROI(e) {
     e.preventDefault();
