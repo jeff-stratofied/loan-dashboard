@@ -827,7 +827,8 @@ const isEmbed = params.get("embed") === "true";
 const openParam = params.get("open");
 const loanIdParam = Number(params.get("loanId")) || null;
 
-const isEmbedded = window.self !== window.top;
+const cameFromReporting =
+  new URLSearchParams(window.location.search).get("from") === "reporting";
 
     
     const PAGE_USER =
