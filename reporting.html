@@ -539,11 +539,12 @@
             buildFrames(activeUser);
 
             // Re-wire after iframe reloads
-            setTimeout(() => {
-                wireClickRedirect("roiFrame", "/loan-dashboard/roi/index.html");
-                wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html");
-                wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html");
-            }, 1500);
+           setTimeout(() => {
+  wireClickRedirect("roiFrame", "/loan-dashboard/roi/index.html");
+  wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html", "kpi2");
+  wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
+}, 1500);
+
         });
 
 // =========================================
