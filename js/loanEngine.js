@@ -400,7 +400,8 @@ if (
   schedule.push({
     monthIndex: schedule.length + 1,
     loanDate,
-    displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
+    displayDate: new Date(loanDate.getFullYear(), loanDate.getMonth(), 1),
+
 
     payment: +(applied.toFixed(2)),
     principalPaid: +(applied.toFixed(2)),
@@ -466,7 +467,8 @@ schedule.push({
   monthIndex: schedule.length + 1,
   loanDate,
 
-  displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
+  displayDate: new Date(loanDate.getFullYear(), loanDate.getMonth(), 1),
+
 
   // Deferral month: no scheduled payment, no scheduled principal/interest
   payment: 0,
@@ -563,7 +565,8 @@ schedule.push({
   monthIndex: schedule.length + 1,
   loanDate,
 
-  displayDate: getCanonicalMonthDate(purchaseDate, schedule.length + 1),
+  displayDate: new Date(loanDate.getFullYear(), loanDate.getMonth(), 1),
+
 
   payment: +(paymentAmt.toFixed(2)),
   principalPaid: +(principalPaid.toFixed(2)),
