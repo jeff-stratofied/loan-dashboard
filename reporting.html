@@ -218,11 +218,12 @@
         }
 
         .content {
-            flex: 1;
-            padding: 30px 50px;
-            overflow-y: auto;
-            background: var(--bg);
+          flex: 1;
+          padding: 8px 50px 30px; /* ⬅ top padding reduced ~75% */
+          overflow-y: auto;
+          background: var(--bg);
         }
+
 
 /* ----------------------------------
    Reporting sub-navigation
@@ -230,9 +231,11 @@
 
 .reporting-subnav {
   max-width: 1600px;
-  margin: 0 auto 10px;
-  padding: 0 50px;
+  margin: 0 0 10px 0;   /* ⬅ no auto-centering */
+  padding-left: 38px;  /* ⬅ ~25% left shift toward sidebar */
+  padding-right: 50px;
 }
+
 
 .reporting-tabs {
   display: flex;
