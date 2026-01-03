@@ -327,15 +327,7 @@
 .roi-click-wrap {
   position: relative;
 }
-
-.iframe-click-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  cursor: pointer;
-}
-
-        
+    
         .top-tile {
             height: 800px;
         }
@@ -418,7 +410,6 @@
                             <div class="iframe-sub">Portfolio ROI and projections</div>
                         </div>
                         <div class="iframe-body roi-click-wrap">
-    <div class="iframe-click-overlay" id="roiClickOverlay"></div>
     <iframe id="roiFrame" src=""></iframe>
 </div>
 
@@ -544,23 +535,15 @@
         updateDisplay(activeUser);
         buildFrames(activeUser);
 
-function wireRoiRedirect() {
-  const overlay = document.getElementById("roiClickOverlay");
-  if (!overlay) return;
-
-  overlay.addEventListener("click", () => {
-    const user = getActiveUser();
-    const url = new URL("/loan-dashboard/roi/index.html", window.location.origin);
-    url.searchParams.set("user", user);
-    url.searchParams.set("from", "reporting");
-    window.location.href = url.toString();
-  }, { once: true });
-}
-
 
 
         // Wire redirects
-        wireRoiRedirect();
+        wireClickRedirect(
+  "roiFrame",
+  "/loan-dashboard/roi/index.html",
+  "kpi2"
+);
+
         wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html","kpi2");
         wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
 
@@ -573,7 +556,12 @@ function wireRoiRedirect() {
 
             // Re-wire after iframe reloads
            setTimeout(() => {
-  wireRoiRedirect();
+  wireClickRedirect(
+  "roiFrame",
+  "/loan-dashboard/roi/index.html",
+  "kpi2"
+);
+
   wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html", "kpi2");
   wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
 }, 1500);
