@@ -1648,6 +1648,12 @@ function computeKPIs(list) {
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
+    // -----------------------------------
+  // Path refs (REQUIRED)
+  // -----------------------------------
+  const loanPaths = [];
+  let weightedPath = null;
+
 
   const rect = containerEl.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
