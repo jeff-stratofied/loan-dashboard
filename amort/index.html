@@ -1887,7 +1887,11 @@ if (defaultEvent) {
 
   
 loan.amort.schedule.forEach((r) => {
-  const rowDate = displayDateForMonthIndex(r.monthIndex);
+  const rowDate =
+  row.loanDate ||
+  row.date ||
+  row.displayDate;
+
 
   const isBeforePurchase = rowDate < purchaseDate;
 
