@@ -481,31 +481,40 @@ schedule.push({
     let principalPaid = 0;
     let paymentAmt = 0;
 
-    if (i < graceMonths) {
-      // Grace: interest accrues, no payment
-      paymentAmt = 0;
-      principalPaid = 0;
-      balance += interest;
-    } else {
-      // Payment month: compute payment dynamically so deferral-capitalized interest
-      // still amortizes by the end of the remaining payment months.
-      const paymentMonthsTotal = totalMonths - graceMonths;
-      const paymentMonthNumber = (i - graceMonths); // 0-based within payment months
-      const remainingPaymentMonths = Math.max(1, paymentMonthsTotal - paymentMonthNumber);
+    // ----------------------------------------------
+// Grace logic MUST be based on loanStartDate
+// ----------------------------------------------
+const monthsSinceLoanStart =
+  (calendarDate.getFullYear() - start.getFullYear()) * 12 +
+  (calendarDate.getMonth() - start.getMonth());
 
-      const r = monthlyRate;
-      const P = balance;
+if (monthsSinceLoanStart < graceMonths) {
+  // Grace: interest accrues, no payment
+  paymentAmt = 0;
+  principalPaid = 0;
+  balance += interest;
+} else {
+  // Payment month
+  const paymentMonthsTotal = totalMonths - graceMonths;
+  const paymentMonthNumber = monthsSinceLoanStart - graceMonths;
+  const remainingPaymentMonths =
+    Math.max(1, paymentMonthsTotal - paymentMonthNumber);
 
-      const dynPayment =
-        r === 0 ? (P / remainingPaymentMonths) : (P * r) / (1 - Math.pow(1 + r, -remainingPaymentMonths));
+  const r = monthlyRate;
+  const P = balance;
 
-      paymentAmt = dynPayment;
+  const dynPayment =
+    r === 0
+      ? (P / remainingPaymentMonths)
+      : (P * r) / (1 - Math.pow(1 + r, -remainingPaymentMonths));
 
-      principalPaid = paymentAmt - interest;
-      if (principalPaid < 0) principalPaid = 0; // safety (very high rates edge)
+  paymentAmt = dynPayment;
+  principalPaid = paymentAmt - interest;
+  if (principalPaid < 0) principalPaid = 0;
 
-      balance = Math.max(0, balance - principalPaid);
-    }
+  balance = Math.max(0, balance - principalPaid);
+}
+
 
     // Apply prepayments for this calendar month
     const eventKey = monthKey(loanDate);
