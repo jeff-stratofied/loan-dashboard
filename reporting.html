@@ -526,8 +526,25 @@
         updateDisplay(activeUser);
         buildFrames(activeUser);
 
+        // -----------------------------------------
+// ROI redirect (iframe-level, deterministic)
+// -----------------------------------------
+function wireRoiRedirect() {
+  const roiFrame = document.getElementById("roiFrame");
+  if (!roiFrame) return;
+
+  roiFrame.addEventListener("click", () => {
+    const user = getActiveUser();
+    const url = new URL("/loan-dashboard/roi/index.html", window.location.origin);
+    url.searchParams.set("user", user);
+    url.searchParams.set("from", "reporting");
+    window.location.href = url.toString();
+  }, { once: true });
+}
+
+
         // Wire redirects
-        wireClickRedirect("roiFrame", "/loan-dashboard/roi/index.html");
+        wireRoiRedirect();
         wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html","kpi2");
         wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
 
@@ -540,7 +557,7 @@
 
             // Re-wire after iframe reloads
            setTimeout(() => {
-  wireClickRedirect("roiFrame", "/loan-dashboard/roi/index.html");
+  wireRoiRedirect();
   wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html", "kpi2");
   wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
 }, 1500);
