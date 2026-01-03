@@ -1770,12 +1770,15 @@ function openDrawerForLoan(loan) {
 
   // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
   // Standardize all month math to FIRST OF PURCHASE MONTH
+const loanStartDate = new Date(loan.loanStartDate + "T00:00:00");
 const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
+
 const monthAnchor = new Date(
-  purchaseDate.getFullYear(),
-  purchaseDate.getMonth(),
+  loanStartDate.getFullYear(),
+  loanStartDate.getMonth(),
   1
 );
+
 
   
 function monthIndexFromDate(dateStr, schedule) {
