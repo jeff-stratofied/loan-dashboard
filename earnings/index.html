@@ -1554,7 +1554,7 @@ return da - db;
 buildLoanColorMap(loansWithEarnings);
 
 window.LoanMap = Object.fromEntries(
-loansWithEarnings.map(l => [l.loanName, l])
+  loansWithEarnings.map(l => [l.loanId, l])
 );
 }
 
@@ -1595,10 +1595,9 @@ list.forEach(l => {
 totalPrincipal += Number(l.purchasePrice || 0);
 
 const sched = l.earningsSchedule || [];
-if (!sched.length) return;
+if (sched.length < 1) return;
 
-const lastIdx = sched.length - 1;
-const atEnd = sched[lastIdx];
+const atEnd = sched[sched.length - 1];
 
 projectedNetTotal += Number(atEnd.netEarnings || 0);
 projectedMonthsTotal += sched.length;
