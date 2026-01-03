@@ -3633,7 +3633,7 @@ if (EMBED_MODE) {
 
       const user = PAGE_USER || "jeff";
       window.top.location.href =
-        `//jeff-stratofied.github.io/loan-dashboard/roi/index.html?user=jeff&from=reporting&open=kpi2;
+        `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
     },
     { passive: true }
   );
@@ -3675,8 +3675,7 @@ const _IS_EMBED = _embedParams.get("embed") === "true";
 if (_IS_EMBED) {
   const user = PAGE_USER || "jeff";
   const targetUrl =
-    `//jeff-stratofied.github.io/loan-dashboard/roi/index.html?user=jeff&from=reporting&open=kpi2;
-    }
+    `/loan-dashboard/roi/index.html?user=${user}&open=kpi2`;
 
   function redirectToFullROI(e) {
     e.preventDefault();
@@ -3753,4 +3752,3 @@ window.addEventListener("DOMContentLoaded", () => {
 const isEmbed = new URLSearchParams(window.location.search).get('embed') === 'true';
 
 </script>
-
