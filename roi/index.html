@@ -2009,14 +2009,6 @@ svg.addEventListener("mouseleave", () => {
   vLine.setAttribute("x2", -9999);
 });
 
-window.__roiChartFocusLoan = function (loanId) {
-  loanPaths.forEach(p => {
-    const isTarget = p.dataset.loanId === String(loanId);
-    p.setAttribute("stroke-opacity", isTarget ? "1" : "0.12");
-    p.setAttribute("stroke-width", isTarget ? "3" : "1.2");
-  });
-};
-
 window.__roiChartClearFocus = function () {
   loanPaths.forEach(p => {
     p.setAttribute("stroke-opacity", "0.9");
