@@ -508,6 +508,7 @@
                       const user = getActiveUser();
                       const url = new URL(fullPath, window.location.origin);
                       url.searchParams.set("user", user);
+                        url.searchParams.set("from", "reporting");
                       if (openParam) url.searchParams.set("open", openParam);
                       window.location.href = url.toString();
                     },
