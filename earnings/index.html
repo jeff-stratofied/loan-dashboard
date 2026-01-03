@@ -1775,7 +1775,11 @@ const w = 170;
 const h = 48;
 const padL = 4, padR = 4, padT = 4, padB = 4;
 
-const data = loan.displayEarningsTimeline || earningsSchedule;
+const rawData = loan.displayEarningsTimeline || earningsSchedule;
+
+// 🔑 MINI CHARTS MUST SHOW OWNED MONTHS ONLY
+const data = rawData.filter(d => d.isOwned === true);
+
 
   // 🔍 DEBUG — mini chart input
 if (loan.loanName?.includes("WCC")) {
