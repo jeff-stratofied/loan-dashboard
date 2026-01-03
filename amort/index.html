@@ -2036,14 +2036,6 @@ if (eventType) {
 // =====================================
 
 // --- Y AXIS ---
-const yAxis = document.createElementNS(svgNS, 'line');
-yAxis.setAttribute('x1', pad);
-yAxis.setAttribute('x2', pad);
-yAxis.setAttribute('y1', pad);
-yAxis.setAttribute('y2', h - pad);
-yAxis.setAttribute('stroke', '#94a3b8');
-yAxis.setAttribute('stroke-width', '1');
-svg.appendChild(yAxis);
 
 // Y-axis labels (5 ticks)
 for (let i = 0; i <= 4; i++) {
@@ -2061,14 +2053,6 @@ for (let i = 0; i <= 4; i++) {
 }
 
 // --- X AXIS ---
-const xAxis = document.createElementNS(svgNS, 'line');
-xAxis.setAttribute('x1', pad);
-xAxis.setAttribute('x2', w - pad);
-xAxis.setAttribute('y1', h - pad);
-xAxis.setAttribute('y2', h - pad);
-xAxis.setAttribute('stroke', '#94a3b8');
-xAxis.setAttribute('stroke-width', '1');
-svg.appendChild(xAxis);
 
 // X-axis labels (every ~25%)
 const xTickCount = 4;
