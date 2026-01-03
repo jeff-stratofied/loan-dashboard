@@ -1591,6 +1591,8 @@ let monthsCounted = 1;
 let projectedNetTotal = 0;
 let projectedMonthsTotal = 0;
 
+const kpi2Rows = [];
+  
 list.forEach(l => {
 totalPrincipal += Number(l.purchasePrice || 0);
 
@@ -1598,6 +1600,17 @@ const sched = l.earningsSchedule || [];
 if (sched.length < 1) return;
 
 const atEnd = sched[sched.length - 1];
+
+  kpi2Rows.push({
+  loanId: l.loanId,
+  loanName: l.loanName,
+  school: l.school,
+  netEarnings: Number(atEnd.netEarnings || 0),
+  principal: Number(atEnd.cumPrincipal || 0),
+  interest: Number(atEnd.cumInterest || 0),
+  fees: -Number(atEnd.cumFees || 0)
+});
+
 
 projectedNetTotal += Number(atEnd.netEarnings || 0);
 projectedMonthsTotal += sched.length;
@@ -1646,15 +1659,17 @@ portfolioMonthIndex >= 0
 const monthsCountedKpi3 = portfolioMonths;
 
 window.kpis = {
-totalNetToDate,
-totalNetProjected,
-totalFeesToDate,
-totalFeesProjected,
-totalPrincipal,
-avgMonthlyNet,
-monthsCounted: monthsCountedKpi3,
-projectedAvgMonthlyNet
+  totalNetToDate,
+  totalNetProjected,
+  totalFeesToDate,
+  totalFeesProjected,
+  totalPrincipal,
+  avgMonthlyNet,
+  monthsCounted: monthsCountedKpi3,
+  projectedAvgMonthlyNet,
+  kpi2Rows
 };
+
 
 return window.kpis;
 }
