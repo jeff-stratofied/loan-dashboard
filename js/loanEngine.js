@@ -282,9 +282,10 @@ export function buildAmortSchedule(loan) {
 
   const monthlyRate = nominalRate / 12;
 
-  // Contractual months (do NOT include deferrals)
-  const totalMonths = (graceYears + termYears) * 12;
-  const graceMonths = graceYears * 12;
+  // Contractual months (grace is PART of term, not additive)
+const totalMonths = termYears * 12;
+const graceMonths = graceYears * 12;
+
 
   // -------------------------------
   // Canonical dates (MONTH-ANCHORED)
