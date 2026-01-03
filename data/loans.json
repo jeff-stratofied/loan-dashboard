@@ -305,7 +305,7 @@
     },
     {
       "loanName": "WCC 2014 5.00",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2014-06-01",
@@ -320,7 +320,7 @@
     },
     {
       "loanName": "WCC 2017 5.00",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2017-01-01",
@@ -335,7 +335,7 @@
     },
     {
       "loanName": "WCC 2017 5.50",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2017-01-01",
@@ -357,7 +357,7 @@
     },
     {
       "loanName": "WCC 2017 6.00",
-      "user": "jeff",
+      "user": "nick",
       "visible": true,
       "school": "Wyoming Catholic College",
       "loanStartDate": "2017-01-01",
