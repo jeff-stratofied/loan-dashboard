@@ -282,9 +282,11 @@ export function buildAmortSchedule(loan) {
 
   const monthlyRate = nominalRate / 12;
 
-  // Contractual months (grace is PART of term, not additive)
-const totalMonths = termYears * 12;
+// ✅ Grace is ADDITIVE to repayment term
 const graceMonths = graceYears * 12;
+const repaymentMonths = termYears * 12;
+const totalMonths = graceMonths + repaymentMonths;
+
 
 
   // -------------------------------
@@ -521,7 +523,7 @@ if (monthsSinceLoanStart < graceMonths) {
   balance += interest;
 } else {
   // Payment month
-  const paymentMonthsTotal = totalMonths - graceMonths;
+  const paymentMonthsTotal = repaymentMonths;
   const paymentMonthNumber = monthsSinceLoanStart - graceMonths;
   const remainingPaymentMonths =
     Math.max(1, paymentMonthsTotal - paymentMonthNumber);
