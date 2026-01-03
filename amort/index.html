@@ -560,6 +560,49 @@ html[data-theme="dark"] .close-btn {
   border-bottom: 1px solid var(--border) !important;
 }
 
+/* =========================================
+   Contextual Back Navigation (Reporting → UI)
+   ========================================= */
+
+.back-row {
+  margin-bottom: 6px;
+}
+
+.back-link {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.back-link:hover {
+  color: var(--brand);
+  transform: translateX(-2px);
+}
+
+.back-link:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Hide by default — shown only when navigated from Reporting */
+#backToHoldingsRow {
+  display: none;
+}
+
+    
 /* Body scrolls */
 .embed-mode .drawer-body {
   padding: 0 20px 20px !important;
@@ -602,21 +645,33 @@ html[data-theme="dark"] .close-btn {
 
 <body>
   <div class="app" role="main">
-    <header>
-      <div class="header-top">
-        <div>
-          <h1>Loan Portfolio - Amortization Schedules</h1>
-          <p class="lead">Click on the loan below to see & export the amortization schedule.</p>
-        </div>
-        <div class="header-controls">
-          <div style="font-size:13px;color:var(--muted)">Name: <strong id="currentUserLabel" style="color:var(--brand)"></strong>
-</div>
-          <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
-        </div>
-      </div>
+<header>
+  <!-- Contextual back navigation -->
+  <div class="back-row" id="backToHoldingsRow">
+    <button class="back-link" id="backToHoldingsBtn" type="button">
+      ← Back to My Holdings
+    </button>
+  </div>
 
-      <div class="current-date" id="currentDateLabel">Current Date: </div>
-    </header>
+  <div class="header-top">
+    <div>
+      <h1>Loan Portfolio – Amortization Schedules</h1>
+      <p class="lead">
+        Click on the loan below to see & export the amortization schedule.
+      </p>
+    </div>
+
+    <div class="header-controls">
+      <div style="font-size:13px;color:var(--muted)">
+        Name: <strong id="currentUserLabel" style="color:var(--brand)"></strong>
+      </div>
+      <button id="themeToggle" class="theme-icon" title="Toggle dark mode">🌙</button>
+    </div>
+  </div>
+
+  <div class="current-date" id="currentDateLabel">Current Date:</div>
+</header>
+
 
     <section class="kpis" id="kpis"></section>
 
@@ -774,105 +829,7 @@ const loanIdParam = Number(params.get("loanId")) || null;
   USER_LABELS[PAGE_USER] || "Unknown User";
 
    
-    /* ============================
-       Loan data (dates spread across ~6 months)
-       ============================ */
-/* delete    
-    const loans = [
-      { id:1, purchaseDate:'2025-01-15', purchasePrice:10000, termYears:10, graceYears:4.5, nominalRate:0.08 },
-      { id:2, purchaseDate:'2025-02-01', purchasePrice:7500, termYears:8, graceYears:2, nominalRate:0.075 },
-      { id:3, purchaseDate:'2025-02-20', purchasePrice:12000, termYears:12, graceYears:3, nominalRate:0.0825 },
-      { id:4, purchaseDate:'2025-03-10', purchasePrice:6000, termYears:9, graceYears:1.5, nominalRate:0.095 },
-      { id:5, purchaseDate:'2025-03-30', purchasePrice:5000, termYears:10, graceYears:1, nominalRate:0.09 },
-      { id:6, purchaseDate:'2025-04-15', purchasePrice:7500, termYears:5, graceYears:0, nominalRate:0.073 },
-      { id:7, purchaseDate:'2025-04-30', purchasePrice:10000, termYears:8, graceYears:0, nominalRate:0.09 },
-      { id:8, purchaseDate:'2025-05-20', purchasePrice:5000, termYears:9, graceYears:0.5, nominalRate:0.11 },
-      { id:9, purchaseDate:'2025-06-10', purchasePrice:10000, termYears:7, graceYears:0.25, nominalRate:0.10 },
-      { id:10,purchaseDate:'2025-06-30', purchasePrice:8000, termYears:3, graceYears:0, nominalRate:0.06 }
-    ];
-delete */
-    /* ============================
-       Amortization (grace interest capitalized)
-       ============================ */
-/* delete
-    function calcAmort(principal, annualRate, termYears, graceYears) {
-      const monthlyRate = annualRate / 12;
-      const totalMonths = Math.round(termYears * 12);
-      const graceMonths = Math.round(graceYears * 12);
-      const repayMonths = Math.max(1, totalMonths - graceMonths);
 
-      let balance = principal;
-      const schedule = [];
-
-      // Grace months — interest accrues and capitalizes (payment = 0)
-      for (let m = 1; m <= graceMonths; m++) {
-        const interest = +(balance * monthlyRate).toFixed(2);
-        balance = +(balance + interest).toFixed(2); // capitalize
-        schedule.push({ monthIndex: m, payment: 0, principalPaid: 0, interest, balance });
-      }
-
-      // Payment computed on capitalized balance after grace
-      const payment = monthlyRate === 0
-        ? +(balance / repayMonths).toFixed(2)
-        : +((balance * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -repayMonths))).toFixed(2);
-
-      // Repayment months
-      for (let m = 1; m <= repayMonths; m++) {
-        const interest = +(balance * monthlyRate).toFixed(2);
-        const principalPaid = +Math.min(balance, +(payment - interest).toFixed(2));
-        balance = +(Math.max(0, balance - principalPaid).toFixed(2));
-        schedule.push({ monthIndex: graceMonths + m, payment: +payment.toFixed(2), principalPaid, interest, balance });
-      }
-
-      return { payment, schedule };
-    }
-delete */
-
-    
-    /* ============================
-       Build loans with amort + cumulative metrics + mini points
-       ============================ */
-
-/* delete
-function buildStaticLoans() {
-  return loans.map(l => {
-    const amort = calcAmort(l.purchasePrice, l.nominalRate, l.termYears, l.graceYears);
-
-    let cumP = 0, cumI = 0, cumTotal = 0;
-
-    const cumSchedule = amort.schedule.map(r => {
-      cumP = +(cumP + r.principalPaid).toFixed(2);
-      cumI = +(cumI + r.interest).toFixed(2);
-      cumTotal = +(cumTotal + r.payment).toFixed(2);
-
-      return {
-        ...r,
-        cumPrincipal: cumP,
-        cumInterest: cumI,
-        cumTotal,
-        loanDate: new Date(),
-        ownershipDate: new Date()
-      };
-    });
-
-    const miniPts = cumSchedule
-      .slice(0, Math.min(24, cumSchedule.length))
-      .map(s => ({
-        x: s.monthIndex,
-        y: s.balance
-      }));
-
-    return {
-      ...l,
-      loanName: "Loan " + l.loanId,
-      loanStartDate: l.purchaseDate,
-      amort,
-      cumSchedule,
-      miniPts
-    };
-  });
-}
-delete */
     
 async function init() {
 if (USE_DYNAMIC_DATA) {
