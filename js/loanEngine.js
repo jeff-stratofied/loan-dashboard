@@ -64,15 +64,14 @@ export async function loadLoans() {
     );
 
     // Normalize dates
-    const loanStartDate =
-      l.loanStartDate ||
-      l.startDate ||
-      "";
+    const loanStartDate = normalizeDate(
+  l.loanStartDate || l.startDate || ""
+);
 
-    const purchaseDate =
-      l.purchaseDate ||
-      l.loanStartDate ||
-      "";
+const purchaseDate = normalizeDate(
+  l.purchaseDate || ""
+);
+
 
     
     // Normalize terms
@@ -291,7 +290,14 @@ export function buildAmortSchedule(loan) {
   // Canonical dates (MONTH-ANCHORED)
   // -------------------------------
   const start = new Date(loanStartDate + "T00:00:00");
-  const purchase = new Date(purchaseDate + "T00:00:00");
+
+  if (!Number.isFinite(start.getTime())) {
+  throw new Error(
+    `Invalid loanStartDate for loan "${loan.loanName}": ${loan.loanStartDate}`
+  );
+}
+
+    const purchase = new Date(purchaseDate + "T00:00:00");
 
   // Ownership always begins at the first of purchase month
   const purchaseMonth = new Date(
