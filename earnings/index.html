@@ -3466,10 +3466,11 @@ const defDate = new Date(y, m - 1, d);
     const mini = tile.querySelector(".mini-chart");
     if (mini) {
       createMiniStackedEarningsSVG(
-        mini,
-        loan.earningsSchedule || [],
-        loan
-      );
+  miniChartEl,
+  loan.displayEarningsTimeline || earningsSchedule,
+  loan
+);
+
     }
   });
 }
