@@ -748,135 +748,69 @@ export function buildPortfolioViews(loansWithAmort) {
   
 
 // ----------------------------------------------
-// 3) Earnings Timeline (PROJECTED AS-OF)
+// 3) Earnings Timeline (CANONICAL, MONTHLY)
 // ----------------------------------------------
 //
-// netEarnings = earned so far (cumulative)
-// projectedNet = earned + remaining lifetime
+// Emits a full, gap-free monthly timeline from loanStartDate
+// UI must render this directly (no inference)
 // ----------------------------------------------
 
-const earningsSeries = {};
+const earningsTimeline = {};
 const earningsKpis = {};
 
 loansWithAmort.forEach(loan => {
+  const start = new Date(loan.loanStartDate + "T00:00:00");
   const purchase = new Date(loan.purchaseDate + "T00:00:00");
 
   let cumPrincipal = 0;
   let cumInterest  = 0;
   let cumFees      = 0;
 
-  // NEW: previous cumulatives (for incrementals)
-  let prevCumPrincipal = 0;
-  let prevCumInterest  = 0;
-  let prevCumFees      = 0;
+  const timeline = loan.amort.schedule.map(r => {
+    const owned = r.loanDate >= purchase;
 
-  // --- build earned-to-date series first
-  const earnedSeries = loan.amort.schedule
-    .filter(r => r.loanDate >= purchase)
-    .map(r => {
+    // suppress earnings pre-ownership
+    const principal = owned ? r.principalPaid : 0;
+    const interest  = owned ? r.interest       : 0;
+    const fees      = owned ? Number(r.feeThisMonth ?? 0) : 0;
 
-      // 🔒 AUTHORITATIVE DEFERRAL RULE
-      const isDeferred = r.isDeferred === true;
-
-      // Fees may exist elsewhere; suppress during deferral
-      const feeThisMonth = isDeferred
-        ? 0
-        : Number(r.feeThisMonth ?? 0);
-
-      // Accumulate cumulatives
-      cumPrincipal += r.principalPaid;
-      cumInterest  += r.interest;
-      cumFees      += feeThisMonth;
-
-      // ✅ Incrementals (this is the key fix)
-      const monthlyPrincipal = cumPrincipal - prevCumPrincipal;
-      const monthlyInterest  = cumInterest  - prevCumInterest;
-      const monthlyFees      = cumFees      - prevCumFees;
-      const monthlyNet       =
-        monthlyPrincipal + monthlyInterest - monthlyFees;
-
-      // Advance previous trackers
-      prevCumPrincipal = cumPrincipal;
-      prevCumInterest  = cumInterest;
-      prevCumFees      = cumFees;
-
-      return {
-        loanDate: r.loanDate,
-        ownershipDate: r.loanDate,
-        monthIndex: r.monthIndex,
-        payment: r.payment,
-        principalPaid: r.principalPaid,
-        interest: r.interest,
-        balance: r.balance,
-        isDeferred,
-
-        // cumulative (unchanged behavior)
-        cumPrincipal,
-        cumInterest,
-        cumFees,
-        netEarnings: cumPrincipal + cumInterest - cumFees,
-
-        // NEW: incremental fields (used by table)
-        monthlyPrincipal,
-        monthlyInterest,
-        monthlyFees,
-        monthlyNet
-      };
-    });
-
-  if (!earnedSeries.length) {
-    earningsSeries[loan.id] = [];
-    earningsKpis[loan.id] = 0;
-    return;
-  }
-
-  // --- lifetime net (final earned point)
-  const lifetimeNet =
-    earnedSeries[earnedSeries.length - 1].netEarnings;
-
-  // --- PROJECTED-AS-OF timeline
-  earningsSeries[loan.id] = earnedSeries.map(r => {
-    const earned = r.netEarnings;
-    const projected = earned + (lifetimeNet - earned);
+    cumPrincipal += principal;
+    cumInterest  += interest;
+    cumFees      += fees;
 
     return {
-      ...r,
-      netEarnings: projected
+      loanDate: r.loanDate,
+      monthIndex: r.monthIndex,
+
+      // ownership flags (engine-owned truth)
+      isOwned: owned,
+      ownershipDate: owned ? r.loanDate : null,
+      isDeferred: r.isDeferred === true,
+      defaulted: r.defaulted === true,
+
+      // incremental
+      monthlyPrincipal: principal,
+      monthlyInterest: interest,
+      monthlyFees: fees,
+      monthlyNet: principal + interest - fees,
+
+      // cumulative
+      cumPrincipal,
+      cumInterest,
+      cumFees,
+      netEarnings: cumPrincipal + cumInterest - cumFees,
+
+      balance: r.balance
     };
   });
 
-  // KPI2 value = lifetime net (unchanged)
-  earningsKpis[loan.id] = lifetimeNet;
+  earningsTimeline[loan.id] = timeline;
+
+  earningsKpis[loan.id] =
+    timeline.length > 0
+      ? timeline[timeline.length - 1].netEarnings
+      : 0;
 });
-
-// ----------------------------------------------
-// 3b) Projected Earnings Timeline (AS-OF)
-// ----------------------------------------------
-
-const projectedEarningsSeries = {};
-
-Object.keys(earningsSeries).forEach(loanId => {
-  const series = earningsSeries[loanId];
-  if (!series.length) {
-    projectedEarningsSeries[loanId] = [];
-    return;
-  }
-
-  const lifetimeNet =
-    series[series.length - 1].netEarnings;
-
-  projectedEarningsSeries[loanId] = series.map(r => {
-    const earned = r.netEarnings;
-    const projected = earned + (lifetimeNet - earned);
-
-    return {
-      ...r,
-      netEarnings: projected
-    };
-  });
-});
-
-
 
   // ----------------------------------------------
   // 4) Amort KPIs (Total Invested, Portfolio Value, etc.)
@@ -919,10 +853,10 @@ return {
   roiSeries,
   roiKpis,
 
-  // earnings page data
-  earningsSeries,              // earned-to-date (KPI1)
-  projectedEarningsSeries,     // projected-as-of (KPI2)
-  earningsKpis
+  // earnings page data (canonical)
+earningsTimeline,
+earningsKpis
+
 };
 
 
