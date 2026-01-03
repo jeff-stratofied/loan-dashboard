@@ -267,13 +267,18 @@ html[data-theme="dark"] body {
   .kpi p  { margin:8px 0 0; font-size:18px; font-weight:700; }
 
 
-    .grid {
+.grid {
   display: grid;
   grid-template-columns: repeat(2,1fr);
-  grid-auto-rows: min-content; 
+  grid-auto-rows: min-content;
   gap: 12px;
-  height: calc(100vh - 320px);
-  overflow: auto;
+
+  /* IMPORTANT:
+     Let .app be the only scroll container.
+     Never height-clamp the loan grid. */
+  overflow: visible;
+
+  /* Optional: keep for visual spacing consistency */
   padding-right: 6px;
 }
 
