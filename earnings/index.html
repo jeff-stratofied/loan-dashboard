@@ -1838,13 +1838,26 @@ svg.appendChild(rFee);
 });
 
 
+const totalOwnedMonths = Math.max(0, data.length - 1);
 
-const totalOwnedMonths = data.length - 1;
-const ownedMonthsToToday =
-  Math.min(
-    totalOwnedMonths,
-    getCurrentScheduleIndex(loan) - 1
+// find TODAY within the mini-chart’s OWN timeline
+let ownedMonthsToToday = data.findIndex(r => {
+  if (!r.ownershipDate) return false;
+  return (
+    r.ownershipDate.getFullYear() === TODAY.getFullYear() &&
+    r.ownershipDate.getMonth() === TODAY.getMonth()
   );
+});
+
+// clamp safely
+if (ownedMonthsToToday < 0) {
+  ownedMonthsToToday = TODAY > data[data.length - 1]?.ownershipDate
+    ? totalOwnedMonths
+    : 0;
+}
+
+ownedMonthsToToday = Math.min(ownedMonthsToToday, totalOwnedMonths);
+
 
 
 const ratio = totalOwnedMonths > 0 ? (ownedMonthsToToday / totalOwnedMonths) : 0;
