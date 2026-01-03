@@ -1518,7 +1518,7 @@ monthsSinceStart
 });
 
 loansWithEarnings = loansWithEarnings.filter(l =>
-(l.user ?? "jeff") === PAGE_USER
+l.user === PAGE_USER
 );
 
 loansWithEarnings.sort((a, b) => {
