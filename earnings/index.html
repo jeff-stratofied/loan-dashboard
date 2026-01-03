@@ -1525,17 +1525,12 @@ return {
 }).filter(r => r && r.ownershipDate);
 
 
-const byMonth = new Map();
-
-earningsSchedule.forEach(r => {
-const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
-byMonth.set(key, r);
-});
-
+// ✅ KEEP ALL ROWS — DO NOT COLLAPSE BY MONTH
 const normalizedEarningsSchedule =
-[...byMonth.values()].sort((a, b) =>
-a.ownershipDate - b.ownershipDate
-);
+  earningsSchedule
+    .slice()
+    .sort((a, b) => a.ownershipDate - b.ownershipDate);
+
 
 return {
 ...normalizedLoan,
