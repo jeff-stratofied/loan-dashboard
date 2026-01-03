@@ -635,9 +635,22 @@ html[data-theme="dark"] .close-btn {
   border-top: 1px solid var(--border) !important;
 }
 
-    .embed-mode .app {
+ /* =========================================
+   EMBED MODE — show header, hide page chrome
+   ========================================= */
+
+/* Keep header + back button visible */
+.embed-mode header {
+  display: block;
+}
+
+/* Hide KPI row and grid when embedded */
+.embed-mode .kpis,
+.embed-mode .loan-filters,
+.embed-mode .grid {
   display: none !important;
 }
+
 
     
   </style>
