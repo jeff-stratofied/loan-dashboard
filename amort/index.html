@@ -848,17 +848,14 @@ const backRow = document.getElementById("backToHoldingsRow");
 const backBtn = document.getElementById("backToHoldingsBtn");
 
 // Show Back button when loaded inside Reporting iframe
-if (isEmbedded) {
+if (cameFromReporting) {
   backRow.style.display = "block";
 
   backBtn.addEventListener("click", () => {
-    window.parent.postMessage(
-      { type: "back-to-my-holdings" },
-      "*"
-    );
+    window.location.href =
+      "/loan-dashboard/reporting?user=" + PAGE_USER;
   });
 }
-
 
     
 async function init() {
