@@ -1838,30 +1838,19 @@ svg.appendChild(rFee);
 });
 
 
-const totalOwnedMonths = Math.max(0, data.length - 1);
+// --- TODAY line based on ENGINE schedule index ---
+const currentIdx = Math.min(
+  data.length - 1,
+  Math.max(0, getCurrentScheduleIndex(loan) - 1)
+);
 
-// find TODAY within the mini-chart’s OWN timeline
-let ownedMonthsToToday = data.findIndex(r => {
-  if (!r.ownershipDate) return false;
-  return (
-    r.ownershipDate.getFullYear() === TODAY.getFullYear() &&
-    r.ownershipDate.getMonth() === TODAY.getMonth()
-  );
-});
-
-// clamp safely
-if (ownedMonthsToToday < 0) {
-  ownedMonthsToToday = TODAY > data[data.length - 1]?.ownershipDate
-    ? totalOwnedMonths
+const ratio =
+  data.length > 1
+    ? currentIdx / (data.length - 1)
     : 0;
-}
 
-ownedMonthsToToday = Math.min(ownedMonthsToToday, totalOwnedMonths);
-
-
-
-const ratio = totalOwnedMonths > 0 ? (ownedMonthsToToday / totalOwnedMonths) : 0;
 const currentX = padL + ratio * (w - padL - padR);
+
 
 const vline = document.createElementNS(svgNS, "line");
 vline.setAttribute("x1", currentX);
