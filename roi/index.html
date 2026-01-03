@@ -1796,6 +1796,7 @@ loanSeriesList.forEach(ls => {
   path.dataset.type = "loan";
   path.dataset.loanId = String(ls.id);
   svg.appendChild(path);
+  loanPaths.push(path);
 });
 
 
@@ -1811,6 +1812,9 @@ loanSeriesList.forEach(ls => {
     path.setAttribute("stroke", opts.weightedColor || "#000");
     path.setAttribute("stroke-width", opts.weightedWidth || "2.6");
     path.dataset.type = "weighted";
+    path.dataset.role = "weighted-line"; 
+    path.style.pointerEvents = "none"; 
+    weightedPath = path;
     svg.appendChild(path);
   }
 
@@ -1854,6 +1858,38 @@ loanSeriesList.forEach(ls => {
     axis.appendChild(t);
   });
 
+// -----------------------------------
+// Hover dimming helpers (EXACT)
+// -----------------------------------
+function dimWeightedLine() {
+  if (!weightedPath) return;
+  weightedPath.setAttribute("stroke-opacity", "0.15");
+}
+
+function restoreWeightedLine() {
+  if (!weightedPath) return;
+  weightedPath.setAttribute("stroke-opacity", "0.9");
+}
+
+window.__roiChartFocusLoan = function (loanId) {
+  loanPaths.forEach(p => {
+    const active = p.dataset.loanId === String(loanId);
+    p.setAttribute("stroke-opacity", active ? "1" : "0.15");
+    p.setAttribute("stroke-width", active ? "2.6" : "1.2");
+  });
+  dimWeightedLine();
+};
+
+window.__roiChartClearFocus = function () {
+  loanPaths.forEach(p => {
+    p.setAttribute("stroke-opacity", "0.9");
+    p.setAttribute("stroke-width", "1.2");
+  });
+  restoreWeightedLine();
+};
+
+
+  
 // -----------------------------------
 // Hover interaction (REFINED)
 // -----------------------------------
@@ -1990,6 +2026,13 @@ svg.addEventListener("mouseleave", () => {
 function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
+  // -----------------------------------
+  // Path refs for hover / table sync
+  // -----------------------------------
+  const loanPaths = [];
+  let weightedPath = null;
+
+  
   const rect = containerEl.getBoundingClientRect();
   const w = Math.max(360, rect.width || 700);
   const h = opts.h || 260;
@@ -3647,10 +3690,14 @@ function renderCapitalRecoveryDrawer() {
 
   drawerExtra.innerHTML = html;
 
-  const chartSvg = drawerChartArea.querySelector("svg");
+const chartSvg = drawerChartArea.querySelector("svg");
 if (chartSvg) {
   const loanPaths = Array.from(
     chartSvg.querySelectorAll('path[data-type="loan"]')
+  );
+
+  const weightedPath = chartSvg.querySelector(
+    'path[data-type="weighted"]'
   );
 
   const table = document.getElementById("capitalRecoveryTable");
@@ -3660,22 +3707,35 @@ if (chartSvg) {
       if (!rowLoanId) return;
 
       row.addEventListener("mouseenter", () => {
+        // Emphasize hovered loan
         loanPaths.forEach(p => {
           const isTarget = p.dataset.loanId === rowLoanId;
           p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
           p.setAttribute("stroke-width", isTarget ? "2.6" : "1.2");
         });
+
+        // 🔽 DIM weighted / portfolio line
+        if (weightedPath) {
+          weightedPath.setAttribute("stroke-opacity", "0.15");
+        }
       });
 
       row.addEventListener("mouseleave", () => {
+        // Restore loan lines
         loanPaths.forEach(p => {
           p.setAttribute("stroke-opacity", "0.9");
           p.setAttribute("stroke-width", "1.2");
         });
+
+        // 🔼 RESTORE weighted line
+        if (weightedPath) {
+          weightedPath.setAttribute("stroke-opacity", "0.9");
+        }
       });
     });
   }
 }
+
 }
 
 // ----------------------------------
