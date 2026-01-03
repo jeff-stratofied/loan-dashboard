@@ -761,7 +761,7 @@ tr.event-default td {
         <h1>Loan Portfolio — ROI</h1>
        <p class="lead">
     ROI to Date = (Loan Value Today – Purchase Price) / Purchase Price
-    <span class="info-hover" title="ROI to Date measures your current return so far. It includes all principal and interest already received, minus fees, plus the Mark-to-Market discounted value (95%) of the outstanding loan balance.">ⓘ</span>
+    <span class="info-hover" title="ROI to Date measures your current return up to the current month. It includes all principal and interest already received, minus fees, plus the Mark-to-Market discounted value (95%) of the outstanding loan balance.">ⓘ</span>
     </p>
 
     <p class="lead">
@@ -1123,6 +1123,17 @@ function getEventRowClass(loan, row) {
   
     async function initROI() {
       const TODAY = new Date();
+
+// -------------------------------------
+// KPI-1 authoritative "current month"
+// -------------------------------------
+const KPI_CURRENT_MONTH = new Date(
+  TODAY.getFullYear(),
+  TODAY.getMonth(),
+  1
+);
+
+      
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
       // --------------------------------------------------
 // FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
@@ -1278,6 +1289,22 @@ function getCurrentOwnedRoiEntry(loan){
   return ownedEntries[ownedEntries.length - 1];
 }
 
+      function getRoiEntryAsOfMonth(loan, monthDate) {
+  if (!Array.isArray(loan.roiSeries)) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  const eligible = loan.roiSeries.filter(
+    r => r.date && r.date <= monthDate
+  );
+
+  if (!eligible.length) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  return eligible[eligible.length - 1];
+}
+
 
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
@@ -1291,10 +1318,11 @@ function computeKPIs(list) {
   // Weighted ROI to Date (unchanged)
   // -------------------------------------
   const weightedROI =
-    list.reduce((s, l) => {
-      const entry = getCurrentOwnedRoiEntry(l);
-      return s + l.purchasePrice * (entry.roi || 0);
-    }, 0) / Math.max(1, total);
+  list.reduce((s, l) => {
+    const entry = getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH);
+    return s + l.purchasePrice * (entry.roi || 0);
+  }, 0) / Math.max(1, total);
+
 
   // -------------------------------------
   // Projected Weighted ROI (unchanged)
@@ -2002,7 +2030,7 @@ const pts = anchored.map(p => [
     const kpisEl = document.getElementById('kpis');
     kpisEl.innerHTML = `
       <div class="kpi" data-kpi="tpv">
-        <h3>Weighted ROI to Date</h3>
+        <h3>Weighted ROI to Current Month</h3>
         <p id="wroi">${(kpis.weightedROI * 100).toFixed(2)}%</p>
       </div>
     
