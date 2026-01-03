@@ -2010,6 +2010,71 @@ if (eventType) {
     svg.appendChild(line);
   }
 
+// =====================================
+// AXES (X + Y)
+// =====================================
+
+// --- Y AXIS ---
+const yAxis = document.createElementNS(svgNS, 'line');
+yAxis.setAttribute('x1', pad);
+yAxis.setAttribute('x2', pad);
+yAxis.setAttribute('y1', pad);
+yAxis.setAttribute('y2', h - pad);
+yAxis.setAttribute('stroke', '#94a3b8');
+yAxis.setAttribute('stroke-width', '1');
+svg.appendChild(yAxis);
+
+// Y-axis labels (5 ticks)
+for (let i = 0; i <= 4; i++) {
+  const val = minY + ((4 - i) / 4) * range;
+  const y = pad + i * ((h - pad * 2) / 4);
+
+  const t = document.createElementNS(svgNS, 'text');
+  t.setAttribute('x', pad - 6);
+  t.setAttribute('y', y + 4);
+  t.setAttribute('text-anchor', 'end');
+  t.setAttribute('font-size', '11');
+  t.setAttribute('fill', 'var(--muted)');
+  t.textContent = `$${Math.round(val).toLocaleString()}`;
+  svg.appendChild(t);
+}
+
+// --- X AXIS ---
+const xAxis = document.createElementNS(svgNS, 'line');
+xAxis.setAttribute('x1', pad);
+xAxis.setAttribute('x2', w - pad);
+xAxis.setAttribute('y1', h - pad);
+xAxis.setAttribute('y2', h - pad);
+xAxis.setAttribute('stroke', '#94a3b8');
+xAxis.setAttribute('stroke-width', '1');
+svg.appendChild(xAxis);
+
+// X-axis labels (every ~25%)
+const xTickCount = 4;
+for (let i = 0; i <= xTickCount; i++) {
+  const idx = Math.round((i / xTickCount) * (schedule.length - 1));
+  const monthIndex = schedule[idx].monthIndex;
+
+  const d = new Date(loan.loanStartDate + "T00:00:00");
+  d.setMonth(d.getMonth() + (monthIndex - 1));
+
+  const x = pad + idx * stepX;
+
+  const t = document.createElementNS(svgNS, 'text');
+  t.setAttribute('x', x);
+  t.setAttribute('y', h - pad + 16);
+  t.setAttribute('text-anchor', 'middle');
+  t.setAttribute('font-size', '11');
+  t.setAttribute('fill', 'var(--muted)');
+  t.textContent = d.toLocaleDateString(undefined, {
+    month: 'short',
+    year: 'numeric'
+  });
+
+  svg.appendChild(t);
+}
+
+  
   const pathBal = buildPath(balances);
   const pathP = buildPath(cumP);
   const pathI = buildPath(cumI);
