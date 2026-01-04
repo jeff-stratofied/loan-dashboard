@@ -2929,17 +2929,26 @@ function buildHistoricalRoiTimeline(loans) {
     // Map ownershipDate -> ROI for quick lookup
     const roiMap = {};
     loan.cumSchedule.forEach(row => {
-    if (!row.isOwned) return;
 
-    const realized = (row.cumPrincipal + row.cumInterest) - row.cumFees;
-    const unrealized = row.balance * 0.95;
-    const loanValue = realized + unrealized;
+  if (!row.isOwned) return;
 
-    const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
+  const rowDate = row.displayDate || row.loanDate;
+  if (!rowDate) return;
 
-    const key = row.loanDate.toISOString().slice(0, 7);
-    roiMap[key] = roi;
+  const realized = (row.cumPrincipal + row.cumInterest) - row.cumFees;
+  const unrealized = row.balance * 0.95;
+  const loanValue = realized + unrealized;
+
+  const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
+
+  // Month-safe key (NO UTC rollover)
+  const key =
+    rowDate.getFullYear() + "-" +
+    String(rowDate.getMonth() + 1).padStart(2, "0");
+
+  roiMap[key] = roi;
 });
+
 
 
    // Build calendar-aligned ROI (null before purchase)
