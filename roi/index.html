@@ -2809,7 +2809,17 @@ function populateProjectedROILoanTable(){
 }
 
 function getEventRowClass(loan, row) {
-  if (!Array.isArray(loan.events) || !row.loanDate) return "";
+  if (!row.loanDate) return "";
+
+  // ----------------------------------
+  // DEFERRAL — row-state driven
+  // ----------------------------------
+  if (row.isOwned && row.isDeferred === true) {
+    return "event-deferral";
+  }
+
+  // No events → no further styling
+  if (!Array.isArray(loan.events)) return "";
 
   // Engine-authoritative row month
   const rowKey =
@@ -2827,12 +2837,12 @@ function getEventRowClass(loan, row) {
     if (eventKey !== rowKey) continue;
 
     if (e.type === "default") return "event-default";
-    if (row.isOwned && row.isDeferred === true) return "event-deferral";
     if (e.type === "prepayment") return "event-prepayment";
   }
 
   return "";
 }
+
 
 
       
