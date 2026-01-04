@@ -2909,7 +2909,7 @@ drawerAmortContainer.innerHTML = `
   roiBody.innerHTML = '';
 loan.roiSeries.forEach(s => {
   const cs =
-    loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
+    loan.cumSchedule.find(r => r.monthIndex === s.month) || {};
 
   const tr = document.createElement('tr');
   
