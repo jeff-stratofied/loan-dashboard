@@ -1260,7 +1260,18 @@ const formattedLoans = userLoans.map(l => ({
     
 const rawAmort = buildAmortSchedule(l);
 
-const amortSchedule = rawAmort;
+// ----------------------------------
+// Respect terminal rows from engine
+// ----------------------------------
+const amortSchedule = (() => {
+  const out = [];
+  for (const r of rawAmort) {
+    out.push(r);
+    if (r.isTerminal === true) break; // 🔒 STOP at default
+  }
+  return out;
+})();
+
 
       // Attach ownership flags
       const purchase = new Date(l.purchaseDate);
@@ -1274,22 +1285,29 @@ const amortSchedule = rawAmort;
     }));
 
         
-    // Build cumulative values only for owned rows
-      let cumP = 0, cumI = 0, cumFees = 0;
-      const cumSchedule = scheduleWithOwnership.map(r => {
-        if (r.isOwned) {
-        cumP += r.principalPaid;
-        cumI += r.interest;
-        const feeThisMonth = Number(r.feeThisMonth ?? 0);
-        cumFees += feeThisMonth;
-      }
-      return {
-        ...r,
+const cumSchedule = scheduleWithOwnership
+  .filter(r => r.isOwned)
+  .reduce((rows, r) => {
+    cumP += r.principalPaid;
+    cumI += r.interest;
+    const feeThisMonth = Number(r.feeThisMonth ?? 0);
+    cumFees += feeThisMonth;
+
+    rows.push({
+      ...r,
       cumPrincipal: +cumP.toFixed(2),
       cumInterest: +cumI.toFixed(2),
       cumFees: +cumFees.toFixed(2)
-    };
     });
+
+    // 🔒 HARD STOP at terminal row
+    if (r.isTerminal === true) {
+      return rows;
+    }
+
+    return rows;
+  }, []);
+
 
     // Compute proper ROI timeline using correct amort + fees
     const purchasePrice = Number(l.purchasePrice ?? 0);
