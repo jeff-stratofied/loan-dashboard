@@ -1136,7 +1136,7 @@ function getLoanEventBadges(loan) {
 
 function getEventRowClass(loan, row) {
 
-  if (DEBUG_EVENT_HILITE) {
+if (DEBUG_EVENT_HILITE) {
   const matchLoan =
     !DEBUG_EVENT_LOAN_MATCH ||
     String(loan.name || loan.loanName || "").includes(DEBUG_EVENT_LOAN_MATCH);
@@ -1145,14 +1145,18 @@ function getEventRowClass(loan, row) {
     console.warn(
       "[ROI ROW CHECK]",
       loan.name || loan.loanName,
-      "display =", r?.displayDate,
-      "loanDate =", r?.loanDate,
-      "displayKey =", r?.displayDate && (r.displayDate.getFullYear() * 12 + r.displayDate.getMonth()),
-      "loanKey =", r?.loanDate && (r.loanDate.getFullYear() * 12 + r.loanDate.getMonth()),
-      "events =", loan.events
+      "displayDate =", row?.displayDate,
+      "loanDate =", row?.loanDate,
+      "displayKey =",
+        row?.displayDate &&
+        (row.displayDate.getFullYear() * 12 + row.displayDate.getMonth()),
+      "loanKey =",
+        row?.loanDate &&
+        (row.loanDate.getFullYear() * 12 + row.loanDate.getMonth())
     );
   }
 }
+
 
   
   if (!row) return "";
@@ -1192,7 +1196,7 @@ function getEventRowClass(loan, row) {
   // PREPAYMENT (month-based, non-terminal)
   // ----------------------------------
   if (Array.isArray(loan.events)) {
-    const rowDate = row.displayDate;
+    const rowDate = row.loanDate;
 
     if (!rowDate) return "";
 
