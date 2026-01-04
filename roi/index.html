@@ -1592,9 +1592,15 @@ function computeKPIs(list) {
         tooltip.style.display = 'block';
         tooltip.style.left = (rect.left + cx) + 'px';
         tooltip.style.top = (rect.top + cy - 28) + 'px';
-        tooltip.innerHTML = (opts.labelFn ? opts.labelFn(point, idx) : (point.date
-  ? `Date: ${formatDate(point.date)} • ${(point.y * 100).toFixed(2)}%`
-: (`M${point.x} • ${(point.y * 100).toFixed(2)}%`)));
+        tooltip.innerHTML = (
+  opts.labelFn
+    ? opts.labelFn(point, idx)
+    : (
+        point.date
+          ? `${formatMonthYear(point.date)} • ${(point.y * 100).toFixed(2)}%`
+          : (`M${point.x} • ${(point.y * 100).toFixed(2)}%`)
+      )
+);
       });
      svg.addEventListener('mouseleave', function () {
     hoverG.innerHTML = '';
