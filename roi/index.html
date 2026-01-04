@@ -1031,6 +1031,19 @@ function formatCurrency(val) {
   });
 }
 
+function parseISODateLocal(iso) {
+  if (!iso) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function monthAnchor(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+
+
+    
 function createBadgeTooltip(badge, text) {
   const tooltip = document.createElement('div');
   tooltip.className = 'badge-tooltip';
@@ -1137,7 +1150,7 @@ if (Array.isArray(loan.events)) {
   for (const e of loan.events) {
     if (e.type !== "prepayment" || !e.date) continue;
 
-    const d = new Date(e.date);
+    const d = parseISODateLocal(e.date);
     const eventKey =
       d.getFullYear() * 12 + d.getMonth();
 
@@ -2310,54 +2323,80 @@ const badgeHtml = badges.length
 
 // After tile.innerHTML is set, attach tooltips to badges
 const badgeElements = tile.querySelectorAll('.loan-badge');
+
 badgeElements.forEach((badgeEl, index) => {
-  const badgeData = badges[index]; // Matches order from getLoanEventBadges
+  const badgeData = badges[index];
   if (!badgeData) return;
 
   const type = badgeData.type;
   const eventsOfType = loan.events.filter(e => e.type === type);
-
   let tooltipText = '';
 
+  // -------------------------
+  // PREPAYMENT (month-based)
+  // -------------------------
   if (type === 'prepayment') {
     tooltipText = eventsOfType.map(e => {
-      const date = new Date(e.date);
-      return `Prepayment\nDate: ${date.toLocaleDateString()}\nAmount: $${Number(e.amount || 0).toLocaleString()}`;
+      const d = monthAnchor(parseISODateLocal(e.date));
+      return (
+        `Prepayment\n` +
+        `Date: ${formatMonthYear(d)}\n` +
+        `Amount: $${Number(e.amount || 0).toLocaleString()}`
+      );
     }).join('\n\n');
-  } else if (type === 'deferral') {
+  }
+
+  // -------------------------
+  // DEFERRAL (month-based)
+  // -------------------------
+  else if (type === 'deferral') {
     tooltipText = eventsOfType.map(e => {
-      const start = new Date(e.startDate);
+      const start = monthAnchor(parseISODateLocal(e.startDate));
       const end = new Date(start);
       end.setMonth(end.getMonth() + Number(e.months || 0));
-      return `Deferral\nStart: ${start.toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}\nDuration: ${e.months} months\nEnd: ${end.toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}`;
+
+      return (
+        `Deferral\n` +
+        `Start: ${formatMonthYear(start)}\n` +
+        `Duration: ${e.months} months\n` +
+        `End: ${formatMonthYear(end)}`
+      );
     }).join('\n\n');
-  } else if (type === 'default') {
-    const e = eventsOfType[0]; // Assume one default
+  }
+
+  // -------------------------
+  // DEFAULT (terminal month)
+  // -------------------------
+  else if (type === 'default') {
+    const e = eventsOfType[0];
     if (!e) return;
 
-    const defDate = new Date(e.date);
+    const defMonth = monthAnchor(parseISODateLocal(e.date));
     const recovered = Number(e.recoveryAmount || 0);
 
-    // Find the default row in amort schedule (matches month/year)
-    const defYear = defDate.getFullYear();
-    const defMonth = defDate.getMonth();
     const defaultRow = loan.amort.schedule.find(r =>
-      r.loanDate.getFullYear() === defYear && r.loanDate.getMonth() === defMonth
+      r.loanDate.getFullYear() === defMonth.getFullYear() &&
+      r.loanDate.getMonth() === defMonth.getMonth()
     );
 
     let remaining = 0;
     if (defaultRow) {
-      const balanceAtDefault = defaultRow.balance + recovered; // Reconstruct balance before recovery
-      remaining = balanceAtDefault - recovered; // Remaining (loss) after recovery
+      const balanceAtDefault = defaultRow.balance + recovered;
+      remaining = balanceAtDefault - recovered;
     }
 
-    tooltipText = `Default\nDate: ${defDate.toLocaleDateString(undefined, {month: 'short', year: 'numeric'})}\nRecovered: $${recovered.toLocaleString()}\nRemaining: $${remaining.toLocaleString()}`;
+    tooltipText =
+      `Default\n` +
+      `Date: ${formatMonthYear(defMonth)}\n` +
+      `Recovered: $${recovered.toLocaleString()}\n` +
+      `Remaining: $${remaining.toLocaleString()}`;
   }
 
   if (tooltipText) {
     createBadgeTooltip(badgeEl, tooltipText);
   }
 });
+
         
       tile.addEventListener('click', e=>{ e.stopPropagation(); openDrawerForLoan(loan); });
       tile.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openDrawerForLoan(loan); } });
