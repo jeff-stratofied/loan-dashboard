@@ -1111,6 +1111,35 @@ function getLoanEventBadges(loan) {
 
 
 function getEventRowClass(loan, row) {
+
+// ================================
+// DEBUG — DEFAULT ROW SELECTION
+// ================================
+if (
+  Array.isArray(loan.events) &&
+  loan.events.some(e => e.type === "default")
+) {
+  console.groupCollapsed(
+    "🟥 DEFAULT ROW CHECK",
+    loan.name,
+    formatMonthYear(row.displayDate)
+  );
+
+  const defaultEvent = loan.events.find(e => e.type === "default");
+  console.log("Default event date:", defaultEvent?.date);
+
+  console.log("Row values:", {
+    displayDate: row.displayDate,
+    loanDate: row.loanDate,
+    isOwned: row.isOwned,
+    isTerminal: row.isTerminal,
+    ownershipMonthIndex: row.ownershipMonthIndex
+  });
+
+  console.groupEnd();
+}
+
+  
   if (!row || !row.displayDate) return "";
 
   // ----------------------------------
@@ -1124,8 +1153,14 @@ function getEventRowClass(loan, row) {
 // DEFAULT — authoritative terminal row
 // ----------------------------------
 if (row.isTerminal === true) {
+  console.log(
+    "✅ APPLYING event-default to",
+    loan.name,
+    formatMonthYear(row.displayDate)
+  );
   return "event-default";
 }
+
 
 // ----------------------------------
 // PREPAYMENT (non-terminal, single month)
@@ -2796,31 +2831,31 @@ drawerAmortContainer.innerHTML = `
 `;
   const roiBody = document.getElementById('roiBody');
   roiBody.innerHTML = '';
-loan.roiSeries.forEach(s => {
-  const cs =
-    loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
-
+loan.roiSeries.forEach(cs => {
   const tr = document.createElement('tr');
 
-  // Shade deferral months
   if (cs.isDeferred) {
     tr.style.background = 'rgba(234,179,8,0.08)';
   }
 
   const rowClass = getEventRowClass(loan, cs);
   if (rowClass) tr.classList.add(rowClass);
+
   const monthLabel =
-    cs.displayDate instanceof Date
-      ? formatMonthYear(cs.displayDate)
+    cs.date instanceof Date
+      ? formatMonthYear(cs.date)
       : '';
+
   tr.innerHTML = `
     <td style="text-align:left">${monthLabel}</td>
-    <td style="text-align:right">$${formatCurrency(cs.balance)}</td>
-    <td style="text-align:right">$${formatCurrency(s.loanValue)}</td>
-    <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
+    <td style="text-align:right">$${formatCurrency(cs.remainingBalance)}</td>
+    <td style="text-align:right">$${formatCurrency(cs.loanValue)}</td>
+    <td style="text-align:right">${((cs.roi || 0) * 100).toFixed(2)}%</td>
   `;
+
   roiBody.appendChild(tr);
 });
+
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
