@@ -1597,7 +1597,8 @@ function computeKPIs(list) {
     ? opts.labelFn(point, idx)
     : (
         point.date
-          ? `${formatMonthYear(point.date)} • ${(point.y * 100).toFixed(2)}%`
+  ? `${formatMonthYear(point.date)} • ${(point.y * 100).toFixed(2)}%`
+
           : (`M${point.x} • ${(point.y * 100).toFixed(2)}%`)
       )
 );
@@ -2441,8 +2442,9 @@ badgeElements.forEach((badgeEl, index) => {
       line.setAttribute('stroke-dasharray', '3 3');
       line.setAttribute('stroke-opacity', '0.6');
       svg.appendChild(line);
-      svg.addEventListener('mousemove', ev=>{ const rect=svg.getBoundingClientRect(); const relX=ev.clientX-rect.left; const step = (w-pad*2)/Math.max(1,pts.length-1); let idxNearest=Math.round((relX-pad)/step); idxNearest=Math.max(0,Math.min(pts.length-1,idxNearest)); const p = loan.roiSeries[idxNearest]; tooltip.style.left=ev.clientX+'px'; tooltip.style.top=(ev.clientY-10)+'px'; tooltip.style.display='block'; tooltip.innerHTML =
-  'Date: ' + formatDate(p.date) +
+      svg.addEventListener('mousemove', ev=>{ const rect=svg.getBoundingClientRect(); const relX=ev.clientX-rect.left; const step = (w-pad*2)/Math.max(1,pts.length-1); let idxNearest=Math.round((relX-pad)/step); idxNearest=Math.max(0,Math.min(pts.length-1,idxNearest)); const p = loan.roiSeries[idxNearest]; tooltip.style.left=ev.clientX+'px'; tooltip.style.top=(ev.clientY-10)+'px'; tooltip.style.display='block'; 
+     tooltip.innerHTML =
+  formatMonthYear(p.date) +
   ' • ROI ' + (p.roi * 100).toFixed(2) + '%';
  const hoverG = svg.querySelector('g.mini-hover'); hoverG.innerHTML=''; const cx = pad + idxNearest*step; const cy = pad + (h - pad*2) - ((p.roi - minY)/rangeY)*(h - pad*2); const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',3.6); c.setAttribute('fill','#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); });
       svg.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; const hoverG = svg.querySelector('g.mini-hover'); if(hoverG) hoverG.innerHTML=''; });
@@ -2827,7 +2829,8 @@ function openDrawerForLoan(loan){
     loanStartDate: loan.loanStartDate,
     tickEvery: 12,
     labelFn: (pt) =>
-      `Date: ${formatDate(pt.date)} • ROI ${(pt.y * 100).toFixed(2)}%`
+  `${formatMonthYear(pt.date)} • ROI ${(pt.y * 100).toFixed(2)}%`
+
   });
   // --------------------------------------------------
   // ROI-BY-MONTH TABLE (use displayDate)
@@ -3850,7 +3853,9 @@ if (_IS_EMBED) {
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
       
-      document.getElementById("currentDate").textContent = formatDate(new Date());
+      document.getElementById("currentDate").textContent =
+  formatMonthYear(new Date());
+
       initROI();
     });
 
