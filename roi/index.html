@@ -3945,6 +3945,32 @@ if (_IS_EMBED) {
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
+
+/* =====================================================
+   DEBUG — VERIFY DEFERRAL EVENTS EXIST AT LOAD TIME
+   ===================================================== */
+console.group("🧾 EVENT AUDIT (ROI — after loadLoans)");
+loans.forEach(l => {
+  const ev = Array.isArray(l.events) ? l.events : [];
+  const types = ev.reduce((m, e) => {
+    const t = e?.type || "NO_TYPE";
+    m[t] = (m[t] || 0) + 1;
+    return m;
+  }, {});
+  const sampleDeferral = ev.find(e => e?.type === "deferral") || null;
+
+  console.log(
+    l.name || l.loanName || l.id,
+    {
+      eventsCount: ev.length,
+      eventTypes: types,
+      sampleDeferral
+    }
+  );
+});
+console.groupEnd();
+/* ===================================================== */
+      
       document.getElementById("currentDate").textContent = formatDate(new Date());
       initROI();
     });
