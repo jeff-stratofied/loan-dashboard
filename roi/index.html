@@ -1192,54 +1192,30 @@ if (DEBUG_EVENT_HILITE) {
     return "event-default";
   }
 
-  // ----------------------------------
-  // PREPAYMENT (month-based, non-terminal)
-  // ----------------------------------
-  if (Array.isArray(loan.events)) {
-    const rowDate = row.loanDate;
+// ----------------------------------
+// PREPAYMENT (month-based, non-terminal)
+// ----------------------------------
+if (Array.isArray(loan.events)) {
+  const rowDate = row.loanDate;
+  if (!rowDate) return "";
 
-    if (!rowDate) return "";
+  const rowKey = rowDate.getFullYear() * 12 + rowDate.getMonth();
 
-    const rowKey = rowDate.getFullYear() * 12 + rowDate.getMonth();
+  for (const e of loan.events) {
+    if (e.type !== "prepayment" || !e.date) continue;
 
-    for (const e of loan.events) {
-      if (e.type !== "prepayment" || !e.date) continue;
+    const dLocal = parseISODateLocal(e.date);
+    if (!dLocal || isNaN(+dLocal)) continue;
 
-      // Compare all the ways this might be getting parsed
-      const dLocal = parseISODateLocal(e.date);          // your intended parse
-      const dNative = new Date(e.date);                 // the timezone-shifting parse
-      const eventKeyLocal =
-        dLocal && !isNaN(+dLocal) ? (dLocal.getFullYear() * 12 + dLocal.getMonth()) : NaN;
-      const eventKeyNative =
-        !isNaN(+dNative) ? (dNative.getFullYear() * 12 + dNative.getMonth()) : NaN;
+    const eventKey =
+      dLocal.getFullYear() * 12 + dLocal.getMonth();
 
-      if (DEBUG_EVENT_HILITE) {
-        const matchLoan =
-          !DEBUG_EVENT_LOAN_MATCH ||
-          String(loan.name || loan.loanName || "").includes(DEBUG_EVENT_LOAN_MATCH);
-
-        // Only log rows near where an off-by-one shows up (rowKey within 1 month of either parse)
-        const near =
-          Math.abs(rowKey - eventKeyLocal) <= 1 || Math.abs(rowKey - eventKeyNative) <= 1;
-
-        if (matchLoan && near) {
-          console.groupCollapsed(
-            `[EVENT-HILITE] ${loan.name || loan.loanName || loan.id} row=${dbgMonthKey(rowDate)}`
-          );
-          console.log("rowDate:", rowDate, "rowKey:", rowKey);
-          console.log("event raw e.date:", e.date);
-          console.log("parseISODateLocal:", dLocal, "key:", eventKeyLocal, "month:", dbgMonthKey(dLocal));
-          console.log("new Date(e.date):", dNative, "key:", eventKeyNative, "month:", dbgMonthKey(dNative));
-          console.groupEnd();
-        }
-      }
-
-      // This is the real match used for highlighting
-      if (rowKey === eventKeyLocal) {
-        return "event-prepayment";
-      }
+    if (rowKey === eventKey) {
+      return "event-prepayment";
     }
   }
+}
+
 
 
   return "";
@@ -2833,26 +2809,31 @@ function populateProjectedROILoanTable(){
 }
 
 function getEventRowClass(loan, row) {
-  if (!Array.isArray(loan.events) || !row.displayDate) return "";
+  if (!Array.isArray(loan.events) || !row.loanDate) return "";
 
-  const rowMonth =
-    row.displayDate.getFullYear() + "-" + row.displayDate.getMonth();
+  // Engine-authoritative row month
+  const rowKey =
+    row.loanDate.getFullYear() * 12 + row.loanDate.getMonth();
 
   for (const e of loan.events) {
     if (!e.date) continue;
-    const d = new Date(e.date);
-    const eventMonth = d.getFullYear() + "-" + d.getMonth();
 
-    if (eventMonth === rowMonth) {
-      if (e.type === "default") return "event-default";
-      if (row.isOwned && row.isDeferral) {
-  return 'event-deferral';
-}
-      if (e.type === "prepayment") return "event-prepayment";
-    }
+    const d = parseISODateLocal(e.date);
+    if (!d || isNaN(+d)) continue;
+
+    const eventKey =
+      d.getFullYear() * 12 + d.getMonth();
+
+    if (eventKey !== rowKey) continue;
+
+    if (e.type === "default") return "event-default";
+    if (row.isOwned && row.isDeferred === true) return "event-deferral";
+    if (e.type === "prepayment") return "event-prepayment";
   }
+
   return "";
 }
+
 
       
 function openDrawerForLoan(loan){
