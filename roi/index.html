@@ -1167,26 +1167,33 @@ function getEventRowClass(loan, row) {
     return "event-deferral";
   }
 
-  // ----------------------------------
-  // DEFAULT / PREPAYMENT (single month)
-  // ----------------------------------
-  if (Array.isArray(loan.events)) {
-    const rowKey =
-      row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
+// ----------------------------------
+// DEFAULT — authoritative terminal row
+// ----------------------------------
+if (row.isTerminal === true) {
+  return "event-default";
+}
 
-    for (const e of loan.events) {
-      if (!e.date) continue;
+// ----------------------------------
+// PREPAYMENT (non-terminal, single month)
+// ----------------------------------
+if (Array.isArray(loan.events)) {
+  const rowKey =
+    row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
 
-      const d = new Date(e.date);
-      const eventKey =
-        d.getFullYear() * 12 + d.getMonth();
+  for (const e of loan.events) {
+    if (e.type !== "prepayment" || !e.date) continue;
 
-      if (rowKey === eventKey) {
-        if (e.type === "default") return "event-default";
-        if (e.type === "prepayment") return "event-prepayment";
-      }
+    const d = new Date(e.date);
+    const eventKey =
+      d.getFullYear() * 12 + d.getMonth();
+
+    if (rowKey === eventKey) {
+      return "event-prepayment";
     }
   }
+}
+
 
   return "";
 }
