@@ -1135,6 +1135,26 @@ function getLoanEventBadges(loan) {
 
 
 function getEventRowClass(loan, row) {
+
+  if (DEBUG_EVENT_HILITE) {
+  const matchLoan =
+    !DEBUG_EVENT_LOAN_MATCH ||
+    String(loan.name || loan.loanName || "").includes(DEBUG_EVENT_LOAN_MATCH);
+
+  if (matchLoan) {
+    console.warn(
+      "[ROI ROW CHECK]",
+      loan.name || loan.loanName,
+      "display =", r?.displayDate,
+      "loanDate =", r?.loanDate,
+      "displayKey =", r?.displayDate && (r.displayDate.getFullYear() * 12 + r.displayDate.getMonth()),
+      "loanKey =", r?.loanDate && (r.loanDate.getFullYear() * 12 + r.loanDate.getMonth()),
+      "events =", loan.events
+    );
+  }
+}
+
+  
   if (!row) return "";
 
   // ----------------------------------
@@ -1172,7 +1192,8 @@ function getEventRowClass(loan, row) {
   // PREPAYMENT (month-based, non-terminal)
   // ----------------------------------
   if (Array.isArray(loan.events)) {
-    const rowDate = row.loanDate || row.displayDate;
+    const rowDate = row.displayDate;
+
     if (!rowDate) return "";
 
     const rowKey = rowDate.getFullYear() * 12 + rowDate.getMonth();
@@ -2896,15 +2917,6 @@ loan.roiSeries.forEach(s => {
     loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
 
   const tr = document.createElement('tr');
-
-// 🔴 DEBUG — row identity
-console.warn(
-  "[ROI ROW]",
-  loan.loanName,
-  "loanDate =", row.loanDate,
-  "displayDate =", row.displayDate,
-  "isTerminal =", row.isTerminal
-);
   
   // Shade deferral months
   if (cs.isDeferred) {
