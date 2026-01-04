@@ -418,6 +418,7 @@ if (
     ownershipDate: isOwned ? loanDate : null,
 
     defaulted: true,
+    isTerminal: true,
     recovery: +(applied.toFixed(2)),
     contractualMonth: i + 1
   });
