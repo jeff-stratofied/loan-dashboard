@@ -616,7 +616,7 @@ schedule.push(
 
   contractualMonth: i + 1
 });
-
+);
 
     
     // advance both calendars: 1 month forward, and 1 contractual month forward
