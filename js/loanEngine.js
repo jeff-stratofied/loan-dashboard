@@ -303,6 +303,18 @@ const graceMonths = graceYears * 12;
 const repaymentMonths = termYears * 12;
 const totalMonths = graceMonths + repaymentMonths;
 
+function normalizeDeferralFlags(row) {
+  row.isDeferred =
+    row.isDeferred === true ||
+    row.deferral === true ||
+    row.deferred === true;
+
+  // 🔥 Kill legacy flags so nothing downstream can read them
+  delete row.deferral;
+  delete row.deferred;
+
+  return row;
+}
 
 
   // -------------------------------
@@ -411,7 +423,8 @@ if (
   const applied = Math.min(balance, defaultRecovery);
   const isOwned = loanDate >= purchaseMonth;
 
-  schedule.push({
+  schedule.push(
+  normalizeDeferralFlags({
     monthIndex: schedule.length + 1,
     loanDate,
     displayDate: new Date(loanDate.getFullYear(), loanDate.getMonth(), 1),
@@ -423,7 +436,6 @@ if (
     balance: +((balance - applied).toFixed(2)),
 
     prepayment: 0,
-    deferral: false,
     accruedInterest: 0,
 
     isOwned,
@@ -478,7 +490,8 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
 
 const deferralIndex = deferralTotal - deferralRemaining;
 
-schedule.push({
+schedule.push(
+  normalizeDeferralFlags({
   monthIndex: schedule.length + 1,
   loanDate,
 
@@ -576,7 +589,8 @@ if (monthsSinceLoanStart < graceMonths) {
 
 const isOwned = loanDate >= purchaseMonth;
 
-schedule.push({
+schedule.push(
+  normalizeDeferralFlags({
   monthIndex: schedule.length + 1,
   loanDate,
 
@@ -589,7 +603,6 @@ schedule.push({
   balance: +(balance.toFixed(2)),
 
   prepayment: +(prepaymentThisMonth.toFixed(2)),
-  deferral: false,
   accruedInterest: 0,
 
   // 🔑 DEFERRAL FLAGS (explicitly NOT deferred)
