@@ -2917,6 +2917,8 @@ loan.roiSeries.forEach(s => {
     );
   }) || {};
 
+  if (loan.name === "OSU 2024 8.00" && String(s.date).includes("Sep")) console.warn("MATCH", { sMonth: s.month, sDate: s.date, csMonthIndex: cs.monthIndex, csOwnedIdx: cs.ownershipMonthIndex, csDeferred: cs.isDeferred });
+
 
   const tr = document.createElement('tr');
   
