@@ -4251,38 +4251,49 @@ return series;
 }
 
 function buildKpi4AvgMonthlyRows(loans) {
-const rowsByMonth = new Map();
+  const rowsByMonth = new Map();
 
-loans.forEach(l => {
-const sched = l.earningsSchedule || [];
-if (!sched.length) return;
+  loans.forEach(l => {
+    const sched = l.earningsSchedule || [];
+    if (!sched.length) return;
 
-sched.forEach((r, i) => {
-const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
-if (!rowsByMonth.has(key)) {
-rowsByMonth.set(key, {
-date: new Date(r.ownershipDate),
-totalNet: 0,
-months: 0
-});
+    sched.forEach((r, i) => {
+      // 🔒 KPI4 MUST ONLY COUNT OWNED MONTHS
+      if (!(r.ownershipDate instanceof Date)) return;
+
+      const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
+
+      if (!rowsByMonth.has(key)) {
+        rowsByMonth.set(key, {
+          date: new Date(
+            r.ownershipDate.getFullYear(),
+            r.ownershipDate.getMonth(),
+            1
+          ),
+          totalNet: 0,
+          months: 0
+        });
+      }
+
+      const row = rowsByMonth.get(key);
+
+      // cumulative net across loans
+      row.totalNet += Number(r.netEarnings || 0);
+
+      // months since ownership began (max across loans)
+      row.months = Math.max(row.months, i + 1);
+    });
+  });
+
+  return [...rowsByMonth.values()]
+    .sort((a, b) => a.date - b.date)
+    .map(r => ({
+      date: r.date,
+      avg: r.months > 0 ? r.totalNet / r.months : 0,
+      netToDate: r.totalNet
+    }));
 }
 
-const row = rowsByMonth.get(key);
-row.totalNet += Number(r.netEarnings || 0);
-row.months = Math.max(row.months, i + 1);
-});
-});
-
-const rows = [...rowsByMonth.values()]
-.sort((a, b) => a.date - b.date)
-.map(r => ({
-date: r.date,
-avg: r.months > 0 ? r.totalNet / r.months : 0,
-netToDate: r.totalNet
-}));
-
-return rows;
-}
 
 function renderKpiTable(containerId, headers, rows) {
 const container = document.getElementById(containerId);
