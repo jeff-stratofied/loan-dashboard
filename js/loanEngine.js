@@ -309,12 +309,13 @@ function normalizeDeferralFlags(row) {
     row.deferral === true ||
     row.deferred === true;
 
-  // 🔥 Kill legacy flags so nothing downstream can read them
+  // Kill legacy flags so nothing downstream can read them
   delete row.deferral;
   delete row.deferred;
 
   return row;
 }
+
 
 
   // -------------------------------
@@ -500,24 +501,23 @@ schedule.push(
 
 
   // Deferral month: no scheduled payment, no scheduled principal/interest
-  payment: 0,
-  principalPaid: +(prepaymentThisMonth.toFixed(2)), // only prepayment counts as principal
-  interest: 0,
-  balance: +(balance.toFixed(2)),
+payment: 0,
+principalPaid: +(prepaymentThisMonth.toFixed(2)), // only prepayment counts as principal
+interest: 0,
+balance: +(balance.toFixed(2)),
 
-  prepayment: +(prepaymentThisMonth.toFixed(2)),
-  deferral: true,
-  accruedInterest: +(accruedInterest.toFixed(2)),
+prepayment: +(prepaymentThisMonth.toFixed(2)),
+accruedInterest: +(accruedInterest.toFixed(2)),
 
-  // 🔑 DEFERRAL FLAGS (authoritative, engine-owned)
-  isDeferred: true,
-  deferralIndex,
-  deferralRemaining,
+// 🔑 DEFERRAL FLAGS (single source of truth)
+isDeferred: true,
+deferralIndex,
+deferralRemaining,
 
-  isOwned,
-  ownershipDate: isOwned ? loanDate : null,
+isOwned,
+ownershipDate: isOwned ? loanDate : null,
 
-  contractualMonth: i + 1
+contractualMonth: i + 1
 })
 );
 
