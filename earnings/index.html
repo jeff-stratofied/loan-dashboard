@@ -1244,6 +1244,28 @@ function monthDiff(d1, d2) {
   );
 }
 
+  function getCanonicalCurrentEarningsRow(loan) {
+  const sched = loan.earningsSchedule || [];
+  if (!sched.length) return null;
+
+  const y = TODAY.getFullYear();
+  const m = TODAY.getMonth();
+
+  // Primary: calendar match
+  const match = sched.find(r =>
+    r.loanDate &&
+    r.loanDate.getFullYear() === y &&
+    r.loanDate.getMonth() === m
+  );
+
+  if (match) return match;
+
+  // Fallback: last owned row
+  return sched
+    .filter(r => r.isOwned)
+    .at(-1) || sched.at(-1);
+}
+
   
 function formatCurrency(value) {
 if (!Number.isFinite(value)) return "$0.00";
@@ -1635,15 +1657,9 @@ const atEnd = sched[sched.length - 1];
 projectedNetTotal += Number(atEnd.netEarnings || 0);
 projectedMonthsTotal += sched.length;
 
-const currentIdx = Math.min(
-  sched.length - 1,
-  Math.max(0, getCurrentScheduleIndex(l) - 1)
-);
-
-const atCurrent = sched[currentIdx];
-totalNetToDate += Number(atCurrent?.netEarnings ?? 0);
-
-totalFeesToDate += Number(atCurrent?.cumFees || 0);
+const currentRow = getCanonicalCurrentEarningsRow(l);
+totalNetToDate += Number(currentRow?.netEarnings ?? 0);
+totalFeesToDate += Number(currentRow?.cumFees ?? 0);
 
 totalNetProjected += Number(atEnd.netEarnings || 0);
 totalFeesProjected += Number(atEnd.cumFees || 0);
