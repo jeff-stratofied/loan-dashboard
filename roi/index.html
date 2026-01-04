@@ -2897,6 +2897,15 @@ loan.roiSeries.forEach(s => {
 
   const tr = document.createElement('tr');
 
+// 🔴 DEBUG — row identity
+console.warn(
+  "[ROI ROW]",
+  loan.loanName,
+  "loanDate =", row.loanDate,
+  "displayDate =", row.displayDate,
+  "isTerminal =", row.isTerminal
+);
+  
   // Shade deferral months
   if (cs.isDeferred) {
     tr.style.background = 'rgba(234,179,8,0.08)';
