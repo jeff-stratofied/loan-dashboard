@@ -138,26 +138,6 @@ export function addMonths(date, n) {
   return d;
 }
 
-export function monthDiff(d1, d2) {
-  const years = d2.getFullYear() - d1.getFullYear();
-  const months = d2.getMonth() - d1.getMonth();
-  return years * 12 + months;
-}
-
-export function formatDate(date) {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric"
-  });
-}
-
-export function formatMonthYear(date) {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short"
-  });
-}
 
 // ===============================
 // Deferral helper (AUTHORITATIVE)
@@ -234,26 +214,6 @@ export function getCurrentScheduleIndex(loan, asOf = new Date()) {
     Math.max(1, months),
     loan.amort.schedule.length
   );
-}
-
-
-// -------------------------------
-// Canonical amort display date
-// Always first of month to avoid rollover bugs
-// -------------------------------
-function getCanonicalMonthDate(purchaseDateStr, monthIndex) {
-  const p = new Date(purchaseDateStr + "T00:00:00");
-
-  // Anchor = first day of purchase month
-  const anchor = new Date(
-    p.getFullYear(),
-    p.getMonth(),
-    1
-  );
-
-  const d = new Date(anchor);
-  d.setMonth(d.getMonth() + (monthIndex - 1));
-  return d;
 }
 
 function normalizeDate(d) {
@@ -651,15 +611,6 @@ export function attachSchedules(loans) {
     }
   }));
 }
-
-// -------------------------------
-// Portfolio-level view builder
-// (Placeholder for now)
-// -------------------------------
-//
-// ROI, earnings, amort KPIs, next-month expected income,
-// and any shared timelines will be added during PHASE C.
-//
 
 export function buildPortfolioViews(loansWithAmort) {
   
