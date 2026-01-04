@@ -1283,7 +1283,10 @@ const amortSchedule = (() => {
         : 0,
       ownershipDate: r.loanDate >= purchase ? r.loanDate : null
     }));
-
+        
+let cumP = 0;
+let cumI = 0;
+let cumFees = 0;
         
 const cumSchedule = scheduleWithOwnership
   .filter(r => r.isOwned)
