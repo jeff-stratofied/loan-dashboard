@@ -1328,16 +1328,20 @@ const cumSchedule = scheduleWithOwnership
   const unrealized = r.balance * 0.95;
   const loanValue = realized + unrealized;
   const roi = (loanValue - purchasePrice) / purchasePrice;
-  return {
-    month: r.ownershipMonthIndex,
-    date: r.displayDate,        // 🔑 canonical date
-    roi,
-    loanValue,
-    cumFees: r.cumFees,
-    realized,
-    remainingBalance: r.balance,
-    unrealized
-  };
+ return {
+  month: r.ownershipMonthIndex,
+  date: r.displayDate,
+  roi,
+  loanValue,
+  cumFees: r.cumFees,
+  realized,
+  remainingBalance: r.balance,
+  unrealized,
+
+  // 🔑 PROPAGATE TERMINAL STATE
+  isTerminal: r.isTerminal === true
+};
+
 });
 
 
