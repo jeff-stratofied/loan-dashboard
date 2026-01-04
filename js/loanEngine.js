@@ -8,6 +8,23 @@
 
 import { loadLoans as fetchLoans } from "./loadLoans.js";
 
+// =======================================
+// Canonical LOCAL date helpers (NO TZ BUG)
+// =======================================
+function parseISODateLocal(iso) {
+  if (!iso) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function monthKeyFromDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthKeyFromISO(iso) {
+  return iso.slice(0, 7); // "YYYY-MM"
+}
+
 // ===============================
 // UNIVERSAL LOAD + NORMALIZE
 // ===============================
@@ -71,23 +88,6 @@ export async function loadLoans() {
 const purchaseDate = normalizeDate(
   l.purchaseDate || ""
 );
-
-// =======================================
-// Canonical LOCAL date helpers (NO TZ BUG)
-// =======================================
-function parseISODateLocal(iso) {
-  if (!iso) return null;
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
-}
-
-function monthKeyFromDate(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function monthKeyFromISO(iso) {
-  return iso.slice(0, 7); // "YYYY-MM"
-}
 
     
     // Normalize terms
