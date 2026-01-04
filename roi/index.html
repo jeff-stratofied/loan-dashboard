@@ -1002,21 +1002,6 @@ if (cameFromReporting && backRow && backBtn) {
   john: "John Investor"
 };
 
-    
-    function addMonths(date, months) {
-      const d = new Date(date);
-      d.setMonth(d.getMonth() + months);
-      return d;
-    }
-
-    function formatDate(date) {
-      return date.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-      });
-    }
-
     function formatMonthYear(date) {
       return date.toLocaleDateString("en-US", {
         year: "numeric",
@@ -1058,22 +1043,6 @@ function buildGlobalDatesFromLoans(loans) {
     .sort((a, b) => a - b)
     .map(ms => new Date(ms));
 }
-
-
-    
-// ===============================
-// DEBUG: event month highlighting
-// ===============================
-const DEBUG_EVENT_HILITE = true;
-// Optional: narrow to one loan name/id so you don't spam the console
-const DEBUG_EVENT_LOAN_MATCH = "PSU 2024 8.83"; // change or set "" to log all
-
-function dbgMonthKey(d) {
-  if (!(d instanceof Date) || isNaN(+d)) return "InvalidDate";
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-
     
 function createBadgeTooltip(badge, text) {
   const tooltip = document.createElement('div');
@@ -1152,44 +1121,8 @@ function getLoanEventBadges(loan) {
 
   return badges;
 }
-
-function findCumRowForDate(loan, date) {
-  if (!date || !Array.isArray(loan.cumSchedule)) return null;
-
-  return loan.cumSchedule.find(r =>
-    r.loanDate &&
-    r.loanDate.getFullYear() === date.getFullYear() &&
-    r.loanDate.getMonth() === date.getMonth()
-  ) || null;
-}
-
-
     
-function getEventRowClass(loan, row) {
-
-if (DEBUG_EVENT_HILITE) {
-  const matchLoan =
-    !DEBUG_EVENT_LOAN_MATCH ||
-    String(loan.name || loan.loanName || "").includes(DEBUG_EVENT_LOAN_MATCH);
-
-  if (matchLoan) {
-    console.warn(
-      "[ROI ROW CHECK]",
-      loan.name || loan.loanName,
-      "displayDate =", row?.displayDate,
-      "loanDate =", row?.loanDate,
-      "displayKey =",
-        row?.displayDate &&
-        (row.displayDate.getFullYear() * 12 + row.displayDate.getMonth()),
-      "loanKey =",
-        row?.loanDate &&
-        (row.loanDate.getFullYear() * 12 + row.loanDate.getMonth())
-    );
-  }
-}
-
-
-  
+function getEventRowClass(loan, row) {  
   if (!row) return "";
 
   // ----------------------------------
@@ -1199,23 +1132,6 @@ if (DEBUG_EVENT_HILITE) {
     return "event-deferral";
   }
 
-  if (DEBUG_EVENT_HILITE) {
-    const matchLoan =
-      !DEBUG_EVENT_LOAN_MATCH ||
-      String(loan.name || loan.loanName || "").includes(DEBUG_EVENT_LOAN_MATCH);
-
-    if (matchLoan && row.isTerminal === true) {
-      const rd = row.loanDate || row.displayDate;
-      console.log(
-        `[EVENT-HILITE][DEFAULT] ${loan.name || loan.loanName || loan.id}`,
-        "row terminal month =", dbgMonthKey(rd),
-        "rowDate =", rd,
-        "raw default event =", (loan.events || []).find(x => x.type === "default")
-      );
-    }
-  }
-
-  
   // ----------------------------------
   // DEFAULT — authoritative terminal row
   // ----------------------------------
@@ -2073,29 +1989,15 @@ svg.addEventListener("mouseleave", () => {
   vLine.setAttribute("x2", -9999);
 });
 
-
-  
   svg.appendChild(axis);
   containerEl.appendChild(svg);
-}
-
-      function smoothMonotonic(points) {
-  if (points.length < 2) return "";
-
-  let d = `M ${points[0][0]} ${points[0][1]}`;
-  for (let i = 1; i < points.length; i++) {
-    const [x0, y0] = points[i - 1];
-    const [x1, y1] = points[i];
-    const cx = (x0 + x1) / 2;
-    d += ` Q ${cx} ${y0}, ${x1} ${y1}`;
-  }
-  return d;
 }
 
 // ============================================================
 // ROI SPREAD CHART (loan lines ONLY — no weighted line)
 // ============================================================
-function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
+/* delete
+      function createROISpreadChart(containerEl, loanSeriesList, opts = {}) {
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
   // -----------------------------------
@@ -2287,7 +2189,8 @@ const pts = anchored.map(p => [
 
   containerEl.appendChild(svg);
 }
-
+delete */
+      
     /* -------------------------
        UI: Render KPI tiles
        ------------------------- */
@@ -2507,19 +2410,6 @@ badgeElements.forEach((badgeEl, index) => {
       const today = new Date();
       // find index of last roiSeries entry whose ownershipDate <= today
       let todayIdxFull = -1;
-
-// --- DEBUG: confirm deferral event shape + whether engine produced deferred rows
-const defEvents = (loan.events || []).filter(e => e.type === "deferral");
-console.warn("[DEFERRAL EVENTS]", loan.name, defEvents);
-
-// Count deferral rows produced by engine
-const deferredCount = (loan.cumSchedule || []).filter(r => r.isDeferred === true).length;
-console.warn("[DEFERRED ROWS IN cumSchedule]", loan.name, deferredCount);
-
-// If zero, print the first few schedule rows so we see flags
-if (deferredCount === 0) {
-  console.warn("[SAMPLE cumSchedule rows]", (loan.cumSchedule || []).slice(0, 6));
-}
 
         
       loan.roiSeries.forEach((entry, i) => {
@@ -2963,9 +2853,6 @@ loan.roiSeries.forEach(s => {
     );
   }) || {};
 
-  if (loan.name === "OSU 2024 8.00" && String(s.date).includes("Sep")) console.warn("MATCH", { sMonth: s.month, sDate: s.date, csMonthIndex: cs.monthIndex, csOwnedIdx: cs.ownershipMonthIndex, csDeferred: cs.isDeferred });
-
-
   const tr = document.createElement('tr');
   
   // Shade deferral months
@@ -2974,16 +2861,6 @@ loan.roiSeries.forEach(s => {
   }
 
   const cumRow = findCumRowForDate(loan, s.date);
-
-// DEBUG (keep temporarily)
-if (DEBUG_EVENT_HILITE && loan.name?.includes(DEBUG_EVENT_LOAN_MATCH)) {
-  console.warn("[ROI TABLE MATCH]", {
-    roiDate: s.date,
-    cumLoanDate: cumRow?.loanDate,
-    isDeferred: cumRow?.isDeferred,
-    isOwned: cumRow?.isOwned
-  });
-}
 
 const rowClass = getEventRowClass(loan, cumRow || s);
 
@@ -3965,31 +3842,6 @@ if (_IS_EMBED) {
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
-
-/* =====================================================
-   DEBUG — VERIFY DEFERRAL EVENTS EXIST AT LOAD TIME
-   ===================================================== */
-console.group("🧾 EVENT AUDIT (ROI — after loadLoans)");
-loans.forEach(l => {
-  const ev = Array.isArray(l.events) ? l.events : [];
-  const types = ev.reduce((m, e) => {
-    const t = e?.type || "NO_TYPE";
-    m[t] = (m[t] || 0) + 1;
-    return m;
-  }, {});
-  const sampleDeferral = ev.find(e => e?.type === "deferral") || null;
-
-  console.log(
-    l.name || l.loanName || l.id,
-    {
-      eventsCount: ev.length,
-      eventTypes: types,
-      sampleDeferral
-    }
-  );
-});
-console.groupEnd();
-/* ===================================================== */
       
       document.getElementById("currentDate").textContent = formatDate(new Date());
       initROI();
