@@ -1129,9 +1129,6 @@ html[data-theme="dark"] .legend .sw {
 <script type="module">
 import {
   addMonths,
-  monthDiff,
-  formatDate,
-  formatMonthYear,
   getStandardToday,
   getPortfolioStartDate,
   getCurrentScheduleIndex,
@@ -1222,6 +1219,32 @@ const copyBtn = document.getElementById("copyCsvBtn");
 if (copyBtn) copyBtn.addEventListener("click", redirectToFull, true);
 }
 
+function formatDate(d) {
+  if (!(d instanceof Date)) return "";
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric"
+  });
+}
+
+function formatMonthYear(d) {
+  if (!(d instanceof Date)) return "";
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short"
+  });
+}
+
+function monthDiff(d1, d2) {
+  if (!(d1 instanceof Date) || !(d2 instanceof Date)) return 0;
+  return (
+    (d2.getFullYear() - d1.getFullYear()) * 12 +
+    (d2.getMonth() - d1.getMonth())
+  );
+}
+
+  
 function formatCurrency(value) {
 if (!Number.isFinite(value)) return "$0.00";
 return "$" + value.toLocaleString("en-US", {
