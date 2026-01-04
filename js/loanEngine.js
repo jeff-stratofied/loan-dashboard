@@ -357,17 +357,19 @@ events
 
 
   // -------------------------------
-  // Index DEFERRAL events by start month
-  // (calendar-based, summed if same month)
-  // -------------------------------
-  const deferralStartMap = {};
+// Index DEFERRAL events by start month
+// Accept startDate OR date (older data uses date)
+// -------------------------------
+const deferralStartMap = {};
 events
-  .filter(e => e.type === "deferral" && e.startDate && Number(e.months) > 0)
+  .filter(e => e.type === "deferral" && (e.startDate || e.date) && Number(e.months) > 0)
   .forEach(e => {
-    const key = monthKeyFromISO(e.startDate); // 🔑 NO Date()
+    const startISO = e.startDate || e.date;          // ✅ fallback
+    const key = monthKeyFromISO(startISO);           // 🔑 NO Date()
     const m = Math.max(0, Math.floor(Number(e.months) || 0));
     deferralStartMap[key] = (deferralStartMap[key] || 0) + m;
   });
+
 
 
   // -------------------------------
