@@ -1133,7 +1133,18 @@ function getLoanEventBadges(loan) {
   return badges;
 }
 
+function findCumRowForDate(loan, date) {
+  if (!date || !Array.isArray(loan.cumSchedule)) return null;
 
+  return loan.cumSchedule.find(r =>
+    r.loanDate &&
+    r.loanDate.getFullYear() === date.getFullYear() &&
+    r.loanDate.getMonth() === date.getMonth()
+  ) || null;
+}
+
+
+    
 function getEventRowClass(loan, row) {
 
 if (DEBUG_EVENT_HILITE) {
@@ -2927,7 +2938,20 @@ loan.roiSeries.forEach(s => {
     tr.style.background = 'rgba(234,179,8,0.08)';
   }
 
-  const rowClass = getEventRowClass(loan, cs);
+  const cumRow = findCumRowForDate(loan, s.date);
+
+// DEBUG (keep temporarily)
+if (DEBUG_EVENT_HILITE && loan.name?.includes(DEBUG_EVENT_LOAN_MATCH)) {
+  console.warn("[ROI TABLE MATCH]", {
+    roiDate: s.date,
+    cumLoanDate: cumRow?.loanDate,
+    isDeferred: cumRow?.isDeferred,
+    isOwned: cumRow?.isOwned
+  });
+}
+
+const rowClass = getEventRowClass(loan, cumRow || s);
+
   if (rowClass) tr.classList.add(rowClass);
   const monthLabel =
     cs.displayDate instanceof Date
