@@ -2909,7 +2909,14 @@ drawerAmortContainer.innerHTML = `
   roiBody.innerHTML = '';
 loan.roiSeries.forEach(s => {
   const cs =
-    loan.cumSchedule.find(r => r.monthIndex === s.month) || {};
+  loan.cumSchedule.find(r => {
+    if (!r.loanDate || !s.date) return false;
+    return (
+      r.loanDate.getFullYear() === s.date.getFullYear() &&
+      r.loanDate.getMonth() === s.date.getMonth()
+    );
+  }) || {};
+
 
   const tr = document.createElement('tr');
   
