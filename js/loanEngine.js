@@ -72,6 +72,22 @@ const purchaseDate = normalizeDate(
   l.purchaseDate || ""
 );
 
+// =======================================
+// Canonical LOCAL date helpers (NO TZ BUG)
+// =======================================
+function parseISODateLocal(iso) {
+  if (!iso) return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function monthKeyFromDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthKeyFromISO(iso) {
+  return iso.slice(0, 7); // "YYYY-MM"
+}
 
     
     // Normalize terms
@@ -292,7 +308,7 @@ const totalMonths = graceMonths + repaymentMonths;
   // -------------------------------
   // Canonical dates (MONTH-ANCHORED)
   // -------------------------------
-  const start = new Date(loanStartDate + "T00:00:00");
+ const start = parseISODateLocal(loanStartDate);
 
   if (!Number.isFinite(start.getTime())) {
   throw new Error(
@@ -300,7 +316,7 @@ const totalMonths = graceMonths + repaymentMonths;
   );
 }
 
-    const purchase = new Date(purchaseDate + "T00:00:00");
+    const purchase = parseISODateLocal(purchaseDate);
 
   // Ownership always begins at the first of purchase month
   const purchaseMonth = new Date(
@@ -318,43 +334,39 @@ const totalMonths = graceMonths + repaymentMonths;
   // Index PREPAYMENT events by month
   // -------------------------------
   const prepayMap = {};
-  events
-    .filter(e => e.type === "prepayment" && e.date)
-    .forEach(e => {
-      const d = new Date(e.date + "T00:00:00");
-      const key = monthKey(d);
-      if (!prepayMap[key]) prepayMap[key] = [];
-      prepayMap[key].push(e);
-    });
+events
+  .filter(e => e.type === "prepayment" && e.date)
+  .forEach(e => {
+    const key = monthKeyFromISO(e.date); // 🔑 NO Date()
+    if (!prepayMap[key]) prepayMap[key] = [];
+    prepayMap[key].push(e);
+  });
+
 
   // -------------------------------
   // Index DEFERRAL events by start month
   // (calendar-based, summed if same month)
   // -------------------------------
   const deferralStartMap = {};
-  events
-    .filter(e => e.type === "deferral" && e.startDate && Number(e.months) > 0)
-    .forEach(e => {
-      const d = new Date(e.startDate + "T00:00:00");
-      const key = monthKey(d);
-      const m = Math.max(0, Math.floor(Number(e.months) || 0));
-      deferralStartMap[key] = (deferralStartMap[key] || 0) + m;
-    });
+events
+  .filter(e => e.type === "deferral" && e.startDate && Number(e.months) > 0)
+  .forEach(e => {
+    const key = monthKeyFromISO(e.startDate); // 🔑 NO Date()
+    const m = Math.max(0, Math.floor(Number(e.months) || 0));
+    deferralStartMap[key] = (deferralStartMap[key] || 0) + m;
+  });
+
 
   // -------------------------------
   // Index DEFAULT event (calendar-anchored)
   // -------------------------------
   const defaultEvent = events.find(e => e.type === "default" && e.date);
 
-  // Raw date (day precision)
-  const defaultDate = defaultEvent
-    ? new Date(defaultEvent.date + "T00:00:00")
-    : null;
+// Canonical default month key (NO Date math)
+const defaultMonthKey = defaultEvent
+  ? monthKeyFromISO(defaultEvent.date)
+  : null;
 
-  // Canonical default month (FIRST of month — critical)
-  const defaultMonth = defaultDate
-    ? new Date(defaultDate.getFullYear(), defaultDate.getMonth(), 1)
-    : null;
 
   const defaultRecovery = defaultEvent
     ? Number(defaultEvent.recoveryAmount || 0)
@@ -391,10 +403,10 @@ let deferralTotal = 0;
 // DEFAULT — terminal event (must run first)
 // ----------------------------------------------
 if (
-  defaultMonth &&
-  calendarDate.getFullYear() === defaultMonth.getFullYear() &&
-  calendarDate.getMonth() === defaultMonth.getMonth()
+  defaultMonthKey &&
+  monthKeyFromDate(calendarDate) === defaultMonthKey
 ) {
+
   const loanDate = new Date(calendarDate);
   const applied = Math.min(balance, defaultRecovery);
   const isOwned = loanDate >= purchaseMonth;
