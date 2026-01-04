@@ -1078,53 +1078,6 @@ function createBadgeTooltip(badge, text) {
              (d2.getMonth() - d1.getMonth());
     }
 
-function buildGlobalDatesFromLoans(loans) {
-  console.group("📅 [DEBUG] buildGlobalDatesFromLoans");
-
-  const set = new Set();
-
-  loans.forEach(l => {
-    if (!l.scheduleWithOwnership) {
-      console.warn("Loan missing scheduleWithOwnership:", l.id);
-      return;
-    }
-
-    const ownedRows = l.scheduleWithOwnership
-      .filter(r => r.isOwned && r.displayDate);
-
-    const ownedDates = ownedRows.map(r => r.displayDate);
-    const lastOwned = ownedDates.at(-1);
-
-    const isDefaulted =
-      Array.isArray(l.events) &&
-      l.events.some(e => e.type === "default");
-
-    console.log(
-      `Loan ${l.id} (${l.name})`,
-      {
-        ownedMonths: ownedDates.length,
-        firstOwned: ownedDates[0],
-        lastOwned,
-        defaulted: isDefaulted
-      }
-    );
-
-    ownedDates.forEach(d => set.add(+d));
-  });
-
-  const dates = Array.from(set).sort((a, b) => a - b);
-
-  console.log("GLOBAL DATE DOMAIN", {
-    count: dates.length,
-    first: dates[0] ? new Date(dates[0]) : null,
-    last: dates.at(-1) ? new Date(dates.at(-1)) : null
-  });
-
-  console.groupEnd();
-
-  return dates.map(ms => new Date(ms));
-}
-
 
 function getLoanEventBadges(loan) {
   const badges = [];
@@ -1702,28 +1655,6 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   // Build a unified date axis
   // -------------------------
   const globalDates = opts.dates || [];
-
-console.group("📈 [DEBUG] createMultiSeriesChart");
-
-console.log("Global dates received:", {
-  count: globalDates.length,
-  first: globalDates[0],
-  last: globalDates.at(-1)
-});
-
-loanSeriesList.forEach(ls => {
-  const dates = ls.data.map(p => p.date);
-  console.log(
-    `Loan series ${ls.id}`,
-    {
-      points: dates.length,
-      first: dates[0],
-      last: dates.at(-1)
-    }
-  );
-});
-
-console.groupEnd();
 
   
   if (!globalDates.length) {
@@ -2868,12 +2799,7 @@ drawerAmortContainer.innerHTML = `
 loan.roiSeries.forEach(s => {
   const cs =
     loan.cumSchedule.find(r => r.ownershipMonthIndex === s.month) || {};
-  console.log(
-  "[ROI TABLE ROW]",
-  formatMonthYear(cs.displayDate),
-  "isDeferred =", cs.isDeferred,
-  "remaining =", cs.deferralRemaining
-);
+
   const tr = document.createElement('tr');
 
   // Shade deferral months
