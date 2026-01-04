@@ -1124,7 +1124,7 @@ function getLoanEventBadges(loan) {
 
 
 function getEventRowClass(loan, row) {
-  if (!row || !row.displayDate) return "";
+  if (!row) return "";
 
   // ----------------------------------
   // DEFERRAL — authoritative from engine
@@ -1133,33 +1133,35 @@ function getEventRowClass(loan, row) {
     return "event-deferral";
   }
 
-// ----------------------------------
-// DEFAULT — authoritative terminal row
-// ----------------------------------
-if (row.isTerminal === true) {
-  return "event-default";
-}
+  // ----------------------------------
+  // DEFAULT — authoritative terminal row
+  // ----------------------------------
+  if (row.isTerminal === true) {
+    return "event-default";
+  }
 
-// ----------------------------------
-// PREPAYMENT (non-terminal, single month)
-// ----------------------------------
-if (Array.isArray(loan.events)) {
-  const rowKey =
-    row.displayDate.getFullYear() * 12 + row.displayDate.getMonth();
+  // ----------------------------------
+  // PREPAYMENT (month-based, non-terminal)
+  // ----------------------------------
+  if (Array.isArray(loan.events)) {
+    const rowDate = row.loanDate || row.displayDate;
+    if (!rowDate) return "";
 
-  for (const e of loan.events) {
-    if (e.type !== "prepayment" || !e.date) continue;
+    const rowKey =
+      rowDate.getFullYear() * 12 + rowDate.getMonth();
 
-    const d = parseISODateLocal(e.date);
-    const eventKey =
-      d.getFullYear() * 12 + d.getMonth();
+    for (const e of loan.events) {
+      if (e.type !== "prepayment" || !e.date) continue;
 
-    if (rowKey === eventKey) {
-      return "event-prepayment";
+      const d = parseISODateLocal(e.date);
+      const eventKey =
+        d.getFullYear() * 12 + d.getMonth();
+
+      if (rowKey === eventKey) {
+        return "event-prepayment";
+      }
     }
   }
-}
-
 
   return "";
 }
