@@ -1041,6 +1041,26 @@ function monthAnchor(date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+function buildGlobalDatesFromLoans(loans) {
+  const dates = new Set();
+
+  loans.forEach(loan => {
+    if (!Array.isArray(loan.roiSeries)) return;
+
+    loan.roiSeries.forEach(p => {
+      if (p.date instanceof Date && !isNaN(+p.date)) {
+        dates.add(p.date.getTime());
+      }
+    });
+  });
+
+  return Array.from(dates)
+    .sort((a, b) => a - b)
+    .map(ms => new Date(ms));
+}
+
+
+    
 // ===============================
 // DEBUG: event month highlighting
 // ===============================
