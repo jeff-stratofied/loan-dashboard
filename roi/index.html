@@ -2869,13 +2869,8 @@ loan.roiSeries.forEach(s => {
   if (cs.isDeferred) {
     tr.style.background = 'rgba(234,179,8,0.08)';
   }
-
-  const cumRow = loan.cumSchedule
-  ?.filter(r => r.loanDate && r.loanDate <= rowDate)
-  .slice(-1)[0] || null;
-
-
-const rowClass = getEventRowClass(loan, cumRow || s);
+  
+const rowClass = getEventRowClass(loan, cs || s);
 
   if (rowClass) tr.classList.add(rowClass);
   const monthLabel =
