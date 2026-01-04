@@ -341,7 +341,7 @@ function normalizeDeferralFlags(row) {
   // -------------------------------
   // Helpers
   // -------------------------------
-  const monthKey = (d) => `${d.getFullYear()}-${d.getMonth()}`;
+
 
   // -------------------------------
   // Index PREPAYMENT events by month
@@ -456,7 +456,8 @@ if (
 
 
 // Check if a deferral starts in THIS amort row month
-const startKey = monthKey(calendarDate);
+const startKey = monthKeyFromDate(calendarDate); // "YYYY-MM"
+
 
 if (deferralRemaining === 0 && deferralStartMap[startKey]) {
   deferralRemaining = deferralStartMap[startKey];
@@ -478,7 +479,7 @@ if (deferralRemaining === 0 && deferralStartMap[startKey]) {
       balance += accruedInterest;
 
       // Apply any prepayments in this deferred month (allowed)
-      const key = monthKey(loanDate);
+      const key = monthKeyFromDate(loanDate); // "YYYY-MM"
       const monthEvents = prepayMap[key] || [];
       let prepaymentThisMonth = 0;
 
@@ -574,8 +575,9 @@ if (monthsSinceLoanStart < graceMonths) {
 
 
     // Apply prepayments for this calendar month
-    const eventKey = monthKey(loanDate);
-    const monthEvents = prepayMap[eventKey] || [];
+    const eventKey = monthKeyFromDate(loanDate); // "YYYY-MM"
+const monthEvents = prepayMap[eventKey] || [];
+
 
     let prepaymentThisMonth = 0;
 
