@@ -519,7 +519,7 @@ schedule.push(
 
   contractualMonth: i + 1
 });
-
+);
 
 
       deferralRemaining -= 1;
