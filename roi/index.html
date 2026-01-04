@@ -2487,6 +2487,21 @@ badgeElements.forEach((badgeEl, index) => {
       const today = new Date();
       // find index of last roiSeries entry whose ownershipDate <= today
       let todayIdxFull = -1;
+
+// --- DEBUG: confirm deferral event shape + whether engine produced deferred rows
+const defEvents = (loan.events || []).filter(e => e.type === "deferral");
+console.warn("[DEFERRAL EVENTS]", loan.name, defEvents);
+
+// Count deferral rows produced by engine
+const deferredCount = (loan.cumSchedule || []).filter(r => r.isDeferred === true).length;
+console.warn("[DEFERRED ROWS IN cumSchedule]", loan.name, deferredCount);
+
+// If zero, print the first few schedule rows so we see flags
+if (deferredCount === 0) {
+  console.warn("[SAMPLE cumSchedule rows]", (loan.cumSchedule || []).slice(0, 6));
+}
+
+        
       loan.roiSeries.forEach((entry, i) => {
   if (entry.date && entry.date <= today) {
     todayIdxFull = i;
