@@ -446,6 +446,7 @@ if (
     recovery: +(applied.toFixed(2)),
     contractualMonth: i + 1
   });
+  );
 
   break; // 🔒 STOP schedule immediately
 }
