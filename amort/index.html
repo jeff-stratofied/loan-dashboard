@@ -3421,7 +3421,7 @@ if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
   requestAnimationFrame(() => openDrawerForLoan(loan));
 
   // Only force drawer visibility in embed mode
-  if (isEmbed) {
+  if (PAGE_CONTEXT.isEmbed) {
     drawer.style.display = "flex";
     drawer.classList.add("open");
     drawer.setAttribute("aria-hidden", "false");
@@ -3437,19 +3437,13 @@ if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
     currentLoan = loan;
     requestAnimationFrame(() => openDrawerForLoan(loan));
 
-    // Only force drawer visibility in embed mode
-    if (isEmbed) {
-      drawer.style.display = "flex";
-      drawer.classList.add("open");
-      drawer.setAttribute("aria-hidden", "false");
-    }
   }
 }
 
 // =====================================================
 // EMBED MODE — AUTO OPEN FIRST LOAN (FALLBACK ONLY)
 // =====================================================
-if (isEmbed && currentLoans.length && !drawer.classList.contains("open") && !PAGE_CONTEXT.open) {
+if (PAGE_CONTEXT.isEmbed && currentLoans.length && !drawer.classList.contains("open") && !PAGE_CONTEXT.open) {
   const sorted = currentLoans
     .slice()
     .sort(
