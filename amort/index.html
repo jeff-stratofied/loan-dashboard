@@ -854,12 +854,10 @@ const PAGE_CONTEXT = (() => {
   };
 })();
 
-    
-
 /* ============================
-   GLOBAL STATE — MUST BE FIRST
+   GLOBAL STATE (mutable)
    ============================ */
-
+    
 let currentLoans = [];
 let allLoans = [];
 let apiLoans = [];
@@ -871,15 +869,6 @@ let allowEmbedRedirect = false;
 
 let tpvSeriesData = [];
 let USE_DYNAMIC_DATA = true;
-    
-const params = new URLSearchParams(window.location.search);
-const userParam = params.get("user") || "jeff";
-const isEmbed = params.get("embed") === "true";
-const openParam = params.get("open");
-const loanIdParam = Number(params.get("loanId")) || null;
-
-const cameFromReporting =
-  new URLSearchParams(window.location.search).get("from") === "reporting";
 
     
     const USER_LABELS = {
@@ -889,19 +878,19 @@ const cameFromReporting =
     };
     
     document.getElementById("currentUserLabel").textContent =
-  USER_LABELS[PAGE_USER] || "Unknown User";
+  USER_LABELS[PAGE_CONTEXT.user] || "Unknown User";
 
    
 const backRow = document.getElementById("backToHoldingsRow");
 const backBtn = document.getElementById("backToHoldingsBtn");
 
 // Show Back button when loaded inside Reporting iframe
-if (cameFromReporting) {
+if (PAGE_CONTEXT.cameFromReporting) {
   backRow.style.display = "block";
 
   backBtn.addEventListener("click", () => {
     window.location.href =
-      "/loan-dashboard/reporting?user=" + PAGE_USER;
+      "/loan-dashboard/reporting?user=" + PAGE_CONTEXT.user;
   });
 }
 
@@ -1020,7 +1009,7 @@ allLoans = allLoans.map(l => ({
 // USER + VISIBILITY FILTER (STEP 2B)
 // --------------------------------------------------
 allLoans = allLoans.filter(l =>
-  l.user === PAGE_USER && l.visible === true
+  l.user === PAGE_CONTEXT && l.visible === true
 );
 
   // =====================================================
@@ -3499,12 +3488,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Initialize page (loads loans internally)
   await init();
 
-  // =====================================================
-  // EMBED MODE — REDIRECT TO FULL PAGE (SINGLE CONTRACT)
-  // =====================================================
-  if (!isEmbed) return;
+// =====================================================
+// EMBED MODE — REDIRECT TO FULL PAGE (SINGLE CONTRACT)
+// =====================================================
+if (!PAGE_CONTEXT.isEmbed) return;
 
-  const user = PAGE_USER || "jeff";
+const user = PAGE_CONTEXT.user;
+
   const baseUrl = `/loan-dashboard/amort/index.html?user=${user}`;
 
   function redirectToFullPage() {
