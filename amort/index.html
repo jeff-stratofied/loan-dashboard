@@ -898,61 +898,52 @@ if (PAGE_CONTEXT.cameFromReporting) {
    B. DATA LOADING & NORMALIZATION
    ========================================================= */
   
-async function init() {
-if (USE_DYNAMIC_DATA) {
- const apiResult = await loadLoans();
+async function loadAndNormalizeLoans() {
+  const apiResult = await loadLoans();
 
-// Support BOTH return shapes:
-// 1) array (amort page)
-// 2) { loans, sha } (admin / other pages)
-const rawLoans = Array.isArray(apiResult)
-  ? apiResult
-  : apiResult.loans;
+  // Support BOTH return shapes:
+  // 1) array (amort page)
+  // 2) { loans, sha } (admin / other pages)
+  const rawLoans = Array.isArray(apiResult)
+    ? apiResult
+    : apiResult.loans;
 
   apiLoans = rawLoans.map(normalizeLoan);
 
   // --------------------------------------------------
-// DEV-ONLY SCHEMA DRIFT GUARD
-// --------------------------------------------------
-const DEV_MODE =
-  location.hostname === "localhost" ||
-  location.hostname.includes("github.io");
+  // DEV-ONLY SCHEMA DRIFT GUARD
+  // --------------------------------------------------
+  const DEV_MODE =
+    location.hostname === "localhost" ||
+    location.hostname.includes("github.io");
 
-if (DEV_MODE) {
-  apiLoans.forEach(l => {
-    const problems = [];
+  if (DEV_MODE) {
+    apiLoans.forEach(l => {
+      const problems = [];
 
-    if (!Number.isFinite(l.nominalRate))
-      problems.push("nominalRate");
-    if (!Number.isFinite(l.principal))
-      problems.push("principal");
-    if (!Number.isFinite(l.purchasePrice))
-      problems.push("purchasePrice");
-    if (!Number.isFinite(l.termYears))
-      problems.push("termYears");
-    if (!l.loanStartDate)
-      problems.push("loanStartDate");
-    if (!l.user)
-      problems.push("user");
-    if (problems.length) {
-      console.warn(
-        "⚠️ Loan schema issue",
-        {
+      if (!Number.isFinite(l.nominalRate)) problems.push("nominalRate");
+      if (!Number.isFinite(l.principal)) problems.push("principal");
+      if (!Number.isFinite(l.purchasePrice)) problems.push("purchasePrice");
+      if (!Number.isFinite(l.termYears)) problems.push("termYears");
+      if (!l.loanStartDate) problems.push("loanStartDate");
+      if (!l.user) problems.push("user");
+
+      if (problems.length) {
+        console.warn("⚠️ Loan schema issue", {
           loanId: l.loanId,
           loanName: l.loanName,
           problems,
           loan: l
-        }
-      );
-    }
-  });
-}
+        });
+      }
+    });
+  }
 
-apiLoans = attachSchedules(apiLoans);
+  // Build amort schedules
+  apiLoans = attachSchedules(apiLoans);
 
+  // Enrich with cumulative values + mini sparkline points
   allLoans = apiLoans.map(l => {
-
-    // ADD cumulative values directly into amort.schedule
     let cumP = 0, cumI = 0, cumT = 0;
 
     const schedule = l.amort.schedule.map(r => {
@@ -968,7 +959,6 @@ apiLoans = attachSchedules(apiLoans);
       };
     });
 
-    // build mini sparkline points
     const miniPts = schedule
       .slice(0, Math.min(24, schedule.length))
       .map(s => ({
@@ -976,7 +966,6 @@ apiLoans = attachSchedules(apiLoans);
         y: s.balance
       }));
 
-    // IMPORTANT: overwrite amort.schedule so drawer charts work
     return {
       ...l,
       amort: { ...l.amort, schedule },
@@ -985,73 +974,66 @@ apiLoans = attachSchedules(apiLoans);
     };
   });
 
-// --------------------------------------------------
-// NORMALIZE user + visible (match Admin defaults)
-// --------------------------------------------------
-allLoans = allLoans.map(l => ({
-  ...l,
-  user: l.user ?? "jeff",
-  visible: l.visible !== false
-}));
+  // Normalize user + visible (match Admin defaults)
+  allLoans = allLoans.map(l => ({
+    ...l,
+    user: l.user ?? "jeff",
+    visible: l.visible !== false
+  }));
 
-// --------------------------------------------------
-// USER + VISIBILITY FILTER (STEP 2B)
-// --------------------------------------------------
-allLoans = allLoans.filter(l =>
-  l.user === PAGE_CONTEXT.user && l.visible === true
-);
+  // Apply page-level user filter
+  allLoans = allLoans.filter(
+    l => l.user === PAGE_CONTEXT.user && l.visible === true
+  );
 
-  // =====================================================
-// FINALIZE CURRENT LOANS — SINGLE SOURCE OF TRUTH
-// =====================================================
-currentLoans = [...allLoans];
+  // FINALIZE — single source of truth
+  currentLoans = [...allLoans];
+}
 
+async function init() {
+  if (USE_DYNAMIC_DATA) {
+    await loadAndNormalizeLoans();
 
-  
+    /* ---------------------------------------------------------
+       DATA FREEZE POINT
+       After this line:
+       - allLoans
+       - currentLoans
+       MUST NOT be mutated
+       --------------------------------------------------------- */
+  }
 
-/* ---------------------------------------------------------
-   DATA FREEZE POINT
-   After this line:
-   - allLoans
-   - currentLoans
-   MUST NOT be mutated
-   --------------------------------------------------------- */
+  // -------------------------------------------
+  // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
+  // -------------------------------------------
+  window.KPI_COLOR_MAP = {};
 
-  
-    // -------------------------------------------
-    // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
-    // -------------------------------------------
-    window.KPI_COLOR_MAP = {};
-    
-    // High-contrast, human-distinguishable palette
-    const BASE_DISTINCT_COLORS = [
-      '#2563eb', // blue
-      '#dc2626', // red
-      '#16a34a', // green
-      '#7c3aed', // purple
-      '#ea580c', // orange
-      '#0891b2', // cyan
-      '#ca8a04', // amber
-      '#be185d', // rose
-      '#15803d', // dark green
-      '#1d4ed8', // deep blue
-      '#9333ea', // violet
-      '#b91c1c'  // dark red
-    ];
-    
-    // Stable ordering so colors never reshuffle
-    const sortedLoansForColors = allLoans
-      .slice()
-      .sort((a, b) => (a.loanId ?? a.id) - (b.loanId ?? b.id));
-    
-    // Assign deterministically
-    sortedLoansForColors.forEach((loan, i) => {
-      const id = loan.loanId ?? loan.id;
-      window.KPI_COLOR_MAP[id] =
-        BASE_DISTINCT_COLORS[i % BASE_DISTINCT_COLORS.length];
-    });
-    
-    }
+  const BASE_DISTINCT_COLORS = [
+    '#2563eb', // blue
+    '#dc2626', // red
+    '#16a34a', // green
+    '#7c3aed', // purple
+    '#ea580c', // orange
+    '#0891b2', // cyan
+    '#ca8a04', // amber
+    '#be185d', // rose
+    '#15803d', // dark green
+    '#1d4ed8', // deep blue
+    '#9333ea', // violet
+    '#b91c1c'  // dark red
+  ];
+
+  const sortedLoansForColors = allLoans
+    .slice()
+    .sort((a, b) => (a.loanId ?? a.id) - (b.loanId ?? b.id));
+
+  sortedLoansForColors.forEach((loan, i) => {
+    const id = loan.loanId ?? loan.id;
+    window.KPI_COLOR_MAP[id] =
+      BASE_DISTINCT_COLORS[i % BASE_DISTINCT_COLORS.length];
+  });
+}
+
 
 /* =========================================================
    C. DERIVED DATA (PURE COMPUTATION)
@@ -3454,7 +3436,7 @@ if (PAGE_CONTEXT.isEmbed && currentLoans.length && !drawer.classList.contains("o
   requestAnimationFrame(() => openDrawerForLoan(loan));
 }
 
-} // <--- End of init()
+
 // =====================================================
 // DOM READY — INIT + EMBED REDIRECT HANDLING
 // =====================================================
