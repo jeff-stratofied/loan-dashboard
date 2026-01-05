@@ -1216,12 +1216,12 @@ function renderDistributionDrawer() {
   // -----------------------------
   // Build CONTINUOUS month domain
   // -----------------------------
-  const minDate = Math.min(...allLoans.map(
-    l => new Date(l.purchaseDate + 'T00:00:00').getTime()
-  ));
-  const maxDate = Math.max(...allLoans.map(
-    l => new Date(l.purchaseDate + 'T00:00:00').getTime()
-  ));
+  const minDate = Math.min(
+    ...allLoans.map(l => new Date(l.purchaseDate + 'T00:00:00').getTime())
+  );
+  const maxDate = Math.max(
+    ...allLoans.map(l => new Date(l.purchaseDate + 'T00:00:00').getTime())
+  );
 
   const months = [];
   const cursor = new Date(minDate);
@@ -1243,7 +1243,6 @@ function renderDistributionDrawer() {
   svg.setAttribute('height', '100%');
 
   const maxCount = Math.max(1, ...Object.values(counts));
-  const firstMonthDate = new Date(months[0] + '-01T00:00:00');
   const step = (w - pad * 2) / months.length;
 
   // -----------------------------
@@ -1266,13 +1265,8 @@ function renderDistributionDrawer() {
     rect.setAttribute('fill', '#06b6d4');
     svg.appendChild(rect);
 
-    // ---- calendar-based 6 month labels ----
-    const currentMonthDate = new Date(m + '-01T00:00:00');
-    const monthDiff =
-      (currentMonthDate.getFullYear() - firstMonthDate.getFullYear()) * 12 +
-      (currentMonthDate.getMonth() - firstMonthDate.getMonth());
-
-    if (monthDiff % 6 === 0) {
+    // ---- SIMPLE x-axis labels: every 6 months ----
+    if (i % 6 === 0) {
       const text = document.createElementNS(svgNS, 'text');
       text.setAttribute('x', x + barW / 2);
       text.setAttribute('y', h - pad + 14);
@@ -1280,7 +1274,8 @@ function renderDistributionDrawer() {
       text.setAttribute('text-anchor', 'middle');
       text.setAttribute('fill', '#475569');
 
-      text.textContent = currentMonthDate.toLocaleDateString(undefined, {
+      const d = new Date(m + '-01T00:00:00');
+      text.textContent = d.toLocaleDateString(undefined, {
         month: 'short',
         year: 'numeric'
       });
@@ -1305,6 +1300,7 @@ function renderDistributionDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
 
       // current month marker on the right edge (visual cue)
