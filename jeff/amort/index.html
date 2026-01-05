@@ -1186,123 +1186,6 @@ drawerBody.scrollTop = 0;
 }
 
 
-function renderDistributionDrawer() {
-  currentMode = 'kpi';
-  currentLoan = null;
-
-  drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
-  drawerSub.textContent = 'Number of loans purchased by month';
-  drawerPrimaryTitle.textContent = '';
-  drawerPrimary.textContent = '';
-  drawerSecondaryTitle.textContent = 'Total Invested';
-
-  const totalInvested = allLoans.reduce((s, l) => s + l.purchasePrice, 0);
-  drawerSecondary.textContent = `$${totalInvested.toLocaleString()}`;
-
-  drawerAmortContainer.style.display = 'none';
-  drawerExtra.innerHTML = '';
-  drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'none';
-
-  // -----------------------------
-  // Build counts by purchase month
-  // -----------------------------
-  const counts = {};
-  allLoans.forEach(l => {
-    const m = monthKey(l.purchaseDate); // YYYY-MM
-    counts[m] = (counts[m] || 0) + 1;
-  });
-
-  // -----------------------------
-  // Build CONTINUOUS month domain
-  // -----------------------------
-  const minDate = Math.min(
-    ...allLoans.map(l => new Date(l.purchaseDate + 'T00:00:00').getTime())
-  );
-  const maxDate = Math.max(
-    ...allLoans.map(l => new Date(l.purchaseDate + 'T00:00:00').getTime())
-  );
-
-  const months = [];
-  const cursor = new Date(minDate);
-  cursor.setDate(1);
-
-  while (cursor.getTime() <= maxDate) {
-    months.push(cursor.toISOString().slice(0, 7)); // YYYY-MM
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
-
-  // -----------------------------
-  // SVG setup
-  // -----------------------------
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const w = 480, h = 220, pad = 30;
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
-
-  const maxCount = Math.max(1, ...Object.values(counts));
-  const step = (w - pad * 2) / months.length;
-
-  // -----------------------------
-  // Bars + X-axis labels
-  // -----------------------------
-  months.forEach((m, i) => {
-    const count = counts[m] || 0;
-
-    const barW = step * 0.7;
-    const gap = (step - barW) / 2;
-    const x = pad + i * step + gap;
-    const barH = (count / maxCount) * (h - pad * 2);
-    const y = h - pad - barH;
-
-    const rect = document.createElementNS(svgNS, 'rect');
-    rect.setAttribute('x', x);
-    rect.setAttribute('y', y);
-    rect.setAttribute('width', barW);
-    rect.setAttribute('height', barH);
-    rect.setAttribute('fill', '#06b6d4');
-    svg.appendChild(rect);
-
-    // ---- SIMPLE x-axis labels: every 6 months ----
-    if (i % 6 === 0) {
-      const text = document.createElementNS(svgNS, 'text');
-      text.setAttribute('x', x + barW / 2);
-      text.setAttribute('y', h - pad + 14);
-      text.setAttribute('font-size', '11');
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('fill', '#475569');
-
-      const d = new Date(m + '-01T00:00:00');
-      text.textContent = d.toLocaleDateString(undefined, {
-        month: 'short',
-        year: 'numeric'
-      });
-
-      svg.appendChild(text);
-    }
-
-    rect.addEventListener('mousemove', ev => {
-      tooltip.style.display = 'block';
-      tooltip.style.left = ev.clientX + 'px';
-      tooltip.style.top = (ev.clientY - 12) + 'px';
-      tooltip.innerHTML = `${m} • ${count} loans`;
-    });
-
-    rect.addEventListener('mouseleave', () => {
-      tooltip.style.display = 'none';
-    });
-  });
-
-  drawerChartArea.appendChild(svg);
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  drawerBody.scrollTop = 0;
-}
-
-
-
       // current month marker on the right edge (visual cue)
       const curLine = document.createElementNS(svgNS, 'line');
       curLine.setAttribute('x1', pad + (w - pad * 2));
@@ -1846,6 +1729,121 @@ for (let i = 0; i < months.length; i += skip) {
       drawerBody.scrollTop = 0;
     }
 
+function renderDistributionDrawer() {
+  currentMode = 'kpi';
+  currentLoan = null;
+
+  drawerTitle.textContent = 'Distribution — Loans by Purchase Month';
+  drawerSub.textContent = 'Number of loans purchased by month';
+  drawerPrimaryTitle.textContent = '';
+  drawerPrimary.textContent = '';
+  drawerSecondaryTitle.textContent = 'Total Invested';
+
+  const totalInvested = allLoans.reduce((s, l) => s + l.purchasePrice, 0);
+  drawerSecondary.textContent = `$${totalInvested.toLocaleString()}`;
+
+  drawerAmortContainer.style.display = 'none';
+  drawerExtra.innerHTML = '';
+  drawerChartArea.innerHTML = '';
+  drawerLegend.style.display = 'none';
+
+  // -----------------------------
+  // Build counts by purchase month
+  // -----------------------------
+  const counts = {};
+  allLoans.forEach(l => {
+    const m = monthKey(l.purchaseDate); // YYYY-MM
+    counts[m] = (counts[m] || 0) + 1;
+  });
+
+  // -----------------------------
+  // Build CONTINUOUS month domain
+  // -----------------------------
+  const minDate = Math.min(
+    ...allLoans.map(l => new Date(l.purchaseDate + 'T00:00:00').getTime())
+  );
+  const maxDate = Math.max(
+    ...allLoans.map(l => new Date(l.purchaseDate + 'T00:00:00').getTime())
+  );
+
+  const months = [];
+  const cursor = new Date(minDate);
+  cursor.setDate(1);
+
+  while (cursor.getTime() <= maxDate) {
+    months.push(cursor.toISOString().slice(0, 7)); // YYYY-MM
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  // -----------------------------
+  // SVG setup
+  // -----------------------------
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const w = 480, h = 220, pad = 30;
+  const svg = document.createElementNS(svgNS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+
+  const maxCount = Math.max(1, ...Object.values(counts));
+  const step = (w - pad * 2) / months.length;
+
+  // -----------------------------
+  // Bars + X-axis labels
+  // -----------------------------
+  months.forEach((m, i) => {
+    const count = counts[m] || 0;
+
+    const barW = step * 0.7;
+    const gap = (step - barW) / 2;
+    const x = pad + i * step + gap;
+    const barH = (count / maxCount) * (h - pad * 2);
+    const y = h - pad - barH;
+
+    const rect = document.createElementNS(svgNS, 'rect');
+    rect.setAttribute('x', x);
+    rect.setAttribute('y', y);
+    rect.setAttribute('width', barW);
+    rect.setAttribute('height', barH);
+    rect.setAttribute('fill', '#06b6d4');
+    svg.appendChild(rect);
+
+    // ---- SIMPLE x-axis labels: every 6 months ----
+    if (i % 6 === 0) {
+      const text = document.createElementNS(svgNS, 'text');
+      text.setAttribute('x', x + barW / 2);
+      text.setAttribute('y', h - pad + 14);
+      text.setAttribute('font-size', '11');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('fill', '#475569');
+
+      const d = new Date(m + '-01T00:00:00');
+      text.textContent = d.toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric'
+      });
+
+      svg.appendChild(text);
+    }
+
+    rect.addEventListener('mousemove', ev => {
+      tooltip.style.display = 'block';
+      tooltip.style.left = ev.clientX + 'px';
+      tooltip.style.top = (ev.clientY - 12) + 'px';
+      tooltip.innerHTML = `${m} • ${count} loans`;
+    });
+
+    rect.addEventListener('mouseleave', () => {
+      tooltip.style.display = 'none';
+    });
+  });
+
+  drawerChartArea.appendChild(svg);
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  drawerBody.scrollTop = 0;
+}
+    
     /* ============================
        CSV / copy / download / print
        ============================ */
