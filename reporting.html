@@ -492,21 +492,34 @@
         </div>
     </div>
 
-    <script>
+// ===================================================
+// 1. DOM REFERENCES & CONSTANTS
+// ===================================================
+
+  <script>
         const hamburger = document.getElementById('hamburger');
         const sidebar = document.getElementById('sidebar');
         const userSelect = document.getElementById('userSelect');
         const currentUserDisplay = document.getElementById('currentUserDisplay');
-
-        hamburger.addEventListener('click', () => {
-            sidebar.classList.toggle('expanded');
-        });
 
         const displayNames = {
             "jeff": "Jeff Customer",
             "nick": "Nick Lender",
             "john": "John Investor"
         };
+
+    
+// ===================================================
+// 2. SIDEBAR & UI TOGGLES
+// ===================================================
+
+        hamburger.addEventListener('click', () => {
+            sidebar.classList.toggle('expanded');
+        });
+    
+// ===================================================
+// 3. USER STATE & URL MANAGEMENT
+// ===================================================
 
         function getActiveUser() {
             const params = new URLSearchParams(location.search);
@@ -526,6 +539,11 @@
             userSelect.value = user;
         }
 
+    
+// ===================================================
+// 4. IFRAME SOURCE BUILDERS
+// ===================================================
+
         function buildFrames(user) {
             document.getElementById("roiFrame").src =
                 `/loan-dashboard/roi/index.html?user=${user}&from=reporting&open=kpi2`;
@@ -537,7 +555,12 @@
                 `/loan-dashboard/amort/index.html?user=${user}&embed=true&open=first`;
         }
 
-            function wireClickRedirect(iframeId, fullPath, openParam) {
+    
+// ===================================================
+// 5. IFRAME CLICK REDIRECT LOGIC
+// ===================================================
+
+  function wireClickRedirect(iframeId, fullPath, openParam) {
               const iframe = document.getElementById(iframeId);
               if (!iframe) return;
             
@@ -562,23 +585,29 @@
               });
             }
 
+      
+// ===================================================
+// 6. PAGE INITIALIZATION
+// ===================================================
 
-        // Initial load - now defaults to Jeff Customer
+       // Initial load - now defaults to Jeff Customer
         let activeUser = getActiveUser();
         updateDisplay(activeUser);
         buildFrames(activeUser);
 
-
-
         // Wire redirects
         wireClickRedirect(
-  "roiFrame",
-  "/loan-dashboard/roi/index.html",
-  "kpi2"
-);
-
+          "roiFrame",
+          "/loan-dashboard/roi/index.html",
+          "kpi2"
+        );
         wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html","kpi2");
         wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
+
+      
+// ===================================================
+// 7. USER SWITCH HANDLING
+// ===================================================
 
         // User switcher
         userSelect.addEventListener("change", () => {
@@ -587,37 +616,41 @@
             updateDisplay(activeUser);
             buildFrames(activeUser);
 
-            // Re-wire after iframe reloads
+        // Re-wire after iframe reloads
            setTimeout(() => {
-  wireClickRedirect(
-  "roiFrame",
-  "/loan-dashboard/roi/index.html",
-  "kpi2"
-);
+         wireClickRedirect(
+          "roiFrame",
+          "/loan-dashboard/roi/index.html",
+          "kpi2"
+        );
 
-  wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html", "kpi2");
-  wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
-}, 1500);
+      wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html", "kpi2");
+      wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
+        }, 1500);
+     });
 
-        });
+      
+// ===================================================
+// 8. CROSS-IFRAME MESSAGING
+// ===================================================
 
-// =========================================
-// Handle "Back to My Holdings" from iframes
-// =========================================
-window.addEventListener("message", (event) => {
-  if (event.data?.type === "back-to-my-holdings") {
-    // Ensure Reporting → My Holdings tab is active
-    const tabs = document.querySelectorAll(".reporting-tab");
-    tabs.forEach(tab => tab.classList.remove("active"));
-    const holdingsTab = document.querySelector(".reporting-tab.active") ||
+        // =========================================
+        // Handle "Back to My Holdings" from iframes
+        // =========================================
+        window.addEventListener("message", (event) => {
+          if (event.data?.type === "back-to-my-holdings") {
+            // Ensure Reporting → My Holdings tab is active
+            const tabs = document.querySelectorAll(".reporting-tab");
+            tabs.forEach(tab => tab.classList.remove("active"));
+            const holdingsTab = document.querySelector(".reporting-tab.active") ||
                         document.querySelector(".reporting-tab:nth-child(2)");
-    if (holdingsTab) holdingsTab.classList.add("active");
+            if (holdingsTab) holdingsTab.classList.add("active");
 
-    // Scroll Reporting content to top (polish)
-    const content = document.querySelector(".content");
-    if (content) content.scrollTop = 0;
-  }
-});
+        // Scroll Reporting content to top (polish)
+        const content = document.querySelector(".content");
+        if (content) content.scrollTop = 0;
+      }
+    });
 
         
     </script>
