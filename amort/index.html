@@ -1131,6 +1131,18 @@ function derivePortfolioData(loans) {
   };
 }
 
+    const DEV_ASSERT =
+  location.hostname === "localhost" ||
+  location.hostname.includes("github.io");
+
+function assert(condition, message, context = {}) {
+  if (!DEV_ASSERT) return;
+  if (!condition) {
+    console.error("❌ ASSERTION FAILED:", message, context);
+    debugger; // stop immediately in dev
+  }
+}
+
     
 function renderAndWirePage() {
 
@@ -1139,6 +1151,20 @@ function renderAndWirePage() {
      ========================= */
 
  const derived = derivePortfolioData(currentLoans);
+assert(Array.isArray(currentLoans), "currentLoans must be an array");
+assert(derived, "derived data missing");
+
+assert(derived.kpis, "derived.kpis missing", derived);
+assert(Array.isArray(derived.tpvSeriesData), "TPV series missing", derived);
+assert(Number.isFinite(derived.tpvValue), "TPV value invalid", derived);
+
+assert(
+  Array.isArray(derived.loanViews),
+  "loanViews missing or not array",
+  derived
+);
+
+  
   const kpis = derived.kpis;
 cachedKPIs = derived.kpis;
 // 🔑 Bridge derived data → legacy KPI drawers
@@ -1149,6 +1175,23 @@ tpvSeriesData = derived.tpvSeriesData;
      D. RENDER KPIs
      ========================= */
 
+// STEP 6.3 — Guard KPI rendering
+assert(
+  Number.isFinite(kpis.weightedRate),
+  "KPI weightedRate invalid",
+  kpis
+);
+assert(
+  Number.isFinite(kpis.monthlyIncome),
+  "KPI monthlyIncome invalid",
+  kpis
+);
+assert(
+  Number.isFinite(kpis.totalPrincipal),
+  "KPI totalPrincipal invalid",
+  kpis
+);
+  
   const kpisEl = document.getElementById('kpis');
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
@@ -1185,6 +1228,19 @@ if (tpvTile) {
     const tooltip = document.getElementById('tooltip');
   grid.innerHTML = "";
     derived.loanViews.forEach(({ loan, miniSeries, maturityDate, currentMonthIndex }, idx) => {
+      assert(loan, "loan missing in loanView", { idx });
+assert(
+  Array.isArray(miniSeries),
+  "miniSeries missing for loan",
+  loan
+);
+assert(
+  Number.isFinite(currentMonthIndex),
+  "currentMonthIndex invalid",
+  loan
+);
+
+      
       const tile = document.createElement('div');
       tile.className = 'tile';
 
@@ -1861,7 +1917,7 @@ delete */
 
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
-
+assert(loan, "openDrawerForLoan called with null loan");
   
   // =====================================================
   // HARD RESET KPI-ONLY STATE (restore loan mode)
@@ -2569,6 +2625,14 @@ drawer.classList.add('kpi-interactive');
 
 
 function renderTPVDrawer() {
+  assert(currentMode !== "loan", "TPV drawer opened in loan mode");
+assert(
+  Array.isArray(tpvSeriesData) && tpvSeriesData.length,
+  "renderTPVDrawer called with empty TPV series",
+  { tpvSeriesData }
+);
+
+  
   // =====================================================
   // SAFETY: TPV series may not exist yet (iframe / embed)
   // =====================================================
