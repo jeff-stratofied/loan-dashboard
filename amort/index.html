@@ -1214,14 +1214,15 @@ ${buildEventBadges(loan.events || [])}
     &nbsp;·&nbsp;
     Term: ${loan.termYears}y
     &nbsp;·&nbsp;
-    Matures: ${
-      (() => {
-        const first = new Date(loan.loanStartDate + 'T00:00:00');
-        const lastIdx = loan.amort.schedule[loan.amort.schedule.length - 1].monthIndex;
-        first.setMonth(first.getMonth() + (lastIdx - 1));
-        return first.toLocaleDateString(undefined, { month: "short", year: "numeric" });
-      })()
-    }
+Matures: ${
+  maturityDate
+    ? maturityDate.toLocaleDateString(undefined, {
+        month: "short",
+        year: "numeric"
+      })
+    : "—"
+}
+
   </div>
 
   <!-- Line 4: Loan ID -->
@@ -1331,7 +1332,7 @@ const svg = tile.querySelector('svg.sparkline');
 const w = 170, h = 48, pad = 6;
 
 // Correct: use cumulative schedule
-const fullSched = loan.cumSchedule || [];
+const fullSched = miniSeries || [];
 
 if (!fullSched.length) {
   svg.innerHTML = "";   // nothing to plot
@@ -1353,7 +1354,7 @@ const xForMonth = month => {
 };
 
 // derive "current month index" based on loan purchase date → today
-const curMonthForLoan = getCurrentScheduleIndex(loan);
+const curMonthForLoan = currentMonthIndex;
 
 // render SVG
 svg.innerHTML = `
