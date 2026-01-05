@@ -2926,6 +2926,14 @@ drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
 
 
 function renderRatesDrawer() {
+const { kpis } = derivePortfolioData(currentLoans);
+
+  assert(
+    Number.isFinite(kpis.weightedRate),
+    "Rates drawer: weightedRate invalid",
+    kpis
+  );
+
   currentMode = 'kpi';
   currentLoan = null;
 drawer.classList.add('kpi-interactive');
@@ -2939,7 +2947,7 @@ drawer.classList.add('kpi-interactive');
 
 drawerPrimaryTitle.textContent = 'Avg Rate';
 drawerPrimary.textContent =
-  `${(derived.kpis.weightedRate * 100).toFixed(2)}%`;
+  `${(kpis.weightedRate * 100).toFixed(2)}%`;
 
 
   drawerSecondaryTitle.textContent = 'Rate Range';
