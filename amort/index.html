@@ -1075,14 +1075,17 @@ function renderAndWirePage() {
 
   tpvSeriesData = tpvSeries(currentLoans);
 
-  allLoans.sort((a, b) => {
+const sortedLoans = allLoans
+  .slice()
+  .sort((a, b) => {
     const da = new Date(a.purchaseDate || a.loanStartDate).getTime() || 0;
     const db = new Date(b.purchaseDate || b.loanStartDate).getTime() || 0;
     return da - db;
   });
 
-  const curIdx = getCurrentMonthIndex(allLoans) - 1;
-  const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
+  const curIdx = getCurrentMonthIndex(sortedLoans) - 1;
+const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
+
   const tpvVal =
     tpvSeriesData.length > 0 && tpvSeriesData[tpvIdx]
       ? tpvSeriesData[tpvIdx].value
@@ -1093,73 +1096,11 @@ function renderAndWirePage() {
     tpvTile.textContent = `$${Math.round(tpvVal).toLocaleString()}`;
   }
 
-  /* =========================
-     E. INTERACTION WIRING
-     ========================= */
-
-  document.querySelectorAll('.kpi').forEach(k => {
-    k.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const key = k.getAttribute('data-kpi');
-      if (key === 'distribution') renderDistributionDrawer();
-      if (key === 'tpv') renderTPVDrawer();
-      if (key === 'rates') renderRatesDrawer();
-      if (key === 'payments') renderPaymentsDrawer();
-    });
-  });
-}
-
-
-  
-
-
-function buildEventBadges(events = []) {
-  if (!events.length) return "";
-
-  return `
-    <div class="loan-badges">
-      ${events.map(e => {
-        if (e.type === "default") {
-          return `<span class="loan-badge default">⚠️ Default</span>`;
-        }
-
-        if (e.type === "deferral") {
-          return `<span class="loan-badge deferral">⏸ Deferral</span>`;
-        }
-
-        if (e.type === "prepayment") {
-          return `<span class="loan-badge prepayment">💰 Prepay</span>`;
-        }
-
-        return "";
-      }).join("")}
-    </div>
-  `;
-}
-
-
-  
-   /* ============================
+     /* ============================
        Render loan tiles with mini-charts (cumulative principal & interest)
        ============================ */
     const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
-
-function setMiniTooltipContent(lines) {
-  tooltip.innerHTML = lines.join("<br>");
-  tooltip.style.display = "block";
-}
-
-function positionMiniTooltip(x, y, offset = 12) {
-  tooltip.style.left = `${x}px`;
-  tooltip.style.top = `${y - offset}px`;
-}
-
-function hideMiniTooltip() {
-  tooltip.style.display = "none";
-}
-
-  
   grid.innerHTML = "";
     currentLoans.forEach((loan, idx) => {
       const tile = document.createElement('div');
@@ -1425,19 +1366,21 @@ svg.innerHTML = `
       });
     });
 
+/* ============================
+   Populate amort filter dropdowns
+   ============================ */
 
-  
-/* Populate amort filter dropdowns */
 const filterName = document.getElementById("filterName");
 const filterSchool = document.getElementById("filterSchool");
 const filterRate = document.getElementById("filterRate");
 const sortLoans = document.getElementById("sortLoans");
 const resetBtn = document.getElementById("resetFilters");
 
-
+// Build dropdown values from canonical data
 const names = [...new Set(allLoans.map(l => l.loanName).filter(Boolean))];
 const schools = [...new Set(allLoans.map(l => l.school).filter(Boolean))];
 
+// Populate name filter
 names.forEach(n => {
   const o = document.createElement("option");
   o.value = n.toLowerCase();
@@ -1445,6 +1388,7 @@ names.forEach(n => {
   filterName.appendChild(o);
 });
 
+// Populate school filter
 schools.forEach(s => {
   const o = document.createElement("option");
   o.value = s.toLowerCase();
@@ -1452,9 +1396,109 @@ schools.forEach(s => {
   filterSchool.appendChild(o);
 });
 
+// -----------------------------
+// Wire filter + sort controls
+// -----------------------------
+filterName.addEventListener("change", applyLoanFilters);
+filterSchool.addEventListener("change", applyLoanFilters);
+filterRate.addEventListener("change", applyLoanFilters);
+sortLoans.addEventListener("change", applyLoanFilters);
+
+resetBtn.addEventListener("click", () => {
+  filterName.value = "";
+  filterSchool.value = "";
+  filterRate.value = "";
+  sortLoans.value = "";
+  applyLoanFilters();
+});
+
+// Initial filter pass
+applyLoanFilters();
+
+       /* -------------------------
+   Compact tile toggle (persisted)
+   ------------------------- */
+    const compactToggle = document.getElementById("toggleCompact");
+    
+    // Restore saved preference
+    const savedCompact = localStorage.getItem("loanGridCompact");
+    if (savedCompact !== null) {
+      compactToggle.checked = savedCompact === "true";
+    }
+    
+    // Apply initial state
+    loanGrid.classList.toggle("compact", compactToggle.checked);
+    
+    // Persist on change
+    compactToggle.addEventListener("change", () => {
+      loanGrid.classList.toggle("compact", compactToggle.checked);
+      localStorage.setItem("loanGridCompact", compactToggle.checked);
+    });
+  
+  /* =========================
+     E. INTERACTION WIRING
+     ========================= */
+
+  document.querySelectorAll('.kpi').forEach(k => {
+    k.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const key = k.getAttribute('data-kpi');
+      if (key === 'distribution') renderDistributionDrawer();
+      if (key === 'tpv') renderTPVDrawer();
+      if (key === 'rates') renderRatesDrawer();
+      if (key === 'payments') renderPaymentsDrawer();
+    });
+  });
+}
+
 
   
+
+
+function buildEventBadges(events = []) {
+  if (!events.length) return "";
+
+  return `
+    <div class="loan-badges">
+      ${events.map(e => {
+        if (e.type === "default") {
+          return `<span class="loan-badge default">⚠️ Default</span>`;
+        }
+
+        if (e.type === "deferral") {
+          return `<span class="loan-badge deferral">⏸ Deferral</span>`;
+        }
+
+        if (e.type === "prepayment") {
+          return `<span class="loan-badge prepayment">💰 Prepay</span>`;
+        }
+
+        return "";
+      }).join("")}
+    </div>
+  `;
+}
+
+
+function setMiniTooltipContent(lines) {
+  tooltip.innerHTML = lines.join("<br>");
+  tooltip.style.display = "block";
+}
+
+function positionMiniTooltip(x, y, offset = 12) {
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top = `${y - offset}px`;
+}
+
+function hideMiniTooltip() {
+  tooltip.style.display = "none";
+}
+
 function applyLoanFilters() {
+  const filterName = document.getElementById("filterName");
+  const filterSchool = document.getElementById("filterSchool");
+  const filterRate = document.getElementById("filterRate");
+
   const nameVal = filterName.value;
   const schoolVal = filterSchool.value;
   const rateVal = filterRate.value;
@@ -1482,6 +1526,7 @@ function applyLoanFilters() {
 
 function applyLoanSort() {
   const grid = document.getElementById("loanGrid");
+  const sortLoans = document.getElementById("sortLoans");
   const mode = sortLoans.value;
 
   const tiles = Array.from(grid.children)
@@ -1491,20 +1536,19 @@ function applyLoanSort() {
 
   tiles.sort((a, b) => {
     switch (mode) {
-      case "purchase_asc": return get(a,"purchaseDate") - get(b,"purchaseDate");
-      case "purchase_desc": return get(b,"purchaseDate") - get(a,"purchaseDate");
-      case "amount_asc": return get(a,"amount") - get(b,"amount");
-      case "amount_desc": return get(b,"amount") - get(a,"amount");
-      case "rate_asc": return get(a,"rate") - get(b,"rate");
-      case "rate_desc": return get(b,"rate") - get(a,"rate");
+      case "purchase_asc": return get(a, "purchaseDate") - get(b, "purchaseDate");
+      case "purchase_desc": return get(b, "purchaseDate") - get(a, "purchaseDate");
+      case "amount_asc": return get(a, "amount") - get(b, "amount");
+      case "amount_desc": return get(b, "amount") - get(a, "amount");
+      case "rate_asc": return get(a, "rate") - get(b, "rate");
+      case "rate_desc": return get(b, "rate") - get(a, "rate");
       default: return 0;
     }
   });
 
   tiles.forEach(t => grid.appendChild(t));
 }
-
-  
+ 
 
 // ---------- Date helpers (replace CURRENT_MONTH usage) ----------
 function monthsBetween(startDateStr, endDate = new Date()) {
@@ -1672,27 +1716,6 @@ resetBtn.addEventListener("click", () => {
   applyLoanFilters();
 });
 
-
-       /* -------------------------
-   Compact tile toggle (persisted)
-   ------------------------- */
-    const compactToggle = document.getElementById("toggleCompact");
-    const loanGrid = document.getElementById("loanGrid");
-    
-    // Restore saved preference
-    const savedCompact = localStorage.getItem("loanGridCompact");
-    if (savedCompact !== null) {
-      compactToggle.checked = savedCompact === "true";
-    }
-    
-    // Apply initial state
-    loanGrid.classList.toggle("compact", compactToggle.checked);
-    
-    // Persist on change
-    compactToggle.addEventListener("change", () => {
-      loanGrid.classList.toggle("compact", compactToggle.checked);
-      localStorage.setItem("loanGridCompact", compactToggle.checked);
-    });
 
     /* ============================
        Drawer helpers
