@@ -861,12 +861,6 @@ const PAGE_CONTEXT = (() => {
 let currentLoans = [];
 let allLoans = [];
 let apiLoans = [];
-let cachedKPIs = {
-  get weightedRate() {
-    throw new Error("❌ GLOBAL cachedKPIs WAS READ");
-  }
-};
-
 
 let currentLoan = null;
 let currentMode = null;
@@ -1171,7 +1165,7 @@ assert(
 
   
   const kpis = derived.kpis;
-cachedKPIs = derived.kpis;
+
 // 🔑 Bridge derived data → legacy KPI drawers
 tpvSeriesData = derived.tpvSeriesData;
 
@@ -2943,9 +2937,10 @@ drawer.classList.add('kpi-interactive');
   const minRate = Math.min(...rates);
   const maxRate = Math.max(...rates);
 
-  drawerPrimaryTitle.textContent = 'Avg Rate';
-  drawerPrimary.textContent =
-    `${(cachedKPIs.weightedRate * 100).toFixed(2)}%`;
+drawerPrimaryTitle.textContent = 'Avg Rate';
+drawerPrimary.textContent =
+  `${(derived.kpis.weightedRate * 100).toFixed(2)}%`;
+
 
   drawerSecondaryTitle.textContent = 'Rate Range';
   drawerSecondary.textContent =
