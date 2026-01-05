@@ -2624,22 +2624,29 @@ drawer.classList.add('kpi-interactive');
 
 
 function renderTPVDrawer() {
-  assert(
-  currentMode === "kpi" || currentMode === null,
-  "TPV drawer entered with invalid mode",
-  { currentMode }
-);
-assert(
-  Array.isArray(tpvSeriesData) && tpvSeriesData.length,
-  "renderTPVDrawer called with empty TPV series",
-  { tpvSeriesData }
-);
 
-  
+  // 🔑 HARD RESET — leave loan context (ONCE)
+  currentLoan = null;
+  currentMode = "kpi";
+
+  drawer.classList.add("kpi-interactive");
+  drawerAmortContainer.style.display = "none";
+  drawerExtra.innerHTML = "";
+  drawerLegend.style.display = "none";
+
+  // 🔒 Canonical derived snapshot
+  const derived = derivePortfolioData(currentLoans);
+
+  assert(
+    Array.isArray(derived.tpvSeriesData),
+    "TPV drawer: tpvSeriesData invalid",
+    derived
+  );
+
   // =====================================================
-  // SAFETY: TPV series may not exist yet (iframe / embed)
+  // SAFETY: no portfolio data yet (iframe / embed)
   // =====================================================
-  if (!Array.isArray(tpvSeriesData) || !tpvSeriesData.length) {
+  if (!derived.tpvSeriesData.length) {
     drawerTitle.textContent = 'Total Portfolio Value';
     drawerSub.textContent = 'No portfolio data available';
     drawerPrimaryTitle.textContent = 'Current TPV';
@@ -2655,36 +2662,35 @@ assert(
     return;
   }
 
-
-  currentMode = 'kpi';
-  currentLoan = null;
+  // =====================================================
+  // MAIN TPV CONTENT
+  // =====================================================
 
   drawer.classList.remove('kpi-interactive');
 
   drawerTitle.textContent = 'Total Portfolio Value';
-  drawerSub.textContent = 'Purchase + accrued interest (grace) + cumulative payments';
+  drawerSub.textContent =
+    'Purchase + accrued interest (grace) + cumulative payments';
 
   drawerPrimaryTitle.textContent = 'Current TPV';
-  const curMonthIdx = getCurrentMonthIndex(currentLoans);
-
-
-const curVal =
-  tpvSeriesData.length > 0 &&
-  tpvSeriesData[Math.min(curMonthIdx - 1, tpvSeriesData.length - 1)]
-    ? tpvSeriesData[Math.min(curMonthIdx - 1, tpvSeriesData.length - 1)].value
-    : 0;
-
-drawerPrimary.textContent = `$${Math.round(curVal).toLocaleString()}`;
-
+  drawerPrimary.textContent =
+    `$${Math.round(derived.tpvValue).toLocaleString()}`;
 
   drawerSecondaryTitle.textContent = 'Total Invested';
   drawerSecondary.textContent =
-  `$${currentLoans.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
+    `$${currentLoans
+      .reduce((s, l) => s + l.purchasePrice, 0)
+      .toLocaleString()}`;
 
   drawerAmortContainer.style.display = 'none';
   drawerExtra.innerHTML = '';
   drawerChartArea.innerHTML = '';
   drawerLegend.style.display = 'none';
+
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+}
+
 
   /* ============================
      SVG + scale
