@@ -497,6 +497,23 @@
 // ===================================================
 
   <script>
+
+// ===================================================
+// TEMP: Usage instrumentation (REMOVE AFTER PHASE 3)
+// ===================================================
+
+const __USED__ = new Set();
+
+function markUsed(name) {
+    markUsed("getActiveUser");
+    
+  __USED__.add(name);
+}
+
+// Expose for DevTools inspection
+window.__USED__ = __USED__;
+
+      
         const hamburger = document.getElementById('hamburger');
         const sidebar = document.getElementById('sidebar');
         const userSelect = document.getElementById('userSelect');
@@ -522,6 +539,8 @@
 // ===================================================
 
         function getActiveUser() {
+markUsed("getActiveUser");
+            
             const params = new URLSearchParams(location.search);
             let user = params.get("user");
             if (!user || !displayNames.hasOwnProperty(user)) user = "jeff"; // Default to Jeff Customer
@@ -529,12 +548,16 @@
         }
 
         function setActiveUser(user) {
+markUsed("getActiveUser");
+
             const url = new URL(location.href);
             url.searchParams.set("user", user);
             history.replaceState({}, "", url);
         }
 
         function updateDisplay(user) {
+            markUsed("getActiveUser");
+            
             currentUserDisplay.textContent = displayNames[user];
             userSelect.value = user;
         }
@@ -545,6 +568,8 @@
 // ===================================================
 
         function buildFrames(user) {
+markUsed("getActiveUser");
+            
             document.getElementById("roiFrame").src =
                 `/loan-dashboard/roi/index.html?user=${user}&from=reporting&open=kpi2`;
 
@@ -561,6 +586,8 @@
 // ===================================================
 
   function wireClickRedirect(iframeId, fullPath, openParam) {
+markUsed("getActiveUser");
+      
               const iframe = document.getElementById(iframeId);
               if (!iframe) return;
             
