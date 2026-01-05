@@ -897,8 +897,7 @@ if (PAGE_CONTEXT.cameFromReporting) {
 /* =========================================================
    B. DATA LOADING & NORMALIZATION
    ========================================================= */
-
-    
+  
 async function init() {
 if (USE_DYNAMIC_DATA) {
  const apiResult = await loadLoans();
@@ -925,22 +924,16 @@ if (DEV_MODE) {
 
     if (!Number.isFinite(l.nominalRate))
       problems.push("nominalRate");
-
     if (!Number.isFinite(l.principal))
       problems.push("principal");
-
     if (!Number.isFinite(l.purchasePrice))
       problems.push("purchasePrice");
-
     if (!Number.isFinite(l.termYears))
       problems.push("termYears");
-
     if (!l.loanStartDate)
       problems.push("loanStartDate");
-
     if (!l.user)
       problems.push("user");
-
     if (problems.length) {
       console.warn(
         "⚠️ Loan schema issue",
@@ -955,7 +948,6 @@ if (DEV_MODE) {
   });
 }
 
-  
 apiLoans = attachSchedules(apiLoans);
 
   allLoans = apiLoans.map(l => {
@@ -993,8 +985,6 @@ apiLoans = attachSchedules(apiLoans);
     };
   });
 
-
-  
 // --------------------------------------------------
 // NORMALIZE user + visible (match Admin defaults)
 // --------------------------------------------------
@@ -1004,7 +994,6 @@ allLoans = allLoans.map(l => ({
   visible: l.visible !== false
 }));
 
-  
 // --------------------------------------------------
 // USER + VISIBILITY FILTER (STEP 2B)
 // --------------------------------------------------
@@ -1016,6 +1005,9 @@ allLoans = allLoans.filter(l =>
 // FINALIZE CURRENT LOANS — SINGLE SOURCE OF TRUTH
 // =====================================================
 currentLoans = [...allLoans];
+
+
+  
 
 /* ---------------------------------------------------------
    DATA FREEZE POINT
