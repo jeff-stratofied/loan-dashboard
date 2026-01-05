@@ -991,6 +991,7 @@ async function loadAndNormalizeLoans() {
 }
 
 async function init() {
+  // 1) Load + normalize data
   if (USE_DYNAMIC_DATA) {
     await loadAndNormalizeLoans();
 
@@ -1003,24 +1004,22 @@ async function init() {
        --------------------------------------------------------- */
   }
 
-  // -------------------------------------------
-  // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
-  // -------------------------------------------
+  // 2) KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
   window.KPI_COLOR_MAP = {};
 
   const BASE_DISTINCT_COLORS = [
-    '#2563eb', // blue
-    '#dc2626', // red
-    '#16a34a', // green
-    '#7c3aed', // purple
-    '#ea580c', // orange
-    '#0891b2', // cyan
-    '#ca8a04', // amber
-    '#be185d', // rose
-    '#15803d', // dark green
-    '#1d4ed8', // deep blue
-    '#9333ea', // violet
-    '#b91c1c'  // dark red
+    "#2563eb", // blue
+    "#dc2626", // red
+    "#16a34a", // green
+    "#7c3aed", // purple
+    "#ea580c", // orange
+    "#0891b2", // cyan
+    "#ca8a04", // amber
+    "#be185d", // rose
+    "#15803d", // dark green
+    "#1d4ed8", // deep blue
+    "#9333ea", // violet
+    "#b91c1c"  // dark red
   ];
 
   const sortedLoansForColors = allLoans
@@ -1032,57 +1031,69 @@ async function init() {
     window.KPI_COLOR_MAP[id] =
       BASE_DISTINCT_COLORS[i % BASE_DISTINCT_COLORS.length];
   });
+
+  // 3) NOW render + wire the UI (must happen AFTER data exists)
+  renderAndWirePage();
 }
 
+function renderAndWirePage() {
 
-/* =========================================================
-   C. DERIVED DATA (PURE COMPUTATION)
-   ========================================================= */
+  /* =========================================================
+     C. DERIVED DATA (PURE COMPUTATION)
+     ========================================================= */
 
-  
-     /* ============================
-       Render KPI tiles
-       ============================ */
-    cachedKPIs = computeKPIs(currentLoans);
-    const kpis = cachedKPIs;
-
-/* =========================================================
-   D. RENDERERS
-   (No data mutation below this point)
-   ========================================================= */
+  // Render KPI tiles
+  cachedKPIs = computeKPIs(currentLoans);
+  const kpis = cachedKPIs;
 
 
-  
-    const kpisEl = document.getElementById('kpis');
-    kpisEl.innerHTML = `
-      <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$${kpis.totalPrincipal.toLocaleString()}</p></div>
-      <div class="kpi" data-kpi="rates"><h3>Avg Rate</h3><p>${(kpis.weightedRate * 100).toFixed(2)}%</p></div>
-      <div class="kpi" data-kpi="payments"><h3>Monthly Income</h3><p>$${kpis.monthlyIncome.toFixed(2)}</p></div>
-      <div class="kpi" data-kpi="distribution">
-        <h3>Total Invested</h3>
-        <p>$${kpis.totalPrincipal.toLocaleString()}</p>
-      </div>
+  /* =========================================================
+     D. RENDERERS
+     (No data mutation below this point)
+     ========================================================= */
 
-    `;
+  const kpisEl = document.getElementById('kpis');
+  kpisEl.innerHTML = `
+    <div class="kpi" data-kpi="tpv">
+      <h3>Total Portfolio Value</h3>
+      <p id="tpvTile">$${kpis.totalPrincipal.toLocaleString()}</p>
+    </div>
 
-/* =========================================================
-   E. INTERACTION WIRING
-   ========================================================= */
+    <div class="kpi" data-kpi="rates">
+      <h3>Avg Rate</h3>
+      <p>${(kpis.weightedRate * 100).toFixed(2)}%</p>
+    </div>
 
-  
-       /* ============================
-       Wire KPI clicks
-       ============================ */
-    document.querySelectorAll('.kpi').forEach(k => {
-      k.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        const key = k.getAttribute('data-kpi');
-        if (key === 'distribution') renderDistributionDrawer();
-        if (key === 'tpv') renderTPVDrawer();
-        if (key === 'rates') renderRatesDrawer();
-        if (key === 'payments') renderPaymentsDrawer();
-      });
+    <div class="kpi" data-kpi="payments">
+      <h3>Monthly Income</h3>
+      <p>$${kpis.monthlyIncome.toFixed(2)}</p>
+    </div>
+
+    <div class="kpi" data-kpi="distribution">
+      <h3>Total Invested</h3>
+      <p>$${kpis.totalPrincipal.toLocaleString()}</p>
+    </div>
+  `;
+
+
+  /* =========================================================
+     E. INTERACTION WIRING
+     ========================================================= */
+
+  // Wire KPI clicks
+  document.querySelectorAll('.kpi').forEach(k => {
+    k.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+
+      const key = k.getAttribute('data-kpi');
+      if (key === 'distribution') renderDistributionDrawer();
+      if (key === 'tpv') renderTPVDrawer();
+      if (key === 'rates') renderRatesDrawer();
+      if (key === 'payments') renderPaymentsDrawer();
     });
+  });
+}
+
   
   // Now it is safe: allLoans exists
     tpvSeriesData = tpvSeries(currentLoans);   // assign to global
