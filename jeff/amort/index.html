@@ -1220,6 +1220,8 @@ drawerBody.scrollTop = 0;
       svg.setAttribute('height', '100%');
 
       const maxCount = Math.max(...Object.values(counts));
+      const firstMonthDate = new Date(months[0] + "-01T00:00:00");
+
       months.forEach((m, i) => {
         const barW = (w - pad * 2) / months.length * 0.7;
         const gap = ((w - pad * 2) / months.length - barW) / 2;
@@ -1233,8 +1235,13 @@ drawerBody.scrollTop = 0;
         rect.setAttribute('fill', '#06b6d4');
         svg.appendChild(rect);
 
-        // X-axis label — every 6 months
-if (i % LABEL_INTERVAL === 0) {
+const currentMonthDate = new Date(m + "-01T00:00:00");
+const monthDiff =
+  (currentMonthDate.getFullYear() - firstMonthDate.getFullYear()) * 12 +
+  (currentMonthDate.getMonth() - firstMonthDate.getMonth());
+
+// Label every 6 CALENDAR months
+if (monthDiff % 6 === 0) {
   const text = document.createElementNS(svgNS, 'text');
   text.setAttribute('x', x + barW / 2);
   text.setAttribute('y', h - pad + 14);
@@ -1243,6 +1250,8 @@ if (i % LABEL_INTERVAL === 0) {
   text.setAttribute('fill', '#475569');
   text.textContent = m;
   svg.appendChild(text);
+}
+
 }
 
 
