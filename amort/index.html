@@ -1700,23 +1700,6 @@ const monthlyIncome = list.reduce((sum, loan) => {
     }
 
 
-// filters
-filterName.addEventListener("change", applyLoanFilters);
-filterSchool.addEventListener("change", applyLoanFilters);
-filterRate.addEventListener("change", applyLoanFilters);
-
-// sort
-sortLoans.addEventListener("change", applyLoanSort);
-
-// reset
-resetBtn.addEventListener("click", () => {
-  filterName.value = "";
-  filterSchool.value = "";
-  filterRate.value = "";
-  applyLoanFilters();
-});
-
-
     /* ============================
        Drawer helpers
        ============================ */
