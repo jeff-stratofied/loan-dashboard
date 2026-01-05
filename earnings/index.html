@@ -1576,25 +1576,6 @@ const normalizedEarningsSchedule =
     .slice()
     .sort((a, b) => a.loanDate - b.loanDate);
 
-// 🔍 DEBUG — earnings timeline lengths
-console.log(
-  "[EARNINGS DEBUG]",
-  normalizedLoan.loanName,
-  "amort:", amort.schedule.length,
-  "earnings:", normalizedEarningsSchedule.length
-);
-
-  // 🔍 DEBUG — first & last earnings dates
-const first = normalizedEarningsSchedule[0];
-const last  = normalizedEarningsSchedule.at(-1);
-
-console.log(
-  "[EARNINGS RANGE]",
-  normalizedLoan.loanName,
-  first?.loanDate?.toISOString().slice(0, 10),
-  "→",
-  last?.loanDate?.toISOString().slice(0, 10)
-);
 
 
 return {
@@ -1842,17 +1823,6 @@ const rawData = loan.displayEarningsTimeline || earningsSchedule;
 // 🔑 MINI CHARTS MUST SHOW OWNED MONTHS ONLY
 const data = rawData.filter(d => d.isOwned === true);
 
-
-  // 🔍 DEBUG — mini chart input
-if (loan.loanName?.includes("WCC")) {
-  console.log(
-    "[MINI DATA]",
-    loan.loanName,
-    "bars:", data.length,
-    "first:", data[0]?.loanDate,
-    "last:", data.at(-1)?.loanDate
-  );
-}
 
 
 let maxAbs = 0;
