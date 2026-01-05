@@ -1071,14 +1071,76 @@ async function init() {
 
 }
 
+/* =========================================================
+   STEP 5 — DERIVED DATA (PURE, READ-ONLY)
+   ========================================================= */
+function derivePortfolioData(loans) {
+  // --- KPIs ---
+  const kpis = computeKPIs(loans);
+
+  // --- TPV series ---
+  const tpvSeriesData = tpvSeries(loans);
+
+  // --- Stable loan ordering (used by TPV + charts) ---
+  const loansByPurchaseDate = loans
+    .slice()
+    .sort((a, b) => {
+      const da = new Date(a.purchaseDate || a.loanStartDate).getTime() || 0;
+      const db = new Date(b.purchaseDate || b.loanStartDate).getTime() || 0;
+      return da - db;
+    });
+
+  // --- Current TPV index ---
+  const curIdx = getCurrentMonthIndex(loansByPurchaseDate) - 1;
+  const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
+  const tpvValue =
+    tpvSeriesData[tpvIdx]?.value ?? 0;
+
+  // --- Loan view models (tiles consume ONLY this) ---
+  const loanViews = loans.map(loan => {
+    const schedule = loan.cumSchedule || [];
+
+    const miniSeries = schedule.map(r => ({
+      monthIndex: r.monthIndex,
+      balance: r.balance,
+      cumPrincipal: r.cumPrincipal,
+      cumInterest: r.cumInterest
+    }));
+
+    const maturityDate = (() => {
+      if (!schedule.length) return null;
+      const d = new Date(loan.loanStartDate + "T00:00:00");
+      d.setMonth(d.getMonth() + (schedule.length - 1));
+      return d;
+    })();
+
+    return {
+      loan,
+      miniSeries,
+      maturityDate,
+      currentMonthIndex: getCurrentScheduleIndex(loan)
+    };
+  });
+
+  return {
+    kpis,
+    tpvSeriesData,
+    tpvValue,
+    loansByPurchaseDate,
+    loanViews
+  };
+}
+
+    
 function renderAndWirePage() {
 
   /* =========================
      C. DERIVED DATA
      ========================= */
 
-  cachedKPIs = computeKPIs(currentLoans);
-  const kpis = cachedKPIs;
+ const derived = derivePortfolioData(currentLoans);
+cachedKPIs = derived.kpis;
+
 
   /* =========================
      D. RENDER KPIs
@@ -1088,7 +1150,7 @@ function renderAndWirePage() {
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
       <h3>Total Portfolio Value</h3>
-      <p id="tpvTile">$${kpis.totalPrincipal.toLocaleString()}</p>
+      <p id="tpvTile">$${Math.round(derived.tpvValue).toLocaleString()}</p>
     </div>
     <div class="kpi" data-kpi="rates">
       <h3>Avg Rate</h3>
@@ -1104,32 +1166,14 @@ function renderAndWirePage() {
     </div>
   `;
 
-  /* =========================
-     TPV TILE UPDATE (SAFE NOW)
-     ========================= */
+// --- TPV tile value (from derived data ONLY) ---
+const tpvTile = document.getElementById("tpvTile");
+if (tpvTile) {
+  tpvTile.textContent =
+    `$${Math.round(derived.tpvValue).toLocaleString()}`;
+}
 
-  tpvSeriesData = tpvSeries(currentLoans);
 
-const sortedLoans = allLoans
-  .slice()
-  .sort((a, b) => {
-    const da = new Date(a.purchaseDate || a.loanStartDate).getTime() || 0;
-    const db = new Date(b.purchaseDate || b.loanStartDate).getTime() || 0;
-    return da - db;
-  });
-
-  const curIdx = getCurrentMonthIndex(sortedLoans) - 1;
-const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
-
-  const tpvVal =
-    tpvSeriesData.length > 0 && tpvSeriesData[tpvIdx]
-      ? tpvSeriesData[tpvIdx].value
-      : 0;
-
-  const tpvTile = document.getElementById('tpvTile');
-  if (tpvTile) {
-    tpvTile.textContent = `$${Math.round(tpvVal).toLocaleString()}`;
-  }
 
      /* ============================
        Render loan tiles with mini-charts (cumulative principal & interest)
@@ -1137,7 +1181,7 @@ const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
     const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
   grid.innerHTML = "";
-    currentLoans.forEach((loan, idx) => {
+    derived.loanViews.forEach(({ loan, miniSeries, maturityDate, currentMonthIndex }, idx) => {
       const tile = document.createElement('div');
       tile.className = 'tile';
 
