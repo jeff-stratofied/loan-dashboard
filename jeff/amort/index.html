@@ -589,16 +589,25 @@ if (USE_DYNAMIC_DATA) {
        /* ============================
        Wire KPI clicks
        ============================ */
-    document.querySelectorAll('.kpi').forEach(k => {
-      k.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        const key = k.getAttribute('data-kpi');
-        if (key === 'distribution') renderDistributionDrawer();
-        if (key === 'tpv') renderTPVDrawer();
-        if (key === 'rates') renderRatesDrawer();
-        if (key === 'payments') renderPaymentsDrawer();
-      });
-    });
+   /* ============================
+   Wire KPI clicks (delegated)
+   ============================ */
+const kpisContainer = document.getElementById('kpis');
+
+kpisContainer.addEventListener('click', (ev) => {
+  const kpi = ev.target.closest('.kpi');
+  if (!kpi) return;
+
+  ev.stopPropagation();
+
+  const key = kpi.getAttribute('data-kpi');
+
+  if (key === 'distribution') renderDistributionDrawer();
+  if (key === 'tpv') renderTPVDrawer();
+  if (key === 'rates') renderRatesDrawer();
+  if (key === 'payments') renderPaymentsDrawer();
+});
+
   
   // Now it is safe: allLoans exists
     tpvSeriesData = tpvSeries(allLoans);   // assign to global
