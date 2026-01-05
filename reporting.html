@@ -501,16 +501,6 @@
 // ===================================================
 // TEMP: Usage instrumentation (REMOVE AFTER PHASE 3)
 // ===================================================
-
-const __USED__ = new Set();
-
-function markUsed(name) {
-  __USED__.add(name);
-}
-
-// Expose for DevTools inspection
-window.__USED__ = __USED__;
-
       
         const hamburger = document.getElementById('hamburger');
         const sidebar = document.getElementById('sidebar');
@@ -537,8 +527,6 @@ window.__USED__ = __USED__;
 // ===================================================
 
         function getActiveUser() {
-markUsed("getActiveUser");
-            
             const params = new URLSearchParams(location.search);
             let user = params.get("user");
             if (!user || !displayNames.hasOwnProperty(user)) user = "jeff"; // Default to Jeff Customer
@@ -546,16 +534,12 @@ markUsed("getActiveUser");
         }
 
         function setActiveUser(user) {
-markUsed("setActiveUser");
-
             const url = new URL(location.href);
             url.searchParams.set("user", user);
             history.replaceState({}, "", url);
         }
 
-        function updateDisplay(user) {
-            markUsed("updateDisplay");
-            
+        function updateDisplay(user) {      
             currentUserDisplay.textContent = displayNames[user];
             userSelect.value = user;
         }
@@ -566,8 +550,6 @@ markUsed("setActiveUser");
 // ===================================================
 
         function buildFrames(user) {
-markUsed("buildFrames");
-            
             document.getElementById("roiFrame").src =
                 `/loan-dashboard/roi/index.html?user=${user}&from=reporting&open=kpi2`;
 
@@ -584,8 +566,6 @@ markUsed("buildFrames");
 // ===================================================
 
   function wireClickRedirect(iframeId, fullPath, openParam) {
-markUsed("wireClickRedirect");
-      
               const iframe = document.getElementById(iframeId);
               if (!iframe) return;
             
