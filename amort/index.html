@@ -1009,7 +1009,7 @@ allLoans = allLoans.map(l => ({
 // USER + VISIBILITY FILTER (STEP 2B)
 // --------------------------------------------------
 allLoans = allLoans.filter(l =>
-  l.user === PAGE_CONTEXT && l.visible === true
+  l.user === PAGE_CONTEXT.user && l.visible === true
 );
 
   // =====================================================
@@ -3407,7 +3407,7 @@ function renderPaymentsDrawer() {
 // =====================================================
 // URL-DRIVEN AUTO OPEN (FULL PAGE + EMBED)
 // =====================================================
-if (openParam === "first" && currentLoans.length) {
+if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
   const sorted = currentLoans
     .slice()
     .sort(
@@ -3428,9 +3428,9 @@ if (openParam === "first" && currentLoans.length) {
   }
 }
 
-if (openParam === "loan" && loanIdParam) {
+if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
   const loan = currentLoans.find(
-    l => (l.loanId ?? l.id) === loanIdParam
+    l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
   );
 
   if (loan) {
@@ -3449,7 +3449,7 @@ if (openParam === "loan" && loanIdParam) {
 // =====================================================
 // EMBED MODE — AUTO OPEN FIRST LOAN (FALLBACK ONLY)
 // =====================================================
-if (isEmbed && currentLoans.length && !drawer.classList.contains("open") && !openParam) {
+if (isEmbed && currentLoans.length && !drawer.classList.contains("open") && !PAGE_CONTEXT.open) {
   const sorted = currentLoans
     .slice()
     .sort(
