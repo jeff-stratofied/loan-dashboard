@@ -1184,56 +1184,7 @@ drawerBody.scrollTop = 0;
 
 } // <-- THIS closes openDrawerForLoan(loan) — required
 
-
-    /* ============================
-       KPI drawers: Distribution, TPV, Rates, Payments
-       (each removes amortization as requested)
-       ============================ */
-
-    function monthKey(dateStr) {
-  return dateStr.slice(0, 7); // "YYYY-MM"
 }
-
-
-      // current month marker on the right edge (visual cue)
-      const curLine = document.createElementNS(svgNS, 'line');
-      curLine.setAttribute('x1', pad + (w - pad * 2));
-      curLine.setAttribute('x2', pad + (w - pad * 2));
-      curLine.setAttribute('y1', pad);
-      curLine.setAttribute('y2', h - pad);
-      curLine.setAttribute('stroke', '#111827');
-      curLine.setAttribute('stroke-dasharray', '3 4');
-      curLine.setAttribute('stroke-opacity', '0.3');
-      svg.appendChild(curLine);
-
-      drawerChartArea.appendChild(svg);
-
-      // table listing loans
-      drawerExtra.innerHTML = `
-        <div style="margin-top:10px">
-          <strong class="small">Loans</strong>
-          <div style="max-height:220px; overflow:auto; margin-top:6px; border-radius:6px; padding:6px; border:1px solid var(--border);background:var(--card)">
-            <table style="width:100%; font-size:13px">
-              <thead>
-                <tr><th>Loan</th><th>Purchase</th><th>Rate</th><th style="text-align:right">Balance</th></tr>
-              </thead>
-              <tbody>
-                ${allLoans.map(l => `<tr>
-                  <td style="text-align:left">Loan ${l.id}</td>
-                  <td style="text-align:left">${l.purchaseDate}</td>
-                  <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
-                  <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
-                </tr>`).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-      drawerBody.scrollTop = 0;
-    }
 
     function renderTPVDrawer() {
       currentMode = 'kpi';
@@ -1741,10 +1692,19 @@ for (let i = 0; i < months.length; i += skip) {
 
 
 
-function renderDistributionDrawer() {
-console.log('KPI4 DISTRIBUTION DRAWER RENDERED', Date.now());
+// -----------------------------
+// Helpers
+// -----------------------------
+function monthKey(dateStr) {
+  return dateStr.slice(0, 7); // "YYYY-MM"
+}
 
-  
+// -----------------------------
+// KPI4 — Distribution Drawer
+// -----------------------------
+function renderDistributionDrawer() {
+  console.log('KPI4 DISTRIBUTION DRAWER RENDERED', Date.now());
+
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -1772,7 +1732,7 @@ console.log('KPI4 DISTRIBUTION DRAWER RENDERED', Date.now());
   });
 
   // -----------------------------
-  // Build CONTINUOUS month domain
+  // Build continuous month domain
   // -----------------------------
   const minDate = Math.min(
     ...allLoans.map(l => new Date(l.purchaseDate + 'T00:00:00').getTime())
@@ -1823,7 +1783,7 @@ console.log('KPI4 DISTRIBUTION DRAWER RENDERED', Date.now());
     rect.setAttribute('fill', '#06b6d4');
     svg.appendChild(rect);
 
-    // ---- SIMPLE x-axis labels: every 6 months ----
+    // Simple x-axis labels: every 6 months
     if (i % 6 === 0) {
       const text = document.createElementNS(svgNS, 'text');
       text.setAttribute('x', x + barW / 2);
@@ -1853,11 +1813,60 @@ console.log('KPI4 DISTRIBUTION DRAWER RENDERED', Date.now());
     });
   });
 
+  // -----------------------------
+  // Current month marker
+  // -----------------------------
+  const curLine = document.createElementNS(svgNS, 'line');
+  curLine.setAttribute('x1', pad + (w - pad * 2));
+  curLine.setAttribute('x2', pad + (w - pad * 2));
+  curLine.setAttribute('y1', pad);
+  curLine.setAttribute('y2', h - pad);
+  curLine.setAttribute('stroke', '#111827');
+  curLine.setAttribute('stroke-dasharray', '3 4');
+  curLine.setAttribute('stroke-opacity', '0.3');
+  svg.appendChild(curLine);
+
   drawerChartArea.appendChild(svg);
+
+  // -----------------------------
+  // Loan table
+  // -----------------------------
+  drawerExtra.innerHTML = `
+    <div style="margin-top:10px">
+      <strong class="small">Loans</strong>
+      <div style="max-height:220px; overflow:auto; margin-top:6px; border-radius:6px; padding:6px; border:1px solid var(--border); background:var(--card)">
+        <table style="width:100%; font-size:13px">
+          <thead>
+            <tr>
+              <th>Loan</th>
+              <th>Purchase</th>
+              <th>Rate</th>
+              <th style="text-align:right">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${allLoans.map(l => `
+              <tr>
+                <td style="text-align:left">Loan ${l.id}</td>
+                <td style="text-align:left">${l.purchaseDate}</td>
+                <td style="text-align:left">${(l.nominalRate * 100).toFixed(2)}%</td>
+                <td style="text-align:right">$${l.purchasePrice.toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // -----------------------------
+  // Open drawer
+  // -----------------------------
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
 }
+
 
     
     /* ============================
