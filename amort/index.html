@@ -2199,6 +2199,11 @@ drawerBody.scrollTop = 0;
       return d.toLocaleString(undefined, { year: 'numeric', month: 'short' });
     }
 
+// Helper to extract YYYY-MM from a date string like "2025-01-15"
+function monthKey(dateStr) {
+  return dateStr.slice(0, 7); // "2025-01-15" → "2025-01"
+}
+    
 // -----------------------------
 // KPI4 — Distribution Drawer
 // -----------------------------
