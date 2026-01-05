@@ -2336,7 +2336,7 @@ drawer.classList.add('kpi-interactive');
       svg.appendChild(rect);
     });
 
-    if (i % 3 === 0) {
+    if (i % 2.5 === 0) {
       const text = document.createElementNS(svgNS, 'text');
       text.setAttribute('x', x + barW / 2);
       text.setAttribute('y', h - pad + 16);
