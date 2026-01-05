@@ -861,7 +861,12 @@ const PAGE_CONTEXT = (() => {
 let currentLoans = [];
 let allLoans = [];
 let apiLoans = [];
-let cachedKPIs = "__POISON__";
+let cachedKPIs = {
+  get weightedRate() {
+    throw new Error("❌ GLOBAL cachedKPIs WAS READ");
+  }
+};
+
 
 let currentLoan = null;
 let currentMode = null;
