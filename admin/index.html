@@ -239,6 +239,21 @@ tbody tr:hover {
 }
 
 /* ===========================================
+   STICKY TABLE HEADER
+   =========================================== */
+
+#loan-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+
+  /* Ensure header stays visually solid while scrolling */
+  background: var(--card);
+  box-shadow: 0 1px 0 var(--border);
+}
+
+  
+/* ===========================================
    INPUTS + SELECTS
    =========================================== */
 
