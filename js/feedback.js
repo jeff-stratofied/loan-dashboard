@@ -1,4 +1,10 @@
 (function () {
+
+// ❌ Do not show feedback button inside iframes
+if (window.self !== window.top) {
+  return;
+}
+  
   // ===== CONFIG =====
   const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSddSOaPeOoTk_U9uA-SaIl-K7QKtyajEqnNfATra4J4zr_7rw/viewform?usp=header";
 
