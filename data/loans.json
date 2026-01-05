@@ -286,7 +286,14 @@
       "termYears": 10,
       "graceYears": 1,
       "loanId": "S4I46M5NFY",
-      "events": []
+      "events": [
+        {
+          "id": "d1d659f6-32dd-4b52-aa67-6e9df35198cb",
+          "type": "default",
+          "date": "2025-12-10",
+          "recoveryAmount": 0
+        }
+      ]
     },
     {
       "loanName": "CMU 2024 9.00",
@@ -311,7 +318,7 @@
       "loanStartDate": "2014-06-01",
       "purchaseDate": "2023-06-01",
       "principal": 22000,
-      "purchasePrice": 9000,
+      "purchasePrice": 10000,
       "rate": 0.05,
       "termYears": 10,
       "graceYears": 4,
