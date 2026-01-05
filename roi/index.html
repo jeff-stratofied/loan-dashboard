@@ -791,6 +791,29 @@ tr.event-default td {
   opacity: 1 !important;
 }
 
+    #feedback-btn {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 9999;
+
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-size: 20px;
+}
+
+#feedback-btn:hover {
+  transform: scale(1.05);
+}
+
     
   </style>
 </head>
@@ -3893,6 +3916,10 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 </script>
+
+<script src="/loan-dashboard/js/feedback.js"></script>
+
+    
 </body>
 </html>
 
