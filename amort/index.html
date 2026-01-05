@@ -819,6 +819,7 @@ html[data-theme="dark"] .close-btn {
 
   <div id="tooltip" class="tooltip" role="status" aria-live="polite"></div>
 
+
   <script type="module">
     import { loadLoans } from "../js/loadLoans.js";
 import {
@@ -827,6 +828,12 @@ import {
 } from "../js/loanEngine.js";
 
     import { normalizeLoan } from "../js/normalizeLoan.js";
+
+/* =========================================================
+   A. PAGE CONTEXT & ROUTING
+   ========================================================= */
+
+    
 
 /* ============================
    GLOBAL STATE — MUST BE FIRST
@@ -879,6 +886,10 @@ if (cameFromReporting) {
       "/loan-dashboard/reporting?user=" + PAGE_USER;
   });
 }
+
+/* =========================================================
+   B. DATA LOADING & NORMALIZATION
+   ========================================================= */
 
     
 async function init() {
@@ -999,6 +1010,14 @@ allLoans = allLoans.filter(l =>
 // =====================================================
 currentLoans = [...allLoans];
 
+/* ---------------------------------------------------------
+   DATA FREEZE POINT
+   After this line:
+   - allLoans
+   - currentLoans
+   MUST NOT be mutated
+   --------------------------------------------------------- */
+
   
     // -------------------------------------------
     // KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
@@ -1035,18 +1054,24 @@ currentLoans = [...allLoans];
     
     }
 
-/* delete
-   else {
-    allLoans = buildStaticLoans();
-  }
-delete */
+/* =========================================================
+   C. DERIVED DATA (PURE COMPUTATION)
+   ========================================================= */
+
   
      /* ============================
        Render KPI tiles
        ============================ */
     cachedKPIs = computeKPIs(currentLoans);
     const kpis = cachedKPIs;
-    
+
+/* =========================================================
+   D. RENDERERS
+   (No data mutation below this point)
+   ========================================================= */
+
+
+  
     const kpisEl = document.getElementById('kpis');
     kpisEl.innerHTML = `
       <div class="kpi" data-kpi="tpv"><h3>Total Portfolio Value</h3><p id="tpvTile">$${kpis.totalPrincipal.toLocaleString()}</p></div>
@@ -1058,6 +1083,12 @@ delete */
       </div>
 
     `;
+
+/* =========================================================
+   E. INTERACTION WIRING
+   ========================================================= */
+
+  
        /* ============================
        Wire KPI clicks
        ============================ */
