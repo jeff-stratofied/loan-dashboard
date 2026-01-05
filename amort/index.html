@@ -2625,7 +2625,11 @@ drawer.classList.add('kpi-interactive');
 
 
 function renderTPVDrawer() {
-  assert(currentMode !== "loan", "TPV drawer opened in loan mode");
+  assert(
+  currentMode === "kpi" || currentMode === null,
+  "TPV drawer entered with invalid mode",
+  { currentMode }
+);
 assert(
   Array.isArray(tpvSeriesData) && tpvSeriesData.length,
   "renderTPVDrawer called with empty TPV series",
