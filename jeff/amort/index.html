@@ -1181,10 +1181,10 @@ drawerBody.scrollTop = 0;
        (each removes amortization as requested)
        ============================ */
 
-    function monthLabel(dateStr) {
-      const d = new Date(dateStr + 'T00:00:00');
-      return d.toLocaleString(undefined, { year: 'numeric', month: 'short' });
-    }
+    function monthKey(dateStr) {
+  return dateStr.slice(0, 7); // "YYYY-MM"
+}
+
 
     function renderDistributionDrawer() {
       currentMode = 'kpi';
@@ -1204,7 +1204,11 @@ drawerBody.scrollTop = 0;
 
       // counts by month
       const counts = {};
-      allLoans.forEach(l => { const m = monthLabel(l.purchaseDate); counts[m] = (counts[m] || 0) + 1; });
+      allLoans.forEach(l => {
+  const m = monthKey(l.purchaseDate);
+  counts[m] = (counts[m] || 0) + 1;
+});
+
       const months = Object.keys(counts).sort();
       const LABEL_INTERVAL = 6;
 
@@ -1236,20 +1240,27 @@ drawerBody.scrollTop = 0;
         svg.appendChild(rect);
 
 const currentMonthDate = new Date(m + "-01T00:00:00");
-const monthDiff =
-  (currentMonthDate.getFullYear() - firstMonthDate.getFullYear()) * 12 +
-  (currentMonthDate.getMonth() - firstMonthDate.getMonth());
+  const monthDiff =
+    (currentMonthDate.getFullYear() - firstMonthDate.getFullYear()) * 12 +
+    (currentMonthDate.getMonth() - firstMonthDate.getMonth());
 
-// Label every 6 CALENDAR months
-if (monthDiff % 6 === 0) {
-  const text = document.createElementNS(svgNS, 'text');
-  text.setAttribute('x', x + barW / 2);
-  text.setAttribute('y', h - pad + 14);
-  text.setAttribute('font-size', '11');
-  text.setAttribute('text-anchor', 'middle');
-  text.setAttribute('fill', '#475569');
-  text.textContent = m;
-  svg.appendChild(text);
+  // Label every 6 calendar months
+  if (monthDiff % 6 === 0) {
+    const text = document.createElementNS(svgNS, 'text');
+    text.setAttribute('x', x + barW / 2);
+    text.setAttribute('y', h - pad + 14);
+    text.setAttribute('font-size', '11');
+    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('fill', '#475569');
+
+    // display formatting only
+    const d = new Date(m + "-01T00:00:00");
+    text.textContent = d.toLocaleDateString(undefined, {
+      month: 'short',
+      year: 'numeric'
+    });
+
+    svg.appendChild(text);
 }
 
 }
