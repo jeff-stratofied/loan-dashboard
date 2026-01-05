@@ -832,6 +832,27 @@ import {
 /* =========================================================
    A. PAGE CONTEXT & ROUTING
    ========================================================= */
+/* =========================================================
+   PAGE CONTEXT (single source of truth)
+   ========================================================= */
+
+const PAGE_CONTEXT = (() => {
+  const params = new URLSearchParams(window.location.search);
+
+  const user = params.get("user") || "jeff";
+  const isEmbed = params.get("embed") === "true";
+  const open = params.get("open");
+  const loanId = Number(params.get("loanId")) || null;
+  const from = params.get("from");
+
+  return {
+    user,
+    isEmbed,
+    open,
+    loanId,
+    cameFromReporting: from === "reporting"
+  };
+})();
 
     
 
@@ -860,9 +881,6 @@ const loanIdParam = Number(params.get("loanId")) || null;
 const cameFromReporting =
   new URLSearchParams(window.location.search).get("from") === "reporting";
 
-    
-    const PAGE_USER =
-  new URLSearchParams(window.location.search).get("user") || "jeff";
     
     const USER_LABELS = {
       jeff: "Jeff Customer",
