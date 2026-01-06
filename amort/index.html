@@ -530,8 +530,9 @@ html[data-theme="dark"] .close-btn {
 
 .embed-mode .app {
   margin: 0 !important;
-  padding: 0 !important;
+  padding: 16px 16px 0 16px !important; /* MATCH earnings */
 }
+
 
 /* Drawer container */
 .embed-mode .drawer {
@@ -564,8 +565,15 @@ html[data-theme="dark"] .close-btn {
   height: 100% !important;
 }
 
-/* Drawer body is the ONLY scroll container */
 .embed-mode .drawer-body {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 16px 20px 20px !important;
+  max-height: none !important;
+}
+
+
   overflow-y: auto !important;
   overflow-x: hidden !important;
   max-height: none !important;
@@ -585,6 +593,13 @@ html[data-theme="dark"] .close-btn {
   border-bottom: 1px solid var(--border) !important;
 }
 
+.embed-mode .grid {
+  height: auto !important;
+  overflow: hidden !important;
+  padding-right: 0 !important;
+}
+
+    
 /* =========================================
    Contextual Back Navigation (Reporting → UI)
    ========================================= */
@@ -627,13 +642,6 @@ html[data-theme="dark"] .close-btn {
   display: none;
 }
 
-    
-/* Body scrolls */
-.embed-mode .drawer-body {
-  padding: 0 20px 20px !important;
-  overflow-y: auto !important;
-  flex: 1 1 auto !important;
-}
 
 /* Hide embed-only helper text */
 .embed-mode .drawer-body .muted {
