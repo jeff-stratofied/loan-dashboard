@@ -842,11 +842,13 @@ html[data-theme="dark"] .legend .sw {
   display: none !important;
 }
 
-/* KPIs stay visible in iframe */
+/* EMBED MODE — KPI spacing MUST match amort */
 .embed-mode .kpis {
   display: grid !important;
-  margin: 0 0 12px !important;
+  margin-top: 12px !important;   /* ← amort baseline */
+  margin-bottom: 12px !important;
 }
+
 
     /* =========================================
    KPI1 + KPI2 table hover (ONLY)
