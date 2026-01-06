@@ -1215,8 +1215,7 @@ USER_LABELS[PAGE_USER] || PAGE_USER;
 // =====================================================
 const TODAY = getStandardToday();
 
-const isEmbed =
-new URLSearchParams(window.location.search).get("embed") === "true";
+const isEmbed = earlyParams.get("embed") === "true";
 
 if (isEmbed) {
 document.body.classList.add("embed-mode");
