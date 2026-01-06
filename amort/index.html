@@ -1721,6 +1721,53 @@ function chartDateLabel(startDateStr, monthIndex) {
   });
 }
 
+function monthIndexFromDate(dateStr, schedule) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setHours(0, 0, 0, 0);
+
+  for (const r of schedule) {
+    // ✅ Prefer the same date source the table is aligned to
+    let rowDate = null;
+
+    if (r.displayDate) {
+      // displayDate may be a Date object or an ISO string depending on how it was loaded
+      rowDate = (r.displayDate instanceof Date)
+        ? r.displayDate
+        : new Date(String(r.displayDate).slice(0, 10) + "T00:00:00");
+    } else if (r.date) {
+      rowDate = new Date(r.date + "T00:00:00");
+    } else if (r.loanDate) {
+      rowDate = (r.loanDate instanceof Date)
+        ? r.loanDate
+        : new Date(r.loanDate);
+    } else if (r.monthDate) {
+      rowDate = new Date(r.monthDate + "T00:00:00");
+    }
+
+    // Fallback only if none exist
+    if (!rowDate) {
+      rowDate = new Date(monthAnchor);
+      rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
+    }
+
+    rowDate.setHours(0, 0, 0, 0);
+    if (
+      rowDate.getFullYear() === d.getFullYear() &&
+      rowDate.getMonth() === d.getMonth()
+    ) {
+      return r.monthIndex;
+    }
+  }
+  return null;
+}
+
+
+function displayDateForMonthIndex(monthIndex) {
+  const d = new Date(monthAnchor);
+
+  d.setMonth(d.getMonth() + (monthIndex - 1));
+  return d;
+}
 
   
 /* ============================
@@ -1951,68 +1998,6 @@ const monthAnchor = new Date(
 );
 
 
-  
-function monthIndexFromDate(dateStr, schedule) {
-  const d = new Date(dateStr + "T00:00:00");
-  d.setHours(0, 0, 0, 0);
-
-  for (const r of schedule) {
-    // ✅ Prefer the same date source the table is aligned to
-    let rowDate = null;
-
-    if (r.displayDate) {
-      // displayDate may be a Date object or an ISO string depending on how it was loaded
-      rowDate = (r.displayDate instanceof Date)
-        ? r.displayDate
-        : new Date(String(r.displayDate).slice(0, 10) + "T00:00:00");
-    } else if (r.date) {
-      rowDate = new Date(r.date + "T00:00:00");
-    } else if (r.loanDate) {
-      rowDate = (r.loanDate instanceof Date)
-        ? r.loanDate
-        : new Date(r.loanDate);
-    } else if (r.monthDate) {
-      rowDate = new Date(r.monthDate + "T00:00:00");
-    }
-
-    // Fallback only if none exist
-    if (!rowDate) {
-      rowDate = new Date(monthAnchor);
-      rowDate.setMonth(rowDate.getMonth() + (r.monthIndex - 1));
-    }
-
-    rowDate.setHours(0, 0, 0, 0);
-
-    if (
-      rowDate.getFullYear() === d.getFullYear() &&
-      rowDate.getMonth() === d.getMonth()
-    ) {
-      return r.monthIndex;
-    }
-  }
-
-  return null;
-}
-
-
-
-
-function displayDateForMonthIndex(monthIndex) {
-  const d = new Date(monthAnchor);
-
-  d.setMonth(d.getMonth() + (monthIndex - 1));
-  return d;
-}
-
-function fmtDate(d) {
-  return d.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  });
-}
-
-
 // =====================================
 // Build event lookup (READ-ONLY)
 // =====================================
@@ -2061,7 +2046,7 @@ if (defaultEvent) {
 
   
 loan.amort.schedule.forEach((r) => {
-  const rowDate = displayDateForMonthIndex(r.monthIndex);
+  const rowDate = displayDateForMonthIndex(r.monthIndex, monthAnchor);
 
   const isBeforePurchase = rowDate < purchaseDate;
 
@@ -2072,7 +2057,7 @@ loan.amort.schedule.forEach((r) => {
 
   const tr = document.createElement("tr");
 tr.innerHTML = `
-  <td style="text-align:left">${fmtDate(rowDate)}</td>
+  <td style="text-align:left">${formatDate(rowDate)}</td>
   <td style="text-align:right">${formatCurrency(r.payment)}</td>
   <td style="text-align:right">${formatCurrency(r.principalPaid)}</td>
   <td style="text-align:right">${formatCurrency(r.interest)}</td>
