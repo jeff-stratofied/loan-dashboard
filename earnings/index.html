@@ -1183,8 +1183,7 @@ new URLSearchParams(window.location.search).get("user") || "jeff";
   // =========================================
 // Back to My Holdings (Reporting context)
 // =========================================
-const params = new URLSearchParams(window.location.search);
-const cameFromReporting = params.get("from") === "reporting";
+const cameFromReporting = earlyParams.get("from") === "reporting";
 
 const backRow = document.getElementById("backToHoldingsRow");
 const backBtn = document.getElementById("backToHoldingsBtn");
