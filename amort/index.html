@@ -916,7 +916,6 @@ if (DEV_MODE) {
   rawLoans.forEach(l => {
     const problems = [];
 
-    if (!Number.isFinite(l.nominalRate)) problems.push("nominalRate");
     if (!Number.isFinite(l.principal)) problems.push("principal");
     if (!Number.isFinite(l.purchasePrice)) problems.push("purchasePrice");
     if (!Number.isFinite(l.termYears)) problems.push("termYears");
@@ -1762,12 +1761,12 @@ function monthIndexFromDate(dateStr, schedule) {
 }
 
 
-function displayDateForMonthIndex(monthIndex) {
+function displayDateForMonthIndex(monthIndex, monthAnchor) {
   const d = new Date(monthAnchor);
-
   d.setMonth(d.getMonth() + (monthIndex - 1));
   return d;
 }
+
 
   
 /* ============================
