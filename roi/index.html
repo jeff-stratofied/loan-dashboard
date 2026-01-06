@@ -4147,37 +4147,41 @@ if (EMBED_MODE) {
 /* from GROK */
 // Apply embed mode layout
 if (EMBED_MODE) {
-    document.body.classList.add('embed-mode'); // Trigger CSS (optional, but keep for any other styles)
+  document.body.classList.add('embed-mode'); // Trigger CSS (optional, but keep for any other styles)
 
-    // Hide header to remove filters, title, and date (matches Earnings/Amort)
-    const header = document.querySelector('header');
-    if (header) header.style.display = 'none';
+  // Hide header to remove title, subhead, and theme toggle (matches Earnings/Amort)
+  const header = document.querySelector('header');
+  if (header) header.style.display = 'none';
 
-    // Force drawer visibility and positioning
-    const drawer = document.querySelector('.drawer');
-    if (drawer) {
-        drawer.style.display = 'flex';
-        drawer.classList.add('open');
-        drawer.setAttribute('aria-hidden', 'false');
+  // Hide filters specifically (since they appear after KPIs)
+  const filters = document.querySelector('.loan-filters');
+  if (filters) filters.style.display = 'none';
 
-        // Move drawer below KPIs (append to .app)
-        const app = document.querySelector('.app');
-        const kpis = document.querySelector('.kpis');
-        if (app && kpis) {
-            app.appendChild(drawer); // Reposition drawer as last child
-        }
-    }
+  // Force drawer visibility and positioning
+  const drawer = document.querySelector('.drawer');
+  if (drawer) {
+      drawer.style.display = 'flex';
+      drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
 
-    // Hide feedback button if present (matches Earnings/Amort)
-    const feedbackBtn = document.getElementById('feedback-btn');
-    if (feedbackBtn) feedbackBtn.style.display = 'none';
+      // Move drawer below KPIs (append to .app)
+      const app = document.querySelector('.app');
+      const kpis = document.querySelector('.kpis');
+      if (app && kpis) {
+          app.appendChild(drawer); // Reposition drawer as last child
+      }
+  }
 
-    // Ensure auto-open works in embed
-    requestAnimationFrame(() => {
-        if (OPEN_TARGET === "kpi2" || OPEN_TARGET === "projectedROI") {
-            renderRatesDrawer(); // Open KPI2 drawer (as existing)
-        }
-    });
+  // Hide feedback button if present (matches Earnings/Amort)
+  const feedbackBtn = document.getElementById('feedback-btn');
+  if (feedbackBtn) feedbackBtn.style.display = 'none';
+
+  // Ensure auto-open works in embed
+  requestAnimationFrame(() => {
+      if (OPEN_TARGET === "kpi2" || OPEN_TARGET === "projectedROI") {
+          renderRatesDrawer(); // Open KPI2 drawer (as existing)
+      }
+  });
 }
 
       
