@@ -1259,6 +1259,16 @@ function formatMonthYear(d) {
     month: "short"
   });
 }
+
+function monthDiff(start, end) {
+  if (!(start instanceof Date) || !(end instanceof Date)) return 0;
+
+  return (
+    (end.getFullYear() - start.getFullYear()) * 12 +
+    (end.getMonth() - start.getMonth())
+  );
+}
+
   
 function formatCurrency(value) {
 if (!Number.isFinite(value)) return "$0.00";
