@@ -1168,7 +1168,7 @@ import {
 const urlParams = new URLSearchParams(window.location.search);
 
 const PAGE_USER = urlParams.get("user") || "jeff";
-const isEmbed = urlParams.get("embed") === "true";
+const isEmbed   = urlParams.get("embed") === "true";
 const cameFromReporting = urlParams.get("from") === "reporting";
 
   
@@ -1177,10 +1177,9 @@ let currentMode = 'portfolio';
 
 let PORTFOLIO_START = null;
 
-
-const earlyParams = new URLSearchParams(window.location.search);
-if (earlyParams.get('embed') === 'true') {
-document.documentElement.style.visibility = 'hidden';
+if (isEmbed) {
+  document.documentElement.style.visibility = 'hidden';
+  document.body.classList.add("embed-mode");
 }
 
 const PAGE_USER =
@@ -1228,11 +1227,8 @@ document.body.classList.add("embed-mode");
 }
 
 if (isEmbed) {
-const userParam =
-new URLSearchParams(window.location.search).get("user") || "jeff";
-
 const targetUrl =
-`/loan-dashboard/earnings/index.html?user=${userParam}&open=kpi2`;
+  `/loan-dashboard/earnings/index.html?user=${PAGE_USER}&open=kpi2`;
 
 function redirectToFull(e) {
 e.preventDefault();
