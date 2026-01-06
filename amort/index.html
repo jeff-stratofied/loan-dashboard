@@ -864,11 +864,8 @@ let apiLoans = [];
 
 let currentLoan = null;
 let currentMode = null;
-let allowEmbedRedirect = false;
 
 let tpvSeriesData = [];
-let USE_DYNAMIC_DATA = true;
-
     
     const USER_LABELS = {
       jeff: "Jeff Customer",
@@ -907,7 +904,7 @@ async function loadAndNormalizeLoans() {
     ? apiResult
     : apiResult.loans;
 
-  apiLoans = rawLoans.map(normalizeLoan);
+  
 
   // --------------------------------------------------
   // DEV-ONLY SCHEMA DRIFT GUARD
@@ -938,11 +935,12 @@ async function loadAndNormalizeLoans() {
     });
   }
 
-  // Build amort schedules
-  apiLoans = attachSchedules(apiLoans);
+const enrichedLoans = attachSchedules(
+   rawLoans.map(normalizeLoan)
+ );
 
-  // Enrich with cumulative values + mini sparkline points
-  allLoans = apiLoans.map(l => {
+ allLoans = enrichedLoans.map(l => {
+  
     let cumP = 0, cumI = 0, cumT = 0;
 
     const schedule = l.amort.schedule.map(r => {
@@ -991,8 +989,6 @@ async function loadAndNormalizeLoans() {
 
 async function init() {
   // 1) Load + normalize data
-  if (USE_DYNAMIC_DATA) {
-    await loadAndNormalizeLoans();
 
     /* ---------------------------------------------------------
        DATA FREEZE POINT
@@ -1001,7 +997,7 @@ async function init() {
        - currentLoans
        MUST NOT be mutated
        --------------------------------------------------------- */
-  }
+  await loadAndNormalizeLoans();
 
   // 2) KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
   window.KPI_COLOR_MAP = {};
@@ -1900,19 +1896,6 @@ function formatMonthYear(d) {
   });
 }
 
-
- /* delete
-  function highlightLoanInDistributionChart(loanId) {
-  document
-    .querySelectorAll('#drawerChartArea [data-loan-id]')
-    .forEach(el => {
-      el.style.opacity =
-        el.dataset.loanId === loanId ? '1' : '0.15';
-      el.style.strokeWidth =
-        el.dataset.loanId === loanId ? '3' : '1';
-    });
-}
-delete */
 
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
