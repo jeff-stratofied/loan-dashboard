@@ -1056,6 +1056,72 @@ tr.event-default td {
   transform: none !important;
 }
 
+    /* from GROK Embed mode: Stack KPIs + drawer vertically, hide rest */
+body.embed {
+    overflow: visible; /* Allow scrolling in iframe */
+    height: auto; /* Fit content */
+}
+
+.embed .app {
+    max-width: 100%; /* Full iframe width */
+    margin: 0;
+    padding: 10px; /* Reduced padding for tight fit */
+    display: flex;
+    flex-direction: column; /* Stack vertically */
+    height: auto;
+    overflow: visible;
+    background: var(--bg);
+}
+
+.embed header {
+    display: none; /* Hide header (title, controls) */
+}
+
+.embed .grid {
+    display: none; /* Hide loan tiles grid */
+}
+
+.embed .kpis {
+    margin: 0 0 12px; /* Tight spacing below KPIs */
+    grid-template-columns: repeat(2, 1fr); /* 2x2 for narrow iframe */
+    gap: 8px; /* Compact */
+}
+
+.embed .drawer {
+    position: relative; /* Not fixed */
+    width: 100% !important; /* Full width */
+    max-width: 100%;
+    height: auto; /* Fit content */
+    transform: none !important; /* No slide-in */
+    border-left: none; /* No sidebar border */
+    box-shadow: none; /* Remove shadow for inline look */
+    display: flex !important; /* Ensure visible */
+    flex-direction: column;
+    overflow: visible; /* Allow internal scroll */
+    z-index: 1; /* No overlay */
+}
+
+.embed .drawer-body,
+.embed #drawerBody {
+    overflow-y: auto; /* Scrollable chart/table */
+    max-height: 600px; /* Limit height to fit iframe, enable scroll */
+    padding: 10px; /* Compact */
+}
+
+.embed .drawer-chart {
+    height: 200px; /* Compact chart for scrollable drawer */
+}
+
+.embed .drawer-footer {
+    display: none; /* Hide footer if not needed (matches Earnings/Amort simplicity) */
+}
+
+/* Media for very narrow iframe */
+@media (max-width: 500px) {
+    .embed .kpis {
+        grid-template-columns: 1fr; /* Stack KPIs vertically if too narrow */
+    }
+}
     
 #feedback-btn:hover {
   transform: scale(1.05);
@@ -1468,7 +1534,39 @@ if (Array.isArray(loan.events)) {
         monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
       }));
     }
-  
+
+/* from GROK */
+    // Apply embed mode layout
+if (EMBED_MODE) {
+    document.body.classList.add('embed'); // Trigger CSS
+
+    // Force drawer visibility and positioning
+    const drawer = document.querySelector('.drawer');
+    if (drawer) {
+        drawer.style.display = 'flex';
+        drawer.classList.add('open');
+        drawer.setAttribute('aria-hidden', 'false');
+
+        // Move drawer below KPIs (append to .app)
+        const app = document.querySelector('.app');
+        const kpis = document.querySelector('.kpis');
+        if (app && kpis) {
+            app.appendChild(drawer); // Reposition drawer as last child
+        }
+    }
+
+    // Hide feedback button if present (matches Earnings/Amort)
+    const feedbackBtn = document.getElementById('feedback-btn');
+    if (feedbackBtn) feedbackBtn.style.display = 'none';
+
+    // Ensure auto-open works in embed
+    requestAnimationFrame(() => {
+        if (OPEN_TARGET === "kpi2" || OPEN_TARGET === "projectedROI") {
+            renderRatesDrawer(); // Open KPI2 drawer (as existing)
+        }
+    });
+}
+    
     async function initROI() {
       const TODAY = new Date();
 
