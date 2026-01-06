@@ -866,15 +866,18 @@ html[data-theme="dark"] .legend .sw {
   padding: 8px;
 }
 
-/* ============================================================
-   EMBED MODE (Dashboard iframe)
-   ============================================================ */
-
+/* EMBED MODE — hide chrome, KEEP KPIs */
 .embed-mode header,
-.embed-mode .loan-filters,
-.embed-mode .kpis {
+.embed-mode .loan-filters {
   display: none !important;
 }
+
+/* KPIs stay visible in iframe */
+.embed-mode .kpis {
+  display: grid !important;
+  margin: 0 0 12px !important;
+}
+
 
 /* ============================================================
    EMBED MODE — EARNINGS LAYOUT
@@ -1060,15 +1063,17 @@ delete */
   overflow: hidden !important;
 }
 
-/* 4️⃣ Drawer becomes the ONLY layout container */
+/* EMBED MODE — drawer becomes stacked content */
 .embed-mode .drawer {
   position: static !important;
+  transform: none !important;
   width: 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  overflow: hidden !important;   /* critical: prevents right scrollbar */
+  height: auto !important;
+  max-height: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
+  border-left: none !important;
+  opacity: 1 !important;
 }
 
 /* 5️⃣ Drawer body is the ONLY scroll container */
@@ -1088,8 +1093,6 @@ delete */
   overflow-y: auto !important;   /* table scrolls */
   overflow-x: hidden !important;
 }
-
-
     
   </style>
 </head>
@@ -1262,6 +1265,13 @@ if (isEmbed) {
   document.documentElement.style.visibility = 'hidden';
   document.body.classList.add("embed-mode");
 }
+
+  if (isEmbed) {
+  const drawer = document.getElementById("drawer");
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+}
+
 
   // =========================================
 // Back to My Holdings (Reporting context)
