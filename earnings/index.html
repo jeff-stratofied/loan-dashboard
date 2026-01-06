@@ -2880,230 +2880,282 @@ hasData: false
 return sorted;
 }
 
-function openKpi1(){
-currentLoan = null;
+function openKpi1() {
+  currentLoan = null;
+  currentMode = 'kpi';
 
-resetDrawerContent();
+  // ✅ reset first
+  resetDrawerContent();
 
-drawerTitle.textContent = "Total Net Earnings to Date";
-drawerSub.textContent = "Portfolio-level earnings across all loans.";
-drawerPrimaryTitle.textContent = "Net Earnings to Date";
-drawerPrimary.textContent = formatCurrency(kpis.totalNetToDate);
-drawerSecondaryTitle.textContent = "Total Fees to Date";
-drawerSecondary.textContent = formatCurrency(kpis.totalFeesToDate);
+  // ✅ compute KPIs (canonical source)
+  const kpis = computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
 
-const rows = buildPortfolioDrawerRows(loansWithEarnings);
+  drawerTitle.textContent = "Total Net Earnings to Date";
+  drawerSub.textContent =
+    "Portfolio-level earnings across all loans.";
 
-createKpiStackedChart(
-document.getElementById("drawerChartArea"),
-rows,
-{
-denseXAxis: true,
-thinBars: false,
-useMonthly: true,
-projected: false
+  // ✅ primary / secondary stat boxes
+  drawerPrimaryTitle.textContent = "Net Earnings to Date";
+  drawerPrimary.textContent =
+    formatCurrency(kpis.totalNetToDate);
+
+  drawerSecondaryTitle.textContent = "Total Fees to Date";
+  drawerSecondary.textContent =
+    formatCurrency(kpis.totalFeesToDate);
+
+  // -----------------------------
+  // Chart
+  // -----------------------------
+  const rows = buildPortfolioDrawerRows(loansWithEarnings);
+
+  createKpiStackedChart(
+    document.getElementById("drawerChartArea"),
+    rows,
+    {
+      denseXAxis: true,
+      thinBars: false,
+      useMonthly: true,
+      projected: false
+    }
+  );
+
+  // -----------------------------
+  // Table
+  // -----------------------------
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  renderKPI1Table(loansWithEarnings, "drawerKpiTable");
+
+  openDrawer();
 }
-);
 
-drawerExtra.innerHTML =
-`<div class="amort-wrap" id="drawerKpiTable"></div>`;
-renderKPI1Table(loansWithEarnings, "drawerKpiTable");
-
-openDrawer();
-}
 
 function openKpi2() {
+  currentLoan = null;
+  currentMode = 'kpi';
 
-currentLoan = null;
-currentMode = 'kpi';
+  resetDrawerContent();
 
-currentLoan = null;
+  drawerTitle.textContent = "Projected Total Net Earnings";
+  drawerSub.textContent =
+    "Projected lifetime earnings across all loans, assuming full term.";
 
-resetDrawerContent();
+  // ✅ COMPUTE KPIs (THIS WAS MISSING)
+  const kpis = computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
 
-drawerTitle.textContent = "Projected Total Net Earnings";
-drawerSub.textContent =
-"Projected lifetime earnings across all loans, assuming full term.";
+  // Chart
+  renderKPI2Chart(loansWithEarnings);
 
-renderKPI2Chart(loansWithEarnings);
+  // Table
+  drawerExtra.innerHTML = `
+    <div class="amort-wrap" id="kpi2Table"></div>
+  `;
+  renderKPI2Table(loansWithEarnings, "kpi2Table");
 
-drawerExtra.innerHTML = `
-<div class="amort-wrap" id="kpi2Table"></div>
-`;
-renderKPI2Table(loansWithEarnings, "kpi2Table");
+  // ✅ Populate stat boxes
+  drawerPrimaryTitle.textContent = "Projected Net Earnings";
+  drawerPrimary.textContent =
+    formatCurrency(kpis.totalNetProjected);
 
-drawerPrimaryTitle.textContent = "Projected Net Earnings";
-drawerPrimary.textContent =
-formatCurrency(kpis.totalNetProjected);
+  drawerSecondaryTitle.textContent = "Projected Total Fees";
+  drawerSecondary.textContent =
+    formatCurrency(kpis.totalFeesProjected
 
-drawerSecondaryTitle.textContent = "Projected Total Fees";
-drawerSecondary.textContent =
-formatCurrency(kpis.totalFeesProjected);
-
-openDrawer();
-}
 
 function openKpi3() {
-currentLoan = null;
+  currentLoan = null;
+  currentMode = 'kpi';
 
-drawerTitle.textContent = "Avg Monthly Earnings To Date";
-drawerSub.textContent =
-"Total net earnings divided by months since portfolio inception.";
+  // ✅ RESET FIRST (critical)
+  resetDrawerContent();
 
-drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
-drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
+  drawerTitle.textContent = "Avg Monthly Earnings To Date";
+  drawerSub.textContent =
+    "Total net earnings divided by months since portfolio inception.";
 
-drawerSecondaryTitle.innerHTML = `
-Months Counted
-<span class="info-icon" title="Months counted is the total months each loan has been owned.">ⓘ</span>
-`;
-drawerSecondary.textContent = String(
-Math.max(0, Number(kpis?.monthsCounted ?? 0))
-);
+  // ✅ COMPUTE KPIs (missing before)
+  const kpis = computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
 
-resetDrawerContent();
+  // ✅ PRIMARY / SECONDARY STAT BOXES
+  drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
+  drawerPrimary.textContent =
+    formatCurrency(kpis.avgMonthlyToDate);
 
-const activeLoans = loansWithEarnings.filter(
-l => !hiddenLoans.has(l.loanId)
-);
+  drawerSecondaryTitle.innerHTML = `
+    Months Counted
+    <span class="info-icon"
+      title="Months counted is the total months each loan has been owned.">ⓘ</span>
+  `;
+  drawerSecondary.textContent =
+    String(Math.max(0, Number(kpis.monthsCounted ?? 0)));
 
-const rows = buildPortfolioDrawerRows(activeLoans);
+  // -----------------------------
+  // Existing chart logic (unchanged)
+  // -----------------------------
 
-const PORTFOLIO_START = window.__PORTFOLIO_START__
-? new Date(window.__PORTFOLIO_START__)
-: (rows.length ? new Date(rows[0].date) : new Date());
+  const activeLoans = loansWithEarnings.filter(
+    l => !hiddenLoans.has(l.loanId)
+  );
 
-PORTFOLIO_START.setHours(0, 0, 0, 0);
+  const rows = buildPortfolioDrawerRows(activeLoans);
 
+  const PORTFOLIO_START = window.__PORTFOLIO_START__
+    ? new Date(window.__PORTFOLIO_START__)
+    : (rows.length ? new Date(rows[0].date) : new Date());
 
+  PORTFOLIO_START.setHours(0, 0, 0, 0);
 
-const rowByMonth = new Map();
-rows.forEach(r => {
-const d = new Date(r.date);
-const key = `${d.getFullYear()}-${d.getMonth()}`;
-rowByMonth.set(key, r);
-});
+  const rowByMonth = new Map();
+  rows.forEach(r => {
+    const d = new Date(r.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    rowByMonth.set(key, r);
+  });
 
-const fullMonths = [];
-const cursor = new Date(
-PORTFOLIO_START.getFullYear(),
-PORTFOLIO_START.getMonth(),
-1
-);
-const end = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+  const fullMonths = [];
+  const cursor = new Date(
+    PORTFOLIO_START.getFullYear(),
+    PORTFOLIO_START.getMonth(),
+    1
+  );
+  const end = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
 
-while (cursor <= end) {
-const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
-const existing = rowByMonth.get(key);
+  while (cursor <= end) {
+    const key = `${cursor.getFullYear()}-${cursor.getMonth()}`;
+    const existing = rowByMonth.get(key);
 
-fullMonths.push({
-date: new Date(cursor),
-contributions: existing?.contributions || []
-});
+    fullMonths.push({
+      date: new Date(cursor),
+      contributions: existing?.contributions || []
+    });
 
-cursor.setMonth(cursor.getMonth() + 1);
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  const firstNonZeroIdx = fullMonths.findIndex(
+    m => (m.contributions || []).some(c => c.hasData)
+  );
+
+  const chartMonths =
+    firstNonZeroIdx >= 0
+      ? fullMonths.slice(firstNonZeroIdx)
+      : fullMonths;
+
+  let cumulativeNet = 0;
+
+  const avgRows = chartMonths.map(m => {
+    const monthNet = (m.contributions || []).reduce(
+      (sum, c) =>
+        sum + (c.hasData ? (Number(c.monthlyNet) || 0) : 0),
+      0
+    );
+
+    cumulativeNet += monthNet;
+
+    const monthsElapsed = Math.max(
+      1,
+      monthDiff(PORTFOLIO_START, m.date) + 1
+    );
+
+    return {
+      date: m.date,
+      avg: cumulativeNet / monthsElapsed,
+      netToDate: cumulativeNet
+    };
+  });
+
+  renderKpi3AvgLineChart(
+    document.getElementById("drawerChartArea"),
+    avgRows
+  );
+
+  // Table
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  renderKPI3Table(activeLoans, "drawerKpiTable");
+
+  const table = document.querySelector("#drawerKpiTable table");
+  if (table) {
+    table.classList.remove("kpi1-table", "kpi2-table", "kpi4-table");
+    table.querySelectorAll(".loan-swatch").forEach(el => el.remove());
+    table.querySelectorAll("td, td *").forEach(el => {
+      el.style.color = "var(--text)";
+    });
+  }
+
+  openDrawer();
 }
 
-const firstNonZeroIdx = fullMonths.findIndex(
-m => (m.contributions || []).some(c => c.hasData)
-);
-
-const chartMonths =
-firstNonZeroIdx >= 0
-? fullMonths.slice(firstNonZeroIdx)
-: fullMonths;
-
-let cumulativeNet = 0;
-
-const avgRows = chartMonths.map(m => {
-const monthNet = (m.contributions || []).reduce(
-(sum, c) =>
-sum + (c.hasData ? (Number(c.monthlyNet) || 0) : 0),
-0
-);
-
-cumulativeNet += monthNet;
-
-const monthsElapsed = Math.max(
-1,
-monthDiff(PORTFOLIO_START, m.date) + 1
-);
-
-return {
-date: m.date,
-avg: cumulativeNet / monthsElapsed,
-netToDate: cumulativeNet
-};
-});
-
-renderKpi3AvgLineChart(
-document.getElementById("drawerChartArea"),
-avgRows
-);
-
-drawerExtra.innerHTML =
-`<div class="amort-wrap" id="drawerKpiTable"></div>`;
-
-renderKPI3Table(activeLoans, "drawerKpiTable");
-
-const table = document.querySelector("#drawerKpiTable table");
-if (table) {
-
-table.classList.remove("kpi1-table", "kpi2-table", "kpi4-table");
-
-table.querySelectorAll(".loan-swatch").forEach(el => el.remove());
-
-table.querySelectorAll("td, td *").forEach(el => {
-el.style.color = "var(--text)";
-});
-}
-
-openDrawer();
-}
 
 function openKpi4() {
-currentLoan = null;
-currentMode = "kpi";
+  currentLoan = null;
+  currentMode = "kpi";
 
-const activeLoans = loansWithEarnings.filter(l => !hiddenLoans.has(l.loanId));
-const loansWithEarningsFiltered = activeLoans.filter(l =>
-l.earningsSchedule && Array.isArray(l.earningsSchedule) && l.earningsSchedule.length > 0
-);
+  // ✅ RESET FIRST (critical)
+  resetDrawerContent();
 
-console.log('Active loans:', activeLoans.length, 'With schedules:', loansWithEarningsFiltered.length);
+  const activeLoans = loansWithEarnings.filter(
+    l => !hiddenLoans.has(l.loanId)
+  );
 
-drawerTitle.textContent = "Projected Avg Monthly Earnings";
-drawerSub.textContent =
-"Average projected net earnings per month across the full lifetime of all loans.";
+  const loansWithEarningsFiltered = activeLoans.filter(
+    l =>
+      Array.isArray(l.earningsSchedule) &&
+      l.earningsSchedule.length > 0
+  );
 
-drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
-drawerPrimary.textContent =
-formatCurrency(window.kpis?.projectedAvgMonthlyNet ?? 0);
+  // ✅ COMPUTE KPIs (canonical source)
+  const kpis = computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
 
-const totalMonthsThroughMaturity = loansWithEarningsFiltered.length > 0
-? Math.max(...loansWithEarningsFiltered.map(l => l.earningsSchedule.length))
-: 0;
-drawerSecondaryTitle.textContent = "Months Through Maturity";
-drawerSecondary.textContent = `${totalMonthsThroughMaturity}`;
+  drawerTitle.textContent = "Projected Avg Monthly Earnings";
+  drawerSub.textContent =
+    "Average projected net earnings per month across the full lifetime of all loans.";
 
-resetDrawerContent();
+  // ✅ PRIMARY
+  drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
+  drawerPrimary.textContent =
+    formatCurrency(kpis.avgMonthlyProjected);
 
-const rows = buildKpi4AvgMonthlyRows(loansWithEarningsFiltered);
+  // ✅ SECONDARY
+  const totalMonthsThroughMaturity =
+    loansWithEarningsFiltered.length > 0
+      ? Math.max(
+          ...loansWithEarningsFiltered.map(
+            l => l.earningsSchedule.length
+          )
+        )
+      : 0;
 
-renderKpi3AvgLineChart(
-document.getElementById("drawerChartArea"),
-rows,
-{ xLabelEveryMonths: 24 }
-);
+  drawerSecondaryTitle.textContent = "Months Through Maturity";
+  drawerSecondary.textContent =
+    String(totalMonthsThroughMaturity);
 
-document.getElementById("drawerLegend").style.display = "none";
+  // -----------------------------
+  // Chart
+  // -----------------------------
+  const rows = buildKpi4AvgMonthlyRows(loansWithEarningsFiltered);
 
-drawerExtra.innerHTML = `<div class="amort-wrap" id="drawerKpiTable"></div>`;
-renderKPI4Table(activeLoans, "drawerKpiTable");
-document.getElementById("drawerKpiTable")?.classList.add("kpi4-table");
+  renderKpi3AvgLineChart(
+    document.getElementById("drawerChartArea"),
+    rows,
+    { xLabelEveryMonths: 24 }
+  );
 
-openDrawer();
+  document.getElementById("drawerLegend").style.display = "none";
+
+  // -----------------------------
+  // Table
+  // -----------------------------
+  drawerExtra.innerHTML =
+    `<div class="amort-wrap" id="drawerKpiTable"></div>`;
+  renderKPI4Table(activeLoans, "drawerKpiTable");
+  document
+    .getElementById("drawerKpiTable")
+    ?.classList.add("kpi4-table");
+
+  openDrawer();
 }
+
 
 const activeLoans = loansWithEarnings.filter(
 l => !hiddenLoans.has(l.loanId)
