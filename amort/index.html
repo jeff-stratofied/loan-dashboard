@@ -564,10 +564,13 @@ html[data-theme="dark"] .close-btn {
    EMBED MODE — REMOVE NESTED SCROLL (Amort iframe)
    ============================================================ */
 
+/* IFRAME MODE — amort table scrolls internally */
 .embed-mode .amort-wrap {
-  max-height: none !important;
-  overflow: visible !important;
+  max-height: 40vh !important;   /* match Earnings */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
+
 
     
 /* =========================================
@@ -650,10 +653,11 @@ html[data-theme="dark"] .close-btn {
    EMBED MODE — show header, hide page chrome
    ========================================= */
 
-/* Keep header + back button visible */
+/* IFRAME MODE — remove page chrome above KPIs */
 .embed-mode header {
-  display: block;
+  display: none !important;
 }
+
 
 /* Hide ONLY the loan grid + filters in iframe */
 .embed-mode .loan-filters,
