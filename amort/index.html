@@ -578,13 +578,6 @@ html[data-theme="dark"] .close-btn {
   max-height: none !important;
 }
 
-
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  max-height: none !important;
-  padding-top: 16px !important; /* spacing below KPIs */
-}
-
 /* Ensure amort table does not create nested scroll */
 .embed-mode .amort-wrap {
   max-height: none !important;
@@ -1072,30 +1065,59 @@ async function init() {
       BASE_DISTINCT_COLORS[i % BASE_DISTINCT_COLORS.length];
   });
 
-  // 3) NOW render + wire the UI (must happen AFTER data exists)
-  renderAndWirePage();
+// 3) NOW render + wire the UI (must happen AFTER data exists)
+renderAndWirePage();
 
-    /* =====================================================
-     EMBED / REPORTING AUTO-OPEN LOGIC
-     (MUST RUN AFTER RENDER)
-     ===================================================== */
+/* =====================================================
+   EMBED / REPORTING AUTO-OPEN LOGIC
+   (MUST RUN AFTER RENDER)
+   ===================================================== */
 
-  if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
+if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
 
-    // 1️⃣ Explicit loan open (?open=loan&loanId=123)
-    if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-      const loan = currentLoans.find(
-        l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-      );
+  // 1️⃣ Explicit loan open (?open=loan&loanId=123)
+  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+    const loan = currentLoans.find(
+      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+    );
 
-      if (loan) {
-        requestAnimationFrame(() => {
-          openDrawerForLoan(loan);
-          drawer.classList.add("open");
-          drawer.setAttribute("aria-hidden", "false");
-        });
-        return; // ✅ LEGAL (inside init)
-      }
+    if (loan) {
+      requestAnimationFrame(() => {
+        openDrawerForLoan(loan);
+        drawer.classList.add("open");
+        drawer.setAttribute("aria-hidden", "false");
+      });
+      return; // ✅ stop init here
+    }
+  }
+
+  // 2️⃣ Open first loan (?open=first)
+  if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
+    requestAnimationFrame(() => {
+      openDrawerForLoan(currentLoans[0]);
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    });
+    return; // ✅ stop init here
+  }
+
+  // 3️⃣ KPI auto-open (?open=kpi-tpv | kpi-rates | kpi-payments | kpi-distribution)
+  if (PAGE_CONTEXT.open && PAGE_CONTEXT.open.startsWith("kpi-")) {
+    const key = PAGE_CONTEXT.open.replace("kpi-", "");
+
+    requestAnimationFrame(() => {
+      if (key === "tpv") renderTPVDrawer();
+      if (key === "rates") renderRatesDrawer();
+      if (key === "payments") renderPaymentsDrawer();
+      if (key === "distribution") renderDistributionDrawer();
+
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    });
+    return; // ✅ stop init here
+  }
+}
+
     }
 
     // 2️⃣ Open first loan (?open=first)
