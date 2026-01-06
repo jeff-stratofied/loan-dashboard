@@ -613,12 +613,13 @@ html[data-theme="dark"] .close-btn {
 }
 
     
-/* Body scrolls */
+/* IFRAME MODE: let the iframe scroll, not the drawer */
 .embed-mode .drawer-body {
   padding: 0 20px 20px !important;
-  overflow-y: auto !important;
-  flex: 1 1 auto !important;
+  overflow: visible !important;
+  flex: none !important;
 }
+
 
 /* Hide embed-only helper text */
 .embed-mode .drawer-body .muted {
@@ -871,6 +872,11 @@ const PAGE_CONTEXT = (() => {
   };
 })();
 
+if (PAGE_CONTEXT.isEmbed) {
+  document.documentElement.classList.add("embed-mode");
+}
+
+    
 /* ============================
    GLOBAL STATE (mutable)
    ============================ */
