@@ -887,6 +887,27 @@ html[data-theme="dark"] .legend .sw {
   border-radius: 0 !important;
 }
 
+/* ============================================
+   EMBED MODE — IFRAME CLEANUP (FINAL)
+   ============================================ */
+
+/* Remove top gray bar */
+.embed-mode .app {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* Kill phantom grid spacing */
+.embed-mode .grid {
+  padding-right: 0 !important;
+}
+
+/* Ensure single scroll container */
+.embed-mode .drawer {
+  overflow: hidden !important;
+}
+
+    
 /* ============================================================
    EMBED MODE — REMOVE LOAN GRID ENTIRELY (AUTHORITATIVE FIX)
    ============================================================ */
