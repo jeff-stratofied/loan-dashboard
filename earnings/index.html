@@ -1335,6 +1335,17 @@ const copyBtn = document.getElementById("copyCsvBtn");
 if (copyBtn) copyBtn.addEventListener("click", redirectToFull, true);
 }
 
+function redirectToFullEarnings(openParam) {
+  const url =
+    `/loan-dashboard/earnings/index.html` +
+    `?user=${PAGE_USER}` +
+    `&from=reporting` +
+    (openParam ? `&open=${openParam}` : "");
+
+  window.top.location.href = url;
+}
+
+  
 function formatDate(d) {
   if (!(d instanceof Date)) return "";
   return d.toLocaleDateString("en-US", {
@@ -1562,31 +1573,45 @@ window.KPI_COLOR_MAP = map;
 }
 
 document.querySelectorAll(".kpi").forEach(tile => {
-tile.addEventListener("click", () => {
-const type = tile.dataset.kpi;
+  tile.addEventListener("click", () => {
+    const type = tile.dataset.kpi;
 
-switch (type) {
-case "net":
-openKpi1();
-break;
+    // 🔑 If inside iframe, escape to full Earnings page
+    if (isEmbed) {
+      const url =
+        `/loan-dashboard/earnings/index.html` +
+        `?user=${PAGE_USER}` +
+        `&from=reporting` +
+        `&open=${type}`;
 
-case "projected":
-openKpi2();
-break;
+      window.top.location.href = url;
+      return;
+    }
 
-case "avgMonthly":
-openKpi3();
-break;
+    // Normal (non-iframe) behavior
+    switch (type) {
+      case "net":
+        openKpi1();
+        break;
 
-case "fees":
-openKpi4();
-break;
+      case "projected":
+        openKpi2();
+        break;
 
-default:
-console.warn("Unknown KPI tile:", type);
-}
+      case "avgMonthly":
+        openKpi3();
+        break;
+
+      case "fees":
+        openKpi4();
+        break;
+
+      default:
+        console.warn("Unknown KPI tile:", type);
+    }
+  });
 });
-});
+
 
 function getCurrentEarningsRow(loan) {
   const sched = loan.earningsSchedule || [];
