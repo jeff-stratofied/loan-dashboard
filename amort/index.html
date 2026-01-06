@@ -890,9 +890,6 @@ import {
    ========================================================= */
 
 const PAGE_CONTEXT = (() => {
-  const SHOULD_AUTO_OPEN =
-  PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting;
-  
   const params = new URLSearchParams(window.location.search);
 
   const user = params.get("user") || "jeff";
@@ -909,6 +906,9 @@ const PAGE_CONTEXT = (() => {
     cameFromReporting: from === "reporting"
   };
 })();
+
+const SHOULD_AUTO_OPEN =
+  PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting;
 
 
     
