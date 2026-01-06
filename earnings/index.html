@@ -113,17 +113,6 @@
     margin-top:0;
     }
 
-/* delete
-   header{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    margin-bottom:8px;
-    padding:0;
-    transition:color .25s ease;
-    }
-delete */
-
     .header-top{
       display:flex;
       align-items:center;
@@ -219,18 +208,6 @@ delete */
       border:none;
       box-shadow:var(--shadow);
     }
-
-  /* delete
-    .close-btn{
-      background:var(--card-muted);
-      border:1px solid var(--border);
-      padding:8px;
-      border-radius:8px;
-      cursor:pointer;
-      color:var(--text);
-      transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
-    }
-delete*/
     
     /* ============================================================
    FIX: Earnings Print button matches ROI / Amort
@@ -772,13 +749,6 @@ th:first-child {
   background: var(--surface);
   border-top: 1px solid var(--border);
 }
-
-/* dlete
-.actions {
-  display: flex;
-  gap: 8px;
-}
-delete */
     
 /* Dark Mode Overrides (match amort) */
 html[data-theme="dark"] .drawer {
@@ -878,90 +848,6 @@ html[data-theme="dark"] .legend .sw {
   margin: 0 0 12px !important;
 }
 
-
-/* ============================================================
-   EMBED MODE — EARNINGS LAYOUT
-   ============================================================ */
-/* delete
-.embed-mode .drawer {
-  position: static !important;
-  inset: auto !important;
-  transform: none !important;
-  height: 100% !important;
-  max-height: none !important;
-  width: 100% !important;
-  max-width: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-}
-delete */
-/* ============================================
-   EMBED MODE — IFRAME CLEANUP (FINAL)
-   ============================================ */
-
-/* Remove top gray bar */
-/* delete
-    .embed-mode .app {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-delete */
-/* Kill phantom grid spacing */
-    /* delete
-.embed-mode .grid {
-  padding-right: 0 !important;
-}
-delete */
-/* Ensure single scroll container */
-    /* delete
-.embed-mode .drawer {
-  overflow: hidden !important;
-}
-delete */
-    
-/* ============================================================
-   EMBED MODE — REMOVE LOAN GRID ENTIRELY (AUTHORITATIVE FIX)
-   ============================================================ */
-/* delete
-.embed-mode .grid {
-  display: none !important;
-}
-delete */
-
-/* ============================================================
-   EMBED MODE — SCROLL BEHAVIOR
-   ============================================================ */
-/* delete
-.embed-mode .drawer-body {
-  overflow-y: auto;
-  max-height: none;
-}
-
-.embed-mode html,
-.embed-mode body {
-  overflow: hidden !important;
-}
-delete */
-
-/* ============================================================
-   EMBED MODE — BUTTON VISIBILITY
-   ============================================================ */
-/* delete
-.embed-mode .drawer-close,
-.embed-mode button[aria-label="Close"] {
-  display: none !important;
-}
-
-.embed-mode .close-btn {
-  display: inline-flex !important;
-}
-
-.embed-mode .drawer-footer {
-  display: block !important;
-}
-delete */
-
-
     /* =========================================
    KPI1 + KPI2 table hover (ONLY)
    ========================================= */
@@ -981,37 +867,6 @@ delete */
   opacity: 0.25;
 }
 
-    /* ============================================================
-   EMBED MODE — UNIFIED DRAWER LAYOUT (ALIGN ALL IFRAMES)
-   ============================================================ */
-/* delete
-.embed-mode .drawer-head {
-  padding: 20px !important;
-  min-height: 64px;
-  border-bottom: 1px solid var(--border);
-  background: var(--card);
-}
-
-
-.embed-mode .drawer-chart {
-  height: 220px !important;
-  margin-bottom: 12px !important;
-}
-
-
-.embed-mode .stat-boxes,
-.embed-mode .drawer-info-row {
-  margin-bottom: 12px !important;
-  min-height: 56px;
-}
-
-
-.embed-mode .drawer-body {
-  gap: 12px !important;
-  padding-left: 16px !important;
-  padding-right: 16px !important;
-}
-delete */
     #feedback-btn {
   position: fixed;
   bottom: 18px;
