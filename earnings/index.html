@@ -1165,7 +1165,13 @@ import {
   isDeferredMonth
 } from "../js/loanEngine.js";
 
+const urlParams = new URLSearchParams(window.location.search);
 
+const PAGE_USER = urlParams.get("user") || "jeff";
+const isEmbed = urlParams.get("embed") === "true";
+const cameFromReporting = urlParams.get("from") === "reporting";
+
+  
 let currentLoan = null;
 let currentMode = 'portfolio';
 
