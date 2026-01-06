@@ -558,12 +558,17 @@ html[data-theme="dark"] .close-btn {
    EMBED MODE — STACKED DRAWER SCROLL (MATCH EARNINGS)
    ============================================================ */
 
-/* Prevent page-level scrolling */
+/* Prevent page scroll, allow app scroll (Earnings behavior) */
 .embed-mode html,
 .embed-mode body {
-  overflow: hidden !important;
   height: 100% !important;
 }
+
+.embed-mode .app {
+  overflow: auto !important;
+  max-height: 100vh !important;
+}
+
 
 .embed-mode .drawer-body {
   flex: 1 1 auto !important;
