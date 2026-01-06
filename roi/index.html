@@ -1535,6 +1535,8 @@ if (Array.isArray(loan.events)) {
       }));
     }
 
+    const EMBED_MODE = urlParams.get("embed") === "true";
+    
 /* from GROK */
     // Apply embed mode layout
 if (EMBED_MODE) {
@@ -4140,7 +4142,7 @@ if (table) {
 // Embed auto-open handling (KPI2)
 // ----------------------------------
 const urlParams = new URLSearchParams(window.location.search);
-const EMBED_MODE = urlParams.get("embed") === "true";
+
 const OPEN_TARGET = urlParams.get("open");
 
 requestAnimationFrame(() => {
