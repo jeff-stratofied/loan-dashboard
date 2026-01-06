@@ -2786,7 +2786,11 @@ function renderTPVDrawer() {
   /* ============================
      Current month marker
   ============================ */
-  const curIdx = Math.min(curMonthIdx - 1, tpvSeriesData.length - 1);
+  const curIdx = Math.min(
+  getCurrentMonthIndex(allLoans) - 1,
+  tpvSeriesData.length - 1
+);
+
   const curX = pad + curIdx * stepX;
   const curLine = document.createElementNS(svgNS, 'line');
   curLine.setAttribute('x1', curX);
