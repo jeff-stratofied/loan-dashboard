@@ -654,12 +654,17 @@ html[data-theme="dark"] .close-btn {
   display: block;
 }
 
-/* Hide KPI row and grid when embedded */
-.embed-mode .kpis,
+/* Hide ONLY the loan grid + filters in iframe */
 .embed-mode .loan-filters,
 .embed-mode .grid {
   display: none !important;
 }
+
+/* KPIs MUST remain visible */
+.embed-mode .kpis {
+  display: grid !important;
+}
+
 
     #feedback-btn {
   position: fixed;
@@ -1589,16 +1594,32 @@ applyLoanFilters();
      E. INTERACTION WIRING
      ========================= */
 
-  document.querySelectorAll('.kpi').forEach(k => {
-    k.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const key = k.getAttribute('data-kpi');
-      if (key === 'distribution') renderDistributionDrawer();
-      if (key === 'tpv') renderTPVDrawer();
-      if (key === 'rates') renderRatesDrawer();
-      if (key === 'payments') renderPaymentsDrawer();
-    });
+document.querySelectorAll(".kpi").forEach(tile => {
+  tile.addEventListener("click", e => {
+    e.stopPropagation();
+
+    // 🚨 IFRAME MODE → FULL PAGE REDIRECT
+    if (PAGE_CONTEXT.isEmbed) {
+      const url = new URL(window.location.origin + "/loan-dashboard/amort");
+      url.searchParams.set("user", PAGE_CONTEXT.user);
+      url.searchParams.set("from", "reporting");
+
+      // optional: preserve which KPI was clicked
+      url.searchParams.set("open", tile.dataset.kpi);
+
+      window.top.location.href = url.toString();
+      return;
+    }
+
+    // FULL PAGE MODE → open drawers
+    const key = tile.dataset.kpi;
+    if (key === "distribution") renderDistributionDrawer();
+    if (key === "tpv") renderTPVDrawer();
+    if (key === "rates") renderRatesDrawer();
+    if (key === "payments") renderPaymentsDrawer();
   });
+});
+
 }
 
 
