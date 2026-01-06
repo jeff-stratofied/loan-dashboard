@@ -4145,9 +4145,13 @@ if (EMBED_MODE) {
 }
 
 /* from GROK */
-    // Apply embed mode layout
+// Apply embed mode layout
 if (EMBED_MODE) {
-    document.body.classList.add('embed-mode'); // Trigger CSS
+    document.body.classList.add('embed-mode'); // Trigger CSS (optional, but keep for any other styles)
+
+    // Hide header to remove filters, title, and date (matches Earnings/Amort)
+    const header = document.querySelector('header');
+    if (header) header.style.display = 'none';
 
     // Force drawer visibility and positioning
     const drawer = document.querySelector('.drawer');
