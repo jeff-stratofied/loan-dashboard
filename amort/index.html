@@ -1026,18 +1026,23 @@ const enrichedLoans = attachSchedules(
 }
 
 async function init() {
-  // 1) Load + normalize data
+  /* =====================================================
+     1) LOAD + NORMALIZE DATA
+     ===================================================== */
 
-    /* ---------------------------------------------------------
-       DATA FREEZE POINT
-       After this line:
-       - allLoans
-       - currentLoans
-       MUST NOT be mutated
-       --------------------------------------------------------- */
+  /* ---------------------------------------------------------
+     DATA FREEZE POINT
+     After this line:
+     - allLoans
+     - currentLoans
+     MUST NOT be mutated
+     --------------------------------------------------------- */
   await loadAndNormalizeLoans();
 
-  // 2) KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
+  /* =====================================================
+     2) KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
+     ===================================================== */
+
   window.KPI_COLOR_MAP = {};
 
   const BASE_DISTINCT_COLORS = [
@@ -1065,59 +1070,33 @@ async function init() {
       BASE_DISTINCT_COLORS[i % BASE_DISTINCT_COLORS.length];
   });
 
-// 3) NOW render + wire the UI (must happen AFTER data exists)
-renderAndWirePage();
+  /* =====================================================
+     3) RENDER + WIRE UI (MUST HAPPEN AFTER DATA)
+     ===================================================== */
 
-/* =====================================================
-   EMBED / REPORTING AUTO-OPEN LOGIC
-   (MUST RUN AFTER RENDER)
-   ===================================================== */
+  renderAndWirePage();
 
-if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
+  /* =====================================================
+     4) EMBED / REPORTING AUTO-OPEN LOGIC
+        (MUST RUN AFTER RENDER)
+     ===================================================== */
 
-  // 1️⃣ Explicit loan open (?open=loan&loanId=123)
-  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-    const loan = currentLoans.find(
-      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-    );
+  if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
 
-    if (loan) {
-      requestAnimationFrame(() => {
-        openDrawerForLoan(loan);
-        drawer.classList.add("open");
-        drawer.setAttribute("aria-hidden", "false");
-      });
-      return; // ✅ stop init here
-    }
-  }
+    // 1️⃣ Explicit loan open (?open=loan&loanId=123)
+    if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+      const loan = currentLoans.find(
+        l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+      );
 
-  // 2️⃣ Open first loan (?open=first)
-  if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
-    requestAnimationFrame(() => {
-      openDrawerForLoan(currentLoans[0]);
-      drawer.classList.add("open");
-      drawer.setAttribute("aria-hidden", "false");
-    });
-    return; // ✅ stop init here
-  }
-
-  // 3️⃣ KPI auto-open (?open=kpi-tpv | kpi-rates | kpi-payments | kpi-distribution)
-  if (PAGE_CONTEXT.open && PAGE_CONTEXT.open.startsWith("kpi-")) {
-    const key = PAGE_CONTEXT.open.replace("kpi-", "");
-
-    requestAnimationFrame(() => {
-      if (key === "tpv") renderTPVDrawer();
-      if (key === "rates") renderRatesDrawer();
-      if (key === "payments") renderPaymentsDrawer();
-      if (key === "distribution") renderDistributionDrawer();
-
-      drawer.classList.add("open");
-      drawer.setAttribute("aria-hidden", "false");
-    });
-    return; // ✅ stop init here
-  }
-}
-
+      if (loan) {
+        requestAnimationFrame(() => {
+          openDrawerForLoan(loan);
+          drawer.classList.add("open");
+          drawer.setAttribute("aria-hidden", "false");
+        });
+        return;
+      }
     }
 
     // 2️⃣ Open first loan (?open=first)
@@ -1127,11 +1106,27 @@ if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
         drawer.classList.add("open");
         drawer.setAttribute("aria-hidden", "false");
       });
-      return; // ✅ LEGAL (inside init)
+      return;
+    }
+
+    // 3️⃣ KPI auto-open (?open=kpi-*)
+    if (PAGE_CONTEXT.open && PAGE_CONTEXT.open.startsWith("kpi-")) {
+      const key = PAGE_CONTEXT.open.replace("kpi-", "");
+
+      requestAnimationFrame(() => {
+        if (key === "tpv") renderTPVDrawer();
+        if (key === "rates") renderRatesDrawer();
+        if (key === "payments") renderPaymentsDrawer();
+        if (key === "distribution") renderDistributionDrawer();
+
+        drawer.classList.add("open");
+        drawer.setAttribute("aria-hidden", "false");
+      });
+      return;
     }
   }
-
 }
+
 
 /* =========================================================
    STEP 5 — DERIVED DATA (PURE, READ-ONLY)
