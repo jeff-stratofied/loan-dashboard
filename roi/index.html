@@ -832,6 +832,22 @@ tr.event-default td {
   font-size: 20px;
 }
 
+/* ============================================================
+   ROI IFRAME — SHOW KPIs ABOVE DRAWER (FIX)
+   ============================================================ */
+
+/* App must size to content, not force drawer fullscreen */
+.embed-mode .app {
+  height: auto !important;
+}
+
+/* Drawer must NOT consume full iframe height */
+.embed-mode .drawer {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+    
 #feedback-btn:hover {
   transform: scale(1.05);
 }
