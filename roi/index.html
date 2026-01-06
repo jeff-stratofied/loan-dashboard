@@ -1012,6 +1012,13 @@ tr.event-default td {
   overflow-y: auto;
 }
 
+    /* 🔑 ROI iframe MUST allow page scroll */
+.embed-mode html,
+.embed-mode body {
+  overflow: auto !important;
+  height: auto !important;
+}
+
     
 #feedback-btn:hover {
   transform: scale(1.05);
