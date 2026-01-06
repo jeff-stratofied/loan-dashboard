@@ -549,16 +549,19 @@
 // 4. IFRAME SOURCE BUILDERS
 // ===================================================
 
-        function buildFrames(user) {
-            document.getElementById("roiFrame").src =
-                `/loan-dashboard/roi/index.html?user=${user}&from=reporting&open=kpi2`;
+function buildFrames(user) {
+  const v = Date.now(); // 🔒 force iframe reload
 
-            document.getElementById("earningsFrame").src =
-                `/loan-dashboard/earnings/index.html?user=${user}&embed=true&open=kpi2`;
+  document.getElementById("roiFrame").src =
+    `/loan-dashboard/roi/index.html?user=${user}&from=reporting&open=kpi2&v=${v}`;
 
-            document.getElementById("amortFrame").src =
-                `/loan-dashboard/amort/index.html?user=${user}&embed=true&open=first`;
-        }
+  document.getElementById("earningsFrame").src =
+    `/loan-dashboard/earnings/index.html?user=${user}&embed=true&open=kpi2&v=${v}`;
+
+  document.getElementById("amortFrame").src =
+    `/loan-dashboard/amort/index.html?user=${user}&embed=true&open=first&v=${v}`;
+}
+
 
     
 // ===================================================
@@ -621,17 +624,6 @@
             updateDisplay(activeUser);
             buildFrames(activeUser);
 
-        // Re-wire after iframe reloads
-           setTimeout(() => {
-         wireClickRedirect(
-          "roiFrame",
-          "/loan-dashboard/roi/index.html",
-          "kpi2"
-        );
-
-      wireClickRedirect("earningsFrame", "/loan-dashboard/earnings/index.html", "kpi2");
-      wireClickRedirect("amortFrame", "/loan-dashboard/amort/index.html", "first");
-        }, 1500);
      });
 
       
