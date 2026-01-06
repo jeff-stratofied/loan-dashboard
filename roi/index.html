@@ -780,6 +780,28 @@ tr.event-default td {
   margin-top: 0 !important;
 }
 
+    /* ============================================================
+   EMBED MODE — ROI KPI + DRAWER STACK
+   ============================================================ */
+
+/* KPIs must be visible */
+.embed-mode .kpis {
+  display: grid !important;
+  order: 0 !important;
+}
+
+/* Drawer must come AFTER KPIs */
+.embed-mode .drawer {
+  order: 1 !important;
+}
+
+/* App becomes a vertical stack */
+.embed-mode .app {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+
 .badge-tooltip {
   position: fixed !important;  /* Change from absolute to fixed to avoid clipping */
   z-index: 10000 !important;   /* Higher than .drawer (120) and other elements */
@@ -1510,6 +1532,8 @@ function computeKPIs(list) {
 }
 
     const kpis = computeKPIs(currentLoans);
+
+      
       
     /* -------------------------
        Small chart utilities (line & bar with hover)
@@ -2248,6 +2272,21 @@ delete */
         <p id="roiSpread"></p>
       </div>
     `;
+
+      // =====================================================
+// ROI iframe KPI redirect (AUTHORITATIVE)
+// =====================================================
+if (isEmbed) {
+  document.querySelectorAll(".kpi").forEach(tile => {
+    tile.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      window.top.location.href =
+        `/loan-dashboard/roi?user=${PAGE_USER}&from=reporting`;
+    });
+  });
+}
 
 
       // -------------------------------
