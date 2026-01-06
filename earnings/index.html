@@ -1182,13 +1182,9 @@ if (isEmbed) {
   document.body.classList.add("embed-mode");
 }
 
-const PAGE_USER =
-new URLSearchParams(window.location.search).get("user") || "jeff";
-
   // =========================================
 // Back to My Holdings (Reporting context)
 // =========================================
-const cameFromReporting = earlyParams.get("from") === "reporting";
 
 const backRow = document.getElementById("backToHoldingsRow");
 const backBtn = document.getElementById("backToHoldingsBtn");
@@ -1219,8 +1215,6 @@ USER_LABELS[PAGE_USER] || PAGE_USER;
 // STANDARD DATE — SINGLE SOURCE OF TRUTH (EARNINGS)
 // =====================================================
 const TODAY = getStandardToday();
-
-const isEmbed = earlyParams.get("embed") === "true";
 
 if (isEmbed) {
 document.body.classList.add("embed-mode");
