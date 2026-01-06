@@ -1260,6 +1260,7 @@ let currentLoan = null;
 let currentMode = 'portfolio';
 
 let PORTFOLIO_START = null;
+let PORTFOLIO_KPIS = null;
 
 if (isEmbed) {
   document.documentElement.style.visibility = 'hidden';
@@ -1521,8 +1522,12 @@ buildLoanColorMap(loansWithEarnings);
 window.LoanMap = Object.fromEntries(
   loansWithEarnings.map(l => [l.loanId, l])
 );
+
+PORTFOLIO_KPIS =
+  computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
 }
 
+  
 const KPI_PALETTE = [
 "#2563eb",
 "#dc2626",
@@ -2884,17 +2889,17 @@ function openKpi1() {
   currentLoan = null;
   currentMode = 'kpi';
 
-  // ✅ reset first
+  // reset first
   resetDrawerContent();
 
-  // ✅ compute KPIs (canonical source)
-  const kpis = computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
+  // ✅ USE ENGINE-COMPUTED KPIs (single source of truth)
+  const kpis = PORTFOLIO_KPIS;
 
   drawerTitle.textContent = "Total Net Earnings to Date";
   drawerSub.textContent =
     "Portfolio-level earnings across all loans.";
 
-  // ✅ primary / secondary stat boxes
+  // primary / secondary stat boxes
   drawerPrimaryTitle.textContent = "Net Earnings to Date";
   drawerPrimary.textContent =
     formatCurrency(kpis.totalNetToDate);
@@ -2930,6 +2935,7 @@ function openKpi1() {
 }
 
 
+
 function openKpi2() {
   currentLoan = null;
   currentMode = 'kpi';
@@ -2940,19 +2946,25 @@ function openKpi2() {
   drawerSub.textContent =
     "Projected lifetime earnings across all loans, assuming full term.";
 
-  // ✅ COMPUTE KPIs (THIS WAS MISSING)
-  const kpis = computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
+  // ✅ USE ENGINE-COMPUTED KPIs
+  const kpis = PORTFOLIO_KPIS;
 
+  // -----------------------------
   // Chart
+  // -----------------------------
   renderKPI2Chart(loansWithEarnings);
 
+  // -----------------------------
   // Table
+  // -----------------------------
   drawerExtra.innerHTML = `
     <div class="amort-wrap" id="kpi2Table"></div>
   `;
   renderKPI2Table(loansWithEarnings, "kpi2Table");
 
-  // ✅ Populate stat boxes
+  // -----------------------------
+  // Stat boxes
+  // -----------------------------
   drawerPrimaryTitle.textContent = "Projected Net Earnings";
   drawerPrimary.textContent =
     formatCurrency(kpis.totalNetProjected);
@@ -2960,39 +2972,43 @@ function openKpi2() {
   drawerSecondaryTitle.textContent = "Projected Total Fees";
   drawerSecondary.textContent =
     formatCurrency(kpis.totalFeesProjected);
-  }
+
+  openDrawer();
+}
+
 
 function openKpi3() {
   currentLoan = null;
   currentMode = 'kpi';
 
-  // ✅ RESET FIRST (critical)
+  // reset first
   resetDrawerContent();
 
   drawerTitle.textContent = "Avg Monthly Earnings To Date";
   drawerSub.textContent =
     "Total net earnings divided by months since portfolio inception.";
 
-  // ✅ COMPUTE KPIs (missing before)
-  const kpis = computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
+  // ✅ USE ENGINE-COMPUTED KPIs
+  const kpis = PORTFOLIO_KPIS;
 
-  // ✅ PRIMARY / SECONDARY STAT BOXES
+  // -----------------------------
+  // Stat boxes (ENGINE-DRIVEN)
+  // -----------------------------
   drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
   drawerPrimary.textContent =
-    formatCurrency(kpis.avgMonthlyToDate);
+    formatCurrency(kpis.avgMonthlyNetToDate);
 
   drawerSecondaryTitle.innerHTML = `
     Months Counted
     <span class="info-icon"
-      title="Months counted is the total months each loan has been owned.">ⓘ</span>
+      title="Months counted is the total months the portfolio has been active.">ⓘ</span>
   `;
   drawerSecondary.textContent =
-    String(Math.max(0, Number(kpis.monthsCounted ?? 0)));
+    String(Math.max(0, Number(kpis.monthsElapsed ?? 0)));
 
   // -----------------------------
   // Existing chart logic (unchanged)
   // -----------------------------
-
   const activeLoans = loansWithEarnings.filter(
     l => !hiddenLoans.has(l.loanId)
   );
@@ -3069,7 +3085,9 @@ function openKpi3() {
     avgRows
   );
 
+  // -----------------------------
   // Table
+  // -----------------------------
   drawerExtra.innerHTML =
     `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI3Table(activeLoans, "drawerKpiTable");
@@ -3087,11 +3105,12 @@ function openKpi3() {
 }
 
 
+
 function openKpi4() {
   currentLoan = null;
   currentMode = "kpi";
 
-  // ✅ RESET FIRST (critical)
+  // reset first
   resetDrawerContent();
 
   const activeLoans = loansWithEarnings.filter(
@@ -3104,19 +3123,20 @@ function openKpi4() {
       l.earningsSchedule.length > 0
   );
 
-  // ✅ COMPUTE KPIs (canonical source)
-  const kpis = computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
+  // ✅ USE ENGINE-COMPUTED KPIs
+  const kpis = PORTFOLIO_KPIS;
 
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent =
     "Average projected net earnings per month across the full lifetime of all loans.";
 
-  // ✅ PRIMARY
+  // -----------------------------
+  // Stat boxes (ENGINE-DRIVEN)
+  // -----------------------------
   drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
   drawerPrimary.textContent =
-    formatCurrency(kpis.avgMonthlyProjected);
+    formatCurrency(kpis.avgMonthlyNetProjected);
 
-  // ✅ SECONDARY
   const totalMonthsThroughMaturity =
     loansWithEarningsFiltered.length > 0
       ? Math.max(
@@ -3155,6 +3175,7 @@ function openKpi4() {
 
   openDrawer();
 }
+
 
 
 const activeLoans = loansWithEarnings.filter(
