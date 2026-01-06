@@ -3001,20 +3001,23 @@ function openKpi3() {
   // ✅ USE ENGINE-COMPUTED KPIs
   const kpis = PORTFOLIO_KPIS;
 
-  // -----------------------------
-  // Stat boxes (ENGINE-DRIVEN)
-  // -----------------------------
-  drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
-  drawerPrimary.textContent =
+ // -----------------------------
+// Stat boxes (ENGINE-DRIVEN)
+// -----------------------------
+drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
+drawerPrimary.textContent =
   formatCurrency(kpis.avgMonthlyNet);
 
-  drawerSecondary.textContent =
+// Secondary title WITH info icon
+drawerSecondaryTitle.innerHTML = `
+  Months Counted
+  <span class="info-icon"
+    title="Months counted is the total months the portfolio has been active.">ⓘ</span>
+`;
+
+// Secondary value
+drawerSecondary.textContent =
   String(kpis.monthsCounted);
-    <span class="info-icon"
-      title="Months counted is the total months the portfolio has been active.">ⓘ</span>
-  `;
-  drawerSecondary.textContent =
-    String(Math.max(0, Number(kpis.monthsElapsed ?? 0)));
 
   // -----------------------------
   // Existing chart logic (unchanged)
