@@ -1523,8 +1523,14 @@ window.LoanMap = Object.fromEntries(
   loansWithEarnings.map(l => [l.loanId, l])
 );
 
+// ✅ SET PORTFOLIO START (REQUIRED FOR AVG KPIs)
+PORTFOLIO_START = getPortfolioStartDate(loansWithEarnings);
+window.__PORTFOLIO_START__ = PORTFOLIO_START;
+
+// ✅ NOW compute KPIs
 PORTFOLIO_KPIS =
   computePortfolioEarningsKPIs(loansWithEarnings, TODAY);
+
 }
 
   
