@@ -553,6 +553,31 @@ html[data-theme="dark"] .close-btn {
   padding-top: 0 !important;
 }
 
+/* ============================================================
+   EMBED MODE — STACKED DRAWER SCROLL (MATCH EARNINGS)
+   ============================================================ */
+
+/* Prevent page-level scrolling */
+.embed-mode html,
+.embed-mode body {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+/* Drawer body is the ONLY scroll container */
+.embed-mode .drawer-body {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: none !important;
+  padding-top: 16px !important; /* spacing below KPIs */
+}
+
+/* Ensure amort table does not create nested scroll */
+.embed-mode .amort-wrap {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
 /* Header */
 .embed-mode .drawer-head {
   padding: 20px !important;
@@ -560,16 +585,6 @@ html[data-theme="dark"] .close-btn {
   border-bottom: 1px solid var(--border) !important;
 }
 
-/* ============================================================
-   EMBED MODE — REMOVE NESTED SCROLL (Amort iframe)
-   ============================================================ */
-
-.embed-mode .amort-wrap {
-  max-height: none !important;
-  overflow: visible !important;
-}
-
-    
 /* =========================================
    Contextual Back Navigation (Reporting → UI)
    ========================================= */
@@ -654,12 +669,18 @@ html[data-theme="dark"] .close-btn {
   display: block;
 }
 
-/* Hide KPI row and grid when embedded */
-.embed-mode .kpis,
+/* EMBED MODE — match Earnings behavior */
 .embed-mode .loan-filters,
 .embed-mode .grid {
   display: none !important;
 }
+
+/* KPIs stay visible in iframe */
+.embed-mode .kpis {
+  display: grid !important;
+  margin: 0 0 12px !important;
+}
+
 
     #feedback-btn {
   position: fixed;
@@ -1585,20 +1606,34 @@ applyLoanFilters();
       localStorage.setItem("loanGridCompact", compactToggle.checked);
     });
   
-  /* =========================
-     E. INTERACTION WIRING
-     ========================= */
+/* =========================
+   E. INTERACTION WIRING
+   ========================= */
 
-  document.querySelectorAll('.kpi').forEach(k => {
-    k.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const key = k.getAttribute('data-kpi');
-      if (key === 'distribution') renderDistributionDrawer();
-      if (key === 'tpv') renderTPVDrawer();
-      if (key === 'rates') renderRatesDrawer();
-      if (key === 'payments') renderPaymentsDrawer();
-    });
+document.querySelectorAll('.kpi').forEach(k => {
+  k.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+
+    const key = k.dataset.kpi || "portfolio";
+
+    // 👉 IF inside Reporting iframe → redirect to full Amort page
+    if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
+      window.top.location.href =
+        `/loan-dashboard/amort/index.html` +
+        `?user=${PAGE_CONTEXT.user}` +
+        `&from=reporting` +
+        `&open=kpi-${key}`;
+      return;
+    }
+
+    // 👉 Normal full-page behavior (unchanged)
+    if (key === 'distribution') renderDistributionDrawer();
+    if (key === 'tpv') renderTPVDrawer();
+    if (key === 'rates') renderRatesDrawer();
+    if (key === 'payments') renderPaymentsDrawer();
   });
+});
+
 }
 
 
@@ -3644,6 +3679,18 @@ const user = PAGE_CONTEXT.user;
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener("click", redirectToFullPage, true);
   });
+
+function redirectToFullAmort(openParam) {
+  const url =
+    `/loan-dashboard/amort/index.html` +
+    `?user=${PAGE_CONTEXT.user}` +
+    `&from=reporting` +
+    (openParam ? `&open=${openParam}` : "");
+
+  window.top.location.href = url;
+}
+
+  
 });
 
     document.addEventListener("DOMContentLoaded", init);
