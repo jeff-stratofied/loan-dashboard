@@ -687,6 +687,20 @@ html[data-theme="dark"] .close-btn {
   margin: 0 0 12px !important;
 }
 
+    /* === FIX: ensure KPIs are visible in embed === */
+.embed-mode .app {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.embed-mode .kpis {
+  flex: 0 0 auto !important;
+}
+
+.embed-mode .drawer {
+  flex: 1 1 auto !important;
+}
+
 
     #feedback-btn {
   position: fixed;
@@ -876,6 +890,9 @@ import {
    ========================================================= */
 
 const PAGE_CONTEXT = (() => {
+  const SHOULD_AUTO_OPEN =
+  PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting;
+  
   const params = new URLSearchParams(window.location.search);
 
   const user = params.get("user") || "jeff";
@@ -893,6 +910,8 @@ const PAGE_CONTEXT = (() => {
   };
 })();
 
+
+    
 /* ============================
    GLOBAL STATE (mutable)
    ============================ */
@@ -1074,7 +1093,11 @@ async function init() {
      3) RENDER + WIRE UI (MUST HAPPEN AFTER DATA)
      ===================================================== */
 
+  // Suppress initial paint if auto-opening a drawer
+if (!SHOULD_AUTO_OPEN || !PAGE_CONTEXT.open) {
   renderAndWirePage();
+}
+
 
   /* =====================================================
      4) EMBED / REPORTING AUTO-OPEN LOGIC
@@ -1090,22 +1113,18 @@ async function init() {
       );
 
       if (loan) {
-        requestAnimationFrame(() => {
-          openDrawerForLoan(loan);
-          drawer.classList.add("open");
-          drawer.setAttribute("aria-hidden", "false");
-        });
+        openDrawerForLoan(loan);
+        drawer.classList.add("open");
+        drawer.setAttribute("aria-hidden", "false");
         return;
       }
     }
 
     // 2️⃣ Open first loan (?open=first)
     if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
-      requestAnimationFrame(() => {
-        openDrawerForLoan(currentLoans[0]);
-        drawer.classList.add("open");
-        drawer.setAttribute("aria-hidden", "false");
-      });
+      openDrawerForLoan(currentLoans[0]);
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
       return;
     }
 
@@ -1113,19 +1132,19 @@ async function init() {
     if (PAGE_CONTEXT.open && PAGE_CONTEXT.open.startsWith("kpi-")) {
       const key = PAGE_CONTEXT.open.replace("kpi-", "");
 
-      requestAnimationFrame(() => {
-        if (key === "tpv") renderTPVDrawer();
-        if (key === "rates") renderRatesDrawer();
-        if (key === "payments") renderPaymentsDrawer();
-        if (key === "distribution") renderDistributionDrawer();
+      if (key === "tpv") renderTPVDrawer();
+      if (key === "rates") renderRatesDrawer();
+      if (key === "payments") renderPaymentsDrawer();
+      if (key === "distribution") renderDistributionDrawer();
 
-        drawer.classList.add("open");
-        drawer.setAttribute("aria-hidden", "false");
-      });
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+      return;
+    }
+
       return;
     }
   }
-}
 
 
 /* =========================================================
