@@ -860,7 +860,6 @@ const PAGE_CONTEXT = (() => {
     
 let currentLoans = [];
 let allLoans = [];
-let apiLoans = [];
 
 let currentLoan = null;
 let currentMode = null;
@@ -913,27 +912,28 @@ async function loadAndNormalizeLoans() {
     location.hostname === "localhost" ||
     location.hostname.includes("github.io");
 
-  if (DEV_MODE) {
-    apiLoans.forEach(l => {
-      const problems = [];
+if (DEV_MODE) {
+  rawLoans.forEach(l => {
+    const problems = [];
 
-      if (!Number.isFinite(l.nominalRate)) problems.push("nominalRate");
-      if (!Number.isFinite(l.principal)) problems.push("principal");
-      if (!Number.isFinite(l.purchasePrice)) problems.push("purchasePrice");
-      if (!Number.isFinite(l.termYears)) problems.push("termYears");
-      if (!l.loanStartDate) problems.push("loanStartDate");
-      if (!l.user) problems.push("user");
+    if (!Number.isFinite(l.nominalRate)) problems.push("nominalRate");
+    if (!Number.isFinite(l.principal)) problems.push("principal");
+    if (!Number.isFinite(l.purchasePrice)) problems.push("purchasePrice");
+    if (!Number.isFinite(l.termYears)) problems.push("termYears");
+    if (!l.loanStartDate) problems.push("loanStartDate");
+    if (!l.user) problems.push("user");
 
-      if (problems.length) {
-        console.warn("⚠️ Loan schema issue", {
-          loanId: l.loanId,
-          loanName: l.loanName,
-          problems,
-          loan: l
-        });
-      }
-    });
-  }
+    if (problems.length) {
+      console.warn("⚠️ Loan schema issue", {
+        loanId: l.loanId,
+        loanName: l.loanName,
+        problems,
+        loan: l
+      });
+    }
+  });
+}
+
 
 const enrichedLoans = attachSchedules(
    rawLoans.map(normalizeLoan)
