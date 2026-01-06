@@ -1077,11 +1077,16 @@ html[data-theme="dark"] .legend .sw {
   padding-top: 16px !important;  /* intentional content spacing */
 }
 
-/* 6️⃣ Defensive: prevent table wrappers from creating nested scroll */
+/* ============================================================
+   EMBED MODE — EARNINGS TABLE SCROLL (RESTORE)
+   ============================================================ */
+
 .embed-mode .amort-wrap {
-  overflow: visible !important;
-  max-height: none !important;
+  max-height: 40vh !important;   /* keeps table contained */
+  overflow-y: auto !important;   /* table scrolls */
+  overflow-x: hidden !important;
 }
+
 
     
   </style>
