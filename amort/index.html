@@ -731,6 +731,8 @@ html[data-theme="dark"] .close-btn {
   <select id="sortLoans">
     <option value="purchase_asc">Purchase date ↑</option>
     <option value="purchase_desc">Purchase date ↓</option>
+    <option value="start_asc">Loan start date ↑</option>
+    <option value="start_desc">Loan start date ↓</option>
     <option value="amount_asc">Orig amount ↑</option>
     <option value="amount_desc">Orig amount ↓</option>
     <option value="rate_asc">Interest rate ↑</option>
@@ -1242,6 +1244,7 @@ assert(
       tile.dataset.school = (loan.school || "").toLowerCase();
       tile.dataset.rate = loan.nominalRate;
       tile.dataset.purchaseDate = new Date(loan.purchaseDate).getTime();
+      tile.dataset.startDate = new Date(loan.loanStartDate).getTime();
       tile.dataset.amount = Number(loan.purchasePrice || 0);
 
       tile.setAttribute('tabindex', '0');
@@ -1541,9 +1544,13 @@ resetBtn.addEventListener("click", () => {
   filterName.value = "";
   filterSchool.value = "";
   filterRate.value = "";
-  sortLoans.value = "";
+
+  // 🔑 restore default sort (must match an option value)
+  sortLoans.value = "purchase_asc";
+
   applyLoanFilters();
 });
+
 
 // Initial filter pass
 applyLoanFilters();
@@ -1668,6 +1675,8 @@ function applyLoanSort() {
     switch (mode) {
       case "purchase_asc": return get(a, "purchaseDate") - get(b, "purchaseDate");
       case "purchase_desc": return get(b, "purchaseDate") - get(a, "purchaseDate");
+      case "start_asc": return get(a, "startDate") - get(b, "startDate");
+      case "start_desc": return get(b, "startDate") - get(a, "startDate");
       case "amount_asc": return get(a, "amount") - get(b, "amount");
       case "amount_desc": return get(b, "amount") - get(a, "amount");
       case "rate_asc": return get(a, "rate") - get(b, "rate");
