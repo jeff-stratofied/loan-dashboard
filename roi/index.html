@@ -839,6 +839,24 @@ tr.event-default td {
   min-height: 0 !important;
 }
 
+    /* ROI iframe: grid must size naturally below KPIs */
+.embed-mode .grid {
+  height: auto !important;
+  max-height: none !important;
+  flex: 1 1 auto;
+}
+
+    .embed-mode .kpis {
+  display: grid !important;
+  margin-top: 8px !important;
+  margin-bottom: 12px !important;
+  flex-shrink: 0;
+}
+
+    .embed-mode .grid {
+  overflow-y: auto;
+}
+
     
 #feedback-btn:hover {
   transform: scale(1.05);
