@@ -4122,8 +4122,10 @@ if (_IS_EMBED) {
     copyBtn.addEventListener("click", redirectToFullROI, true);
   }
 }
-console.log("[ROI DEBUG] kpis element:", document.getElementById("kpis"));
-console.log("[ROI DEBUG] kpis HTML:", document.getElementById("kpis")?.innerHTML);
+const k = document.getElementById("kpis");
+const r = k.getBoundingClientRect();
+console.log("[ROI DEBUG] KPI rect:", r);
+
 
 
     } // END initROI()
