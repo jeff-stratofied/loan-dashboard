@@ -113,7 +113,7 @@
     margin-top:0;
     }
 
-    
+/* delete
    header{
     display:flex;
     flex-direction:column;
@@ -122,7 +122,7 @@
     padding:0;
     transition:color .25s ease;
     }
-
+delete */
 
     .header-top{
       display:flex;
@@ -219,6 +219,8 @@
       border:none;
       box-shadow:var(--shadow);
     }
+
+  /* delete
     .close-btn{
       background:var(--card-muted);
       border:1px solid var(--border);
@@ -228,7 +230,8 @@
       color:var(--text);
       transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
-
+delete*/
+    
     /* ============================================================
    FIX: Earnings Print button matches ROI / Amort
    ============================================================ */
@@ -770,11 +773,13 @@ th:first-child {
   border-top: 1px solid var(--border);
 }
 
+/* dlete
 .actions {
   display: flex;
   gap: 8px;
 }
-
+delete */
+    
 /* Dark Mode Overrides (match amort) */
 html[data-theme="dark"] .drawer {
   background: var(--drawer-bg);
@@ -864,17 +869,17 @@ html[data-theme="dark"] .legend .sw {
 /* ============================================================
    EMBED MODE (Dashboard iframe)
    ============================================================ */
-
+/* delete
 .embed-mode header,
 .embed-mode .loan-filters,
 .embed-mode .kpis {
   display: none !important;
 }
-
+delete */
 /* ============================================================
    EMBED MODE — EARNINGS LAYOUT
    ============================================================ */
-
+/* delete
 .embed-mode .drawer {
   position: static !important;
   inset: auto !important;
@@ -886,57 +891,59 @@ html[data-theme="dark"] .legend .sw {
   box-shadow: none !important;
   border-radius: 0 !important;
 }
-
+delete */
 /* ============================================
    EMBED MODE — IFRAME CLEANUP (FINAL)
    ============================================ */
 
 /* Remove top gray bar */
-.embed-mode .app {
+/* delete
+    .embed-mode .app {
   margin-top: 0 !important;
   padding-top: 0 !important;
 }
-
+delete */
 /* Kill phantom grid spacing */
+    /* delete
 .embed-mode .grid {
   padding-right: 0 !important;
 }
-
+delete */
 /* Ensure single scroll container */
+    /* delete
 .embed-mode .drawer {
   overflow: hidden !important;
 }
-
+delete */
     
 /* ============================================================
    EMBED MODE — REMOVE LOAN GRID ENTIRELY (AUTHORITATIVE FIX)
    ============================================================ */
-
+/* delete
 .embed-mode .grid {
   display: none !important;
 }
-
+delete */
 
 /* ============================================================
    EMBED MODE — SCROLL BEHAVIOR
    ============================================================ */
-
+/* delete
 .embed-mode .drawer-body {
   overflow-y: auto;
   max-height: none;
 }
 
-    /* Embed page itself must never scroll */
 .embed-mode html,
 .embed-mode body {
   overflow: hidden !important;
 }
-
+delete */
 
 /* ============================================================
    EMBED MODE — BUTTON VISIBILITY
    ============================================================ */
-
+/* delete
 .embed-mode .drawer-close,
 .embed-mode button[aria-label="Close"] {
   display: none !important;
@@ -949,7 +956,7 @@ html[data-theme="dark"] .legend .sw {
 .embed-mode .drawer-footer {
   display: block !important;
 }
-
+delete */
 
 
     /* =========================================
@@ -974,7 +981,7 @@ html[data-theme="dark"] .legend .sw {
     /* ============================================================
    EMBED MODE — UNIFIED DRAWER LAYOUT (ALIGN ALL IFRAMES)
    ============================================================ */
-
+/* delete
 .embed-mode .drawer-head {
   padding: 20px !important;
   min-height: 64px;
@@ -982,26 +989,26 @@ html[data-theme="dark"] .legend .sw {
   background: var(--card);
 }
 
-/* Chart: same height everywhere */
+
 .embed-mode .drawer-chart {
   height: 220px !important;
   margin-bottom: 12px !important;
 }
 
-/* Stat boxes row */
+
 .embed-mode .stat-boxes,
 .embed-mode .drawer-info-row {
   margin-bottom: 12px !important;
   min-height: 56px;
 }
 
-/* Drawer body spacing */
+
 .embed-mode .drawer-body {
   gap: 12px !important;
   padding-left: 16px !important;
   padding-right: 16px !important;
 }
-
+delete */
     #feedback-btn {
   position: fixed;
   bottom: 18px;
