@@ -3436,11 +3436,6 @@ function renderPaymentsDrawer() {
 }
 
 
-
-
-
-
-
     /* ============================
        CSV / copy / download / print
        ============================ */
@@ -3476,13 +3471,7 @@ function renderPaymentsDrawer() {
     // Accessibility tweak: hide tooltip when grid scrolls
     document.querySelector('.grid').addEventListener('scroll', () => tooltip.style.display = 'none');
 
-    /* ============================
-       Click outside to close drawer
-       - If drawer is open, close it when user clicks anywhere that's
-         not inside the drawer AND not on another tile.
-       - Important: tile clicks call stopPropagation so the tile's click
-         will open drawer and not cause immediate close.
-       ============================ */
+   
     document.addEventListener('click', function (e) {
       if (!drawer.classList.contains('open')) return;
 
@@ -3555,7 +3544,6 @@ if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
   if (loan) {
     currentLoan = loan;
     requestAnimationFrame(() => openDrawerForLoan(loan));
-
   }
 }
 
