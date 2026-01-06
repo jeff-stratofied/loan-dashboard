@@ -4267,6 +4267,19 @@ if (_IS_EMBED) {
       renderRatesDrawer();
     }, 100);
   }
+
+  // Enable scrollbars (matches Earnings/Amort iframes)
+  const app = document.querySelector('.app');
+  if (app) {
+    app.style.overflow = 'auto'; // Scroll whole iframe (KPIs + drawer)
+    app.style.height = 'auto';   // Allow natural height for scrolling
+  }
+
+  const drawerBody = document.querySelector('.drawer-body');
+  if (drawerBody) {
+    drawerBody.style.overflow = 'auto'; // Scroll drawer table
+    drawerBody.style.maxHeight = '400px'; // Optional: Limit height to force scrollbar if table is long
+  }
 }
 const k = document.getElementById("kpis");
 const r = k.getBoundingClientRect();
