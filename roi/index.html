@@ -1122,6 +1122,12 @@ body.embed {
         grid-template-columns: 1fr; /* Stack KPIs vertically if too narrow */
     }
 }
+
+/* Hide entire header in embed mode to remove filters, title, and date */
+.embed-mode header {
+  display: none !important;
+}
+
     
 #feedback-btn:hover {
   transform: scale(1.05);
