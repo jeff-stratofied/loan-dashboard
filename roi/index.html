@@ -1019,6 +1019,25 @@ tr.event-default td {
   height: auto !important;
 }
 
+    /* 🔑 ROI iframe: allow content above grid to be visible */
+.embed-mode .app {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+
+    /* 🔑 ROI iframe: grid must not steal viewport height */
+.embed-mode .grid {
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+}
+
+    .embed-mode .kpis {
+  position: relative;
+  z-index: 1;
+}
+
     
 #feedback-btn:hover {
   transform: scale(1.05);
