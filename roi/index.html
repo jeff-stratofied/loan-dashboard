@@ -716,26 +716,13 @@ tr.event-default td {
     /* ============================================================
    EMBED MODE — UNIFIED LAYOUT (ALIGN WITH EARNINGS & AMORT)
    ============================================================ */
-.embed-mode body,
-.embed-mode .app,
-.embed-mode .drawer {
-  height: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  background: var(--card) !important;
-}
+
 
 .embed-mode .drawer {
-  position: static !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  box-shadow: none !important;
-  border: none !important;
-  border-radius: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
+  height: auto !important;
+  min-height: 0 !important;
 }
+
 
 .embed-mode .drawer-head {
   padding: 20px !important;
@@ -799,6 +786,11 @@ tr.event-default td {
 .embed-mode .app {
   display: flex !important;
   flex-direction: column !important;
+  height: auto !important;
+}
+
+    .embed-mode header {
+  display: none !important;
 }
 
 
