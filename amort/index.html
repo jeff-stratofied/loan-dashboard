@@ -3055,20 +3055,23 @@ do not use */
       enableStackedBarInteractions({
   svg,
   table,
-  tooltipFormatter: rect => {
-    const loanId = rect.dataset.loanId;
-    const monthIdx = Number(rect.dataset.monthIndex);
-    const loan = tpvData.seriesByLoan[loanId];
+tooltipFormatter: rect => {
+  const loanId = rect.dataset.loanId;
+  const i = Number(rect.dataset.monthIndex);
 
-    const value = loan.values[monthIdx] || 0;
-    const month = tpvData.months[monthIdx];
+  const loan = tpvData.seriesByLoan[loanId];
+  const month = tpvData.months[i];
+  const loanValue = loan.values[i] || 0;
+  const total = tpvData.totalsByMonth[i] || 0;
 
-    return `
-      <strong>${loan.loanName}</strong><br>
-      ${month}<br>
-      TPV: $${value.toLocaleString()}
-    `;
-  }
+  return `
+    <strong>${month}</strong><br>
+    Total TPV: $${total.toLocaleString()}<br>
+    <span style="color:${loan.color}">■</span>
+    ${loan.loanName}: $${loanValue.toLocaleString()}
+  `;
+}
+
 });
 /* use */
 
