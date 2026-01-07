@@ -2922,11 +2922,6 @@ function toDate(d) {
   return (d instanceof Date) ? d : new Date(d);
 }
 
-// Format ticks (Jan 2024)
-function formatMonthYear(d) {
-  return d.toLocaleString("en-US", { month: "short", year: "numeric" });
-}
-
 // Simple catmull-rom smoothing
 function smoothPath(points) {
   if (points.length < 3) {
