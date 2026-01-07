@@ -147,6 +147,3 @@ export function renderTPVTable({
   `;
 }
 
-.drawer.kpi-interactive tbody tr.active {
-  background: rgba(148, 163, 184, 0.18);
-}
