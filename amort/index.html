@@ -2932,7 +2932,7 @@ drawerExtra.appendChild(wrap);
   drawerBody.scrollTop = 0;
 }
 
-    function renderTPVTable(derived) {
+function renderTPVTable(derived) {
   const { tpvStackData } = derived;
   const curKey = currentMonthKey();
 
@@ -2942,14 +2942,13 @@ drawerExtra.appendChild(wrap);
 
   table.innerHTML = `
     <thead>
-  <tr>
-    <th style="width:36px">Loan On/Off</th>
-    <th>Loan</th>
-    <th style="text-align:right">Current TPV</th>
-    <th style="text-align:right">Projected TPV</th>
-  </tr>
-</thead>
-
+      <tr>
+        <th style="width:36px">Loan On/Off</th>
+        <th>Loan</th>
+        <th>Current TPV</th>
+        <th>Projected TPV</th>
+      </tr>
+    </thead>
     <tbody></tbody>
   `;
 
@@ -2957,8 +2956,8 @@ drawerExtra.appendChild(wrap);
 
   currentLoans.forEach(loan => {
     const loanId = loan.loanId ?? loan.id;
-    if (hiddenTPVLoans.has(loanId)) return;
 
+    // ✅ ALWAYS compute values (even if loan is toggled off)
     const curVal = sumLoanTPVForMonth(tpvStackData, curKey, loanId);
     const endVal = lastLoanTPV(tpvStackData, loanId);
 
@@ -2966,65 +2965,60 @@ drawerExtra.appendChild(wrap);
     tr.dataset.loanId = loanId;
 
     tr.innerHTML = `
-      <td style="text-align:center">
-  <span
-    class="tpv-swatch"
-    data-loan-id="${loanId}"
-    style="
-      width:12px;
-      height:12px;
-      border-radius:3px;
-      background:${KPI_COLOR_MAP[loanId]};
-      display:inline-block;
-      cursor:pointer;
-    ">
-  </span>
-</td>
+      <td>
+        <span
+          class="tpv-swatch"
+          data-loan-id="${loanId}"
+          style="
+            width:12px;
+            height:12px;
+            border-radius:3px;
+            background:${KPI_COLOR_MAP[loanId]};
+            display:inline-block;
+            cursor:pointer;
+          ">
+        </span>
+      </td>
 
-<td>
-  <div style="font-weight:600">${loan.loanName}</div>
-  <div class="small">${loan.school || ""}</div>
-</td>
+      <td>
+        <div style="font-weight:600">${loan.loanName}</div>
+        <div class="small">${loan.school || ""}</div>
+      </td>
 
-      <td style="text-align:right">$${Math.round(curVal).toLocaleString()}</td>
-      <td style="text-align:right">$${Math.round(endVal).toLocaleString()}</td>
+      <td>$${Math.round(curVal).toLocaleString()}</td>
+      <td>$${Math.round(endVal).toLocaleString()}</td>
     `;
 
-const swatch = tr.querySelector(".tpv-swatch");
+    // ---------- swatch toggle ----------
+    const swatch = tr.querySelector(".tpv-swatch");
+
+    // initialize state
     if (hiddenTPVLoans.has(loanId)) {
-  swatch.classList.add("dimmed");
-}
+      swatch.classList.add("dimmed");
+    }
 
-swatch.addEventListener("click", e => {
-  e.stopPropagation();
+    swatch.addEventListener("click", e => {
+      e.stopPropagation();
 
-if (hiddenTPVLoans.has(loanId)) {
-  hiddenTPVLoans.delete(loanId);
-  swatch.classList.remove("dimmed");
-} else {
-  hiddenTPVLoans.add(loanId);
-  swatch.classList.add("dimmed");
-}
+      if (hiddenTPVLoans.has(loanId)) {
+        hiddenTPVLoans.delete(loanId);
+        swatch.classList.remove("dimmed");
+      } else {
+        hiddenTPVLoans.add(loanId);
+        swatch.classList.add("dimmed");
+      }
 
+      // re-render chart + KPI (table stays visible)
+      renderTPVDrawer();
+    });
 
-  renderTPVDrawer();
-});
-
-
-    // --- hover highlight ---
-tr.addEventListener("mouseenter", () => {
-  tr.classList.add("row-hover");
-});
-
-tr.addEventListener("mouseleave", () => {
-  tr.classList.remove("row-hover");
-});
-
+    // ---------- row hover highlight only ----------
+    tr.addEventListener("mouseenter", () => {
+      tr.classList.add("row-hover");
+    });
 
     tr.addEventListener("mouseleave", () => {
-      document
-        .querySelectorAll(`[data-loan-id]`)
-        .forEach(el => (el.style.opacity = "1"));
+      tr.classList.remove("row-hover");
     });
 
     tbody.appendChild(tr);
@@ -3032,6 +3026,7 @@ tr.addEventListener("mouseleave", () => {
 
   return table;
 }
+
 
 
 function renderRatesDrawer() {
