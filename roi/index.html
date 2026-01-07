@@ -1744,6 +1744,10 @@ function computeKPIs(list) {
 
       containerEl.appendChild(svg); return svg;
     }
+
+// 🔓 Expose chart helper to drawer code
+window.createLineChart = createLineChart;
+
       
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
