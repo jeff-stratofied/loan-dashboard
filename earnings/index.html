@@ -1148,7 +1148,31 @@ if (isEmbed) {
 document.body.classList.add("embed-mode");
 }
 
-  if (isEmbed) {
+ /* ======================================================
+   EMBED MODE — REDIRECT ALL MUTATING ACTIONS TO FULL PAGE
+   ====================================================== */
+
+function redirectToFullEarnings({ open } = {}) {
+  if (!isEmbed) return;
+
+  const url =
+    `/loan-dashboard/earnings/index.html` +
+    `?user=${PAGE_USER}` +
+    `&from=reporting` +
+    (open ? `&open=${open}` : "");
+
+  window.top.location.href = url;
+}
+
+function interceptAndRedirect(open) {
+  return function (e) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    redirectToFullEarnings({ open });
+  };
+}
+
+if (isEmbed) {
   const bindings = [
     // Header / drawer actions
     { selector: "#closeBtn", open: "kpi2" },
@@ -1156,7 +1180,7 @@ document.body.classList.add("embed-mode");
     { selector: "#printBtn", open: "kpi2" },
     { selector: "#copyCsvBtn", open: "kpi2" },
 
-    // 🔑 Loan on/off toggle (EARNINGS TABLE)
+    // 🔑 Loan on/off toggle (earnings tables)
     { selector: ".amort-wrap input[type='checkbox']", open: "kpi2" }
   ];
 
@@ -1165,11 +1189,12 @@ document.body.classList.add("embed-mode");
       el.addEventListener(
         "click",
         interceptAndRedirect(open),
-        true // capture phase — required
+        true // capture phase — REQUIRED
       );
     });
   });
 }
+
 
 
   /* delete
