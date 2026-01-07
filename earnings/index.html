@@ -1149,85 +1149,38 @@ const TODAY = getStandardToday();
    EMBED MODE — REDIRECT ALL MUTATING ACTIONS TO FULL PAGE
    ====================================================== */
 
-function redirectToFullEarnings({ open } = {}) {
-  if (!isEmbed) return;
-
-  const url =
-    `/loan-dashboard/earnings/index.html` +
-    `?user=${PAGE_USER}` +
-    `&from=reporting` +
-    (open ? `&open=${open}` : "");
-
-  window.top.location.href = url;
-}
-
-function interceptAndRedirect(open) {
-  return function (e) {
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    redirectToFullEarnings({ open });
-  };
-}
-
 if (isEmbed) {
   const bindings = [
-    // Header / drawer actions
-    { selector: "#closeBtn", open: "kpi2" },
-    { selector: "#downloadCsvBtn", open: "kpi2" },
-    { selector: "#printBtn", open: "kpi2" },
-    { selector: "#copyCsvBtn", open: "kpi2" },
+    // Header / drawer actions (click is fine)
+    { selector: "#closeBtn", open: "kpi2", events: ["click"] },
+    { selector: "#downloadCsvBtn", open: "kpi2", events: ["click"] },
+    { selector: "#printBtn", open: "kpi2", events: ["click"] },
+    { selector: "#copyCsvBtn", open: "kpi2", events: ["click"] },
 
-    // 🔑 Loan on/off toggle (earnings tables)
-    { selector: ".amort-wrap input[type='checkbox']", open: "kpi2" }
+    // 🔒 Loan on/off checkbox — MUST intercept EARLY
+    {
+      selector: ".amort-wrap input[type='checkbox']",
+      open: "kpi2",
+      events: ["mousedown", "change"]
+    }
   ];
 
-  bindings.forEach(({ selector, open }) => {
+  bindings.forEach(({ selector, open, events }) => {
     document.querySelectorAll(selector).forEach(el => {
-      el.addEventListener(
-        "click",
-        interceptAndRedirect(open),
-        true // capture phase — REQUIRED
-      );
+      events.forEach(evt => {
+        el.addEventListener(
+          evt,
+          (e) => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            redirectToFullEarnings({ open });
+          },
+          true // capture phase — REQUIRED
+        );
+      });
     });
   });
 }
-
-
-
-  /* delete
-if (isEmbed) {
-const targetUrl =
-  `/loan-dashboard/earnings/index.html?user=${PAGE_USER}&open=kpi2`;
-
-function redirectToFull(e) {
-e.preventDefault();
-e.stopImmediatePropagation();
-window.top.location.href = targetUrl;
-}
-
-const closeBtn = document.getElementById("closeBtn");
-if (closeBtn) closeBtn.addEventListener("click", redirectToFull, true);
-
-const downloadBtn = document.getElementById("downloadCsvBtn");
-if (downloadBtn) downloadBtn.addEventListener("click", redirectToFull, true);
-
-const printBtn = document.getElementById("printBtn");
-if (printBtn) printBtn.addEventListener("click", redirectToFull, true);
-
-const copyBtn = document.getElementById("copyCsvBtn");
-if (copyBtn) copyBtn.addEventListener("click", redirectToFull, true);
-}
-
-function redirectToFullEarnings(openParam) {
-  const url =
-    `/loan-dashboard/earnings/index.html` +
-    `?user=${PAGE_USER}` +
-    `&from=reporting` +
-    (openParam ? `&open=${openParam}` : "");
-
-  window.top.location.href = url;
-}
-delete */
   
 function formatDate(d) {
   if (!(d instanceof Date)) return "";
