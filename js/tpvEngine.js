@@ -74,3 +74,61 @@ export function buildLoanTPVTimeline({
 
   return rows;
 }
+
+/**
+ * Build portfolio TPV series aligned by calendar month.
+ *
+ * Output shape optimized for stacked bar charts + tables.
+ */
+export function buildPortfolioTPVSeries(
+  loansWithSchedules,
+  today = getStandardToday()
+) {
+  const monthSet = new Set();
+  const seriesByLoan = {};
+
+  loansWithSchedules.forEach(l => {
+    const rows = buildLoanTPVTimeline({
+      loan: l,
+      amortSchedule: l.amortSchedule,
+      earningsSchedule: l.earningsSchedule,
+      today
+    });
+
+    if (!rows.length) return;
+
+    seriesByLoan[l.id] = {
+      loanId: l.id,
+      loanName: l.loanName,
+      valuesByMonth: {}
+    };
+
+    rows.forEach(r => {
+      monthSet.add(r.monthKey);
+      seriesByLoan[l.id].valuesByMonth[r.monthKey] = r.value;
+    });
+  });
+
+  const months = Array.from(monthSet).sort();
+
+  // Normalize series to aligned arrays
+  Object.values(seriesByLoan).forEach(s => {
+    s.values = months.map(m => s.valuesByMonth[m] || 0);
+    delete s.valuesByMonth;
+  });
+
+  // Portfolio totals (for y-axis scaling / labels)
+  const totalsByMonth = months.map((_, i) =>
+    Object.values(seriesByLoan).reduce(
+      (sum, s) => sum + s.values[i],
+      0
+    )
+  );
+
+  return {
+    months,
+    seriesByLoan,
+    totalsByMonth
+  };
+}
+
