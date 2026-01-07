@@ -1450,7 +1450,21 @@ const cumSchedule = scheduleWithOwnership
         const id = loan.id ?? loan.loanId;
         window.KPI_COLOR_MAP[id] = palette[i];
       });
-      
+
+function getRoiAsOf(loan, date = new Date()) {
+  if (!loan.roiSeries?.length) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  const eligible = loan.roiSeries.filter(
+    r => r.date && r.date <= date
+  );
+
+  return eligible.at(-1) ??
+    { roi: 0, loanValue: loan.purchasePrice };
+}
+
+/* delete   
 function getCurrentOwnedRoiEntry(loan){
   const today = new Date();
   const ownedEntries = loan.roiSeries.filter(
@@ -1483,7 +1497,7 @@ function getCurrentOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
-
+delete */
       
 function computeWeightedRoiAsOfMonth(loans, monthDate) {
   const total = loans.reduce((s, l) => s + l.purchasePrice, 0);
