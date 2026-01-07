@@ -83,6 +83,27 @@ export function renderStackedBarChart({
     });
   });
 
+  // ---- TPV total overlay line (matches old TPV chart) ----
+  const path = document.createElementNS(svgNS, "path");
+
+  const d = data.totalsByMonth
+    .map((v, i) => {
+      const x = padding.left + i * barW + barW / 2;
+      const y = yScale(v);
+      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+    })
+    .join(" ");
+
+  path.setAttribute("d", d);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", "#2563eb");   // same blue as old TPV
+  path.setAttribute("stroke-width", "2");
+  path.setAttribute("stroke-linecap", "round");
+  path.style.pointerEvents = "none";         // don't block bar hover
+
+  svg.appendChild(path);
+
+  
   // ---- X axis labels ----
   months.forEach((m, i) => {
     if (i % Math.ceil(months.length / 6) !== 0) return;
