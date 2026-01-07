@@ -1264,14 +1264,14 @@ loans = [];
 document.getElementById("currentDate").textContent =
   formatDate(TODAY);
 
-
+/* delete
 let stackedBarGroupCounter = 0;
 
 function prepareStackedBar(bar, groupId, index, isPositive = true){
 bar.setAttribute("data-stack-group", groupId);
 bar.setAttribute("data-stack-index", index);
 }
-
+delete */
 
 let loansWithEarnings = [];
 
@@ -1475,7 +1475,7 @@ document.querySelectorAll(".kpi").forEach(tile => {
   });
 });
 
-
+/* delete
 function getCurrentEarningsRow(loan) {
   const sched = loan.earningsSchedule || [];
   if (!sched.length) {
@@ -1489,6 +1489,7 @@ function getCurrentEarningsRow(loan) {
   return { row: sched[idx], idx };
 }
 
+  
   function getSafeCurrentEarningsRow(loan) {
   const sched = loan.earningsSchedule || [];
   if (!sched.length) return null;
@@ -1500,7 +1501,7 @@ function getCurrentEarningsRow(loan) {
 
   return sched[idx] || null;
 }
-
+delete */
 
 let miniHtmlTooltip = null;
 function getMiniHtmlTooltip() {
@@ -2005,6 +2006,7 @@ svg.addEventListener("mousemove", handleMove);
 svg.addEventListener("mouseleave", handleLeave);
 }
 
+  /* delete
 function highlightLoanInKpiChart(container, loanId) {
 if (!container) return;
 
@@ -2022,6 +2024,7 @@ el.style.opacity = "";
 });
 }
 
+
 function highlightKpiRow(tableEl, loanId) {
 tableEl.querySelectorAll("tbody tr").forEach(tr => {
 tr.classList.toggle("dimmed", tr.dataset.loanId !== loanId);
@@ -2033,6 +2036,7 @@ tableEl.querySelectorAll("tbody tr").forEach(tr => {
 tr.classList.remove("dimmed");
 });
 }
+delete */
 
 function renderKpi3AvgLineChart(container, rows, opts = {}) {
 
