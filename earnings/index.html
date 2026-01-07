@@ -853,6 +853,7 @@ html[data-theme="dark"] .legend .sw {
     /* =========================================
    KPI1 + KPI2 table hover (ONLY)
    ========================================= */
+/* delete
 .kpi1-table tbody tr,
 .kpi2-table tbody tr {
   cursor: pointer;
@@ -868,7 +869,8 @@ html[data-theme="dark"] .legend .sw {
 .kpi2-table tbody tr.dimmed {
   opacity: 0.25;
 }
-
+delete */
+    
     #feedback-btn {
   position: fixed;
   bottom: 18px;
@@ -933,14 +935,16 @@ html[data-theme="dark"] .legend .sw {
   opacity: 1 !important;
 }
 
-/* 5️⃣ Drawer body is the ONLY scroll container */
+  
+/* delete
 .embed-mode .drawer-body {
   overflow-y: auto !important;
   overflow-x: hidden !important;
   max-height: none !important;
-  padding-top: 16px !important;  /* intentional content spacing */
+  padding-top: 16px !important;
 }
-
+delete */
+    
 /* ============================================================
    EMBED MODE — EARNINGS TABLE SCROLL (RESTORE)
    ============================================================ */
@@ -2006,38 +2010,6 @@ hideMiniTooltip();
 svg.addEventListener("mousemove", handleMove);
 svg.addEventListener("mouseleave", handleLeave);
 }
-
-  /* delete
-function highlightLoanInKpiChart(container, loanId) {
-if (!container) return;
-
-container.querySelectorAll("rect[data-loan-id]").forEach(el => {
-el.style.opacity =
-el.dataset.loanId === loanId ? "1" : "0.15";
-});
-}
-
-function clearKpiChartHighlight(container) {
-if (!container) return;
-
-container.querySelectorAll("rect[data-loan-id]").forEach(el => {
-el.style.opacity = "";
-});
-}
-
-
-function highlightKpiRow(tableEl, loanId) {
-tableEl.querySelectorAll("tbody tr").forEach(tr => {
-tr.classList.toggle("dimmed", tr.dataset.loanId !== loanId);
-});
-}
-
-function clearKpiRowHighlight(tableEl) {
-tableEl.querySelectorAll("tbody tr").forEach(tr => {
-tr.classList.remove("dimmed");
-});
-}
-delete */
 
 function renderKpi3AvgLineChart(container, rows, opts = {}) {
 
