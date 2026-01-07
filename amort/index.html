@@ -1077,6 +1077,9 @@ async function init() {
   // 3) NOW render + wire the UI (must happen AFTER data exists)
   renderAndWirePage();
 
+  // 🔑 Deep-link KPI open (full UI + iframe redirect target)
+  openAmortKpiFromUrl();
+    
     /* =====================================================
      EMBED / REPORTING AUTO-OPEN LOGIC
      (MUST RUN AFTER RENDER)
@@ -1692,6 +1695,32 @@ document.querySelectorAll(".kpi").forEach(tile => {
   });
 });
 
+}
+
+    function openAmortKpiFromUrl() {
+  const kpi = PAGE_CONTEXT.open;
+  if (!kpi) return;
+
+  switch (kpi) {
+    case "tpv":
+      renderTPVDrawer();
+      break;
+
+    case "rates":
+      renderRatesDrawer();
+      break;
+
+    case "payments":
+      renderPaymentsDrawer();
+      break;
+
+    case "distribution":
+      renderDistributionDrawer();
+      break;
+
+    default:
+      console.warn("Unknown amort KPI:", kpi);
+  }
 }
 
 
