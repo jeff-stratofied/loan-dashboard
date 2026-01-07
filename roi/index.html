@@ -2270,7 +2270,21 @@ svg.addEventListener("mouseleave", () => {
 // ROI iframe KPI redirect (AUTHORITATIVE)
 // =====================================================
 if (isEmbed) {
+  dif (isEmbed) {
   document.querySelectorAll(".kpi").forEach(tile => {
+    tile.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const kpi = tile.dataset.kpi;
+      if (!kpi) return;
+
+      window.top.location.href =
+        `/loan-dashboard/roi?user=${PAGE_USER}&open=${kpi}&from=reporting`;
+    });
+  });
+}
+
     tile.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
