@@ -1148,6 +1148,31 @@ if (isEmbed) {
 document.body.classList.add("embed-mode");
 }
 
+  if (isEmbed) {
+  const bindings = [
+    // Header / drawer actions
+    { selector: "#closeBtn", open: "kpi2" },
+    { selector: "#downloadCsvBtn", open: "kpi2" },
+    { selector: "#printBtn", open: "kpi2" },
+    { selector: "#copyCsvBtn", open: "kpi2" },
+
+    // 🔑 Loan on/off toggle (EARNINGS TABLE)
+    { selector: ".amort-wrap input[type='checkbox']", open: "kpi2" }
+  ];
+
+  bindings.forEach(({ selector, open }) => {
+    document.querySelectorAll(selector).forEach(el => {
+      el.addEventListener(
+        "click",
+        interceptAndRedirect(open),
+        true // capture phase — required
+      );
+    });
+  });
+}
+
+
+  /* delete
 if (isEmbed) {
 const targetUrl =
   `/loan-dashboard/earnings/index.html?user=${PAGE_USER}&open=kpi2`;
@@ -1180,7 +1205,7 @@ function redirectToFullEarnings(openParam) {
 
   window.top.location.href = url;
 }
-
+delete */
   
 function formatDate(d) {
   if (!(d instanceof Date)) return "";
