@@ -1501,14 +1501,14 @@ delete */
       
 function computeWeightedRoiAsOfMonth(loans, monthDate) {
   const total = loans.reduce((s, l) => s + l.purchasePrice, 0);
-
   if (!total) return 0;
 
   return loans.reduce((sum, loan) => {
-    const entry = getRoiEntryAsOfMonth(loan, monthDate);
+    const entry = getRoiAsOf(loan, monthDate);
     return sum + loan.purchasePrice * (entry.roi || 0);
   }, 0) / total;
 }
+
 
       
 function computeKPIs(list) {
@@ -2134,11 +2134,11 @@ if (isEmbed) {
       // -------------------------------
       // KPI4 — ROI Spread value (SAFE)
       // -------------------------------
-      const roiValues = currentLoans.map(l => {
-      const e = getCurrentOwnedRoiEntry(l);
-      return e?.roi ?? 0;
-    });
-    ;
+   const roiValues = currentLoans.map(l => {
+  const e = getRoiAsOf(l);
+  return e?.roi ?? 0;
+});
+
       
       const minROI = Math.min(...roiValues);
       const maxROI = Math.max(...roiValues);
@@ -2159,7 +2159,8 @@ if (isEmbed) {
       .sort((a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate))
       .forEach((loan, idx) => {
 
-      const currentRoiEntry = getCurrentOwnedRoiEntry(loan);
+      const currentRoiEntry = getRoiAsOf(loan);
+
       const tile = document.createElement('div'); tile.className='tile'; tile.setAttribute('tabindex','0');
         tile.dataset.loanName = (loan.name || "").toLowerCase();
         tile.dataset.school = (loan.school || "").toLowerCase();
