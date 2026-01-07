@@ -2970,10 +2970,9 @@ function renderTPVDrawer() {
 
   let weightedROI = 0;
   loansWithAmort.forEach(l => {
-  const last = getRoiAsOf(l, KPI_CURRENT_MONTH);
-  weightedROI += l.purchasePrice * (last.roi || 0);
-});
-
+    const last = getCurrentOwnedRoiEntry(l); // TODAY'S ROI ENTRY
+    weightedROI += l.purchasePrice * (last.roi || 0);
+  });
   weightedROI = weightedROI / Math.max(1, totalInv);
 
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
@@ -2984,9 +2983,9 @@ function renderTPVDrawer() {
   // ===============================
   let portfolioValue = 0;
   loansWithAmort.forEach(l => {
-  const last = getRoiAsOf(l, KPI_CURRENT_MONTH);
-  portfolioValue += last.loanValue || 0;
-});
+    const last = getCurrentOwnedRoiEntry(l);
+    portfolioValue += last.loanValue || 0;
+  });
 
   drawerSecondaryTitle.textContent = "Portfolio Value";
   drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
@@ -3173,11 +3172,7 @@ const totalInv = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
 
 let projWeightedROI = 0;
 loansWithAmort.forEach(l => {
-  const last = getRoiAsOf(
-  l,
-  l.roiSeries?.at(-1)?.date
-);
-
+  const last = getLastOwnedRoiEntry(l);
   projWeightedROI += l.purchasePrice * (last.roi || 0);
 });
 projWeightedROI = projWeightedROI / Math.max(1, totalInv);
@@ -3190,11 +3185,7 @@ drawerPrimary.textContent = (projWeightedROI * 100).toFixed(2) + "%";
 // ===============================
 let projPortfolioValue = 0;
 loansWithAmort.forEach(l => {
-  const last = getRoiAsOf(
-  l,
-  l.roiSeries?.at(-1)?.date
-);
-
+  const last = getLastOwnedRoiEntry(l);
   projPortfolioValue += last.loanValue || 0;
 });
 
