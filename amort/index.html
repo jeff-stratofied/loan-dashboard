@@ -1100,8 +1100,9 @@ function derivePortfolioData(loans) {
   const kpis = computeKPIs(loans);
 
   // --- TPV series (portfolio + per-loan) ---
-  const tpvSeriesData = tpvSeries(loans);
   const tpvStackData  = tpvStackSeries(loans);
+  const tpvSeriesData = tpvSeries(loans);
+
 
   // --- Stable loan ordering (used by TPV + charts) ---
   const loansByPurchaseDate = loans
@@ -1113,10 +1114,15 @@ function derivePortfolioData(loans) {
     });
 
   // --- Current TPV index ---
-  const curIdx = getCurrentMonthIndex(loansByPurchaseDate) - 1;
-  const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
-  const tpvValue =
-    tpvSeriesData[tpvIdx]?.value ?? 0;
+ const months = Object.keys(tpvStackData).sort();
+const lastMonthKey = months[months.length - 1];
+
+const tpvValue =
+  lastMonthKey
+    ? Object.values(tpvStackData[lastMonthKey])
+        .reduce((s, v) => s + v, 0)
+    : 0;
+
 
   // --- Loan view models (tiles consume ONLY this) ---
   const loanViews = loans.map(loan => {
@@ -1921,35 +1927,27 @@ const monthlyIncome = list.reduce((sum, loan) => {
       return d;
     }
 
-    /* ============================
-       TPV (Total Portfolio Value) series
-       Definition:
-         TPV_loan(m) = initialPurchase + accruedInterestDuringGrace_upTo_m + cumulativePaymentsUpTo_m
-       ============================ */
-    function tpvSeries(loansList) {
-      const maxMonths = Math.max(...loansList.map(l => l.amort.schedule.length));
-      const series = [];
+/* ============================
+   TPV (Total Portfolio Value) — MTM CONSISTENT - 
+   TPV_month = Σ loanValue_month;
+    loanValue_month =(cum principal + cum interest − fees) + (remaining balance × 0.95)
+   Portfolio-level series derived from per-loan MTM
+   ============================ */
+function tpvSeries(loansList) {
+  const stack = tpvStackSeries(loansList);
+  const months = Object.keys(stack).sort();
 
-      for (let m = 1; m <= maxMonths; m++) {
-        let total = 0;
-        loansList.forEach(l => {
-          const initial = l.purchasePrice;
-          // accrued interest during grace months up to m
-          const accrued = l.amort.schedule
-            .filter(s => s.monthIndex <= m && s.payment === 0)
-            .reduce((s, r) => s + r.interest, 0);
-          // cumulative payments to date up to m
-          const payments = l.amort.schedule
-            .filter(s => s.monthIndex <= m)
-            .reduce((s, r) => s + r.payment, 0);
+  return months.map(m => {
+    const value = Object.values(stack[m])
+      .reduce((s, v) => s + v, 0);
 
-          total += initial + accrued + payments;
-        });
-        series.push({ month: m, value: total });
-      }
+    return {
+      monthKey: m,
+      value
+    };
+  });
+}
 
-      return series;
-    }
 
     /* ============================
    TPV — Per-loan stacked series
