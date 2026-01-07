@@ -1221,13 +1221,6 @@ if (Array.isArray(loan.events)) {
     // Dynamic loans loaded from backend
     let loans = [];
 
-// ----------------------------
-// Drawer state (REQUIRED)
-// ----------------------------
-let currentMode = null;   // "loan" | "kpi"
-let currentLoan = null;
-
-    
     async function loadLoans() {
       const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
       const data = await res.json();
@@ -1744,10 +1737,6 @@ function computeKPIs(list) {
 
       containerEl.appendChild(svg); return svg;
     }
-
-// 🔓 Expose chart helper to drawer code
-window.createLineChart = createLineChart;
-
       
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
@@ -2933,6 +2922,11 @@ function toDate(d) {
   return (d instanceof Date) ? d : new Date(d);
 }
 
+// Format ticks (Jan 2024)
+function formatMonthYear(d) {
+  return d.toLocaleString("en-US", { month: "short", year: "numeric" });
+}
+
 // Simple catmull-rom smoothing
 function smoothPath(points) {
   if (points.length < 3) {
@@ -3853,6 +3847,8 @@ console.log("[ROI DEBUG] KPI rect:", r);
 // 🔑 Open KPI drawer from ?open= (full UI + iframe redirect)
 openRoiKpiFromUrl();
 
+
+    } // END initROI()
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
