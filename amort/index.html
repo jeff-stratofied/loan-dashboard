@@ -3045,11 +3045,32 @@ do not use */
   // Enable interactions
   // -------------------------------
   const table = tableHost.querySelector("table");
-
+/* do not use
   enableStackedBarInteractions({
     svg,
     table
   });
+do not use */
+      /* use */
+      enableStackedBarInteractions({
+  svg,
+  table,
+  tooltipFormatter: rect => {
+    const loanId = rect.dataset.loanId;
+    const monthIdx = Number(rect.dataset.monthIndex);
+    const loan = tpvData.seriesByLoan[loanId];
+
+    const value = loan.values[monthIdx] || 0;
+    const month = tpvData.months[monthIdx];
+
+    return `
+      <strong>${loan.loanName}</strong><br>
+      ${month}<br>
+      TPV: $${value.toLocaleString()}
+    `;
+  }
+});
+/* use */
 
   // -------------------------------
   // Open drawer
