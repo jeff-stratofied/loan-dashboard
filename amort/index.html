@@ -423,6 +423,11 @@
     .btn{ padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; cursor:pointer; font-weight:600; transition:background-color .25s ease, color .25s ease, border-color .25s ease; }
     .btn.primary{ background:linear-gradient(90deg,var(--brand),var(--accent2)); color:white; border:none; box-shadow:var(--shadow); }
 
+.tpv-dimmed {
+  opacity: 0.35;
+}
+
+    
     .tooltip{
       position:fixed;
       pointer-events:none;
@@ -2904,7 +2909,18 @@ drawerChartArea.appendChild(svg);
    TPV Loan Table (MTM-consistent)
 ============================ */
 drawerExtra.innerHTML = "";
-drawerExtra.appendChild(renderTPVTable(derived));
+
+const wrap = document.createElement("div");
+wrap.style.maxHeight = "40vh";
+wrap.style.overflowY = "auto";
+wrap.style.border = "1px solid var(--border)";
+wrap.style.borderRadius = "8px";
+wrap.style.marginTop = "6px";
+wrap.style.background = "var(--card)";
+
+wrap.appendChild(renderTPVTable(derived));
+drawerExtra.appendChild(wrap);
+
 
 
   drawer.classList.add('open');
@@ -2922,12 +2938,14 @@ drawerExtra.appendChild(renderTPVTable(derived));
 
   table.innerHTML = `
     <thead>
-      <tr>
-        <th>Loan</th>
-        <th style="text-align:right">Current TPV</th>
-        <th style="text-align:right">Projected TPV</th>
-      </tr>
-    </thead>
+  <tr>
+    <th style="width:36px">Loan On/Off</th>
+    <th>Loan</th>
+    <th style="text-align:right">Current TPV</th>
+    <th style="text-align:right">Projected TPV</th>
+  </tr>
+</thead>
+
     <tbody></tbody>
   `;
 
@@ -2944,27 +2962,46 @@ drawerExtra.appendChild(renderTPVTable(derived));
     tr.dataset.loanId = loanId;
 
     tr.innerHTML = `
-      <td>
-        <label style="display:flex;align-items:center;gap:8px">
-          <input type="checkbox" checked />
-          <span style="
-            width:10px;height:10px;border-radius:2px;
-            background:${KPI_COLOR_MAP[loanId]};
-            display:inline-block"></span>
-          <span>${loan.loanName}</span>
-        </label>
-      </td>
+      <td style="text-align:center">
+  <span
+    class="tpv-swatch"
+    data-loan-id="${loanId}"
+    style="
+      width:12px;
+      height:12px;
+      border-radius:3px;
+      background:${KPI_COLOR_MAP[loanId]};
+      display:inline-block;
+      cursor:pointer;
+    ">
+  </span>
+</td>
+
+<td>
+  <div style="font-weight:600">${loan.loanName}</div>
+  <div class="small">${loan.school || ""}</div>
+</td>
+
       <td style="text-align:right">$${Math.round(curVal).toLocaleString()}</td>
       <td style="text-align:right">$${Math.round(endVal).toLocaleString()}</td>
     `;
 
-    // --- toggle on/off ---
-    tr.querySelector("input").addEventListener("change", e => {
-      if (!e.target.checked) hiddenTPVLoans.add(loanId);
-      else hiddenTPVLoans.delete(loanId);
+const swatch = tr.querySelector(".tpv-swatch");
 
-      renderTPVDrawer(); // re-render chart + table
-    });
+swatch.addEventListener("click", e => {
+  e.stopPropagation();
+
+  if (hiddenTPVLoans.has(loanId)) {
+    hiddenTPVLoans.delete(loanId);
+    tr.classList.remove("tpv-dimmed");
+  } else {
+    hiddenTPVLoans.add(loanId);
+    tr.classList.add("tpv-dimmed");
+  }
+
+  renderTPVDrawer();
+});
+
 
     // --- hover highlight ---
     tr.addEventListener("mouseenter", () => {
