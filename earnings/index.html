@@ -1474,8 +1474,8 @@ document.querySelectorAll(".kpi").forEach(tile => {
     }
   });
 });
-
-/* delete
+  
+/* Used */
 function getCurrentEarningsRow(loan) {
   const sched = loan.earningsSchedule || [];
   if (!sched.length) {
@@ -1488,7 +1488,7 @@ function getCurrentEarningsRow(loan) {
   const idx = getCurrentScheduleIndex(loan) - 1;
   return { row: sched[idx], idx };
 }
-delete */
+
   
 /* Used */
   function getSafeCurrentEarningsRow(loan) {
