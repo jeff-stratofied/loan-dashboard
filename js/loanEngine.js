@@ -17,9 +17,10 @@ function parseISODateLocal(iso) {
   return new Date(y, m - 1, d);
 }
 
-function monthKeyFromDate(d) {
+export function monthKeyFromDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
+
 
 function monthKeyFromISO(iso) {
   return iso.slice(0, 7); // "YYYY-MM"
