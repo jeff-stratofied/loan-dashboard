@@ -1131,11 +1131,21 @@ do not use */
       return da - db;
     });
 
+/* do not use
   // --- Current TPV index ---
   const curIdx = getCurrentMonthIndex(loansByPurchaseDate) - 1;
   const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
   const tpvValue =
     tpvSeriesData[tpvIdx]?.value ?? 0;
+do not use */
+  /* use */
+  // --- Current TPV value (tile only) ---
+// Tile TPV = sum of purchase prices (canonical KPI definition)
+const tpvValue = loans.reduce(
+  (sum, l) => sum + (l.purchasePrice || 0),
+  0
+);
+
 
   // --- Loan view models (tiles consume ONLY this) ---
   const loanViews = loans.map(loan => {
