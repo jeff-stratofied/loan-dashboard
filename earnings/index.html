@@ -1483,6 +1483,10 @@ document.querySelectorAll(".kpi").forEach(tile => {
     }
   });
 });
+
+// 🔑 Deep-link support: open KPI drawer if ?open= is present
+openEarningsKpiFromUrl();
+
   
 /* Used */
 function getCurrentEarningsRow(loan) {
@@ -3059,6 +3063,31 @@ function openKpi4() {
   openDrawer();
 }
 
+function openEarningsKpiFromUrl() {
+  const kpi = new URLSearchParams(window.location.search).get("open");
+  if (!kpi) return;
+
+  switch (kpi) {
+    case "net":
+      openKpi1();
+      break;
+
+    case "projected":
+      openKpi2();
+      break;
+
+    case "avgMonthly":
+      openKpi3();
+      break;
+
+    case "fees":
+      openKpi4();
+      break;
+
+    default:
+      console.warn("Unknown earnings KPI:", kpi);
+  }
+}
 
 
 const activeLoans = loansWithEarnings.filter(
