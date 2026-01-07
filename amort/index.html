@@ -367,9 +367,6 @@
    KPI table hover — ONLY interactive KPIs
    (KPI 2 + KPI 4)
 ========================================= */
-.drawer.kpi-interactive #drawerExtra table tbody:hover tr {
-  opacity: 0.45;
-}
 
 .drawer.kpi-interactive #drawerExtra table tbody tr:hover {
   opacity: 1;
@@ -415,18 +412,25 @@
       padding:8px; text-align:left; color:var(--muted); font-weight:700; border-bottom:1px solid var(--border);
       transition:background-color .25s ease, color .25s ease, border-color .25s ease;
     }
-    td{ padding:8px; border-bottom:1px dashed rgba(15,23,42,0.04); text-align:right; transition:color .25s ease, border-color .25s ease; }
-  
-    td:first-child, th:first-child{ text-align:left }
+    td, th{
+  padding:8px;
+  border-bottom:1px dashed rgba(15,23,42,0.04);
+  text-align:left;
+}
+
+
+    tr.row-hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
 
     .actions{ display:flex; gap:8px; margin-top:12px }
     .btn{ padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; cursor:pointer; font-weight:600; transition:background-color .25s ease, color .25s ease, border-color .25s ease; }
     .btn.primary{ background:linear-gradient(90deg,var(--brand),var(--accent2)); color:white; border:none; box-shadow:var(--shadow); }
 
-.tpv-dimmed {
-  opacity: 0.35;
+    .tpv-swatch.dimmed {
+  opacity: 0.25;
 }
-
     
     .tooltip{
       position:fixed;
@@ -2987,31 +2991,35 @@ drawerExtra.appendChild(wrap);
     `;
 
 const swatch = tr.querySelector(".tpv-swatch");
+    if (hiddenTPVLoans.has(loanId)) {
+  swatch.classList.add("dimmed");
+}
 
 swatch.addEventListener("click", e => {
   e.stopPropagation();
 
-  if (hiddenTPVLoans.has(loanId)) {
-    hiddenTPVLoans.delete(loanId);
-    tr.classList.remove("tpv-dimmed");
-  } else {
-    hiddenTPVLoans.add(loanId);
-    tr.classList.add("tpv-dimmed");
-  }
+if (hiddenTPVLoans.has(loanId)) {
+  hiddenTPVLoans.delete(loanId);
+  swatch.classList.remove("dimmed");
+} else {
+  hiddenTPVLoans.add(loanId);
+  swatch.classList.add("dimmed");
+}
+
 
   renderTPVDrawer();
 });
 
 
     // --- hover highlight ---
-    tr.addEventListener("mouseenter", () => {
-      document
-        .querySelectorAll(`[data-loan-id]`)
-        .forEach(el => {
-          el.style.opacity =
-            el.dataset.loanId === loanId ? "1" : "0.15";
-        });
-    });
+tr.addEventListener("mouseenter", () => {
+  tr.classList.add("row-hover");
+});
+
+tr.addEventListener("mouseleave", () => {
+  tr.classList.remove("row-hover");
+});
+
 
     tr.addEventListener("mouseleave", () => {
       document
