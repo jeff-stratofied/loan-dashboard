@@ -72,14 +72,7 @@
       "termYears": 5,
       "graceYears": 0,
       "loanId": "QVGKDMCI3U",
-      "events": [
-        {
-          "id": "8935f65a-efa4-4df6-9133-a4b3da9ce009",
-          "type": "default",
-          "date": "2025-11-12",
-          "recoveryAmount": 0
-        }
-      ]
+      "events": []
     },
     {
       "loanName": "USC 2025 7.90",
@@ -161,14 +154,7 @@
       "termYears": 7,
       "graceYears": 0.5,
       "loanId": "BHH0A15A7A",
-      "events": [
-        {
-          "id": "5b05aa74-1fb4-483a-875e-d091ad0a73ad",
-          "type": "default",
-          "date": "2025-11-01",
-          "recoveryAmount": 500
-        }
-      ]
+      "events": []
     },
     {
       "loanName": "MICH 2024 12.00",
@@ -183,14 +169,7 @@
       "termYears": 10,
       "graceYears": 0,
       "loanId": "O3MVZU9I0G",
-      "events": [
-        {
-          "id": "2d8a9af9-9732-4717-b68a-d94d26d6ef38",
-          "type": "default",
-          "date": "2025-12-01",
-          "recoveryAmount": 500
-        }
-      ]
+      "events": []
     },
     {
       "loanName": "CMU 2024 9.00",
