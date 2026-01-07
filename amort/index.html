@@ -1188,6 +1188,27 @@ assert(
   "loanViews missing or not array",
   derived
 );
+  // 🔒 DEV GUARD — stacked TPV must equal TPV tile
+if (DEV_ASSERT && derived.tpvStackData) {
+  const months = Object.keys(derived.tpvStackData).sort();
+  const lastMonth = months[months.length - 1];
+
+  if (lastMonth) {
+    const stackSum = Object.values(derived.tpvStackData[lastMonth])
+      .reduce((s, v) => s + v, 0);
+
+    assert(
+      Math.abs(stackSum - derived.tpvValue) < 1,
+      "TPV stack does not equal TPV tile",
+      {
+        stackSum,
+        tpvValue: derived.tpvValue,
+        lastMonth
+      }
+    );
+  }
+}
+
 
   
   const kpis = derived.kpis;
@@ -2749,163 +2770,105 @@ function renderTPVDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
 
 
-  /* ============================
-     SVG + scale
-  ============================ */
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const w = 480, h = 220, pad = 30;
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
+/* ============================
+   STACKED TPV BAR CHART
+============================ */
+const { tpvStackData } = derived;
 
-  const vals = tpvSeriesData.map(d => d.value);
-  const maxV = Math.max(...vals);
-  const minV = Math.min(...vals);
-  const range = Math.max(1, maxV - minV);
-  const stepX = (w - pad * 2) / Math.max(1, tpvSeriesData.length - 1);
+const months = Object.keys(tpvStackData).sort();
+if (!months.length) return;
 
-  /* ============================
-     Line
-  ============================ */
-  let pts = '';
-  tpvSeriesData.forEach((d, i) => {
-    const x = pad + i * stepX;
-    const y = pad + (h - pad * 2) -
-      ((d.value - minV) / range) * (h - pad * 2);
-    pts += `${x},${y} `;
-  });
+const svgNS = 'http://www.w3.org/2000/svg';
+const w = 480, h = 220, pad = 30;
+const svg = document.createElementNS(svgNS, 'svg');
+svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+svg.setAttribute('width', '100%');
+svg.setAttribute('height', '100%');
 
-  const poly = document.createElementNS(svgNS, 'polyline');
-  poly.setAttribute('points', pts);
-  poly.setAttribute('fill', 'none');
-  poly.setAttribute('stroke', '#0ea5e9');
-  poly.setAttribute('stroke-width', '2');
-  svg.appendChild(poly);
+const barWidth = (w - pad * 2) / months.length;
 
-  /* ============================
-     Hover visuals
-  ============================ */
-  const hoverLine = document.createElementNS(svgNS, 'line');
-  hoverLine.setAttribute('stroke', '#111827');
-  hoverLine.setAttribute('stroke-width', '1');
-  hoverLine.setAttribute('stroke-dasharray', '3 4');
-  hoverLine.setAttribute('y1', pad);
-  hoverLine.setAttribute('y2', h - pad);
-  hoverLine.style.opacity = '0';
-  hoverLine.style.pointerEvents = 'none';
-  svg.appendChild(hoverLine);
-
-  const hoverDot = document.createElementNS(svgNS, 'circle');
-  hoverDot.setAttribute('r', '4');
-  hoverDot.setAttribute('fill', '#0ea5e9');
-  hoverDot.setAttribute('stroke', '#fff');
-  hoverDot.setAttribute('stroke-width', '1.2');
-  hoverDot.style.opacity = '0';
-  hoverDot.style.pointerEvents = 'none';
-  svg.appendChild(hoverDot);
-
-  function hideTPVHover() {
-    hoverLine.style.opacity = '0';
-    hoverDot.style.opacity = '0';
-    tooltip.style.display = 'none';
-  }
-
-  /* ============================
-     X-axis labels
-  ============================ */
-  const earliest = new Date(
-    Math.min(...allLoans.map(l =>
-      new Date(l.purchaseDate + 'T00:00:00').getTime()
-    ))
-  );
-
-  const labelCount = 6;
-  const skip = Math.max(1, Math.floor(tpvSeriesData.length / labelCount));
-
-  for (let i = 0; i < tpvSeriesData.length; i += skip) {
-    const x = pad + i * stepX;
-    const d = new Date(earliest);
-    d.setMonth(d.getMonth() + i);
-
-    const text = document.createElementNS(svgNS, 'text');
-    text.setAttribute('x', x);
-    text.setAttribute('y', h - pad + 14);
-    text.setAttribute('font-size', '11');
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('fill', '#475569');
-    text.textContent = d.toLocaleDateString(undefined, {
-      month: 'short',
-      year: 'numeric'
-    });
-    svg.appendChild(text);
-  }
-
-  /* ============================
-     Current month marker
-  ============================ */
-  const curIdx = Math.min(
-  getCurrentMonthIndex(allLoans) - 1,
-  tpvSeriesData.length - 1
+// max TPV for scaling
+const maxTPV = Math.max(
+  ...months.map(m =>
+    Object.values(tpvStackData[m]).reduce((s, v) => s + v, 0)
+  )
 );
 
-  const curX = pad + curIdx * stepX;
-  const curLine = document.createElementNS(svgNS, 'line');
-  curLine.setAttribute('x1', curX);
-  curLine.setAttribute('x2', curX);
-  curLine.setAttribute('y1', pad);
-  curLine.setAttribute('y2', h - pad);
-  curLine.setAttribute('stroke', '#111827');
-  curLine.setAttribute('stroke-dasharray', '3 4');
-  curLine.setAttribute('stroke-opacity', '0.6');
-  svg.appendChild(curLine);
+// ---- bars ----
+months.forEach((monthKey, i) => {
+  let yCursor = h - pad;
+  const total = Object.values(tpvStackData[monthKey])
+    .reduce((s, v) => s + v, 0);
 
-  /* ============================
-     Hover hit rects
-  ============================ */
-  tpvSeriesData.forEach((d, i) => {
-    const hit = document.createElementNS(svgNS, 'rect');
-    hit.setAttribute('x', pad + i * stepX - stepX / 2);
-    hit.setAttribute('y', pad);
-    hit.setAttribute('width', Math.max(1, stepX));
-    hit.setAttribute('height', h - pad * 2);
-    hit.setAttribute('fill', 'transparent');
+  Object.entries(tpvStackData[monthKey]).forEach(([loanId, value]) => {
+    const height = (value / maxTPV) * (h - pad * 2);
+    if (height <= 0) return;
 
-    hit.addEventListener('mousemove', (ev) => {
-      const x = pad + i * stepX;
-      const y =
-        pad + (h - pad * 2) -
-        ((d.value - minV) / range) * (h - pad * 2);
+    const rect = document.createElementNS(svgNS, 'rect');
+    rect.setAttribute('x', pad + i * barWidth);
+    rect.setAttribute('y', yCursor - height);
+    rect.setAttribute('width', barWidth - 1);
+    rect.setAttribute('height', height);
+    rect.setAttribute('fill', KPI_COLOR_MAP[loanId]);
+    rect.dataset.loanId = loanId;
 
-      hoverLine.setAttribute('x1', x);
-      hoverLine.setAttribute('x2', x);
-      hoverDot.setAttribute('cx', x);
-      hoverDot.setAttribute('cy', y);
-
-      hoverLine.style.opacity = '0.6';
-      hoverDot.style.opacity = '1';
-
-      const hoverDate = new Date(earliest);
-      hoverDate.setMonth(hoverDate.getMonth() + (d.month - 1));
-
-      tooltip.style.display = 'block';
-      tooltip.style.left = ev.clientX + 'px';
-      tooltip.style.top = (ev.clientY - 12) + 'px';
-      tooltip.innerHTML =
-        `${hoverDate.toLocaleDateString(undefined, {
-          month: 'short',
-          year: 'numeric'
-        })} • TPV $${Math.round(d.value).toLocaleString()}`;
-    });
-
-    hit.addEventListener('mouseleave', hideTPVHover);
-    svg.appendChild(hit);
+    svg.appendChild(rect);
+    yCursor -= height;
   });
 
-  svg.addEventListener('mouseleave', hideTPVHover);
-  drawerChartArea.addEventListener('mouseleave', hideTPVHover);
+  // ---- hover target (whole bar) ----
+  const hit = document.createElementNS(svgNS, 'rect');
+  hit.setAttribute('x', pad + i * barWidth);
+  hit.setAttribute('y', pad);
+  hit.setAttribute('width', barWidth);
+  hit.setAttribute('height', h - pad * 2);
+  hit.setAttribute('fill', 'transparent');
 
-  drawerChartArea.appendChild(svg);
+  hit.addEventListener('mousemove', ev => {
+    const [year, month] = monthKey.split('-').map(Number);
+    const d = new Date(year, month - 1);
+
+    tooltip.style.display = 'block';
+    tooltip.style.left = ev.clientX + 'px';
+    tooltip.style.top = (ev.clientY - 12) + 'px';
+    tooltip.innerHTML =
+      `${d.toLocaleDateString(undefined, {
+        month: 'short',
+        year: 'numeric'
+      })}<br>TPV ${formatCurrency(total)}`;
+  });
+
+  hit.addEventListener('mouseleave', () => {
+    tooltip.style.display = 'none';
+  });
+
+  svg.appendChild(hit);
+});
+
+// ---- x-axis labels (sparse) ----
+const labelSkip = Math.max(1, Math.floor(months.length / 6));
+months.forEach((m, i) => {
+  if (i % labelSkip !== 0) return;
+
+  const [y, mo] = m.split('-').map(Number);
+  const d = new Date(y, mo - 1);
+
+  const text = document.createElementNS(svgNS, 'text');
+  text.setAttribute('x', pad + i * barWidth + barWidth / 2);
+  text.setAttribute('y', h - pad + 14);
+  text.setAttribute('font-size', '11');
+  text.setAttribute('text-anchor', 'middle');
+  text.setAttribute('fill', '#475569');
+  text.textContent = d.toLocaleDateString(undefined, {
+    month: 'short',
+    year: 'numeric'
+  });
+
+  svg.appendChild(text);
+});
+
+drawerChartArea.appendChild(svg);
+
 
   /* ============================
      Snapshot table (unchanged)
