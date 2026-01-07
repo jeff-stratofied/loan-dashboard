@@ -1488,8 +1488,9 @@ function getCurrentEarningsRow(loan) {
   const idx = getCurrentScheduleIndex(loan) - 1;
   return { row: sched[idx], idx };
 }
-
+delete */
   
+/* Used */
   function getSafeCurrentEarningsRow(loan) {
   const sched = loan.earningsSchedule || [];
   if (!sched.length) return null;
@@ -1501,7 +1502,7 @@ function getCurrentEarningsRow(loan) {
 
   return sched[idx] || null;
 }
-delete */
+
 
 let miniHtmlTooltip = null;
 function getMiniHtmlTooltip() {
