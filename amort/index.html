@@ -1114,14 +1114,24 @@ function derivePortfolioData(loans) {
     });
 
   // --- Current TPV index ---
- const months = Object.keys(tpvStackData).sort();
-const lastMonthKey = months[months.length - 1];
+const months = Object.keys(tpvStackData).sort();
+const curKey = currentMonthKey();
+
+// If current month not present (future / early data), clamp safely
+const effectiveKey =
+  tpvStackData[curKey]
+    ? curKey
+    : months[Math.min(
+        months.length - 1,
+        Math.max(0, months.indexOf(curKey))
+      )];
 
 const tpvValue =
-  lastMonthKey
-    ? Object.values(tpvStackData[lastMonthKey])
+  effectiveKey
+    ? Object.values(tpvStackData[effectiveKey])
         .reduce((s, v) => s + v, 0)
     : 0;
+
 
 
   // --- Loan view models (tiles consume ONLY this) ---
@@ -1801,6 +1811,12 @@ function chartDateLabel(startDateStr, monthIndex) {
   });
 }
 
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
+    
 function monthIndexFromDate(dateStr, schedule) {
   const d = new Date(dateStr + "T00:00:00");
   d.setHours(0, 0, 0, 0);
@@ -2726,7 +2742,7 @@ function renderTPVDrawer() {
   if (!derived.tpvSeriesData.length) {
     drawerTitle.textContent = 'Total Portfolio Value';
     drawerSub.textContent = 'No portfolio data available';
-    drawerPrimaryTitle.textContent = 'Current TPV';
+    drawerPrimaryTitle.textContent = 'Current Month TPV';
     drawerPrimary.textContent = '$0';
     drawerSecondaryTitle.textContent = 'Total Invested';
     drawerSecondary.textContent = '$0';
@@ -2747,9 +2763,9 @@ function renderTPVDrawer() {
 
   drawerTitle.textContent = 'Total Portfolio Value';
   drawerSub.textContent =
-    'Purchase + accrued interest (grace) + cumulative payments';
+    'TPV = sum of current month loan values; (cumulative principal + interest - fees) + Mark-to-Market (95%) of remaining balance';
 
-  drawerPrimaryTitle.textContent = 'Current TPV';
+  drawerPrimaryTitle.textContent = 'Current Month TPV';
   drawerPrimary.textContent =
     `$${Math.round(derived.tpvValue).toLocaleString()}`;
 
