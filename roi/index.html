@@ -1044,6 +1044,10 @@ if (cameFromReporting && backRow && backBtn) {
   john: "John Investor"
 };
 
+// ===========================
+// Shared utils Helpers (MOVE LATER)
+// ===========================
+    
     function formatMonthYear(date) {
       return date.toLocaleDateString("en-US", {
         year: "numeric",
@@ -1064,7 +1068,6 @@ function parseISODateLocal(iso) {
   return new Date(y, m - 1, d);
 }
 
-
 function monthAnchor(date) {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
@@ -1081,12 +1084,10 @@ function buildGlobalDatesFromLoans(loans) {
       }
     });
   });
-
   return Array.from(dates)
     .sort((a, b) => a - b)
     .map(ms => new Date(ms));
 }
-
     
 function createBadgeTooltip(badge, text) {
   const tooltip = document.createElement('div');
@@ -1119,7 +1120,6 @@ function createBadgeTooltip(badge, text) {
   // Clean up on removal (optional, but good practice)
   badge.addEventListener('remove', () => tooltip.remove());
 }
-
  
   function getLoanMaturityFromAmort(loan) {
   if (!loan.amort || !loan.amort.schedule || !loan.amort.schedule.length) {
@@ -1130,12 +1130,10 @@ function createBadgeTooltip(badge, text) {
   return lastRow.loanDate ? new Date(lastRow.loanDate) : null;
 }
 
-    
     function monthDiff(d1, d2) {
       return (d2.getFullYear() - d1.getFullYear()) * 12 +
              (d2.getMonth() - d1.getMonth());
     }
-
 
 function getLoanEventBadges(loan) {
   const badges = [];
@@ -1207,9 +1205,6 @@ if (Array.isArray(loan.events)) {
     }
   }
 }
-
-
-
   return "";
 }
 
@@ -2647,7 +2642,7 @@ function populateProjectedROILoanTable(){
     });
   });
 }
-
+/* delete
 function getEventRowClass(loan, row) {
   if (!row.loanDate) return "";
 
@@ -2682,7 +2677,7 @@ function getEventRowClass(loan, row) {
 
   return "";
 }
-
+delete */
 
 
       
@@ -2904,13 +2899,6 @@ function buildHistoricalRoiTimeline(loans) {
 // Convert YYYY-MM-DD to Date objects
 function toDate(d) {
   return (d instanceof Date) ? d : new Date(d);
-}
-
-// Difference in months between two dates
-function monthDiff(a, b) {
-  a = toDate(a);
-  b = toDate(b);
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 }
 
 // Format ticks (Jan 2024)
