@@ -1221,6 +1221,13 @@ if (Array.isArray(loan.events)) {
     // Dynamic loans loaded from backend
     let loans = [];
 
+// ----------------------------
+// Drawer state (REQUIRED)
+// ----------------------------
+let currentMode = null;   // "loan" | "kpi"
+let currentLoan = null;
+
+    
     async function loadLoans() {
       const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
       const data = await res.json();
