@@ -2495,7 +2495,7 @@ function populateROILoanTable(){
   if(!tbody) return;
 
   tbody.innerHTML = loansWithAmort.map(l => {
-    const roiEntry = getCurrentOwnedRoiEntry(l);
+    const roiEntry = getRoiAsOf(l);
 
     let matStr = '';
     try {
@@ -2568,10 +2568,14 @@ function populateROILoanTable(){
 
 function populateProjectedROILoanTable(){
   const tbody = document.querySelector("#roiProjectedLoansTable tbody");
-  if(!tbody) return;
+  if (!tbody) return;
 
   tbody.innerHTML = loansWithAmort.map(l => {
-    const roiEntry = getLastOwnedRoiEntry(l);
+    // ✅ Projected ROI = final ROI entry
+    const roiEntry = getRoiAsOf(
+      l,
+      l.roiSeries?.at(-1)?.date
+    );
 
     let matStr = '';
     try {
@@ -2579,7 +2583,7 @@ function populateProjectedROILoanTable(){
       const months = Math.round((l.termYears + l.graceYears) * 12);
       pd.setMonth(pd.getMonth() + months);
       matStr = pd.toISOString().slice(0,10);
-    } catch(e) {
+    } catch (e) {
       matStr = '';
     }
 
@@ -2608,6 +2612,8 @@ function populateProjectedROILoanTable(){
       </td>
     </tr>`;
   }).join('');
+}
+
 
   // ---------- hover logic ----------
   // Ensure we bind to the MOST RECENT chart SVG
@@ -3279,7 +3285,7 @@ function renderROISpreadDrawer() {
   // Compute spread stats
   // -------------------------------
   const rows = loansWithAmort.map(l => {
-    const e = getCurrentOwnedRoiEntry(l);
+    const e = getRoiAsOf(l);
     return {
       id: l.id,
       name: l.name,
