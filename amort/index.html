@@ -2742,195 +2742,209 @@ drawer.classList.add('kpi-interactive');
 
 function renderTPVDrawer() {
 
-  // 🔑 HARD RESET — leave loan context (ONCE)
+  // 🔑 RESET KPI CONTEXT
   currentLoan = null;
   currentMode = "kpi";
 
   drawer.classList.add("kpi-interactive");
   drawerAmortContainer.style.display = "none";
-  drawerExtra.innerHTML = "";
   drawerLegend.style.display = "none";
+  drawerChartArea.innerHTML = "";
+  drawerExtra.innerHTML = "";
 
-  // 🔒 Canonical derived snapshot
   const derived = derivePortfolioData(currentLoans);
 
-  assert(
-    Array.isArray(derived.tpvSeriesData),
-    "TPV drawer: tpvSeriesData invalid",
-    derived
-  );
-
-  // =====================================================
-  // SAFETY: no portfolio data yet (iframe / embed)
-  // =====================================================
-  if (!derived.tpvSeriesData.length) {
-    drawerTitle.textContent = 'Total Portfolio Value';
-    drawerSub.textContent = 'No portfolio data available';
-    drawerPrimaryTitle.textContent = 'Current Month TPV';
-    drawerPrimary.textContent = '$0';
-    drawerSecondaryTitle.textContent = 'Total Invested';
-    drawerSecondary.textContent = '$0';
-    drawerChartArea.innerHTML = '<p class="small">No data available</p>';
-    drawerExtra.innerHTML = '';
-    drawerLegend.style.display = 'none';
-    drawerAmortContainer.style.display = 'none';
-    drawer.classList.add('open');
-    drawer.setAttribute('aria-hidden', 'false');
+  if (!derived.tpvSeriesData || !derived.tpvSeriesData.length) {
+    drawerTitle.textContent = "Total Portfolio Value";
+    drawerSub.textContent = "No portfolio data available";
+    drawerPrimaryTitle.textContent = "Current Month TPV";
+    drawerPrimary.textContent = "$0";
+    drawerSecondaryTitle.textContent = "Total Invested";
+    drawerSecondary.textContent = "$0";
+    drawerChartArea.innerHTML = "<p class='small'>No data available</p>";
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
     return;
   }
 
   // =====================================================
-  // MAIN TPV CONTENT
+  // HEADER + METRICS
   // =====================================================
 
-  drawer.classList.remove('kpi-interactive');
+  drawer.classList.remove("kpi-interactive");
 
-  drawerTitle.textContent = 'Total Portfolio Value';
+  drawerTitle.textContent = "Total Portfolio Value";
   drawerSub.textContent =
-    'TPV = sum of current month loan values; (cumulative principal + interest - fees) + Mark-to-Market (95%) of remaining balance';
+    "TPV = sum of current month loan values; (cumulative principal + interest − fees) + Mark-to-Market (95%) of remaining balance";
 
-  drawerPrimaryTitle.textContent = 'Current Month TPV';
+  drawerPrimaryTitle.textContent = "Current Month TPV";
   drawerPrimary.textContent =
     `$${Math.round(derived.tpvValue).toLocaleString()}`;
 
-  drawerSecondaryTitle.textContent = 'Total Invested';
+  drawerSecondaryTitle.textContent = "Total Invested";
   drawerSecondary.textContent =
-    `$${currentLoans
-      .reduce((s, l) => s + l.purchasePrice, 0)
-      .toLocaleString()}`;
+    `$${currentLoans.reduce((s, l) => s + l.purchasePrice, 0).toLocaleString()}`;
 
-  drawerAmortContainer.style.display = 'none';
-  drawerExtra.innerHTML = '';
-  drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'none';
+  // =====================================================
+  // STACKED TPV BAR CHART + Y AXIS
+  // =====================================================
 
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
+  const { tpvStackData } = derived;
+  const months = Object.keys(tpvStackData).sort();
+  if (!months.length) return;
 
+  const svgNS = "http://www.w3.org/2000/svg";
 
-/* ============================
-   STACKED TPV BAR CHART
-============================ */
-const { tpvStackData } = derived;
+  const margin = { top: 12, right: 16, bottom: 28, left: 56 };
+  const w = 520;
+  const h = 220;
+  const innerW = w - margin.left - margin.right;
+  const innerH = h - margin.top - margin.bottom;
 
-const months = Object.keys(tpvStackData).sort();
-if (!months.length) return;
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
 
-const svgNS = 'http://www.w3.org/2000/svg';
-const w = 480, h = 220, pad = 30;
-const svg = document.createElementNS(svgNS, 'svg');
-svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-svg.setAttribute('width', '100%');
-svg.setAttribute('height', '100%');
+  const barWidth = innerW / months.length;
 
-const barWidth = (w - pad * 2) / months.length;
+  // max TPV (respect hidden loans)
+  const maxTPV = Math.max(
+    ...months.map(m =>
+      Object.entries(tpvStackData[m]).reduce(
+        (s, [loanId, v]) => hiddenTPVLoans.has(loanId) ? s : s + v,
+        0
+      )
+    )
+  );
 
-// max TPV for scaling
-const maxTPV = Math.max(
-  ...months.map(m =>
-    Object.values(tpvStackData[m]).reduce((s, v) => s + v, 0)
-  )
-);
+  const yScale = v =>
+    margin.top + innerH - (v / maxTPV) * innerH;
 
-// ---- bars ----
-months.forEach((monthKey, i) => {
-  let yCursor = h - pad;
-  const total = Object.values(tpvStackData[monthKey])
-    .reduce((s, v) => s + v, 0);
+  // ---- Y AXIS + GRIDLINES ----
+  const yTicks = 5;
+  for (let i = 0; i < yTicks; i++) {
+    const value = (i / (yTicks - 1)) * maxTPV;
+    const y = yScale(value);
 
-  Object.entries(tpvStackData[monthKey]).forEach(([loanId, value]) => {
-    if (hiddenTPVLoans.has(loanId)) return;
-    const height = (value / maxTPV) * (h - pad * 2);
-    if (height <= 0) return;
+    const grid = document.createElementNS(svgNS, "line");
+    grid.setAttribute("x1", margin.left);
+    grid.setAttribute("x2", w - margin.right);
+    grid.setAttribute("y1", y);
+    grid.setAttribute("y2", y);
+    grid.setAttribute("stroke", "rgba(15,23,42,0.06)");
+    svg.appendChild(grid);
 
-    const rect = document.createElementNS(svgNS, 'rect');
-    rect.setAttribute('x', pad + i * barWidth);
-    rect.setAttribute('y', yCursor - height);
-    rect.setAttribute('width', barWidth - 1);
-    rect.setAttribute('height', height);
-    rect.setAttribute('fill', KPI_COLOR_MAP[loanId]);
-    rect.dataset.loanId = loanId;
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", margin.left - 8);
+    label.setAttribute("y", y + 4);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("font-size", "11");
+    label.setAttribute("fill", "#64748b");
+    label.textContent =
+      value >= 1_000_000
+        ? `$${Math.round(value / 1_000_000)}M`
+        : `$${Math.round(value / 1_000)}k`;
 
-    svg.appendChild(rect);
-    yCursor -= height;
+    svg.appendChild(label);
+  }
+
+  // ---- STACKED BARS ----
+  months.forEach((monthKey, i) => {
+    let yCursor = margin.top + innerH;
+
+    const total = Object.entries(tpvStackData[monthKey]).reduce(
+      (s, [loanId, v]) => hiddenTPVLoans.has(loanId) ? s : s + v,
+      0
+    );
+
+    Object.entries(tpvStackData[monthKey]).forEach(([loanId, value]) => {
+      if (hiddenTPVLoans.has(loanId)) return;
+
+      const height = (value / maxTPV) * innerH;
+      if (height <= 0) return;
+
+      const rect = document.createElementNS(svgNS, "rect");
+      rect.setAttribute("x", margin.left + i * barWidth);
+      rect.setAttribute("y", yCursor - height);
+      rect.setAttribute("width", barWidth - 1);
+      rect.setAttribute("height", height);
+      rect.setAttribute("fill", KPI_COLOR_MAP[loanId]);
+      rect.dataset.loanId = loanId;
+
+      svg.appendChild(rect);
+      yCursor -= height;
+    });
+
+    // hover target
+    const hit = document.createElementNS(svgNS, "rect");
+    hit.setAttribute("x", margin.left + i * barWidth);
+    hit.setAttribute("y", margin.top);
+    hit.setAttribute("width", barWidth);
+    hit.setAttribute("height", innerH);
+    hit.setAttribute("fill", "transparent");
+
+    hit.addEventListener("mousemove", ev => {
+      const [y, m] = monthKey.split("-").map(Number);
+      const d = new Date(y, m - 1);
+
+      tooltip.style.display = "block";
+      tooltip.style.left = ev.clientX + "px";
+      tooltip.style.top = (ev.clientY - 12) + "px";
+      tooltip.innerHTML =
+        `${d.toLocaleDateString(undefined, { month: "short", year: "numeric" })}<br>
+         TPV ${formatCurrency(total)}`;
+    });
+
+    hit.addEventListener("mouseleave", () => {
+      tooltip.style.display = "none";
+    });
+
+    svg.appendChild(hit);
   });
 
-  // ---- hover target (whole bar) ----
-  const hit = document.createElementNS(svgNS, 'rect');
-  hit.setAttribute('x', pad + i * barWidth);
-  hit.setAttribute('y', pad);
-  hit.setAttribute('width', barWidth);
-  hit.setAttribute('height', h - pad * 2);
-  hit.setAttribute('fill', 'transparent');
+  // ---- X AXIS LABELS ----
+  const labelSkip = Math.max(1, Math.floor(months.length / 6));
+  months.forEach((m, i) => {
+    if (i % labelSkip !== 0) return;
 
-  hit.addEventListener('mousemove', ev => {
-    const [year, month] = monthKey.split('-').map(Number);
-    const d = new Date(year, month - 1);
+    const [y, mo] = m.split("-").map(Number);
+    const d = new Date(y, mo - 1);
 
-    tooltip.style.display = 'block';
-    tooltip.style.left = ev.clientX + 'px';
-    tooltip.style.top = (ev.clientY - 12) + 'px';
-    tooltip.innerHTML =
-      `${d.toLocaleDateString(undefined, {
-        month: 'short',
-        year: 'numeric'
-      })}<br>TPV ${formatCurrency(total)}`;
+    const text = document.createElementNS(svgNS, "text");
+    text.setAttribute("x", margin.left + i * barWidth + barWidth / 2);
+    text.setAttribute("y", h - margin.bottom + 14);
+    text.setAttribute("font-size", "11");
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("fill", "#475569");
+    text.textContent =
+      d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+
+    svg.appendChild(text);
   });
 
-  hit.addEventListener('mouseleave', () => {
-    tooltip.style.display = 'none';
-  });
+  drawerChartArea.appendChild(svg);
 
-  svg.appendChild(hit);
-});
+  // =====================================================
+  // TPV LOAN TABLE
+  // =====================================================
 
-// ---- x-axis labels (sparse) ----
-const labelSkip = Math.max(1, Math.floor(months.length / 6));
-months.forEach((m, i) => {
-  if (i % labelSkip !== 0) return;
+  const wrap = document.createElement("div");
+  wrap.style.maxHeight = "40vh";
+  wrap.style.overflowY = "auto";
+  wrap.style.border = "1px solid var(--border)";
+  wrap.style.borderRadius = "8px";
+  wrap.style.marginTop = "6px";
+  wrap.style.background = "var(--card)";
 
-  const [y, mo] = m.split('-').map(Number);
-  const d = new Date(y, mo - 1);
+  wrap.appendChild(renderTPVTable(derived));
+  drawerExtra.appendChild(wrap);
 
-  const text = document.createElementNS(svgNS, 'text');
-  text.setAttribute('x', pad + i * barWidth + barWidth / 2);
-  text.setAttribute('y', h - pad + 14);
-  text.setAttribute('font-size', '11');
-  text.setAttribute('text-anchor', 'middle');
-  text.setAttribute('fill', '#475569');
-  text.textContent = d.toLocaleDateString(undefined, {
-    month: 'short',
-    year: 'numeric'
-  });
-
-  svg.appendChild(text);
-});
-
-drawerChartArea.appendChild(svg);
-
-
-/* ============================
-   TPV Loan Table (MTM-consistent)
-============================ */
-drawerExtra.innerHTML = "";
-
-const wrap = document.createElement("div");
-wrap.style.maxHeight = "40vh";
-wrap.style.overflowY = "auto";
-wrap.style.border = "1px solid var(--border)";
-wrap.style.borderRadius = "8px";
-wrap.style.marginTop = "6px";
-wrap.style.background = "var(--card)";
-
-wrap.appendChild(renderTPVTable(derived));
-drawerExtra.appendChild(wrap);
-
-
-
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
   drawerBody.scrollTop = 0;
 }
+
 
 function renderTPVTable(derived) {
   const { tpvStackData } = derived;
