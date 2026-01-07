@@ -1091,7 +1091,7 @@ async function init() {
   }
 
 }
-
+    
 /* =========================================================
    STEP 5 — DERIVED DATA (PURE, READ-ONLY)
    ========================================================= */
@@ -1099,8 +1099,9 @@ function derivePortfolioData(loans) {
   // --- KPIs ---
   const kpis = computeKPIs(loans);
 
-  // --- TPV series ---
+  // --- TPV series (portfolio + per-loan) ---
   const tpvSeriesData = tpvSeries(loans);
+  const tpvStackData  = tpvStackSeries(loans);
 
   // --- Stable loan ordering (used by TPV + charts) ---
   const loansByPurchaseDate = loans
@@ -1143,14 +1144,17 @@ function derivePortfolioData(loans) {
     };
   });
 
+  // ✅ SINGLE return (source of truth)
   return {
     kpis,
     tpvSeriesData,
+    tpvStackData,
     tpvValue,
     loansByPurchaseDate,
     loanViews
   };
 }
+
 
     const DEV_ASSERT =
   location.hostname === "localhost" ||
@@ -1925,6 +1929,43 @@ const monthlyIncome = list.reduce((sum, loan) => {
 
       return series;
     }
+
+    /* ============================
+   TPV — Per-loan stacked series
+   (monthly, owned-only, MTM)
+   ============================ */
+function tpvStackSeries(loansList) {
+  const series = {}; // { "YYYY-MM": { loanId: value } }
+
+  loansList.forEach(loan => {
+    const loanId = loan.loanId ?? loan.id;
+
+    let cumPrincipal = 0;
+    let cumInterest  = 0;
+    let cumFees      = 0;
+
+    (loan.amort?.schedule || []).forEach(row => {
+      if (!row.isOwned) return;
+
+      const d = row.loanDate;
+      const key =
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
+      cumPrincipal += row.principalPaid || 0;
+      cumInterest  += row.interest || 0;
+      cumFees      += Number(row.feeThisMonth || 0);
+
+      const realized   = cumPrincipal + cumInterest - cumFees;
+      const unrealized = (row.balance || 0) * 0.95;
+      const loanValue  = realized + unrealized;
+
+      series[key] ??= {};
+      series[key][loanId] = loanValue;
+    });
+  });
+
+  return series;
+}
 
 
     /* ============================
