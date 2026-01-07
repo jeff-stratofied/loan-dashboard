@@ -694,9 +694,6 @@ html[data-theme="dark"] .close-btn {
   transform: scale(1.05);
 }
 
-.drawer.kpi-interactive tbody tr.active {
-  background: rgba(148, 163, 184, 0.18);
-}
 
     
   </style>
@@ -853,18 +850,6 @@ import {
 } from "../js/loanEngine.js";
 
     import { normalizeLoan } from "../js/normalizeLoan.js";
-
-/* use */
-    import {
-  buildPortfolioTPVSeries
-} from "../js/tpvEngine.js";
-
-import {
-  renderStackedBarChart,
-  renderTPVTable,
-  enableStackedBarInteractions
-} from "../js/stackedBarUI.js";
-/* use */
 
 /* =========================================================
    A. PAGE CONTEXT & ROUTING
@@ -1114,13 +1099,8 @@ function derivePortfolioData(loans) {
   // --- KPIs ---
   const kpis = computeKPIs(loans);
 
-  /* do not use
   // --- TPV series ---
   const tpvSeriesData = tpvSeries(loans);
-do not use */
-/* use */
-  const tpvSeriesData = null; // TPV handled by shared engine now
-
 
   // --- Stable loan ordering (used by TPV + charts) ---
   const loansByPurchaseDate = loans
@@ -1131,21 +1111,11 @@ do not use */
       return da - db;
     });
 
-/* do not use
   // --- Current TPV index ---
   const curIdx = getCurrentMonthIndex(loansByPurchaseDate) - 1;
   const tpvIdx = Math.min(curIdx, tpvSeriesData.length - 1);
   const tpvValue =
     tpvSeriesData[tpvIdx]?.value ?? 0;
-do not use */
-  /* use */
-  // --- Current TPV value (tile only) ---
-// Tile TPV = sum of purchase prices (canonical KPI definition)
-const tpvValue = loans.reduce(
-  (sum, l) => sum + (l.purchasePrice || 0),
-  0
-);
-
 
   // --- Loan view models (tiles consume ONLY this) ---
   const loanViews = loans.map(loan => {
@@ -1218,13 +1188,8 @@ assert(
   
   const kpis = derived.kpis;
 
-  /* do not use
 // 🔑 Bridge derived data → legacy KPI drawers
 tpvSeriesData = derived.tpvSeriesData;
-do not use */
-
-  /* use */
-  tpvSeriesData = null;
 
 
   /* =========================
@@ -1936,8 +1901,6 @@ const monthlyIncome = list.reduce((sum, loan) => {
        Definition:
          TPV_loan(m) = initialPurchase + accruedInterestDuringGrace_upTo_m + cumulativePaymentsUpTo_m
        ============================ */
-   
-  /* do not use  
     function tpvSeries(loansList) {
       const maxMonths = Math.max(...loansList.map(l => l.amort.schedule.length));
       const series = [];
@@ -1962,7 +1925,7 @@ const monthlyIncome = list.reduce((sum, loan) => {
 
       return series;
     }
-do not use */
+
 
     /* ============================
        Drawer helpers
@@ -2676,7 +2639,7 @@ drawer.classList.add('kpi-interactive');
 }
 
 
-/* do not use
+
 function renderTPVDrawer() {
 
   // 🔑 HARD RESET — leave loan context (ONCE)
@@ -2744,6 +2707,10 @@ function renderTPVDrawer() {
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
 
+
+  /* ============================
+     SVG + scale
+  ============================ */
   const svgNS = 'http://www.w3.org/2000/svg';
   const w = 480, h = 220, pad = 30;
   const svg = document.createElementNS(svgNS, 'svg');
@@ -2757,6 +2724,9 @@ function renderTPVDrawer() {
   const range = Math.max(1, maxV - minV);
   const stepX = (w - pad * 2) / Math.max(1, tpvSeriesData.length - 1);
 
+  /* ============================
+     Line
+  ============================ */
   let pts = '';
   tpvSeriesData.forEach((d, i) => {
     const x = pad + i * stepX;
@@ -2772,6 +2742,9 @@ function renderTPVDrawer() {
   poly.setAttribute('stroke-width', '2');
   svg.appendChild(poly);
 
+  /* ============================
+     Hover visuals
+  ============================ */
   const hoverLine = document.createElementNS(svgNS, 'line');
   hoverLine.setAttribute('stroke', '#111827');
   hoverLine.setAttribute('stroke-width', '1');
@@ -2797,6 +2770,9 @@ function renderTPVDrawer() {
     tooltip.style.display = 'none';
   }
 
+  /* ============================
+     X-axis labels
+  ============================ */
   const earliest = new Date(
     Math.min(...allLoans.map(l =>
       new Date(l.purchaseDate + 'T00:00:00').getTime()
@@ -2824,6 +2800,9 @@ function renderTPVDrawer() {
     svg.appendChild(text);
   }
 
+  /* ============================
+     Current month marker
+  ============================ */
   const curIdx = Math.min(
   getCurrentMonthIndex(allLoans) - 1,
   tpvSeriesData.length - 1
@@ -2840,6 +2819,9 @@ function renderTPVDrawer() {
   curLine.setAttribute('stroke-opacity', '0.6');
   svg.appendChild(curLine);
 
+  /* ============================
+     Hover hit rects
+  ============================ */
   tpvSeriesData.forEach((d, i) => {
     const hit = document.createElementNS(svgNS, 'rect');
     hit.setAttribute('x', pad + i * stepX - stepX / 2);
@@ -2884,6 +2866,9 @@ function renderTPVDrawer() {
 
   drawerChartArea.appendChild(svg);
 
+  /* ============================
+     Snapshot table (unchanged)
+  ============================ */
   drawerExtra.innerHTML = `
   <strong class="small">TPV Snapshot</strong>
   <div style="max-height:45vh;overflow:auto;margin-top:6px;
@@ -2963,123 +2948,6 @@ function renderTPVDrawer() {
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawerBody.scrollTop = 0;
-}
-do not use */
-
-/* use */
-    function renderTPVDrawer() {
-  // -------------------------------
-  // Drawer state reset
-  // -------------------------------
-  drawer.classList.add("kpi-interactive");
-  currentMode = "kpi";
-  currentLoan = null;
-
-  drawerAmortContainer.style.display = "none";
-  drawerLegend.style.display = "none";
-  drawerExtra.innerHTML = "";
-  drawerChartArea.innerHTML = "";
-
-  // -------------------------------
-  // Drawer header
-  // -------------------------------
-  drawerTitle.textContent = "Total Portfolio Value";
-  drawerSub.textContent =
-    "Portfolio value by month, stacked by loan (purchase price + accrued interest + principal).";
-
-  drawerPrimaryTitle.textContent = "Current TPV";
-  drawerPrimary.textContent =
-    document.getElementById("tpvTile")?.textContent || "—";
-
-  drawerSecondaryTitle.textContent = "";
-  drawerSecondary.textContent = "";
-
-  // -------------------------------
-  // Build TPV data (SHARED ENGINE)
-  // -------------------------------
-  const loansWithSchedules = currentLoans.map(l => ({
-    id: l.loanId ?? l.id,
-    loanId: l.loanId ?? l.id,
-    loanName: l.loanName,
-    purchasePrice: l.purchasePrice,
-    amortSchedule: l.amort?.schedule || [],
-    earningsSchedule: l.earningsSchedule || []
-  }));
-
-  const tpvData = buildPortfolioTPVSeries(loansWithSchedules);
-
-  // Inject colors (canonical map)
-  Object.values(tpvData.seriesByLoan).forEach(s => {
-    s.color = window.KPI_COLOR_MAP[s.loanId] || "#64748b";
-  });
-
-  // -------------------------------
-  // Render stacked bar chart
-  // -------------------------------
-  const chartHost = document.createElement("div");
-  chartHost.style.width = "100%";
-  chartHost.style.height = "220px";
-
-  drawerChartArea.appendChild(chartHost);
-
-  const svg = renderStackedBarChart({
-    container: chartHost,
-    data: tpvData,
-    height: 220
-  });
-
-  // -------------------------------
-  // Render TPV table
-  // -------------------------------
-  const tableHost = document.createElement("div");
-  tableHost.className = "amort-wrap";
-
-  drawerExtra.appendChild(tableHost);
-
-  renderTPVTable({
-    container: tableHost,
-    data: tpvData
-  });
-
-  // -------------------------------
-  // Enable interactions
-  // -------------------------------
-  const table = tableHost.querySelector("table");
-/* do not use
-  enableStackedBarInteractions({
-    svg,
-    table
-  });
-do not use */
-      /* use */
-      enableStackedBarInteractions({
-  svg,
-  table,
-tooltipFormatter: rect => {
-  const loanId = rect.dataset.loanId;
-  const i = Number(rect.dataset.monthIndex);
-
-  const loan = tpvData.seriesByLoan[loanId];
-  const month = tpvData.months[i];
-  const loanValue = loan.values[i] || 0;
-  const total = tpvData.totalsByMonth[i] || 0;
-
-  return `
-    <strong>${month}</strong><br>
-    Total TPV: $${total.toLocaleString()}<br>
-    <span style="color:${loan.color}">■</span>
-    ${loan.loanName}: $${loanValue.toLocaleString()}
-  `;
-}
-
-});
-/* use */
-
-  // -------------------------------
-  // Open drawer
-  // -------------------------------
-  drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
 }
 
 
