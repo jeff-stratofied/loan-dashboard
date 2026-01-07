@@ -2961,6 +2961,33 @@ svg.setAttribute("preserveAspectRatio", "none");
   wrap.appendChild(renderTPVTable(derived));
   drawerExtra.appendChild(wrap);
 
+  // --------------------------------------------------
+// TPV TABLE → CHART HOVER (match KPI2 / KPI4 behavior)
+// --------------------------------------------------
+drawerExtra
+  .querySelectorAll("tbody tr[data-loan-id]")
+  .forEach(tr => {
+    const loanId = tr.dataset.loanId;
+
+    tr.addEventListener("mouseenter", () => {
+      drawerChartArea
+        .querySelectorAll("rect[data-loan-id]")
+        .forEach(rect => {
+          rect.style.opacity =
+            rect.dataset.loanId === loanId ? "1" : "0.15";
+        });
+    });
+
+    tr.addEventListener("mouseleave", () => {
+      drawerChartArea
+        .querySelectorAll("rect[data-loan-id]")
+        .forEach(rect => {
+          rect.style.opacity = "1";
+        });
+    });
+  });
+
+
   drawer.classList.add("open");
   drawer.setAttribute("aria-hidden", "false");
   drawerBody.scrollTop = 0;
