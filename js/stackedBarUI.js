@@ -2,7 +2,7 @@
 // stackedBarUI.js
 // Shared stacked bar chart + interactions
 // =======================================
-
+ 
 export function renderStackedBarChart({
   container,
   data,
