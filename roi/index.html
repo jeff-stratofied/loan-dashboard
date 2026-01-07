@@ -1403,6 +1403,36 @@ if (Array.isArray(loan.events)) {
         monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
       }));
     }
+
+/* ============================
+   KPI deep-link router (ROI)
+   ============================ */
+function openRoiKpiFromUrl() {
+  const kpi = new URLSearchParams(window.location.search).get("open");
+  if (!kpi) return;
+
+  switch (kpi) {
+    case "tpv":
+      renderTPVDrawer();
+      break;
+
+    case "rates":
+      renderRatesDrawer();
+      break;
+
+    case "capitalRecovery":
+      renderCapitalRecoveryDrawer();
+      break;
+
+    case "spread":
+      renderRoiSpreadDrawer();
+      break;
+
+    default:
+      console.warn("Unknown ROI KPI:", kpi);
+  }
+}
+
     
     async function initROI() {
       const TODAY = new Date();
@@ -3956,6 +3986,8 @@ const k = document.getElementById("kpis");
 const r = k.getBoundingClientRect();
 console.log("[ROI DEBUG] KPI rect:", r);
 
+// 🔑 Open KPI drawer from ?open= (full UI + iframe redirect)
+openRoiKpiFromUrl();
 
 
     } // END initROI()
