@@ -2275,15 +2275,11 @@ if (isEmbed) {
       e.preventDefault();
       e.stopPropagation();
 
-      const kpi = tile.dataset.kpi;
-      if (!kpi) return;
-
       window.top.location.href =
-        `/loan-dashboard/roi?user=${PAGE_USER}&open=${kpi}&from=reporting`;
+        `/loan-dashboard/roi?user=${PAGE_USER}&from=reporting`;
     });
   });
-  }
-  }
+}
 
 
       // -------------------------------
@@ -2811,7 +2807,44 @@ function populateProjectedROILoanTable(){
     });
   });
 }
-    
+
+function getEventRowClass(loan, row) {
+  if (!row.loanDate) return "";
+
+  // ----------------------------------
+  // DEFERRAL — row-state driven
+  // ----------------------------------
+  if (row.isOwned && row.isDeferred === true) {
+    return "event-deferral";
+  }
+
+  // No events → no further styling
+  if (!Array.isArray(loan.events)) return "";
+
+  // Engine-authoritative row month
+  const rowKey =
+    row.loanDate.getFullYear() * 12 + row.loanDate.getMonth();
+
+  for (const e of loan.events) {
+    if (!e.date) continue;
+
+    const d = parseISODateLocal(e.date);
+    if (!d || isNaN(+d)) continue;
+
+    const eventKey =
+      d.getFullYear() * 12 + d.getMonth();
+
+    if (eventKey !== rowKey) continue;
+
+    if (e.type === "default") return "event-default";
+    if (e.type === "prepayment") return "event-prepayment";
+  }
+
+  return "";
+}
+
+
+
       
 function openDrawerForLoan(loan){
   currentMode = 'loan';
@@ -3033,6 +3066,12 @@ function toDate(d) {
   return (d instanceof Date) ? d : new Date(d);
 }
 
+// Difference in months between two dates
+function monthDiff(a, b) {
+  a = toDate(a);
+  b = toDate(b);
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+}
 
 // Format ticks (Jan 2024)
 function formatMonthYear(d) {
