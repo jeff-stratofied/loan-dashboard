@@ -2313,6 +2313,34 @@ svg.addEventListener("mouseleave", () => {
     /* -------------------------
        UI: Render KPI tiles
        ------------------------- */
+function renderKpis(loans) {
+  const el = document.getElementById("kpis");
+  if (!el) return;
+
+  const k = computeKPIs(loans);
+
+  el.innerHTML = `
+    <div class="kpi" data-kpi="roiToDate">
+      <h3>ROI to Date</h3>
+      <p>${(k.weightedROI * 100).toFixed(2)}%</p>
+    </div>
+
+    <div class="kpi" data-kpi="projected">
+      <h3>Projected ROI</h3>
+      <p>${(k.projectedWeightedROI * 100).toFixed(2)}%</p>
+    </div>
+
+    <div class="kpi" data-kpi="capital">
+      <h3>Capital Recovered</h3>
+      <p>${formatCurrency(k.capitalRecoveredAmount)}</p>
+    </div>
+
+    <div class="kpi" data-kpi="recoveryPct">
+      <h3>Recovery %</h3>
+      <p>${(k.capitalRecoveryPct * 100).toFixed(1)}%</p>
+    </div>
+  `;
+}
 
 
       // =====================================================
