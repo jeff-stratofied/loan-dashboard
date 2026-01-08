@@ -1229,11 +1229,15 @@ function derivePortfolioData(loans) {
       return da - db;
     });
 
-  // --- Current TPV index ---
 const months = Object.keys(tpvStackData).sort();
 
-// Always use the last available month (owned data)
-const effectiveKey = months[months.length - 1];
+// 🔑 Use CURRENT calendar month, capped to available data
+const currentKey = currentMonthKey();
+const effectiveKey =
+  months.includes(currentKey)
+    ? currentKey
+    : months[months.length - 1];
+
 
 
 const tpvValue =
