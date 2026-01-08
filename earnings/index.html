@@ -1097,21 +1097,31 @@ const PAGE_USER = urlParams.get("user") || "jeff";
 const isEmbed   = urlParams.get("embed") === "true";
 const cameFromReporting = urlParams.get("from") === "reporting";
 
-  // =====================================================
-// FULL PAGE LOAD — clear transient drawer navigation
+// =====================================================
+// FULL PAGE RELOAD ONLY — clear transient drawer navigation
+// (do NOT clear on normal navigation like iframe redirects)
 // =====================================================
 if (!isEmbed) {
+  const nav = performance.getEntriesByType("navigation")[0];
+  const navType = nav?.type; // "navigate" | "reload" | "back_forward"
+
   const params = new URLSearchParams(window.location.search);
 
-  if (params.has("open")) {
+  // Only strip ?open= when the user explicitly reloaded the full page
+  if (navType === "reload" && params.has("open")) {
     params.delete("open");
-
-    const cleanUrl =
-      `${location.pathname}?${params.toString()}`;
-
+    const cleanUrl = `${location.pathname}?${params.toString()}`;
     history.replaceState({}, "", cleanUrl);
   }
 }
+  
+console.log("[EARNINGS NAV]", {
+  isEmbed,
+  cameFromReporting,
+  navType: performance.getEntriesByType("navigation")[0]?.type,
+  search: location.search
+});
+
 
   
 let currentLoan = null;
