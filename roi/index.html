@@ -2340,6 +2340,34 @@ function renderKpis(loans) {
       <p>${(k.capitalRecoveryPct * 100).toFixed(1)}%</p>
     </div>
   `;
+
+el.querySelectorAll(".kpi").forEach(tile => {
+  tile.addEventListener("click", () => {
+    const type = tile.dataset.kpi;
+
+    switch (type) {
+      case "roiToDate":
+        openKpi1();
+        break;
+
+      case "roiProjected":
+        openKpi2();
+        break;
+
+      case "capitalRecovered":
+        openKpi3();
+        break;
+
+      case "weightedRoi":
+        openKpi4();
+        break;
+
+      default:
+        console.warn("Unknown KPI:", type);
+    }
+  });
+});
+
 }
 
     /* -------------------------
@@ -2850,21 +2878,6 @@ const rowClass = getEventRowClass(loan, cs || s);
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 }
- 
-    /* -------------------------
-       Drawer helpers & openers
-       ------------------------- */
-    const drawer = document.getElementById('drawer');
-    const drawerTitle = document.getElementById('drawerTitle');
-    const drawerSub = document.getElementById('drawerSub');
-    const drawerPrimaryTitle = document.getElementById('drawerPrimaryTitle');
-    const drawerPrimary = document.getElementById('drawerPrimary');
-    const drawerSecondaryTitle = document.getElementById('drawerSecondaryTitle');
-    const drawerSecondary = document.getElementById('drawerSecondary');
-    const drawerChartArea = document.getElementById('drawerChartArea');
-    const drawerLegend = document.getElementById('drawerLegend');
-    const drawerExtra = document.getElementById('drawerExtra');
-    const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
     function closeDrawer(){ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); tooltip.style.display='none'; currentLoan=null; currentMode=null; }
     let currentLoan=null, currentMode=null;
@@ -3143,6 +3156,20 @@ function renderTPVDrawer() {
   drawer.scrollTop = 0;
 }
 
+      /* -------------------------
+       Drawer helpers & openers
+       ------------------------- */
+    const drawer = document.getElementById('drawer');
+    const drawerTitle = document.getElementById('drawerTitle');
+    const drawerSub = document.getElementById('drawerSub');
+    const drawerPrimaryTitle = document.getElementById('drawerPrimaryTitle');
+    const drawerPrimary = document.getElementById('drawerPrimary');
+    const drawerSecondaryTitle = document.getElementById('drawerSecondaryTitle');
+    const drawerSecondary = document.getElementById('drawerSecondary');
+    const drawerChartArea = document.getElementById('drawerChartArea');
+    const drawerLegend = document.getElementById('drawerLegend');
+    const drawerExtra = document.getElementById('drawerExtra');
+    const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
     function renderRatesDrawer(){
   currentMode = 'kpi';
