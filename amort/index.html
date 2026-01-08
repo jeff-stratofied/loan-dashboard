@@ -3059,7 +3059,11 @@ function renderTPVDrawer() {
   drawerChartArea.innerHTML = "";
   drawerExtra.innerHTML = "";
 
-  const derived = derivePortfolioData(currentLoans);
+  const activeLoans =
+  filteredLoans.length ? filteredLoans : currentLoans;
+
+const derived = derivePortfolioData(activeLoans);
+
 
   if (!derived.tpvSeriesData || !derived.tpvSeriesData.length) {
     drawerTitle.textContent = "Total Portfolio Value";
