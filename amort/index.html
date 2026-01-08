@@ -1773,8 +1773,29 @@ const tableToggle = document.getElementById("toggleTableView");
 const tableWrap = document.getElementById("loanTableWrap");
 const gridEl = document.getElementById("loanGrid");
 
+  // ---------------------------------
+// Restore saved Table View preference
+// ---------------------------------
+const savedTableView = localStorage.getItem("loanTableView");
+
+if (savedTableView !== null) {
+  tableToggle.checked = savedTableView === "true";
+}
+
+// Apply initial state
+const showTable = tableToggle.checked;
+gridEl.style.display = showTable ? "none" : "";
+tableWrap.hidden = !showTable;
+
+if (showTable) {
+  renderLoanTable(currentLoans);
+}
+
 tableToggle.addEventListener("change", () => {
   const showTable = tableToggle.checked;
+
+  // Persist preference
+  localStorage.setItem("loanTableView", showTable);
 
   gridEl.style.display = showTable ? "none" : "";
   tableWrap.hidden = !showTable;
@@ -1783,6 +1804,8 @@ tableToggle.addEventListener("change", () => {
     renderLoanTable(currentLoans);
   }
 });
+
+
 
 
   
