@@ -1455,41 +1455,39 @@ document.querySelectorAll(".kpi").forEach(tile => {
   tile.addEventListener("click", () => {
     const type = tile.dataset.kpi;
 
-    // 🔑 If inside iframe, escape to full Earnings page
-    if (isEmbed) {
-      const url =
-        `/loan-dashboard/earnings/index.html` +
-        `?user=${PAGE_USER}` +
-        `&from=reporting` +
-        `&open=${type}`;
-
-      window.top.location.href = url;
-      return;
+    // -----------------------------------------
+    // FULL PAGE ONLY — update browser history
+    // -----------------------------------------
+    if (!isEmbed) {
+      history.pushState(
+        {},
+        "",
+        `${location.pathname}?user=${PAGE_USER}&open=${type}`
+      );
     }
 
-    // Normal (non-iframe) behavior
+    // -----------------------------------------
+    // Open the KPI drawer
+    // -----------------------------------------
     switch (type) {
       case "net":
         openKpi1();
         break;
-
       case "projected":
         openKpi2();
         break;
-
       case "avgMonthly":
         openKpi3();
         break;
-
       case "fees":
         openKpi4();
         break;
-
       default:
-        console.warn("Unknown KPI tile:", type);
+        openKpi2();
     }
   });
 });
+
 
   
 /* Used */
