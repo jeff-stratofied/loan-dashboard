@@ -1084,21 +1084,8 @@ const enrichedLoans = attachSchedules(
  );
 
  allLoans = enrichedLoans.map(l => {
-  
-    let cumP = 0, cumI = 0, cumT = 0;
 
-    const schedule = l.amort.schedule.map(r => {
-      cumP += r.principalPaid;
-      cumI += r.interest;
-      cumT += r.payment;
-
-      return {
-        ...r,
-        cumPrincipal: +(cumP.toFixed(2)),
-        cumInterest: +(cumI.toFixed(2)),
-        cumTotal: +(cumT.toFixed(2))
-      };
-    });
+   const schedule = l.amort.schedule;
 
     const miniPts = schedule
       .slice(0, Math.min(24, schedule.length))
