@@ -1085,6 +1085,12 @@ import {
   isDeferredMonth
 } from "../js/loanEngine.js";
 
+let earningsDataReadyResolve;
+const earningsDataReady = new Promise(resolve => {
+  earningsDataReadyResolve = resolve;
+});
+
+  
 const urlParams = new URLSearchParams(window.location.search);
 
 const PAGE_USER = urlParams.get("user") || "jeff";
@@ -1416,7 +1422,6 @@ PORTFOLIO_KPIS =
     TODAY,
     PORTFOLIO_START
   );
-
 
 }
 
