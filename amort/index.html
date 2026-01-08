@@ -163,6 +163,7 @@
   align-items:center;
   margin:0 0 14px;
   flex-wrap:wrap;
+  justify-content: space-between;
 }
 
 .loan-filters select {
@@ -172,6 +173,9 @@
   background:var(--card);
   color:var(--text);
   font-size:13px;
+}
+    .loan-filters > * {
+  flex-shrink: 0;
 }
 
 /* Reset button — match ROI */
@@ -720,9 +724,19 @@ html[data-theme="dark"] .close-btn {
 }
 
 .loan-table-wrap {
-  margin-top: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+
+  padding: 8px 8px 0 8px;
+  margin-bottom: 12px;
+
+  max-height: calc(100vh - 320px); /* SAME logic as grid */
+  overflow-y: auto;
   overflow-x: auto;
 }
+
 
 #loanTable {
   width: 100%;
@@ -754,13 +768,6 @@ html[data-theme="dark"] .close-btn {
   display: flex;
   gap: 6px;
 }
-
-.mini-btn {
-  padding: 6px 8px;
-  font-size: 12px;
-  border-radius: 6px;
-}
-
 
     
 #feedback-btn:hover {
@@ -838,7 +845,6 @@ html[data-theme="dark"] .close-btn {
   </label>
 
   <button class="btn reset-btn" id="resetFilters">Reset filters</button>
-</section>
 
 <label class="compact-toggle">
   <input type="checkbox" id="toggleTableView" />
@@ -846,15 +852,15 @@ html[data-theme="dark"] .close-btn {
 </label>
 
 <div class="table-actions">
-  <button class="mini-btn" id="downloadAllCsvBtn">Download CSV</button>
-  <button class="mini-btn" id="copyAllCsvBtn">Copy CSV</button>
-  <button class="mini-btn" id="printAllBtn">Print</button>
+  <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
+  <button class="btn" id="copyAllCsvBtn">Copy CSV</button>
+  <button class="btn" id="printAllBtn">Print</button>
 </div>
+  
+</section>
 
     
     <section class="grid" id="loanGrid" aria-live="polite"></section>
-  </div>
-
   <section id="loanTableWrap" class="loan-table-wrap" hidden>
   <table id="loanTable">
     <thead>
@@ -875,6 +881,10 @@ html[data-theme="dark"] .close-btn {
     <tbody></tbody>
   </table>
 </section>
+    
+  </div>
+
+
 
 
   <!-- Right drawer -->
