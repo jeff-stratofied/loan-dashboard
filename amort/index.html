@@ -634,9 +634,12 @@ html[data-theme="dark"] .close-btn {
   display: none;
 }
 
-.embed-mode html,
-.embed-mode body {
-  overflow: hidden !important;
+    
+/* IFRAME MODE: let the iframe scroll, not the drawer */
+.embed-mode .drawer-body {
+  padding: 0 20px 20px !important;
+  overflow: visible !important;
+  flex: none !important;
 }
 
 
