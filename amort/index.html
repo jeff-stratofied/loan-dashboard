@@ -1869,6 +1869,23 @@ document.querySelectorAll(".kpi").forEach(tile => {
   }
 }
 
+function getCurrentLoanBalance(loan) {
+  const schedule = loan.cumSchedule || loan.amort?.schedule || [];
+  if (!schedule.length) return 0;
+
+  // Find the last owned schedule row
+  for (let i = schedule.length - 1; i >= 0; i--) {
+    const row = schedule[i];
+    if (row.isOwned !== false && Number.isFinite(row.balance)) {
+      return row.balance;
+    }
+  }
+
+  // Fallback: last row balance
+  return schedule[schedule.length - 1]?.balance ?? 0;
+}
+
+    
     /* =========================
    TABLE RENDER
    ========================= */
@@ -1892,7 +1909,7 @@ function renderLoanTable(loans) {
       <td>${(l.nominalRate * 100).toFixed(2)}%</td>
       <td>${l.termYears}</td>
       <td>${l.graceYears ?? 0}</td>
-      <td>${formatCurrency(l.balance)}</td>
+      <td>${formatCurrency(getCurrentLoanBalance(l))}</td>
     `;
     tbody.appendChild(tr);
   });
