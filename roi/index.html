@@ -2342,6 +2342,63 @@ function renderKpis(loans) {
   `;
 }
 
+    /* -------------------------
+   UI: Render loan tiles
+   ------------------------- */
+function renderLoanGrid(loans) {
+  const grid = document.getElementById("loanGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+    tile.dataset.loanId = loan.id ?? loan.loanId;
+
+    // Current ROI snapshot
+    const last = getLastOwnedRoiEntry(loan);
+    const roiPct = ((last.roi ?? 0) * 100).toFixed(2);
+
+    // Mini ROI sparkline data
+    const series = (loan.roiSeries || []).map((p, i) => ({
+      x: i + 1,
+      y: p.roi ?? 0
+    }));
+
+    tile.innerHTML = `
+      <div class="tile-left">
+        <div class="loan-name">${loan.name}</div>
+        <div class="loan-sub">${loan.school || ""}</div>
+
+        <div class="loan-meta">
+          <span>Purchased ${formatMonthYear(new Date(loan.purchaseDate))}</span>
+          <span>•</span>
+          <span>ROI ${roiPct}%</span>
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="mini-label">ROI</div>
+        <svg class="sparkline"></svg>
+      </div>
+    `;
+
+    // Render mini sparkline
+    const svg = tile.querySelector("svg.sparkline");
+    if (svg && series.length > 1) {
+      createLineChart(svg, series, {
+        h: 48,
+        pad: 6,
+        color: "#0ea5e9",
+        tickEvery: 999
+      });
+    }
+
+    grid.appendChild(tile);
+  });
+}
+
 
       // =====================================================
 // ROI iframe KPI redirect (AUTHORITATIVE)
