@@ -1573,13 +1573,12 @@ assert(
   "loanViews missing or not array",
   derived
 );
-  // 🔒 DEV GUARD — stacked TPV must equal TPV tile
+// 🔒 DEV GUARD — stacked TPV must equal TPV tile (SAME month key)
 if (DEV_ASSERT && derived.tpvStackData) {
-  const months = Object.keys(derived.tpvStackData).sort();
-  const lastMonth = months[months.length - 1];
+  const monthKey = derived.tpvMonthKey; // ✅ matches tpvValue's effectiveKey
 
-  if (lastMonth) {
-    const stackSum = Object.values(derived.tpvStackData[lastMonth])
+  if (monthKey && derived.tpvStackData[monthKey]) {
+    const stackSum = Object.values(derived.tpvStackData[monthKey])
       .reduce((s, v) => s + v, 0);
 
     assert(
@@ -1588,11 +1587,12 @@ if (DEV_ASSERT && derived.tpvStackData) {
       {
         stackSum,
         tpvValue: derived.tpvValue,
-        lastMonth
+        monthKey
       }
     );
   }
 }
+
 
 
   
