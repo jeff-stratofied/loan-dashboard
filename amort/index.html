@@ -1038,6 +1038,16 @@ if (PAGE_CONTEXT.cameFromReporting) {
   });
 }
 
+// ------------------------------
+// URL helpers
+// ------------------------------
+function clearOpenParamFromUrl() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("open");
+  history.replaceState({}, "", url.toString());
+}
+
+    
 /* =========================================================
    B. DATA LOADING & NORMALIZATION
    ========================================================= */
@@ -1179,34 +1189,39 @@ async function init() {
      (MUST RUN AFTER RENDER)
      ===================================================== */
 
-  if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
+if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
 
-    // 1️⃣ Explicit loan open (?open=loan&loanId=123)
-    if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-      const loan = currentLoans.find(
-        l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-      );
+  // 1️⃣ Explicit loan open (?open=loan&loanId=123)
+  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+    const loan = currentLoans.find(
+      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+    );
 
-      if (loan) {
-        requestAnimationFrame(() => {
-          openDrawerForLoan(loan);
-          drawer.classList.add("open");
-          drawer.setAttribute("aria-hidden", "false");
-        });
-        return; // ✅ LEGAL (inside init)
-      }
-    }
-
-    // 2️⃣ Open first loan (?open=first)
-    if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
+    if (loan) {
       requestAnimationFrame(() => {
-        openDrawerForLoan(currentLoans[0]);
+        openDrawerForLoan(loan);
         drawer.classList.add("open");
         drawer.setAttribute("aria-hidden", "false");
+
+        clearOpenParamFromUrl(); // 🔑 consume open=loan
       });
       return; // ✅ LEGAL (inside init)
     }
   }
+
+  // 2️⃣ Open first loan (?open=first)
+  if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
+    requestAnimationFrame(() => {
+      openDrawerForLoan(currentLoans[0]);
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+
+      clearOpenParamFromUrl(); // 🔑 consume open=first
+    });
+    return; // ✅ LEGAL (inside init)
+  }
+}
+
 
 }
     
@@ -1803,7 +1818,7 @@ function openAmortKpiFromUrl() {
   const kpi = PAGE_CONTEXT.open;
   if (!kpi) return;
 
-  // ✅ not a KPI — handled elsewhere
+  // ❌ These are NOT KPI drawers
   if (kpi === "first" || kpi === "loan") return;
 
   switch (kpi) {
@@ -1821,8 +1836,13 @@ function openAmortKpiFromUrl() {
       break;
     default:
       console.warn("Unknown amort KPI:", kpi);
+      return;
   }
+
+  // 🔑 IMPORTANT: consume open= so reloads don’t re-open
+  clearOpenParamFromUrl();
 }
+
 
 
     
@@ -3926,37 +3946,69 @@ svg.setAttribute('preserveAspectRatio', 'none');
 // =====================================================
 // URL-DRIVEN AUTO OPEN (FULL PAGE + EMBED)
 // =====================================================
-if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
-  const sorted = currentLoans
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(a.purchaseDate).getTime() -
-        new Date(b.purchaseDate).getTime()
+if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
+
+  // 1️⃣ Open first loan (?open=first)
+  if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
+    const sorted = currentLoans
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.purchaseDate).getTime() -
+          new Date(b.purchaseDate).getTime()
+      );
+
+    const loan = sorted[0];
+    currentLoan = loan;
+
+    requestAnimationFrame(() => {
+      openDrawerForLoan(loan);
+
+      // Only force drawer visibility in embed mode
+      if (PAGE_CONTEXT.isEmbed) {
+        drawer.style.display = "flex";
+        drawer.classList.add("open");
+        drawer.setAttribute("aria-hidden", "false");
+      }
+
+      clearOpenParamFromUrl(); // 🔑 consume open=first
+    });
+  }
+
+  // 2️⃣ Explicit loan open (?open=loan&loanId=123)
+  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+    const loan = currentLoans.find(
+      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
     );
 
-  const loan = sorted[0];
-  currentLoan = loan;
-  requestAnimationFrame(() => openDrawerForLoan(loan));
+    if (loan) {
+      currentLoan = loan;
 
-  // Only force drawer visibility in embed mode
-  if (PAGE_CONTEXT.isEmbed) {
-    drawer.style.display = "flex";
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
+      requestAnimationFrame(() => {
+        openDrawerForLoan(loan);
+        clearOpenParamFromUrl(); // 🔑 consume open=loan
+      });
+    }
   }
 }
 
-if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-  const loan = currentLoans.find(
-    l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-  );
 
-  if (loan) {
-    currentLoan = loan;
-    requestAnimationFrame(() => openDrawerForLoan(loan));
+  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+    const loan = currentLoans.find(
+      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+    );
+
+    if (loan) {
+      currentLoan = loan;
+
+      requestAnimationFrame(() => {
+        openDrawerForLoan(loan);
+        clearOpenParamFromUrl(); // 🔑 CONSUME open=loan
+      });
+    }
   }
 }
+
 
 // =====================================================
 // EMBED MODE — AUTO OPEN FIRST LOAN (FALLBACK ONLY)
