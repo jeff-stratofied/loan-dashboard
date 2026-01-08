@@ -1006,6 +1006,8 @@ let allLoans = [];
 
 let currentLoan = null;
 let currentMode = null;
+    let filteredLoans = [];
+
 
 let tpvSeriesData = [];
     
@@ -1765,7 +1767,8 @@ document.querySelectorAll("#loanTable th").forEach(th => {
       return av > bv ? tableSort.dir : -tableSort.dir;
     });
 
-    renderLoanTable(currentLoans);
+    renderLoanTable(filteredLoans);
+
     applyLoanSort(); // keeps tile order aligned
   });
 });
@@ -1957,34 +1960,47 @@ function hideMiniTooltip() {
 }
 
 function applyLoanFilters() {
-  const filterName = document.getElementById("filterName");
-  const filterSchool = document.getElementById("filterSchool");
-  const filterRate = document.getElementById("filterRate");
-
   const nameVal = filterName.value;
   const schoolVal = filterSchool.value;
   const rateVal = filterRate.value;
 
-  document.querySelectorAll("#loanGrid .tile").forEach(tile => {
-    let show = true;
-
-    if (nameVal && !tile.dataset.loanName.includes(nameVal)) show = false;
-    if (schoolVal && !tile.dataset.school.includes(schoolVal)) show = false;
+  filteredLoans = allLoans.filter(l => {
+    if (nameVal && !l.loanName?.toLowerCase().includes(nameVal)) return false;
+    if (schoolVal && !l.school?.toLowerCase().includes(schoolVal)) return false;
 
     if (rateVal) {
-      const r = Number(tile.dataset.rate) * 100;
-      if (
-        (rateVal === "low" && r >= 5) ||
-        (rateVal === "mid" && (r < 5 || r > 8)) ||
-        (rateVal === "high" && r <= 8)
-      ) show = false;
+      const r = l.nominalRate * 100;
+      if (rateVal === "low"  && r >= 5) return false;
+      if (rateVal === "mid"  && (r < 5 || r > 8)) return false;
+      if (rateVal === "high" && r <= 8) return false;
     }
 
-    tile.style.display = show ? "" : "none";
+    return true;
   });
 
   applyLoanSort();
+  renderFilteredViews();
 }
+
+    function renderFilteredViews() {
+  renderLoanTiles(filteredLoans);
+
+  if (document.getElementById("toggleTableView").checked) {
+    renderLoanTable(filteredLoans);
+  }
+}
+
+    function renderLoanTiles(loans) {
+  const grid = document.getElementById("loanGrid");
+  grid.innerHTML = "";
+
+  const derived = derivePortfolioData(loans);
+
+  derived.loanViews.forEach(({ loan, miniSeries, maturityDate, currentMonthIndex }) => {
+    // ⬅️ paste your existing tile creation code here
+  });
+}
+
 
 function applyLoanSort() {
   const grid = document.getElementById("loanGrid");
