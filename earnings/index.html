@@ -1484,9 +1484,6 @@ document.querySelectorAll(".kpi").forEach(tile => {
   });
 });
 
-// 🔑 Deep-link support: open KPI drawer if ?open= is present
-openEarningsKpiFromUrl();
-
   
 /* Used */
 function getCurrentEarningsRow(loan) {
@@ -3136,6 +3133,10 @@ const drawerExtra = document.getElementById("drawerExtra");
 const amortBody = document.getElementById("amortBody");
 const closeBtn = document.getElementById("closeBtn");
 
+// 🔑 Deep-link support: open KPI drawer if ?open= is present
+openEarningsKpiFromUrl();
+
+  
 function renderLoanTiles(loansList) {
   grid.innerHTML = "";
 
