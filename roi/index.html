@@ -1803,21 +1803,44 @@ function enrichLoansWithROI(loans) {
 
     
     
-    async function initROI() {
- 
-      const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-const userLoans = getUserLoans(loans, PAGE_USER);
+async function initROI() {
+  // ----------------------------------
+  // 1. Filter + normalize loans
+  // ----------------------------------
+  const userLoans = getUserLoans(loans, PAGE_USER);
+  const normalizedLoans = normalizeLoans(userLoans);
 
-const normalizedLoans = normalizeLoans(userLoans);
+  // ----------------------------------
+  // 2. Enrich loans with amort + ROI
+  // ----------------------------------
+  const loansWithAmort = enrichLoansWithROI(normalizedLoans);
 
+  // ----------------------------------
+  // 3. Canonical state
+  // ----------------------------------
+  const currentLoans = loansWithAmort;
+  const kpis = computeKPIs(currentLoans);
 
-      const currentLoans = loansWithAmort;
+  // ----------------------------------
+  // 4. Render UI
+  // ----------------------------------
+  renderKpis(currentLoans);
+  renderLoanGrid(currentLoans);
 
-       const kpis = computeKPIs(currentLoans);
+  // ----------------------------------
+  // 5. Wire interactions
+  // ----------------------------------
+  wireLoanTileInteractions(currentLoans);
+  wireKpiInteractions(currentLoans);
 
-const loansWithAmort = enrichLoansWithROI(formattedLoans);
+  // ----------------------------------
+  // 6. Embed / deep-link handling
+  // ----------------------------------
+  if (EMBED_MODE && OPEN_TARGET) {
+    openFromEmbedTarget(OPEN_TARGET, currentLoans);
+  }
+}
 
-      
       
 
 
@@ -3836,7 +3859,6 @@ if (EMBED_MODE) {
    ------------------------- */
 openRoiKpiFromUrl();
 
-    } // END initROI()
 
 function wireThemeToggle() {
   const toggle = document.getElementById("themeToggle");
