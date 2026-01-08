@@ -597,6 +597,24 @@ schedule.push(
     }
   }
 
+// --------------------------------------------------
+// Canonical cumulative fields (engine-owned truth)
+// --------------------------------------------------
+let cumP = 0, cumI = 0, cumPay = 0;
+
+schedule.forEach(r => {
+  if (r.isOwned !== false) {
+    cumP += r.principalPaid;
+    cumI += r.interest;
+    cumPay += r.payment;
+  }
+
+  r.cumPrincipal = +cumP.toFixed(2);
+  r.cumInterest  = +cumI.toFixed(2);
+  r.cumPayment   = +cumPay.toFixed(2);
+});
+
+  
   return schedule;
 }
 
