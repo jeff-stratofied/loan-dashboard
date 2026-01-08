@@ -1317,7 +1317,11 @@ function renderAndWirePage() {
      C. DERIVED DATA
      ========================= */
 
- const derived = derivePortfolioData(currentLoans);
+ const activeLoans =
+  filteredLoans.length ? filteredLoans : currentLoans;
+
+const derived = derivePortfolioData(activeLoans);
+
 assert(Array.isArray(currentLoans), "currentLoans must be an array");
 assert(derived, "derived data missing");
 
@@ -1980,6 +1984,8 @@ function applyLoanFilters() {
 
   applyLoanSort();
   renderFilteredViews();
+  renderAndWirePage();
+
 }
 
     function renderFilteredViews() {
