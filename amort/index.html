@@ -2022,6 +2022,16 @@ function applyLoanFilters() {
   if (!loanTableWrap.hidden) {
     renderLoanTable(currentLoans);
   }
+
+  // 🔑 Reporting return: always re-open first loan
+if (PAGE_CONTEXT.cameFromReporting && currentLoans.length) {
+  requestAnimationFrame(() => {
+    openDrawerForLoan(currentLoans[0]);
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  });
+}
+
 }
 
 
@@ -3986,7 +3996,9 @@ svg.setAttribute('preserveAspectRatio', 'none');
       if (!drawer.classList.contains('open')) return;
 
       const clickedInsideDrawer = drawer.contains(e.target);
-      const clickedTile = !!e.target.closest('.tile'); // matches all tiles
+      const clickedTile =
+   !!e.target.closest('.tile') ||
+   !!e.target.closest('#loanTable tr');
 
       // If the click is outside both drawer and tiles → close
       if (!clickedInsideDrawer && !clickedTile) {
