@@ -1530,49 +1530,6 @@ function getLoanEventBadges(loan) {
 
   return badges;
 }
-
-function getEventRowClass(loan, row) {  
-  if (!row) return "";
-
-  // ----------------------------------
-  // DEFERRAL — authoritative from engine
-  // ----------------------------------
-  if (row.isOwned && row.isDeferred === true) {
-    return "event-deferral";
-  }
-
-  // ----------------------------------
-  // DEFAULT — authoritative terminal row
-  // ----------------------------------
-  if (row.isTerminal === true) {
-    return "event-default";
-  }
-
-// ----------------------------------
-// PREPAYMENT (month-based, non-terminal)
-// ----------------------------------
-if (Array.isArray(loan.events)) {
-  const rowDate = row.loanDate;
-  if (!rowDate) return "";
-
-  const rowKey = rowDate.getFullYear() * 12 + rowDate.getMonth();
-
-  for (const e of loan.events) {
-    if (e.type !== "prepayment" || !e.date) continue;
-
-    const dLocal = parseISODateLocal(e.date);
-    if (!dLocal || isNaN(+dLocal)) continue;
-
-    const eventKey =
-      dLocal.getFullYear() * 12 + dLocal.getMonth();
-
-    if (rowKey === eventKey) {
-      return "event-prepayment";
-    }
-  }
-}
-  return "";
-}
    
 function createBadgeTooltip(badge, text) {
   const tooltip = document.createElement('div');
