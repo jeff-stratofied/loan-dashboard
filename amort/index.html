@@ -719,6 +719,50 @@ html[data-theme="dark"] .close-btn {
   font-size: 20px;
 }
 
+.loan-table-wrap {
+  margin-top: 8px;
+  overflow-x: auto;
+}
+
+#loanTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+#loanTable th {
+  cursor: pointer;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  background: var(--table-header);
+}
+
+#loanTable th::after {
+  content: " ↕";
+  opacity: 0.35;
+  font-size: 11px;
+}
+
+#loanTable td,
+#loanTable th {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.mini-btn {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+
+    
 #feedback-btn:hover {
   transform: scale(1.05);
 }
@@ -796,9 +840,42 @@ html[data-theme="dark"] .close-btn {
   <button class="btn reset-btn" id="resetFilters">Reset filters</button>
 </section>
 
+<label class="compact-toggle">
+  <input type="checkbox" id="toggleTableView" />
+  <span>Table View</span>
+</label>
+
+<div class="table-actions">
+  <button class="mini-btn" id="downloadAllCsvBtn">Download CSV</button>
+  <button class="mini-btn" id="copyAllCsvBtn">Copy CSV</button>
+  <button class="mini-btn" id="printAllBtn">Print</button>
+</div>
+
     
     <section class="grid" id="loanGrid" aria-live="polite"></section>
   </div>
+
+  <section id="loanTableWrap" class="loan-table-wrap" hidden>
+  <table id="loanTable">
+    <thead>
+      <tr>
+        <th data-key="loanId">ID</th>
+        <th data-key="loanName">Loan Name</th>
+        <th data-key="school">School</th>
+        <th data-key="loanStartDate">Loan Start</th>
+        <th data-key="purchaseDate">Purchase Date</th>
+        <th data-key="principal">Orig Amt</th>
+        <th data-key="purchasePrice">Purchase Price</th>
+        <th data-key="nominalRate">Rate</th>
+        <th data-key="termYears">Term</th>
+        <th data-key="graceYears">Grace</th>
+        <th data-key="balance">Balance</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
 
   <!-- Right drawer -->
   <aside id="drawer" class="drawer" aria-hidden="true">
@@ -1658,6 +1735,32 @@ resetBtn.addEventListener("click", () => {
 // Initial filter pass
 applyLoanFilters();
 
+/* =========================
+   TABLE SORTING
+   ========================= */
+
+let tableSort = { key: null, dir: 1 };
+
+document.querySelectorAll("#loanTable th").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (!key) return;
+
+    tableSort.dir = tableSort.key === key ? -tableSort.dir : 1;
+    tableSort.key = key;
+
+    currentLoans.sort((a, b) => {
+      const av = a[key] ?? "";
+      const bv = b[key] ?? "";
+      return av > bv ? tableSort.dir : -tableSort.dir;
+    });
+
+    renderLoanTable(currentLoans);
+    applyLoanSort(); // keeps tile order aligned
+  });
+});
+
+  
        /* -------------------------
    Compact tile toggle (persisted)
    ------------------------- */
@@ -1681,7 +1784,27 @@ applyLoanFilters();
   /* =========================
      E. INTERACTION WIRING
      ========================= */
+/* =========================
+   TABLE VIEW TOGGLE
+   ========================= */
 
+const tableToggle = document.getElementById("toggleTableView");
+const tableWrap = document.getElementById("loanTableWrap");
+const gridEl = document.getElementById("loanGrid");
+
+tableToggle.addEventListener("change", () => {
+  const showTable = tableToggle.checked;
+
+  gridEl.style.display = showTable ? "none" : "";
+  tableWrap.hidden = !showTable;
+
+  if (showTable) {
+    renderLoanTable(currentLoans);
+  }
+});
+
+
+  
 document.querySelectorAll(".kpi").forEach(tile => {
   tile.addEventListener("click", e => {
     e.stopPropagation();
@@ -1736,6 +1859,35 @@ document.querySelectorAll(".kpi").forEach(tile => {
   }
 }
 
+    /* =========================
+   TABLE RENDER
+   ========================= */
+
+function renderLoanTable(loans) {
+  const tbody = document.querySelector("#loanTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  loans.forEach(l => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${l.loanId}</td>
+      <td>${l.loanName}</td>
+      <td>${l.school}</td>
+      <td>${formatDate(new Date(l.loanStartDate))}</td>
+      <td>${formatDate(new Date(l.purchaseDate))}</td>
+      <td>${formatCurrency(l.principal)}</td>
+      <td>${formatCurrency(l.purchasePrice)}</td>
+      <td>${(l.nominalRate * 100).toFixed(2)}%</td>
+      <td>${l.termYears}</td>
+      <td>${l.graceYears ?? 0}</td>
+      <td>${formatCurrency(l.balance)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
 
 function buildEventBadges(events = []) {
   if (!events.length) return "";
@@ -1761,6 +1913,7 @@ function buildEventBadges(events = []) {
   `;
 }
 
+    
 
 function setMiniTooltipContent(lines) {
   tooltip.innerHTML = lines.join("<br>");
@@ -2101,7 +2254,24 @@ function tpvStackSeries(loansList) {
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
 
+/* =========================
+   GLOBAL EXPORT BUTTONS
+   ========================= */
 
+document.getElementById("downloadAllCsvBtn")?.addEventListener("click", () => {
+  const csv = loansToCSV(currentLoans);
+  downloadText(csv, "loans.csv");
+});
+
+document.getElementById("copyAllCsvBtn")?.addEventListener("click", async () => {
+  await navigator.clipboard.writeText(loansToCSV(currentLoans));
+});
+
+document.getElementById("printAllBtn")?.addEventListener("click", () => {
+  window.print();
+});
+
+    
     function closeDrawer() {
       drawer.classList.remove('open');
       drawer.setAttribute('aria-hidden', 'true');
@@ -2142,6 +2312,35 @@ function formatMonthYear(d) {
     month: "short",
     year: "numeric"
   });
+}
+
+    /* =========================
+   TABLE EXPORT
+   ========================= */
+
+function loansToCSV(loans) {
+  const headers = [
+    "ID","Loan Name","School","Loan Start","Purchase Date",
+    "Orig Amt","Purchase Price","Rate","Term","Grace","Balance"
+  ];
+
+  const rows = loans.map(l => [
+    l.loanId,
+    l.loanName,
+    l.school,
+    l.loanStartDate,
+    l.purchaseDate,
+    l.principal,
+    l.purchasePrice,
+    (l.nominalRate * 100).toFixed(2),
+    l.termYears,
+    l.graceYears ?? 0,
+    l.balance
+  ]);
+
+  return [headers, ...rows]
+    .map(r => r.map(v => `"${v}"`).join(","))
+    .join("\n");
 }
 
 
