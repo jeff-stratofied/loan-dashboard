@@ -618,6 +618,25 @@ schedule.forEach(r => {
   return schedule;
 }
 
+export function getCanonicalCurrentAmortRow(schedule, today = new Date()) {
+  if (!schedule?.length) return null;
+
+  const y = today.getFullYear();
+  const m = today.getMonth();
+
+  const match = schedule.find(r =>
+    r.loanDate &&
+    r.loanDate.getFullYear() === y &&
+    r.loanDate.getMonth() === m &&
+    r.isOwned !== false
+  );
+
+  if (match) return match;
+
+  return schedule.filter(r => r.isOwned !== false).at(-1) || schedule.at(-1);
+}
+
+
 // -------------------------------
 // Attach schedules to all loans
 // -------------------------------
