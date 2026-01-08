@@ -1097,6 +1097,22 @@ const PAGE_USER = urlParams.get("user") || "jeff";
 const isEmbed   = urlParams.get("embed") === "true";
 const cameFromReporting = urlParams.get("from") === "reporting";
 
+  // =====================================================
+// FULL PAGE LOAD — clear transient drawer navigation
+// =====================================================
+if (!isEmbed) {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.has("open")) {
+    params.delete("open");
+
+    const cleanUrl =
+      `${location.pathname}?${params.toString()}`;
+
+    history.replaceState({}, "", cleanUrl);
+  }
+}
+
   
 let currentLoan = null;
 let currentMode = 'portfolio';
