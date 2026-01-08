@@ -1179,10 +1179,22 @@ async function init() {
   });
 
   // 3) NOW render + wire the UI (must happen AFTER data exists)
-  renderAndWirePage();
+renderAndWirePage();
 
-  // 🔑 Deep-link KPI open (full UI + iframe redirect target)
-  openAmortKpiFromUrl();
+// 🔑 Deep-link KPI open (full UI + iframe redirect target)
+openAmortKpiFromUrl();
+
+/* =====================================================
+   REPORTING RETURN OVERRIDE
+   ===================================================== */
+if (PAGE_CONTEXT.cameFromReporting && currentLoans.length) {
+  requestAnimationFrame(() => {
+    openDrawerForLoan(currentLoans[0]);
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  });
+}
+
     
     /* =====================================================
      EMBED / REPORTING AUTO-OPEN LOGIC
@@ -1782,6 +1794,13 @@ if (savedTableView !== null) {
   tableToggle.checked = savedTableView === "true";
 }
 
+// 🚨 OVERRIDE when returning from Reporting
+if (PAGE_CONTEXT.cameFromReporting) {
+  tableToggle.checked = false;
+  localStorage.removeItem("loanTableView");
+}
+
+
 // Apply initial state
 const showTable = tableToggle.checked;
 gridEl.style.display = showTable ? "none" : "";
@@ -1913,16 +1932,22 @@ function renderLoanTable(loans) {
     // Click → open loan drawer
     // -----------------------------
     tr.addEventListener("click", () => {
-      openDrawerForLoan(loan);
-    });
+  openDrawerForLoan(loan);
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+});
+
 
     // Keyboard support (Enter / Space)
     tr.addEventListener("keydown", e => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        openDrawerForLoan(loan);
-      }
-    });
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    openDrawerForLoan(loan);
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  }
+});
+
 
     tbody.appendChild(tr);
   });
