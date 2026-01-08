@@ -2267,10 +2267,6 @@ svg.addEventListener("mouseleave", () => {
     `;
 
 // =====================================================
-// ROI iframe KPI redirect (MATCH AMORT)
-// =====================================================
-if (isEmbed) {
-  // =====================================================
 // ROI iframe KPI redirect (USE LEGACY KPI ROUTER)
 // =====================================================
 if (isEmbed) {
@@ -2282,48 +2278,34 @@ if (isEmbed) {
   };
 
   document.querySelectorAll(".kpi").forEach(tile => {
-    tile.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
+    tile.addEventListener(
+      "click",
+      e => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
 
-      const semantic = tile.dataset.kpi;
-      const legacy = KPI_MAP[semantic];
+        const semantic = tile.dataset.kpi;
+        const legacy = KPI_MAP[semantic];
 
-      if (!legacy) {
-        console.warn("Unknown ROI KPI:", semantic);
-        return;
-      }
+        if (!legacy) {
+          console.warn("Unknown ROI KPI:", semantic);
+          return;
+        }
 
-      const url = new URL(
-        window.location.origin + "/loan-dashboard/roi"
-      );
-      url.searchParams.set("user", PAGE_USER);
-      url.searchParams.set("open", legacy);        // 🔑 KEY FIX
-      url.searchParams.set("from", "reporting");
+        const url = new URL(
+          window.location.origin + "/loan-dashboard/roi"
+        );
+        url.searchParams.set("user", PAGE_USER);
+        url.searchParams.set("open", legacy);
+        url.searchParams.set("from", "reporting");
 
-      window.top.location.href = url.toString();
-    }, true);
+        window.top.location.href = url.toString();
+      },
+      true // capture (important)
+    );
   });
 }
 
-    tile.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const kpi = tile.dataset.kpi;
-      if (!kpi) return;
-
-      const url = new URL(
-        window.location.origin + "/loan-dashboard/roi"
-      );
-      url.searchParams.set("user", PAGE_USER);
-      url.searchParams.set("from", "reporting");
-      url.searchParams.set("open", kpi); // 🔑 THIS WAS MISSING
-
-      window.top.location.href = url.toString();
-    });
-  });
-}
 
 
 
