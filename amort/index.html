@@ -1647,11 +1647,15 @@ renderLoanTiles(filteredLoans);
    Populate amort filter dropdowns
    ============================ */
 
-const filterName = document.getElementById("filterName");
+const filterName   = document.getElementById("filterName");
 const filterSchool = document.getElementById("filterSchool");
-const filterRate = document.getElementById("filterRate");
-const sortLoans = document.getElementById("sortLoans");
-const resetBtn = document.getElementById("resetFilters");
+const filterRate   = document.getElementById("filterRate");
+const sortLoans    = document.getElementById("sortLoans");
+const resetBtn     = document.getElementById("resetFilters");
+
+// 🔑 CLEAR existing options (keep first default)
+filterName.options.length = 1;
+filterSchool.options.length = 1;
 
 // Build dropdown values from canonical data
 const names = [...new Set(allLoans.map(l => l.loanName).filter(Boolean))];
@@ -1672,6 +1676,7 @@ schools.forEach(s => {
   o.textContent = s;
   filterSchool.appendChild(o);
 });
+
 
 // -----------------------------
 // Wire filter + sort controls
