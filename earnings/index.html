@@ -1074,7 +1074,7 @@ import {
   buildEarningsSchedule,
   getCanonicalCurrentEarningsRow,
   computePortfolioEarningsKPIs
-} from "../js/earningsEngine.js";
+} from "../js/earningsEngine.js?v=dev";
 
   import {
   addMonths,
@@ -1083,7 +1083,7 @@ import {
   getCurrentScheduleIndex,
   buildAmortSchedule,
   isDeferredMonth
-} from "../js/loanEngine.js";
+} from "../js/loanEngine.js?v=dev";
 
 let earningsDataReadyResolve;
 const earningsDataReady = new Promise(resolve => {
