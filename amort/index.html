@@ -1879,24 +1879,55 @@ function renderLoanTable(loans) {
 
   tbody.innerHTML = "";
 
-  loans.forEach(l => {
+  loans.forEach(loan => {
     const tr = document.createElement("tr");
+    tr.tabIndex = 0; // keyboard focus
+    tr.style.cursor = "pointer";
+
     tr.innerHTML = `
-      <td>${l.loanId}</td>
-      <td>${l.loanName}</td>
-      <td>${l.school}</td>
-      <td>${formatDate(new Date(l.loanStartDate))}</td>
-      <td>${formatDate(new Date(l.purchaseDate))}</td>
-      <td>${formatCurrency(l.principal)}</td>
-      <td>${formatCurrency(l.purchasePrice)}</td>
-      <td>${(l.nominalRate * 100).toFixed(2)}%</td>
-      <td>${l.termYears}</td>
-      <td>${l.graceYears ?? 0}</td>
-      <td>${formatCurrency(getCurrentLoanBalance(l))}</td>
+      <td>${loan.loanId}</td>
+      <td>${loan.loanName}</td>
+      <td>${loan.school}</td>
+      <td>${formatDate(new Date(loan.loanStartDate))}</td>
+      <td>${formatDate(new Date(loan.purchaseDate))}</td>
+      <td>${formatCurrency(loan.principal)}</td>
+      <td>${formatCurrency(loan.purchasePrice)}</td>
+      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
+      <td>${loan.termYears}</td>
+      <td>${loan.graceYears ?? 0}</td>
+      <td>${formatCurrency(getCurrentLoanBalance(loan))}</td>
     `;
+
+    // -----------------------------
+    // Hover highlight
+    // -----------------------------
+    tr.addEventListener("mouseenter", () => {
+      tr.classList.add("row-hover");
+    });
+
+    tr.addEventListener("mouseleave", () => {
+      tr.classList.remove("row-hover");
+    });
+
+    // -----------------------------
+    // Click → open loan drawer
+    // -----------------------------
+    tr.addEventListener("click", () => {
+      openDrawerForLoan(loan);
+    });
+
+    // Keyboard support (Enter / Space)
+    tr.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openDrawerForLoan(loan);
+      }
+    });
+
     tbody.appendChild(tr);
   });
 }
+
 
 
 function buildEventBadges(events = []) {
