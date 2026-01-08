@@ -49,30 +49,32 @@ function monthDiff(d1, d2) {
  *
  * @returns {Array<EarningsRow>}
  */
+
 export function buildEarningsSchedule({
-const loanStart = new Date(loanStartDate + "T00:00:00");
-if (!Number.isFinite(loanStart.getTime())) {
-  throw new Error(
-    `Invalid loanStartDate in earnings engine: ${loanStartDate}`
-  );
-}
-
-const purchaseDt = new Date(purchaseDate + "T00:00:00");
-if (!Number.isFinite(purchaseDt.getTime())) {
-  throw new Error(
-    `Invalid purchaseDate in earnings engine: ${purchaseDate}`
-  );
-}
-
-  
   amortSchedule,
   loanStartDate,
   purchaseDate,
   events = [],
   today
 }) {
+  
   if (!Array.isArray(amortSchedule) || amortSchedule.length === 0) {
     return [];
+  }
+
+  // 🔒 HARD GUARDS (match amort engine behavior)
+  const loanStart = new Date(loanStartDate + "T00:00:00");
+  if (!Number.isFinite(loanStart.getTime())) {
+    throw new Error(
+      `Invalid loanStartDate in earnings engine: ${loanStartDate}`
+    );
+  }
+
+  const purchaseDt = new Date(purchaseDate + "T00:00:00");
+  if (!Number.isFinite(purchaseDt.getTime())) {
+    throw new Error(
+      `Invalid purchaseDate in earnings engine: ${purchaseDate}`
+    );
   }
 
   const loanStart = new Date(loanStartDate + "T00:00:00");
