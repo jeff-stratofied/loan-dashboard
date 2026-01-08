@@ -1598,6 +1598,7 @@ function getEventRowClass(loan, row) {
   return "";
 }
 
+let currentLoans = [];
 
     
     
@@ -1775,7 +1776,8 @@ async function initROI() {
   // ----------------------------------
   // 3. Canonical state
   // ----------------------------------
-  const currentLoans = loansWithAmort;
+  currentLoans = loansWithAmort;
+
   const kpis = computeKPIs(currentLoans);
 
   // ----------------------------------
