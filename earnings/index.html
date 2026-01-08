@@ -1478,9 +1478,6 @@ document.querySelectorAll(".kpi").forEach(tile => {
       return;
     }
 
-    // ✅ FULL PAGE: open KPI + update URL state (no from=reporting here)
-    history.pushState({}, "", `${location.pathname}?user=${PAGE_USER}&open=${type}`);
-
     switch (type) {
       case "net":        openKpi1(); break;
       case "projected":  openKpi2(); break;   // <-- KPI2
@@ -3113,43 +3110,6 @@ function normalizeEarningsKpiParam(kpi) {
 
   return map[kpi] || null;
 }
-
-  // =====================================================
-// Browser Back / Forward → re-sync drawer state
-// =====================================================
-
-window.addEventListener("popstate", () => {
-  const params = new URLSearchParams(window.location.search);
-  const open = params.get("open");
-
-  // Always reset first (critical)
-  closeDrawer?.();
-  currentLoan = null;
-  currentMode = "portfolio";
-
-  // Default behavior when coming back from Reporting
-  if (!open) {
-    openKpi2(); // ← your canonical default
-    return;
-  }
-
-  switch (open) {
-    case "net":
-      openKpi1();
-      break;
-    case "projected":
-      openKpi2();
-      break;
-    case "avgMonthly":
-      openKpi3();
-      break;
-    case "fees":
-      openKpi4();
-      break;
-    default:
-      openKpi2();
-  }
-});
 
   
 function openEarningsKpiFromUrl() {
@@ -4868,13 +4828,34 @@ URL.revokeObjectURL(url);
 }
 
 // =====================================================
-// Browser Back / Forward → re-apply URL state
+// Browser Back / Forward — Earnings (single source)
 // =====================================================
-window.addEventListener("popstate", () => {
-  if (!isEmbed) {
-    syncEarningsDrawerFromUrl();
+window.addEventListener("popstate", (e) => {
+  if (isEmbed) return;
+
+  // 🔒 Ignore reloads / BFCache restores
+  // Only respond to real navigation events we created
+  if (!e.state || e.state.source !== "nav") {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const open = params.get("open");
+
+  closeDrawer?.();
+  currentLoan = null;
+  currentMode = "portfolio";
+
+  switch (open) {
+    case "net":        openKpi1(); break;
+    case "avgMonthly": openKpi3(); break;
+    case "fees":       openKpi4(); break;
+    case "projected":
+    default:
+      openKpi2();
   }
 });
+
 
   
   </script>
