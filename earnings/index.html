@@ -1132,6 +1132,17 @@ if (cameFromReporting && backRow && backBtn) {
   });
 }
 
+  // ✅ If the browser restores the reporting page + iframe from bfcache,
+// force the iframe back to its default state (KPI2 / projected).
+if (isEmbed) {
+  window.addEventListener("pageshow", (e) => {
+    if (e.persisted) {
+      // reset drawer state to default for the iframe
+      try { openKpi2(); } catch (_) {}
+    }
+  });
+}
+
 
 const USER_LABELS = {
 jeff: "Jeff Customer",
@@ -1151,12 +1162,11 @@ USER_LABELS[PAGE_USER] || PAGE_USER;
 const TODAY = getStandardToday();
 
 
-/* ======================================================
-   EMBED MODE — REDIRECT ALL MUTATING ACTIONS TO FULL PAGE
-   (works for dynamically-rendered KPI tables)
-   ====================================================== */
-
-function redirectToFullEarnings(openParam = "kpi2") {
+// =====================================================
+// Canonical iframe → full Earnings redirect
+// (MATCHES AMORT BEHAVIOR)
+// =====================================================
+function redirectToFullEarnings(openParam = "projected") {
   const url =
     `/loan-dashboard/earnings/index.html` +
     `?user=${PAGE_USER}` +
@@ -1165,6 +1175,7 @@ function redirectToFullEarnings(openParam = "kpi2") {
 
   window.top.location.href = url;
 }
+
 
 if (isEmbed) {
   // 1) Simple static buttons (these exist in the DOM immediately)
@@ -1460,38 +1471,33 @@ document.querySelectorAll(".kpi").forEach(tile => {
   tile.addEventListener("click", () => {
     const type = tile.dataset.kpi;
 
-    // -----------------------------------------
-    // FULL PAGE ONLY — update browser history
-    // -----------------------------------------
-    if (!isEmbed) {
-      history.pushState(
-        {},
-        "",
-        `${location.pathname}?user=${PAGE_USER}&open=${type}`
-      );
+    // ✅ IFRAME: always escape to full page, preserve which KPI was clicked
+    if (isEmbed) {
+      const url =
+        `/loan-dashboard/earnings/index.html` +
+        `?user=${PAGE_USER}` +
+        `&from=reporting` +
+        `&open=${type}`;
+
+      window.top.location.href = url;
+      return;
     }
 
-    // -----------------------------------------
-    // Open the KPI drawer
-    // -----------------------------------------
+    // ✅ FULL PAGE: open KPI + update URL state (no from=reporting here)
+    history.pushState({}, "", `${location.pathname}?user=${PAGE_USER}&open=${type}`);
+
     switch (type) {
-      case "net":
-        openKpi1();
-        break;
-      case "projected":
-        openKpi2();
-        break;
-      case "avgMonthly":
-        openKpi3();
-        break;
-      case "fees":
-        openKpi4();
-        break;
+      case "net":        openKpi1(); break;
+      case "projected":  openKpi2(); break;   // <-- KPI2
+      case "avgMonthly": openKpi3(); break;
+      case "fees":       openKpi4(); break;
       default:
+        console.warn("Unknown KPI tile:", type);
         openKpi2();
     }
   });
 });
+
 
 // =====================================================
 // SINGLE SOURCE OF TRUTH — open drawer from URL
