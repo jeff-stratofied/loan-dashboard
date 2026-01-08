@@ -1425,6 +1425,11 @@ PORTFOLIO_KPIS =
 // ✅ SIGNAL DATA READY (THIS WAS MISSING)
 earningsDataReadyResolve?.();
 
+  // ✅ APPLY URL STATE ON INITIAL LOAD (FULL PAGE ONLY)
+if (!isEmbed) {
+  syncEarningsDrawerFromUrl();
+}
+
 }
 
   
@@ -1488,6 +1493,33 @@ document.querySelectorAll(".kpi").forEach(tile => {
   });
 });
 
+// =====================================================
+// SINGLE SOURCE OF TRUTH — open drawer from URL
+// (MATCHES AMORT BEHAVIOR)
+// =====================================================
+function syncEarningsDrawerFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const open = params.get("open");
+
+  // Reset state every time (critical)
+  currentLoan = null;
+  currentMode = "portfolio";
+
+  switch (open) {
+    case "net":
+      openKpi1();
+      break;
+    case "avgMonthly":
+      openKpi3();
+      break;
+    case "fees":
+      openKpi4();
+      break;
+    case "projected":
+    default:
+      openKpi2(); // canonical default
+  }
+}
 
   
 /* Used */
@@ -4833,6 +4865,17 @@ a.download = "drawer-data.csv";
 a.click();
 URL.revokeObjectURL(url);
 }
+
+// =====================================================
+// Browser Back / Forward → re-apply URL state
+// =====================================================
+window.addEventListener("popstate", () => {
+  if (!isEmbed) {
+    syncEarningsDrawerFromUrl();
+  }
+});
+
+  
   </script>
 
 <script src="/loan-dashboard/js/feedback.js"></script>
