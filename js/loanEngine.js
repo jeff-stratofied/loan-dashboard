@@ -636,6 +636,13 @@ export function getCanonicalCurrentAmortRow(schedule, today = new Date()) {
   return schedule.filter(r => r.isOwned !== false).at(-1) || schedule.at(-1);
 }
 
+// loanEngine.js
+export function getCurrentLoanBalance(loan, today = new Date()) {
+  const sched = loan?.amort?.schedule || loan?.cumSchedule || [];
+  const row = getCanonicalCurrentAmortRow(sched, today);
+  return Number(row?.balance || 0);
+}
+
 
 // -------------------------------
 // Attach schedules to all loans
