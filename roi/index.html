@@ -1404,34 +1404,7 @@ if (Array.isArray(loan.events)) {
       }));
     }
 
-/* ============================
-   KPI deep-link router (ROI)
-   ============================ */
-function openRoiKpiFromUrl() {
-  const kpi = new URLSearchParams(window.location.search).get("open");
-  if (!kpi) return;
 
-  switch (kpi) {
-    case "tpv":
-      renderTPVDrawer();
-      break;
-
-    case "rates":
-      renderRatesDrawer();
-      break;
-
-    case "capitalRecovery":
-      renderCapitalRecoveryDrawer();
-      break;
-
-    case "spread":
-      renderRoiSpreadDrawer();
-      break;
-
-    default:
-      console.warn("Unknown ROI KPI:", kpi);
-  }
-}
 
     
     async function initROI() {
@@ -2291,7 +2264,34 @@ if (isEmbed) {
 }
 
 
+/* ============================
+   KPI deep-link router (ROI)
+   ============================ */
+function openRoiKpiFromUrl() {
+  const kpi = new URLSearchParams(window.location.search).get("open");
+  if (!kpi) return;
 
+  switch (kpi) {
+    case "tpv":
+      renderTPVDrawer();
+      break;
+
+    case "rates":
+      renderRatesDrawer();
+      break;
+
+    case "capitalRecovery":
+      renderCapitalRecoveryDrawer();
+      break;
+
+    case "spread":
+      renderRoiSpreadDrawer();
+      break;
+
+    default:
+      console.warn("Unknown ROI KPI:", kpi);
+  }
+}
 
 
       // -------------------------------
