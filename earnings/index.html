@@ -1227,7 +1227,62 @@ if (isEmbed) {
       if (e.target.closest(".amort-wrap input[type='checkbox']")) {
         e.preventDefault();
         e.stopImmediatePropagation();
-        redirectToFullEarnings("kpi2");
+        if (isEmbed) {
+  // 1) Static buttons — ALWAYS go to KPI2 (Projected)
+  ["closeBtn", "downloadCsvBtn", "printBtn", "copyCsvBtn"].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener(
+      "click",
+      (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        redirectToFullEarnings("projected"); // ✅ KPI2 (semantic)
+      },
+      true
+    );
+  });
+
+  // 2) Dynamic controls inside KPI tables / drawer content
+  document.addEventListener(
+    "click",
+    (e) => {
+      // Loan On/Off swatch → full page KPI2
+      if (e.target.closest(".loan-swatch")) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        redirectToFullEarnings("projected");
+        return;
+      }
+
+      // Any checkbox interaction → full page KPI2
+      if (e.target.closest(".amort-wrap input[type='checkbox']")) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        redirectToFullEarnings("projected");
+        return;
+      }
+    },
+    true
+  );
+
+  // Prevent visual toggle in iframe
+  document.addEventListener(
+    "mousedown",
+    (e) => {
+      if (
+        e.target.closest(".loan-swatch") ||
+        e.target.closest(".amort-wrap input[type='checkbox']")
+      ) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    },
+    true
+  );
+}
+
         return;
       }
     },
