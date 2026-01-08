@@ -2270,7 +2270,42 @@ svg.addEventListener("mouseleave", () => {
 // ROI iframe KPI redirect (MATCH AMORT)
 // =====================================================
 if (isEmbed) {
+  // =====================================================
+// ROI iframe KPI redirect (USE LEGACY KPI ROUTER)
+// =====================================================
+if (isEmbed) {
+  const KPI_MAP = {
+    tpv: "kpi1",
+    rates: "kpi2",
+    capitalRecovery: "kpi3",
+    spread: "kpi4"
+  };
+
   document.querySelectorAll(".kpi").forEach(tile => {
+    tile.addEventListener("click", e => {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+
+      const semantic = tile.dataset.kpi;
+      const legacy = KPI_MAP[semantic];
+
+      if (!legacy) {
+        console.warn("Unknown ROI KPI:", semantic);
+        return;
+      }
+
+      const url = new URL(
+        window.location.origin + "/loan-dashboard/roi"
+      );
+      url.searchParams.set("user", PAGE_USER);
+      url.searchParams.set("open", legacy);        // 🔑 KEY FIX
+      url.searchParams.set("from", "reporting");
+
+      window.top.location.href = url.toString();
+    }, true);
+  });
+}
+
     tile.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation();
