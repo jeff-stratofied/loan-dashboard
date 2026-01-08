@@ -2266,8 +2266,8 @@ svg.addEventListener("mouseleave", () => {
       </div>
     `;
 
-      // =====================================================
-// ROI iframe KPI redirect (AUTHORITATIVE)
+// =====================================================
+// ROI iframe KPI redirect (MATCH AMORT)
 // =====================================================
 if (isEmbed) {
   document.querySelectorAll(".kpi").forEach(tile => {
@@ -2275,11 +2275,21 @@ if (isEmbed) {
       e.preventDefault();
       e.stopPropagation();
 
-      window.top.location.href =
-        `/loan-dashboard/roi?user=${PAGE_USER}&from=reporting`;
+      const kpi = tile.dataset.kpi;
+      if (!kpi) return;
+
+      const url = new URL(
+        window.location.origin + "/loan-dashboard/roi"
+      );
+      url.searchParams.set("user", PAGE_USER);
+      url.searchParams.set("from", "reporting");
+      url.searchParams.set("open", kpi); // 🔑 THIS WAS MISSING
+
+      window.top.location.href = url.toString();
     });
   });
 }
+
 
 
       // -------------------------------
