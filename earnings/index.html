@@ -2586,7 +2586,6 @@ openDrawerBase();
 
 function buildPortfolioDrawerRows(loans) {
 
-
 const monthly = new Map();
 
 loans.forEach(loan => {
@@ -3083,6 +3082,43 @@ function normalizeEarningsKpiParam(kpi) {
 
   return map[kpi] || null;
 }
+
+  // =====================================================
+// Browser Back / Forward → re-sync drawer state
+// =====================================================
+
+window.addEventListener("popstate", () => {
+  const params = new URLSearchParams(window.location.search);
+  const open = params.get("open");
+
+  // Always reset first (critical)
+  closeDrawer?.();
+  currentLoan = null;
+  currentMode = "portfolio";
+
+  // Default behavior when coming back from Reporting
+  if (!open) {
+    openKpi2(); // ← your canonical default
+    return;
+  }
+
+  switch (open) {
+    case "net":
+      openKpi1();
+      break;
+    case "projected":
+      openKpi2();
+      break;
+    case "avgMonthly":
+      openKpi3();
+      break;
+    case "fees":
+      openKpi4();
+      break;
+    default:
+      openKpi2();
+  }
+});
 
   
 function openEarningsKpiFromUrl() {
