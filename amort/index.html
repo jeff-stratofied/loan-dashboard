@@ -1196,9 +1196,12 @@ const tpvValue =
 }
 
 
-    const DEV_ASSERT =
-  location.hostname === "localhost" ||
-  location.hostname.includes("github.io");
+const DEV_ASSERT =
+  (location.hostname === "localhost" ||
+   location.hostname.includes("github.io")) &&
+  !new URLSearchParams(window.location.search).has("embed") &&
+  new URLSearchParams(window.location.search).get("from") !== "reporting";
+
 
 function assert(condition, message, context = {}) {
   if (!DEV_ASSERT) return;
