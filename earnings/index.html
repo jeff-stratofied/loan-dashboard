@@ -3067,31 +3067,50 @@ function openKpi4() {
   openDrawer();
 }
 
+function normalizeEarningsKpiParam(kpi) {
+  const map = {
+    kpi1: "net",
+    kpi2: "projected",
+    kpi3: "avgMonthly",
+    kpi4: "fees",
+
+    // allow semantic aliases too
+    net: "net",
+    projected: "projected",
+    avgMonthly: "avgMonthly",
+    fees: "fees"
+  };
+
+  return map[kpi] || null;
+}
+
+  
 function openEarningsKpiFromUrl() {
-  const kpi = new URLSearchParams(window.location.search).get("open");
-  if (!kpi) return;
+  const raw = new URLSearchParams(window.location.search).get("open");
+  if (!raw) return;
+
+  const kpi = normalizeEarningsKpiParam(raw);
+  if (!kpi) {
+    console.warn("Unknown earnings KPI:", raw);
+    return;
+  }
 
   switch (kpi) {
     case "net":
       openKpi1();
       break;
-
     case "projected":
       openKpi2();
       break;
-
     case "avgMonthly":
       openKpi3();
       break;
-
     case "fees":
       openKpi4();
       break;
-
-    default:
-      console.warn("Unknown earnings KPI:", kpi);
   }
 }
+
 
 
 const activeLoans = loansWithEarnings.filter(
