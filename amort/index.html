@@ -1312,29 +1312,23 @@ function renderLoanTiles(loans) {
 
   const derived = derivePortfolioData(loans);
 
-  derived.loanViews.forEach(({ loan, miniSeries, maturityDate, currentMonthIndex }, idx) => {
-     /* ============================
-       Render loan tiles with mini-charts (cumulative principal & interest)
-       ============================ */
-    const grid = document.getElementById('loanGrid');
-    const tooltip = document.getElementById('tooltip');
-  grid.innerHTML = "";
-    derived.loanViews.forEach(({ loan, miniSeries, maturityDate, currentMonthIndex }, idx) => {
-      assert(loan, "loan missing in loanView", { idx });
-assert(
-  Array.isArray(miniSeries),
-  "miniSeries missing for loan",
-  loan
-);
-assert(
-  Number.isFinite(currentMonthIndex),
-  "currentMonthIndex invalid",
-  loan
-);
+  derived.loanViews.forEach(
+    ({ loan, miniSeries, maturityDate, currentMonthIndex }, idx) => {
 
-      
-      const tile = document.createElement('div');
-      tile.className = 'tile';
+      /* ============================
+         Render loan tiles with mini-charts (cumulative principal & interest)
+         ============================ */
+
+      assert(loan, "loan missing in loanView", { idx });
+      assert(Array.isArray(miniSeries), "miniSeries missing for loan", loan);
+      assert(
+        Number.isFinite(currentMonthIndex),
+        "currentMonthIndex invalid",
+        loan
+      );
+
+      const tile = document.createElement("div");
+      tile.className = "tile";
 
       tile.dataset.loanName = (loan.loanName || "").toLowerCase();
       tile.dataset.school = (loan.school || "").toLowerCase();
@@ -1343,262 +1337,205 @@ assert(
       tile.dataset.startDate = new Date(loan.loanStartDate).getTime();
       tile.dataset.amount = Number(loan.purchasePrice || 0);
 
-      tile.setAttribute('tabindex', '0');
+      tile.setAttribute("tabindex", "0");
 
       tile.innerHTML = `
-<div class="tile-left">
-  <!-- Line 1: Loan Name (bold) -->
-  <div class="loan-name" style="font-weight:700;font-size:14px;">
-  ${loan.loanName}
-</div>
+        <div class="tile-left">
+          <div class="loan-name" style="font-weight:700;font-size:14px;">
+            ${loan.loanName}
+          </div>
 
-${buildEventBadges(loan.events || [])}
+          ${buildEventBadges(loan.events || [])}
 
+          <div class="loan-name" style="font-weight:700;font-size:13px;">
+            ${loan.school || "School"}
+          </div>
 
-  <!-- Line 2: School (bold) -->
-  <div class="loan-name" style="font-weight:700;font-size:13px;">
-    ${loan.school || ('School ')}
-  </div>
+          <div class="loan-sub" style="margin-top:6px;">
+            Rate: ${(loan.nominalRate * 100).toFixed(2)}%
+            &nbsp;·&nbsp;
+            Term: ${loan.termYears}y
+            &nbsp;·&nbsp;
+            Matures: ${
+              maturityDate
+                ? maturityDate.toLocaleDateString(undefined, {
+                    month: "short",
+                    year: "numeric"
+                  })
+                : "—"
+            }
+          </div>
 
-  <!-- Line 3: Rate · Term · Matures -->
-  <div class="loan-sub" style="margin-top:6px;">
-    Rate: ${(loan.nominalRate * 100).toFixed(2)}%
-    &nbsp;·&nbsp;
-    Term: ${loan.termYears}y
-    &nbsp;·&nbsp;
-Matures: ${
-  maturityDate
-    ? maturityDate.toLocaleDateString(undefined, {
-        month: "short",
-        year: "numeric"
-      })
-    : "—"
-}
-
-  </div>
-
-  <!-- Line 4: Loan ID -->
-  <div class="loan-sub">
-    Loan ${loan.loanId}
-  </div>
-</div>
+          <div class="loan-sub">
+            Loan ${loan.loanId}
+          </div>
+        </div>
 
         <div class="chart-wrap">
-          <div class="mini-label">Rate ${(loan.nominalRate * 100).toFixed(2)}%</div>
-          <svg class="sparkline" viewBox="0 0 170 48" preserveAspectRatio="none" data-idx="${idx}" aria-hidden="true"></svg>
+          <div class="mini-label">
+            Rate ${(loan.nominalRate * 100).toFixed(2)}%
+          </div>
+          <svg class="sparkline"
+               viewBox="0 0 170 48"
+               preserveAspectRatio="none"
+               aria-hidden="true"></svg>
         </div>
       `;
 
-// -----------------------------
-// Badge hover (ROI-style)
-// -----------------------------
-if (Array.isArray(loan.events) && loan.events.length > 0) {
-  const badges = tile.querySelectorAll(".loan-badge");
+      /* -----------------------------
+         Badge hover (ROI-style)
+         ----------------------------- */
+      if (Array.isArray(loan.events) && loan.events.length > 0) {
+        const badges = tile.querySelectorAll(".loan-badge");
 
-  badges.forEach(badge => {
-    badge.addEventListener("mouseenter", e => {
-      let eventType = null;
-      if (badge.classList.contains("prepayment")) eventType = "prepayment";
-      if (badge.classList.contains("default")) eventType = "default";
-      if (badge.classList.contains("deferral")) eventType = "deferral";
-      if (!eventType) return;
+        badges.forEach(badge => {
+          badge.addEventListener("mouseenter", e => {
+            let eventType = null;
+            if (badge.classList.contains("prepayment")) eventType = "prepayment";
+            if (badge.classList.contains("default")) eventType = "default";
+            if (badge.classList.contains("deferral")) eventType = "deferral";
+            if (!eventType) return;
 
-      const event = loan.events.find(ev => ev.type === eventType);
-      if (!event) return;
+            const event = loan.events.find(ev => ev.type === eventType);
+            if (!event) return;
 
-      const lines = [];
+            const lines = [];
 
-      if (eventType === "prepayment") {
-        lines.push(
-          "Prepayment",
-          `Date: ${formatDate(new Date(event.date + "T00:00:00"))}`,
-          `Amount: ${formatCurrency(event.amount)}`
-        );
+            if (eventType === "prepayment") {
+              lines.push(
+                "Prepayment",
+                `Date: ${formatDate(new Date(event.date + "T00:00:00"))}`,
+                `Amount: ${formatCurrency(event.amount)}`
+              );
+            }
+
+            if (eventType === "default") {
+              const [y, m, d] = event.date.split("-").map(Number);
+              const defDate = new Date(y, m - 1, d);
+
+              const schedule = loan.amort?.schedule || [];
+              let balanceAtDefault = 0;
+
+              for (const row of schedule) {
+                if (
+                  row.loanDate &&
+                  row.loanDate.getFullYear() === defDate.getFullYear() &&
+                  row.loanDate.getMonth() === defDate.getMonth()
+                ) {
+                  balanceAtDefault = Number(row.balance || 0);
+                  break;
+                }
+              }
+
+              const recovered = Number(
+                event.recovered ??
+                event.recoveredAmount ??
+                event.recoveryAmount ??
+                event.amountRecovered ??
+                event.recovery ??
+                0
+              );
+
+              lines.push(
+                "Default",
+                `Date: ${formatMonthYear(defDate)}`,
+                `Recovered: ${formatCurrency(recovered)}`,
+                `Remaining: ${formatCurrency(balanceAtDefault - recovered)}`
+              );
+            }
+
+            if (eventType === "deferral") {
+              lines.push(
+                "Deferral",
+                `Start: ${formatMonthYear(
+                  new Date(event.startDate + "T00:00:00")
+                )}`,
+                `Months: ${event.months}`
+              );
+            }
+
+            setMiniTooltipContent(lines);
+            positionMiniTooltip(e.clientX, e.clientY - 8, 16);
+          });
+
+          badge.addEventListener("mouseleave", hideMiniTooltip);
+        });
       }
 
-      if (eventType === "default") {
-        const [y, m, d] = event.date.split("-").map(Number);
-        const defDate = new Date(y, m - 1, d);
+      tile.addEventListener("click", e => {
+        e.stopPropagation();
+        openDrawerForLoan(loan);
+      });
 
-        const schedule = loan.amort?.schedule || [];
-        let balanceAtDefault = 0;
-
-        for (const row of schedule) {
-          if (
-            row.loanDate &&
-            row.loanDate.getFullYear() === defDate.getFullYear() &&
-            row.loanDate.getMonth() === defDate.getMonth()
-          ) {
-            balanceAtDefault = Number(row.balance || 0);
-            break;
-          }
+      tile.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDrawerForLoan(loan);
         }
-
-        const recovered = Number(
-          event.recovered ??
-          event.recoveredAmount ??
-          event.recoveryAmount ??
-          event.amountRecovered ??
-          event.recovery ??
-          0
-        );
-
-        lines.push(
-          "Default",
-          `Date: ${formatMonthYear(defDate)}`,
-          `Recovered: ${formatCurrency(recovered)}`,
-          `Remaining: ${formatCurrency(balanceAtDefault - recovered)}`
-        );
-      }
-
-      if (eventType === "deferral") {
-        lines.push(
-          "Deferral",
-          `Start: ${formatMonthYear(new Date(event.startDate + "T00:00:00"))}`,
-          `Months: ${event.months}`
-        );
-      }
-
-      setMiniTooltipContent(lines);
-      positionMiniTooltip(
-  e.clientX,
-  e.clientY - 8,
-  16
-);
-
-    });
-
-    badge.addEventListener("mouseleave", hideMiniTooltip);
-  });
-}
-
-      
-      // Important: stop propagation on click so the page-level click listener doesn't close the drawer immediately.
-      tile.addEventListener('click', e => { e.stopPropagation(); openDrawerForLoan(loan); });
-      tile.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDrawerForLoan(loan); } });
+      });
 
       grid.appendChild(tile);
 
-// render mini sparkline
-const svg = tile.querySelector('svg.sparkline');
-const w = 170, h = 48, pad = 6;
+      /* -----------------------------
+         Mini sparkline
+         ----------------------------- */
+      const svg = tile.querySelector("svg.sparkline");
+      const w = 170, h = 48, pad = 6;
 
-// Correct: use cumulative schedule
-const fullSched = miniSeries || [];
-
-if (!fullSched.length) {
-  svg.innerHTML = "";   // nothing to plot
-  return;
-}
-
-// build point arrays
-const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
-const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
-
-const pathP = buildPathFromPoints(pPoints, w, h, pad);
-const pathI = buildPathFromPoints(iPoints, w, h, pad);
-
-// calculate x-position on chart based on month index
-const maxMonth = Math.max(1, fullSched.length);
-const xForMonth = month => {
-  const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
-  return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
-};
-
-// derive "current month index" based on loan purchase date → today
-const curMonthForLoan = currentMonthIndex;
-
-// render SVG
-svg.innerHTML = `
-  <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6"
-        stroke-linecap="round" stroke-linejoin="round"></path>
-
-  <path d="${pathP}" fill="none" stroke="#06b6d4" stroke-width="1.6"
-        stroke-linecap="round" stroke-linejoin="round"></path>
-
-  <g class="mini-hover"></g>
-
-  <line class="current-line"
-        x1="${xForMonth(curMonthForLoan)}"
-        y1="2"
-        x2="${xForMonth(curMonthForLoan)}"
-        y2="${h - 2}"
-        stroke="#111827"
-        stroke-dasharray="3 3"
-        stroke-opacity="0.6" />
-`;
-
-
-
-      // Hover tooltip for mini chart
-      svg.addEventListener('mousemove', ev => {
-      const rect = svg.getBoundingClientRect();
-      const relativeX = ev.clientX - rect.left;
-      const frac = relativeX / rect.width;
-
-      // ---------------------------------
-      // SAFETY CHECK — INSERT HERE
-      // ---------------------------------
+      const fullSched = miniSeries || [];
       if (!fullSched.length) return;
 
-      const idxNearest = Math.round(frac * (fullSched.length - 1));
-      const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
-      if (!p) return;
-      // ---------------------------------
+      const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
+      const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
 
-      tooltip.style.left = (ev.clientX) + 'px';
-      tooltip.style.top = (ev.clientY - 10) + 'px';
-      tooltip.style.display = 'block';
-      const dateLabel = chartDateLabel(loan.loanStartDate, p.monthIndex);
-      tooltip.innerHTML =
-      `${dateLabel} • Principal $${p.cumPrincipal.toLocaleString()} • Interest $${p.cumInterest.toLocaleString()}`;
+      const pathP = buildPathFromPoints(pPoints, w, h, pad);
+      const pathI = buildPathFromPoints(iPoints, w, h, pad);
 
-         // draw hover circles
-      const hoverG = svg.querySelector('g.mini-hover');
-      hoverG.innerHTML = '';
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const stepX = (w - pad * 2) / Math.max(1, fullSched.length - 1);
-      const iX = pad + idxNearest * stepX;
+      const maxMonth = Math.max(1, fullSched.length);
+      const xForMonth = month => {
+        const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
+        return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
+      };
 
-      const valsP = pPoints.map(pp => pp.y);
-      const valsI = iPoints.map(pp => pp.y);
+      svg.innerHTML = `
+        <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6" />
+        <path d="${pathP}" fill="none" stroke="#06b6d4" stroke-width="1.6" />
+        <g class="mini-hover"></g>
+        <line class="current-line"
+              x1="${xForMonth(currentMonthIndex)}"
+              y1="2"
+              x2="${xForMonth(currentMonthIndex)}"
+              y2="${h - 2}"
+              stroke="#111827"
+              stroke-dasharray="3 3"
+              stroke-opacity="0.6" />
+      `;
 
-      if (!valsP.length || !valsI.length || !p) return;
+      svg.addEventListener("mousemove", ev => {
+        const rect = svg.getBoundingClientRect();
+        const frac = (ev.clientX - rect.left) / rect.width;
+        const idxNearest = Math.round(frac * (fullSched.length - 1));
+        const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
+        if (!p) return;
 
-      const minP = Math.min(...valsP), maxP = Math.max(...valsP), rangeP = Math.max(1, maxP - minP);
-      const minI = Math.min(...valsI), maxI = Math.max(...valsI), rangeI = Math.max(1, maxI - minI);
-
-      const cyP = pad + (h - pad * 2) - ((p.cumPrincipal - minP) / rangeP) * (h - pad * 2);
-      const cyI = pad + (h - pad * 2) - ((p.cumInterest - minI) / rangeI) * (h - pad * 2);
-
-      const cP = document.createElementNS(svgNS, 'circle');
-      cP.setAttribute('cx', iX); 
-      cP.setAttribute('cy', cyP); 
-      cP.setAttribute('r', 3.4); 
-      cP.setAttribute('fill', '#06b6d4');
-      cP.setAttribute('stroke', '#fff');
-      cP.setAttribute('stroke-width', '1');
-      hoverG.appendChild(cP);
-
-      const cI = document.createElementNS(svgNS, 'circle');
-      cI.setAttribute('cx', iX); 
-      cI.setAttribute('cy', cyI); 
-      cI.setAttribute('r', 3.4); 
-      cI.setAttribute('fill', '#a78bfa');
-      cI.setAttribute('stroke', '#fff');
-      cI.setAttribute('stroke-width', '1');
-      hoverG.appendChild(cI);
-    
+        tooltip.style.left = `${ev.clientX}px`;
+        tooltip.style.top = `${ev.clientY - 10}px`;
+        tooltip.style.display = "block";
+        tooltip.innerHTML =
+          `${chartDateLabel(loan.loanStartDate, p.monthIndex)} • ` +
+          `Principal $${p.cumPrincipal.toLocaleString()} • ` +
+          `Interest $${p.cumInterest.toLocaleString()}`;
       });
 
-      svg.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
-        const hoverG = svg.querySelector('g.mini-hover');
-        if (hoverG) hoverG.innerHTML = '';
+      svg.addEventListener("mouseleave", () => {
+        tooltip.style.display = "none";
+        const hoverG = svg.querySelector("g.mini-hover");
+        if (hoverG) hoverG.innerHTML = "";
       });
-    });
-  });
+    }
+  );
 }
+
 
     
     
@@ -1857,31 +1794,31 @@ document.querySelectorAll(".kpi").forEach(tile => {
 
 }
 
-    function openAmortKpiFromUrl() {
+function openAmortKpiFromUrl() {
   const kpi = PAGE_CONTEXT.open;
   if (!kpi) return;
+
+  // ✅ not a KPI — handled elsewhere
+  if (kpi === "first" || kpi === "loan") return;
 
   switch (kpi) {
     case "tpv":
       renderTPVDrawer();
       break;
-
     case "rates":
       renderRatesDrawer();
       break;
-
     case "payments":
       renderPaymentsDrawer();
       break;
-
     case "distribution":
       renderDistributionDrawer();
       break;
-
     default:
       console.warn("Unknown amort KPI:", kpi);
   }
 }
+
 
     
     /* =========================
