@@ -77,9 +77,6 @@ export function buildEarningsSchedule({
     );
   }
 
-  const loanStart = new Date(loanStartDate + "T00:00:00");
-  const purchaseDt = new Date(purchaseDate + "T00:00:00");
-
   const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
   const monthsSinceStart = Number.isFinite(monthsSinceStartRaw)
     ? monthsSinceStartRaw
