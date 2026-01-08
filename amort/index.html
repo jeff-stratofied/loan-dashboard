@@ -1236,16 +1236,10 @@ function derivePortfolioData(loans) {
 
   // --- Current TPV index ---
 const months = Object.keys(tpvStackData).sort();
-const curKey = currentMonthKey();
 
-// If current month not present (future / early data), clamp safely
-const effectiveKey =
-  tpvStackData[curKey]
-    ? curKey
-    : months[Math.min(
-        months.length - 1,
-        Math.max(0, months.indexOf(curKey))
-      )];
+// Always use the last available month (owned data)
+const effectiveKey = months[months.length - 1];
+
 
 const tpvValue =
   effectiveKey
@@ -2236,7 +2230,8 @@ function tpvStackSeries(loansList) {
     let cumFees      = 0;
 
     (loan.amort?.schedule || []).forEach(row => {
-      if (!row.isOwned) return;
+      if (row.isOwned === false) return;
+
 
       const d = row.loanDate;
       const key =
