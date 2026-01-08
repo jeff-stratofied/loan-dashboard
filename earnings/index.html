@@ -3141,9 +3141,12 @@ const amortBody = document.getElementById("amortBody");
 const closeBtn = document.getElementById("closeBtn");
 
 // 🔑 Deep-link support: open KPI drawer if ?open= is present
-openEarningsKpiFromUrl();
+(async () => {
+  await earningsDataReady;   // wait until PORTFOLIO_KPIS exists
+  openEarningsKpiFromUrl();
+})();
 
-  
+ 
 function renderLoanTiles(loansList) {
   grid.innerHTML = "";
 
@@ -3439,6 +3442,7 @@ async function initPage() {
   document.getElementById("kpiFees").textContent =
     formatCurrency(kpis.projectedAvgMonthlyNet);
 
+/* delete?
   // 9️⃣ Deep-link support (?open=kpi2)
   const openParam = urlParams.get("open");
   if (openParam === "kpi2") {
@@ -3448,6 +3452,7 @@ async function initPage() {
       requestAnimationFrame(openKpi2)
     );
   }
+  delete? */
 
   // 🔟 Embed behavior
   if (isEmbed) {
