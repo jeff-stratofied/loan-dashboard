@@ -2208,6 +2208,7 @@ function tpvStackSeries(loansList) {
     const drawerExtra = document.getElementById('drawerExtra');
     const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
+/* delete
 // ==============================
 // KPI drawer opener (authoritative)
 // ==============================
@@ -2218,7 +2219,41 @@ function openDrawerForKPI() {
   currentLoan = null;
   currentMode = "kpi";
 }
+delete */
 
+    /* from Grok */
+    // ==============================
+// KPI drawer opener (authoritative)
+// ==============================
+function openDrawerForKPI() {
+  // Reset to KPI mode
+  currentMode = 'kpi';
+  currentLoan = null;
+
+  // Default: non-interactive (individual render functions will add .kpi-interactive if needed)
+  drawer.classList.remove('kpi-interactive');
+
+  // Hide loan-specific sections
+  drawerAmortContainer.style.display = 'none';
+  drawerLegend.style.display = 'none';
+
+  // Clear all dynamic content areas
+  drawerTitle.textContent = '';
+  drawerSub.textContent = '';
+  drawerPrimaryTitle.textContent = '';
+  drawerPrimary.textContent = '';
+  drawerSecondaryTitle.textContent = '';
+  drawerSecondary.textContent = '';
+  drawerChartArea.innerHTML = '';
+  drawerExtra.innerHTML = '';
+
+  // Open the drawer visually
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+
+  // Reset scroll position
+  drawerBody.scrollTop = 0;
+}
   
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
