@@ -129,6 +129,17 @@ html,body{
   flex-shrink: 0;
 }
 
+    /* Match Amort filter select styling */
+.loan-filters select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500; /* 🔑 remove bold look */
+}
+
 
   /* Compact view toggle */
 .compact-toggle {
@@ -1783,9 +1794,12 @@ function renderLoanTableROI(loans) {
     tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
 
     // 🔑 MATCH AMORT: safe drawer entry
-    tr.addEventListener("click", () => {
-      openLoanDrawerSafe(loan);
-    });
+  tr.addEventListener("click", () => {
+  currentMode = "loan";      // 🔑 force loan context
+  currentLoan = loan;        // 🔑 set active loan
+  openLoanDrawerSafe(loan);  // open drawer
+});
+
 
     tbody.appendChild(tr);
   });
