@@ -317,12 +317,12 @@
   font-size: 13px;
 }
 
-.compact-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-left: 4px;
+/* Match Amort: smaller toggle text */
+.compact-toggle span {
+  font-size: 12px;
+  color: var(--muted);
 }
+
 
 
 /* =========================================
@@ -1499,6 +1499,38 @@ function getLoansForTableView() {
 
   const { key, dir } = TABLE_SORT;
   return filtered.slice().sort((a, b) => dir * compareForKey(a, b, key));
+}
+
+  // =====================================================
+// Sort <select> → table + grid (MATCH AMORT BEHAVIOR)
+// =====================================================
+const sortLoansEl = document.getElementById("sortLoans");
+
+if (sortLoansEl) {
+  sortLoansEl.addEventListener("change", () => {
+    const value = sortLoansEl.value;
+    if (!value) return;
+
+    const [key, dir] = value.split("_");
+
+    const KEY_MAP = {
+      purchase: "purchaseDate",
+      start: "loanStartDate",
+      amount: "principal",
+      rate: "nominalRate"
+    };
+
+    TABLE_SORT.key = KEY_MAP[key] || null;
+    TABLE_SORT.dir = dir === "desc" ? -1 : 1;
+
+    // 🔑 If table view is on → re-render table
+    if (!tableWrapEl.hidden) {
+      renderLoanTable(getLoansForTableView());
+    } else {
+      // otherwise re-render grid (existing behavior)
+      renderLoanGrid();
+    }
+  });
 }
 
   
@@ -3628,9 +3660,35 @@ if (mini) {
    TABLE RENDER (EARNINGS)
    ========================= */
 function renderLoanTable(loans) {
-  const tbody = document.querySelector("#loanTable tbody");
+  const table = document.getElementById("loanTable");
+  const tbody = table?.querySelector("tbody");
   if (!tbody) return;
 
+  // -------------------------
+  // Wire table header sorting (STEP C)
+  // -------------------------
+  const ths = table.querySelectorAll("thead th[data-key]");
+  ths.forEach(th => {
+    th.onclick = () => {
+      const key = th.dataset.key;
+
+      if (TABLE_SORT.key === key) {
+        TABLE_SORT.dir *= -1;
+      } else {
+        TABLE_SORT.key = key;
+        TABLE_SORT.dir = 1;
+      }
+
+      // 🔑 KEEP SORT DROPDOWN IN SYNC (Amort parity)
+      updateSortSelectFromTable(TABLE_SORT.key, TABLE_SORT.dir);
+
+      renderLoanTable(getLoansForTableView());
+    };
+  });
+
+  // -------------------------
+  // Render rows
+  // -------------------------
   tbody.innerHTML = "";
 
   loans.forEach(loan => {
@@ -3671,6 +3729,43 @@ function renderLoanTable(loans) {
 
     tbody.appendChild(tr);
   });
+}
+
+
+  // =========================================
+// Sort select <-> table sort mapping (Amort parity)
+// =========================================
+function applySortFromSelect(value) {
+  if (!value) return;
+
+  const [key, dir] = value.split("_");
+
+  const KEY_MAP = {
+    purchase: "purchaseDate",
+    start: "loanStartDate",
+    amount: "principal",
+    rate: "nominalRate"
+  };
+
+  TABLE_SORT.key = KEY_MAP[key] || null;
+  TABLE_SORT.dir = dir === "desc" ? -1 : 1;
+}
+
+function updateSortSelectFromTable(key, dir) {
+  const SELECT_MAP = {
+    purchaseDate: "purchase",
+    loanStartDate: "start",
+    principal: "amount",
+    nominalRate: "rate"
+  };
+
+  const sortEl = document.getElementById("sortLoans");
+  if (!sortEl) return;
+
+  const base = SELECT_MAP[key];
+  if (!base) return;
+
+  sortEl.value = `${base}_${dir === -1 ? "desc" : "asc"}`;
 }
 
 
