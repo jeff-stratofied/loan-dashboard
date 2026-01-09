@@ -1227,18 +1227,6 @@ async function init() {
 
 const KPI_KEYS = new Set(["tpv", "rates", "payments", "distribution"]);
 
-function forceTilesView() {
-  const loanTableWrap = document.getElementById("loanTableWrap");
-  const loanGrid = document.getElementById("loanGrid");
-  const toggle = document.getElementById("toggleTableView");
-
-  // Force tiles visually
-  if (loanTableWrap) loanTableWrap.hidden = true;
-  if (loanGrid) loanGrid.style.display = "";
-  if (toggle) toggle.checked = false;
-}
-
-
 function openLoanDrawerSafe(loan) {
   if (!loan) return;
   requestAnimationFrame(() => {
@@ -1267,7 +1255,7 @@ function openKpiDrawerSafe(key) {
   // 1) REPORTING ENTRY — STATELESS
   // Tiles view always, BUT honor open= if present
 if (PAGE_CONTEXT.cameFromReporting && !HAS_HANDLED_REPORTING_ENTRY) {
-  forceTilesView();
+  
 
   // KPI deep-link from Reporting
   if (KPI_KEYS.has(PAGE_CONTEXT.open)) {
@@ -1300,12 +1288,6 @@ if (PAGE_CONTEXT.cameFromReporting && !HAS_HANDLED_REPORTING_ENTRY) {
   return;
 }
 
-
-  // 2) EMBED MODE — never show the table in an iframe
-  if (PAGE_CONTEXT.isEmbed) {
-    forceTilesView();
-  }
-
   // 3) KPI deep-linking (?open=tpv etc)
   if (KPI_KEYS.has(PAGE_CONTEXT.open)) {
     openKpiDrawerSafe(PAGE_CONTEXT.open);
@@ -1324,15 +1306,7 @@ if (PAGE_CONTEXT.cameFromReporting && !HAS_HANDLED_REPORTING_ENTRY) {
       return;
     }
   }
-
-  // 5) Open first loan (?open=first)
-  if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
-    openLoanDrawerSafe(currentLoans[0]);
-    clearOpenParamFromUrl();
-    return;
-  }
 })();
-
 
 }
 
@@ -1885,7 +1859,9 @@ const savedTableView = localStorage.getItem("loanTableView");
 if (savedTableView !== null) {
   tableToggle.checked = savedTableView === "true";
 }
-
+// 🔑 Table View owns layout — routing must not fight it
+ENTRY_HANDLED = tableToggle.checked === true;
+  
 const showTable = tableToggle.checked;
 gridEl.style.display = showTable ? "none" : "";
 tableWrap.hidden = !showTable;
@@ -2038,21 +2014,6 @@ function applyLoanFilters() {
   if (!loanTableWrap.hidden) {
     renderLoanTable(currentLoans);
   }
-
- // 🔑 Reporting return: open first loan ONLY if no KPI is active
-if (
-  PAGE_CONTEXT.cameFromReporting &&
-  currentLoans.length &&
-  !ENTRY_HANDLED &&
-  !document.getElementById("toggleTableView")?.checked
-) {
-
-  requestAnimationFrame(() => {
-    openDrawerForLoan(currentLoans[0]);
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
-  });
-}
 }
 
 
