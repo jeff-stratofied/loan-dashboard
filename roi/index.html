@@ -119,23 +119,16 @@ html,body{
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-wrap: nowrap;        /* 🔑 FORCE single row */
+  flex-wrap: nowrap;
   justify-content: space-between;
+
+  margin: 0 0 14px;   /* 🔑 MATCH AMORT SPACING */
 }
 
 .loan-filters > * {
-  flex-shrink: 0;           /* 🔑 prevent wrapping */
+  flex-shrink: 0;
 }
 
-
-.loan-filters select {
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  font-size: 13px;
-}
 
   /* Compact view toggle */
 .compact-toggle {
@@ -1044,7 +1037,9 @@ delete */
 #loanTable tbody tr.row-hover {
   background: rgba(148, 163, 184, 0.12);
 }
-
+#loanTable tbody tr {
+  cursor: pointer;
+}
     
 .table-actions {
   display: flex;
