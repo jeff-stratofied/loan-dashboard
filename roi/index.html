@@ -162,6 +162,16 @@ html,body{
   cursor: pointer;
 }
 
+/* Force checkbox checkmark to white (match Amort) */
+.compact-toggle input[type="checkbox"] {
+  accent-color: var(--brand);
+}
+
+.compact-toggle input[type="checkbox"]:checked {
+  color: #ffffff; /* 🔑 forces white checkmark */
+}
+
+    
     .compact-toggle span {
   font-weight: 500;   /* match Amort */
 }
@@ -1472,6 +1482,8 @@ let allLoans = [];        // 🔑 ADD THIS
 let currentLoans = [];
 
 let TABLE_SORT = { key: null, dir: 1 };
+let currentMode = "kpi";   // 🔑 ROI defaults to KPI mode
+let currentLoan = null;   // 🔑 active loan for drawer
 
 
 
