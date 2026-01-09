@@ -1755,7 +1755,7 @@ function renderLoanTableROI(loans) {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td>${(loan.roiToDate * 100).toFixed(2)}%</td>
+    
       <td>${loan.loanId}</td>
       <td>${loan.loanName}</td>
       <td>${loan.school}</td>
@@ -1766,6 +1766,11 @@ function renderLoanTableROI(loans) {
       <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
       <td>${loan.termYears}</td>
       <td>${loan.graceYears}</td>
+        <td>${
+  Number.isFinite(loan.roiToDate)
+    ? `${(loan.roiToDate * 100).toFixed(2)}%`
+    : "—"
+}</td>
     `;
 
     // 🔑 MATCH AMORT: hover via class, not inline style
