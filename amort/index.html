@@ -1232,14 +1232,12 @@ function forceTilesView() {
   const loanGrid = document.getElementById("loanGrid");
   const toggle = document.getElementById("toggleTableView");
 
-  // Always hide table on Reporting entry and in embed
+  // Force tiles visually
   if (loanTableWrap) loanTableWrap.hidden = true;
   if (loanGrid) loanGrid.style.display = "";
   if (toggle) toggle.checked = false;
-
-  // Do not let persisted table pref win in these contexts
-  try { localStorage.setItem("loanTableView", "false"); } catch (e) {}
 }
+
 
 function openLoanDrawerSafe(loan) {
   if (!loan) return;
