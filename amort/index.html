@@ -1855,26 +1855,23 @@ compactToggle.addEventListener("change", () => {
 const tableToggle = document.getElementById("toggleTableView");
 const tableWrap = document.getElementById("loanTableWrap");
 
-const savedTableView = localStorage.getItem("loanTableView");
-if (savedTableView !== null) {
-  tableToggle.checked = savedTableView === "true";
+// 🚫 Table View is FULL-PAGE ONLY
+if (PAGE_CONTEXT.isEmbed) {
+  tableToggle.checked = false;
+  tableWrap.hidden = true;
+  gridEl.style.display = "none"; // grid already hidden by CSS, this is defensive
+} else {
+  const savedTableView = localStorage.getItem("loanTableView");
+  if (savedTableView !== null) {
+    tableToggle.checked = savedTableView === "true";
+  }
+
+  const showTable = tableToggle.checked;
+  gridEl.style.display = showTable ? "none" : "";
+  tableWrap.hidden = !showTable;
+
+  if (showTable) renderLoanTable(currentLoans);
 }
-// 🔑 Table View owns layout — routing must not fight it
-ENTRY_HANDLED = tableToggle.checked === true;
-  
-const showTable = tableToggle.checked;
-gridEl.style.display = showTable ? "none" : "";
-tableWrap.hidden = !showTable;
-
-if (showTable) renderLoanTable(currentLoans);
-
-tableToggle.addEventListener("change", () => {
-  const show = tableToggle.checked;
-  localStorage.setItem("loanTableView", show);
-  gridEl.style.display = show ? "none" : "";
-  tableWrap.hidden = !show;
-  if (show) renderLoanTable(currentLoans);
-});
 
 }
 
