@@ -1189,88 +1189,88 @@ async function init() {
 
   renderAndWirePage();
 
-  /* =====================================================
-     4) SINGLE ENTRY HANDLER (AUTHORITATIVE)
-     ===================================================== */
+// ===============================
+// SINGLE ENTRY HANDLER (AUTHORITATIVE)
+// ===============================
 
-  function forceTilesView() {
-    const loanTableWrap = document.getElementById("loanTableWrap");
-    const loanGrid = document.getElementById("loanGrid");
-    const toggle = document.getElementById("toggleTableView");
+const KPI_KEYS = new Set(["tpv", "rates", "payments", "distribution"]);
 
-    if (loanTableWrap) loanTableWrap.hidden = true;
-    if (loanGrid) loanGrid.style.display = "";
-    if (toggle) toggle.checked = false;
+function forceTilesView() {
+  const loanTableWrap = document.getElementById("loanTableWrap");
+  const loanGrid = document.getElementById("loanGrid");
+  const toggle = document.getElementById("toggleTableView");
 
-    // Persisted preference must NOT win for reporting entry
-    try {
-      localStorage.setItem("loanTableView", "false");
-    } catch (e) {}
+  // Always hide table on Reporting entry and in embed
+  if (loanTableWrap) loanTableWrap.hidden = true;
+  if (loanGrid) loanGrid.style.display = "";
+  if (toggle) toggle.checked = false;
+
+  // Do not let persisted table pref win in these contexts
+  try { localStorage.setItem("loanTableView", "false"); } catch (e) {}
+}
+
+function openLoanDrawerSafe(loan) {
+  if (!loan) return;
+  requestAnimationFrame(() => {
+    openDrawerForLoan(loan);
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  });
+}
+
+function openKpiDrawerSafe(key) {
+  if (!key) return;
+
+  // KPI drawers
+  if (key === "tpv") return renderTPVDrawer();
+  if (key === "rates") return renderRatesDrawer();
+  if (key === "payments") return renderPaymentsDrawer();
+  if (key === "distribution") return renderDistributionDrawer();
+}
+
+(function handleEntry() {
+  // 1) REPORTING ENTRY — STATELESS
+  // Always: tiles view + loan #1 drawer (ignore table view)
+  if (PAGE_CONTEXT.cameFromReporting) {
+    forceTilesView();
+
+    if (currentLoans.length) openLoanDrawerSafe(currentLoans[0]);
+
+    // consume open= if any
+    clearOpenParamFromUrl();
+    return;
   }
 
-  function openLoanDrawerSafe(loan) {
-    if (!loan) return;
-
-    requestAnimationFrame(() => {
-      openDrawerForLoan(loan);
-      drawer.classList.add("open");
-      drawer.setAttribute("aria-hidden", "false");
-    });
+  // 2) EMBED MODE — never show the table in an iframe
+  if (PAGE_CONTEXT.isEmbed) {
+    forceTilesView();
   }
 
-  (function handleEntry() {
-    // 1️⃣ REPORTING ENTRY — STATELESS
-    if (PAGE_CONTEXT.cameFromReporting) {
-      forceTilesView();
+  // 3) KPI deep-linking (?open=tpv etc) — works for full page AND iframe redirects
+  if (KPI_KEYS.has(PAGE_CONTEXT.open)) {
+    openKpiDrawerSafe(PAGE_CONTEXT.open);
+    clearOpenParamFromUrl();
+    return;
+  }
 
-      if (currentLoans.length) {
-        openLoanDrawerSafe(currentLoans[0]);
-      }
-
+  // 4) Explicit loan open (?open=loan&loanId=123)
+  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+    const loan = currentLoans.find(l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId);
+    if (loan) {
+      openLoanDrawerSafe(loan);
       clearOpenParamFromUrl();
       return;
     }
+  }
 
-    // 2️⃣ EMBED MODE WITH EXPLICIT OPEN
-    if (PAGE_CONTEXT.isEmbed) {
-      if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-        const loan = currentLoans.find(
-          l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-        );
+  // 5) Open first loan (?open=first)
+  if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
+    openLoanDrawerSafe(currentLoans[0]);
+    clearOpenParamFromUrl();
+    return;
+  }
+})();
 
-        if (loan) {
-          openLoanDrawerSafe(loan);
-          clearOpenParamFromUrl();
-          return;
-        }
-      }
-
-      if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
-        openLoanDrawerSafe(currentLoans[0]);
-        clearOpenParamFromUrl();
-        return;
-      }
-    }
-
-    // 3️⃣ NORMAL FULL PAGE DEEP-LINKING
-    if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-      const loan = currentLoans.find(
-        l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-      );
-
-      if (loan) {
-        openLoanDrawerSafe(loan);
-        clearOpenParamFromUrl();
-        return;
-      }
-    }
-
-    if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
-      openLoanDrawerSafe(currentLoans[0]);
-      clearOpenParamFromUrl();
-      return;
-    }
-  })();
 }
 
     
@@ -1609,70 +1609,44 @@ function renderAndWirePage() {
      C. DERIVED DATA
      ========================= */
 
- const derived = derivePortfolioData(currentLoans);
-assert(Array.isArray(currentLoans), "currentLoans must be an array");
-assert(derived, "derived data missing");
+  const derived = derivePortfolioData(currentLoans);
+  assert(Array.isArray(currentLoans), "currentLoans must be an array");
+  assert(derived, "derived data missing");
 
-assert(derived.kpis, "derived.kpis missing", derived);
-assert(Array.isArray(derived.tpvSeriesData), "TPV series missing", derived);
-assert(Number.isFinite(derived.tpvValue), "TPV value invalid", derived);
+  assert(derived.kpis, "derived.kpis missing", derived);
+  assert(Array.isArray(derived.tpvSeriesData), "TPV series missing", derived);
+  assert(Number.isFinite(derived.tpvValue), "TPV value invalid", derived);
 
-assert(
-  Array.isArray(derived.loanViews),
-  "loanViews missing or not array",
-  derived
-);
-// 🔒 DEV GUARD — stacked TPV must equal TPV tile (SAME month key)
-if (DEV_ASSERT && derived.tpvStackData) {
-  const monthKey = derived.tpvMonthKey; // ✅ matches tpvValue's effectiveKey
+  assert(
+    Array.isArray(derived.loanViews),
+    "loanViews missing or not array",
+    derived
+  );
 
-  if (monthKey && derived.tpvStackData[monthKey]) {
-    const stackSum = Object.values(derived.tpvStackData[monthKey])
-      .reduce((s, v) => s + v, 0);
+  if (DEV_ASSERT && derived.tpvStackData) {
+    const monthKey = derived.tpvMonthKey;
+    if (monthKey && derived.tpvStackData[monthKey]) {
+      const stackSum = Object.values(derived.tpvStackData[monthKey])
+        .reduce((s, v) => s + v, 0);
 
-    assert(
-      Math.abs(stackSum - derived.tpvValue) < 1,
-      "TPV stack does not equal TPV tile",
-      {
-        stackSum,
-        tpvValue: derived.tpvValue,
-        monthKey
-      }
-    );
+      assert(
+        Math.abs(stackSum - derived.tpvValue) < 1,
+        "TPV stack does not equal TPV tile",
+        { stackSum, tpvValue: derived.tpvValue, monthKey }
+      );
+    }
   }
-}
 
-
-
-  
   const kpis = derived.kpis;
 
-// 🔑 Bridge derived data → legacy KPI drawers
-tpvSeriesData = derived.tpvSeriesData;
-
+  // 🔑 Bridge derived data → legacy KPI drawers
+  tpvSeriesData = derived.tpvSeriesData;
 
   /* =========================
      D. RENDER KPIs
      ========================= */
 
-// STEP 6.3 — Guard KPI rendering
-assert(
-  Number.isFinite(kpis.weightedRate),
-  "KPI weightedRate invalid",
-  kpis
-);
-assert(
-  Number.isFinite(kpis.monthlyIncome),
-  "KPI monthlyIncome invalid",
-  kpis
-);
-assert(
-  Number.isFinite(kpis.totalPrincipal),
-  "KPI totalPrincipal invalid",
-  kpis
-);
-  
-  const kpisEl = document.getElementById('kpis');
+  const kpisEl = document.getElementById("kpis");
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
       <h3>Total Portfolio Value</h3>
@@ -1692,170 +1666,105 @@ assert(
     </div>
   `;
 
-// --- TPV tile value (from derived data ONLY) ---
-const tpvTile = document.getElementById("tpvTile");
-if (tpvTile) {
-  tpvTile.textContent =
-    `$${Math.round(derived.tpvValue).toLocaleString()}`;
-}
+  /* =====================================================
+     D.1 WIRE KPI TILE CLICKS  ✅ THIS IS THE FIX
+     ===================================================== */
 
-// 🔑 Initial filtered state = all loans
-filteredLoans = [...currentLoans];
+  kpisEl.addEventListener("click", (e) => {
+    const tile = e.target.closest(".kpi");
+    if (!tile) return;
 
-// Render tiles from filtered data
-renderLoanTiles(filteredLoans);
-
-
-
-/* ============================
-   Populate amort filter dropdowns
-   ============================ */
-
-const filterName   = document.getElementById("filterName");
-const filterSchool = document.getElementById("filterSchool");
-const filterRate   = document.getElementById("filterRate");
-const sortLoans    = document.getElementById("sortLoans");
-const resetBtn     = document.getElementById("resetFilters");
-
-// 🔑 CLEAR existing options (keep first default)
-filterName.options.length = 1;
-filterSchool.options.length = 1;
-
-// Build dropdown values from canonical data
-const names = [...new Set(allLoans.map(l => l.loanName).filter(Boolean))];
-const schools = [...new Set(allLoans.map(l => l.school).filter(Boolean))];
-
-// Populate name filter
-names.forEach(n => {
-  const o = document.createElement("option");
-  o.value = n.toLowerCase();
-  o.textContent = n;
-  filterName.appendChild(o);
-});
-
-// Populate school filter
-schools.forEach(s => {
-  const o = document.createElement("option");
-  o.value = s.toLowerCase();
-  o.textContent = s;
-  filterSchool.appendChild(o);
-});
-
-
-// -----------------------------
-// Wire filter + sort controls
-// -----------------------------
-filterName.addEventListener("change", applyLoanFilters);
-filterSchool.addEventListener("change", applyLoanFilters);
-filterRate.addEventListener("change", applyLoanFilters);
-sortLoans.addEventListener("change", applyLoanFilters);
-
-resetBtn.addEventListener("click", () => {
-  filterName.value = "";
-  filterSchool.value = "";
-  filterRate.value = "";
-
-  // 🔑 restore default sort (must match an option value)
-  sortLoans.value = "purchase_asc";
-
-  applyLoanFilters();
-});
-
-
-// Initial filter pass
-applyLoanFilters();
-
-/* =========================
-   TABLE SORTING
-   ========================= */
-
-let tableSort = { key: null, dir: 1 };
-
-document.querySelectorAll("#loanTable th").forEach(th => {
-  th.addEventListener("click", () => {
-    const key = th.dataset.key;
+    const key = tile.dataset.kpi;
     if (!key) return;
 
-    tableSort.dir = tableSort.key === key ? -tableSort.dir : 1;
-    tableSort.key = key;
-
-    currentLoans.sort((a, b) => {
-      const av = a[key] ?? "";
-      const bv = b[key] ?? "";
-      return av > bv ? tableSort.dir : -tableSort.dir;
-    });
-
-    renderLoanTable(currentLoans);
-    applyLoanSort(); // keeps tile order aligned
-  });
-});
-
-  
-       /* -------------------------
-   Compact tile toggle (persisted)
-   ------------------------- */
-    const compactToggle = document.getElementById("toggleCompact");
-    
-    // Restore saved preference
-    const savedCompact = localStorage.getItem("loanGridCompact");
-    if (savedCompact !== null) {
-      compactToggle.checked = savedCompact === "true";
+    // IFRAME / REPORTING → redirect to full page
+    if (PAGE_CONTEXT.isEmbed) {
+      const url = new URL(
+        window.location.origin + "/loan-dashboard/amort/index.html"
+      );
+      url.searchParams.set("user", PAGE_CONTEXT.user);
+      url.searchParams.set("from", "reporting");
+      url.searchParams.set("open", key); // tpv | rates | payments | distribution
+      window.top.location.href = url.toString();
+      return;
     }
-    
-    // Apply initial state
-    loanGrid.classList.toggle("compact", compactToggle.checked);
-    
-    // Persist on change
-    compactToggle.addEventListener("change", () => {
-      loanGrid.classList.toggle("compact", compactToggle.checked);
-      localStorage.setItem("loanGridCompact", compactToggle.checked);
-    });
-  
+
+    // FULL PAGE → open KPI drawer
+    if (key === "tpv") return renderTPVDrawer();
+    if (key === "rates") return renderRatesDrawer();
+    if (key === "payments") return renderPaymentsDrawer();
+    if (key === "distribution") return renderDistributionDrawer();
+  });
+
   /* =========================
-     E. INTERACTION WIRING
+     E. LOAN RENDERING
      ========================= */
-/* =========================
-   TABLE VIEW TOGGLE
-   ========================= */
 
-const tableToggle = document.getElementById("toggleTableView");
-const tableWrap = document.getElementById("loanTableWrap");
-const gridEl = document.getElementById("loanGrid");
+  filteredLoans = [...currentLoans];
+  renderLoanTiles(filteredLoans);
 
-  // ---------------------------------
-// Restore saved Table View preference
-// ---------------------------------
-const savedTableView = localStorage.getItem("loanTableView");
+  /* =========================
+     FILTERS / SORTING
+     ========================= */
 
-if (savedTableView !== null) {
-  tableToggle.checked = savedTableView === "true";
-}
+  const filterName   = document.getElementById("filterName");
+  const filterSchool = document.getElementById("filterSchool");
+  const filterRate   = document.getElementById("filterRate");
+  const sortLoans    = document.getElementById("sortLoans");
+  const resetBtn     = document.getElementById("resetFilters");
 
+  filterName.options.length = 1;
+  filterSchool.options.length = 1;
 
-// Apply initial state
-const showTable = tableToggle.checked;
-gridEl.style.display = showTable ? "none" : "";
-tableWrap.hidden = !showTable;
+  [...new Set(allLoans.map(l => l.loanName).filter(Boolean))]
+    .forEach(n => filterName.add(new Option(n, n.toLowerCase())));
 
-if (showTable) {
-  renderLoanTable(currentLoans);
-}
+  [...new Set(allLoans.map(l => l.school).filter(Boolean))]
+    .forEach(s => filterSchool.add(new Option(s, s.toLowerCase())));
 
-tableToggle.addEventListener("change", () => {
+  filterName.addEventListener("change", applyLoanFilters);
+  filterSchool.addEventListener("change", applyLoanFilters);
+  filterRate.addEventListener("change", applyLoanFilters);
+  sortLoans.addEventListener("change", applyLoanFilters);
+
+  resetBtn.addEventListener("click", () => {
+    filterName.value = "";
+    filterSchool.value = "";
+    filterRate.value = "";
+    sortLoans.value = "purchase_asc";
+    applyLoanFilters();
+  });
+
+  applyLoanFilters();
+
+  /* =========================
+     TABLE VIEW TOGGLE
+     ========================= */
+
+  const tableToggle = document.getElementById("toggleTableView");
+  const tableWrap = document.getElementById("loanTableWrap");
+  const gridEl = document.getElementById("loanGrid");
+
+  const savedTableView = localStorage.getItem("loanTableView");
+  if (savedTableView !== null) {
+    tableToggle.checked = savedTableView === "true";
+  }
+
   const showTable = tableToggle.checked;
-
-  // Persist preference
-  localStorage.setItem("loanTableView", showTable);
-
   gridEl.style.display = showTable ? "none" : "";
   tableWrap.hidden = !showTable;
 
-  if (showTable) {
-    renderLoanTable(currentLoans);
-  }
-});
+  if (showTable) renderLoanTable(currentLoans);
 
+  tableToggle.addEventListener("change", () => {
+    const show = tableToggle.checked;
+    localStorage.setItem("loanTableView", show);
+    gridEl.style.display = show ? "none" : "";
+    tableWrap.hidden = !show;
+    if (show) renderLoanTable(currentLoans);
+  });
 }
+
 
     
     /* =========================
