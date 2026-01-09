@@ -1642,15 +1642,11 @@ function renderLoanTiles(loans) {
 }
 
 
-    
-    
-function renderAndWirePage() {
-
-  
-
   /* =========================
      C. DERIVED DATA
-     ========================= */
+     ========================= */    
+    
+function renderAndWirePage() {
 
   const derived = derivePortfolioData(currentLoans);
   assert(Array.isArray(currentLoans), "currentLoans must be an array");
@@ -1784,9 +1780,6 @@ console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
     return;
   }
 
-
-    
-    
     // FULL PAGE → open KPI drawer
     if (key === "tpv") return renderTPVDrawer();
     if (key === "rates") return renderRatesDrawer();
@@ -1835,6 +1828,28 @@ console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
 
   applyLoanFilters();
 
+/* =========================
+   COMPACT VIEW TOGGLE  ✅ FIX
+   ========================= */
+
+const compactToggle = document.getElementById("toggleCompact");
+const gridEl = document.getElementById("loanGrid");
+
+// restore saved state
+const savedCompact = localStorage.getItem("loanCompact");
+if (savedCompact !== null) {
+  compactToggle.checked = savedCompact === "true";
+  gridEl.classList.toggle("compact", compactToggle.checked);
+}
+
+// react to user toggle
+compactToggle.addEventListener("change", () => {
+  const on = compactToggle.checked;
+  gridEl.classList.toggle("compact", on);
+  localStorage.setItem("loanCompact", on);
+});
+
+  
   /* =========================
      TABLE VIEW TOGGLE
      ========================= */
