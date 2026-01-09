@@ -1092,7 +1092,7 @@ tr.row-hover {
         <th data-key="nominalRate">Rate</th>
         <th data-key="termYears">Term</th>
         <th data-key="graceYears">Grace</th>
-        <th data-key="balance">Balance</th>
+        <th data-key="netEarnings">Net Earnings</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -1429,6 +1429,71 @@ maximumFractionDigits: 2
 
 let loans = [];
 
+// ============================
+// TABLE-ONLY SORT (does NOT affect tile ordering)
+// ============================
+let TABLE_SORT = { key: null, dir: 1 }; // dir: 1=asc, -1=desc
+
+function compareForKey(a, b, key) {
+  // Special-case derived Net Earnings (table column)
+  if (key === "netEarnings") {
+    const ea = Number(a?.netEarnings) || 0;
+    const eb = Number(b?.netEarnings) || 0;
+    return ea - eb;
+  }
+
+  const va = a?.[key];
+  const vb = b?.[key];
+
+  // dates
+  if (key === "loanStartDate" || key === "purchaseDate") {
+    const da = va ? new Date(va).getTime() : 0;
+    const db = vb ? new Date(vb).getTime() : 0;
+    return da - db;
+  }
+
+  // strings
+  if (typeof va === "string" || typeof vb === "string") {
+    return String(va ?? "").localeCompare(String(vb ?? ""), undefined, {
+      numeric: true,
+      sensitivity: "base"
+    });
+  }
+
+  // numbers
+  return (Number(va) || 0) - (Number(vb) || 0);
+}
+
+function getLoansForTableView() {
+  // Base list should respect hiddenLoans (if you want table to match charts)
+  // If you *do* want hidden loans to still appear in the table, remove this filter.
+  const base = loansWithEarnings.filter(l => !hiddenLoans.has(String(l.loanId)));
+
+  // Apply the SAME filter controls as tile view
+  const nameVal = (filterName?.value || "").toLowerCase();
+  const schoolVal = (filterSchool?.value || "").toLowerCase();
+  const rateVal = filterRate?.value || "";
+
+  const filtered = base.filter(l => {
+    if (nameVal && !String(l.loanName || "").toLowerCase().includes(nameVal)) return false;
+    if (schoolVal && !String(l.school || "").toLowerCase().includes(schoolVal)) return false;
+
+    if (rateVal) {
+      const r = Number(l.nominalRate || 0) * 100;
+      if ((rateVal === "low" && r >= 5) ||
+          (rateVal === "mid" && (r < 5 || r > 8)) ||
+          (rateVal === "high" && r <= 8)) return false;
+    }
+    return true;
+  });
+
+  if (!TABLE_SORT.key) return filtered;
+
+  const { key, dir } = TABLE_SORT;
+  return filtered.slice().sort((a, b) => dir * compareForKey(a, b, key));
+}
+
+  
 async function loadLoansFromBackend() {
 try {
 const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
@@ -1557,11 +1622,18 @@ const earningsSchedule = buildEarningsSchedule({
   today: TODAY
 });
 
+const tmpLoan = { ...normalizedLoan, amort: { schedule: amortSchedule }, earningsSchedule };
+
 return {
-  ...normalizedLoan,
-  amort: { schedule: amortSchedule },
-  earningsSchedule
+  ...tmpLoan,
+
+  // ✅ Table expects "principal"
+  principal: Number(normalizedLoan.balanceForAmort ?? normalizedLoan.purchasePrice ?? 0),
+
+  // ✅ Canonical "Net Earnings to date" for table + sorting
+  netEarnings: Number(getCanonicalCurrentEarningsRow(tmpLoan)?.netEarnings ?? 0)
 };
+
 });
 
 loansWithEarnings = loansWithEarnings.filter(l =>
@@ -3544,6 +3616,54 @@ if (mini) {
   });
 }
 
+/* =========================
+   TABLE RENDER (EARNINGS)
+   ========================= */
+function renderLoanTable(loans) {
+  const tbody = document.querySelector("#loanTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tr = document.createElement("tr");
+    tr.tabIndex = 0;
+    tr.style.cursor = "pointer";
+
+    tr.innerHTML = `
+      <td>${loan.loanId ?? ""}</td>
+      <td>${loan.loanName ?? ""}</td>
+      <td>${loan.school ?? ""}</td>
+      <td>${loan.loanStartDate ? formatDate(new Date(loan.loanStartDate)) : ""}</td>
+      <td>${loan.purchaseDate ? formatDate(new Date(loan.purchaseDate)) : ""}</td>
+      <td>${formatCurrency(Number(loan.principal ?? 0))}</td>
+      <td>${formatCurrency(Number(loan.purchasePrice ?? 0))}</td>
+      <td>${(Number(loan.nominalRate ?? 0) * 100).toFixed(2)}%</td>
+      <td>${loan.termYears ?? ""}</td>
+      <td>${loan.graceYears ?? 0}</td>
+      <td>${formatCurrency(Number(loan.netEarnings ?? 0))}</td>
+    `;
+
+    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
+    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
+
+    const openLoan = () => {
+      openDrawerForLoan(loan);
+      drawer.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
+    };
+
+    tr.addEventListener("click", openLoan);
+    tr.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openLoan();
+      }
+    });
+
+    tbody.appendChild(tr);
+  });
+}
 
 
 
@@ -3671,6 +3791,10 @@ if (PAGE_CONTEXT.isEmbed) {
     localStorage.setItem("earningsTableView", on);
     applyTableView(on);
   });
+
+wireLoanTableColumnSort();
+
+  
 }
 
 
@@ -3729,6 +3853,34 @@ if (PAGE_CONTEXT.isEmbed) {
   }
 }
 
+/* =========================
+   TABLE SORTING (table-only)
+   ========================= */
+function wireLoanTableColumnSort() {
+  const ths = document.querySelectorAll("#loanTable thead th[data-key]");
+  const tableWrapEl = document.getElementById("loanTableWrap");
+
+  ths.forEach(th => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.key;
+
+      if (TABLE_SORT.key === key) TABLE_SORT.dir *= -1;
+      else {
+        TABLE_SORT.key = key;
+        TABLE_SORT.dir = 1;
+      }
+
+      if (tableWrapEl && !tableWrapEl.hidden) {
+        renderLoanTable(getLoansForTableView());
+      }
+
+      ths.forEach(x => x.removeAttribute("data-sort"));
+      th.setAttribute("data-sort", TABLE_SORT.dir === 1 ? "asc" : "desc");
+    });
+  });
+}
+
+  
 function applyLoanFilters() {
 const nameVal = filterName.value;
 const schoolVal = filterSchool.value;
@@ -3753,6 +3905,13 @@ tile.style.display = show ? "" : "none";
 });
 
 applyLoanSort();
+
+  // If table view is on, keep it in sync with filters
+const tableWrapEl = document.getElementById("loanTableWrap");
+if (tableWrapEl && !tableWrapEl.hidden) {
+  renderLoanTable(getLoansForTableView());
+}
+
 }
 
 function applyLoanSort() {
