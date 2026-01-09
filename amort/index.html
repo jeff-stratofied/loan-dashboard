@@ -1885,7 +1885,7 @@ console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
 const compactToggle = document.getElementById("toggleCompact");
 
 // restore saved state
-const savedCompact = localStorage.getItem("loanCompact");
+const savedCompact = localStorage.getItem("amortCompact");
 if (savedCompact !== null) {
   compactToggle.checked = savedCompact === "true";
   gridEl.classList.toggle("compact", compactToggle.checked);
@@ -1895,7 +1895,7 @@ if (savedCompact !== null) {
 compactToggle.addEventListener("change", () => {
   const on = compactToggle.checked;
   gridEl.classList.toggle("compact", on);
-  localStorage.setItem("loanCompact", on);
+  localStorage.setItem("amortCompact", on);
 });
 
 
@@ -1915,7 +1915,7 @@ if (PAGE_CONTEXT.isEmbed) {
   gridEl.style.display = "none";
 } else {
   // --- restore ---
-  const savedTableView = localStorage.getItem("loanTableView");
+  const savedTableView = localStorage.getItem("amortTableView");
   if (savedTableView !== null) {
     tableToggle.checked = savedTableView === "true";
   }
@@ -1935,7 +1935,7 @@ if (PAGE_CONTEXT.isEmbed) {
   // --- 🔑 USER TOGGLE (THIS WAS MISSING) ---
   tableToggle.addEventListener("change", () => {
     const on = tableToggle.checked;
-    localStorage.setItem("loanTableView", on);
+    localStorage.setItem("amortTableView", on);
     applyTableView(on);
   });
 }
