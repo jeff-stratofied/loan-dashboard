@@ -1280,41 +1280,7 @@ function redirectToFullEarnings(openParam = "projected") {
 
 
 if (isEmbed) {
-  // 1) Simple static buttons (these exist in the DOM immediately)
-  ["closeBtn", "downloadCsvBtn", "printBtn", "copyCsvBtn"].forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    el.addEventListener(
-      "click",
-      (e) => {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        redirectToFullEarnings("kpi2");
-      },
-      true // capture
-    );
-  });
-
-  // 2) Dynamic controls inside KPI tables / drawer content
-  //    Use event delegation so it still works after re-render.
-  document.addEventListener(
-    "click",
-    (e) => {
-      // ✅ Loan On/Off swatch in KPI tables (THIS is your real toggle)
-      if (e.target.closest(".loan-swatch")) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        redirectToFullEarnings("kpi1"); // or "kpi2" if you prefer
-        return;
-      }
-
-      // ✅ If you truly have any checkboxes inside drawer tables, catch them too
-      if (e.target.closest(".amort-wrap input[type='checkbox']")) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        if (isEmbed) {
-  // 1) Static buttons — ALWAYS go to KPI2 (Projected)
+  // 1) Simple static buttons (exist immediately)
   ["closeBtn", "downloadCsvBtn", "printBtn", "copyCsvBtn"].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1326,15 +1292,16 @@ if (isEmbed) {
         e.stopImmediatePropagation();
         redirectToFullEarnings("projected"); // ✅ KPI2 (semantic)
       },
-      true
+      true // capture
     );
   });
 
   // 2) Dynamic controls inside KPI tables / drawer content
+  //    Use event delegation so it still works after re-render.
   document.addEventListener(
     "click",
     (e) => {
-      // Loan On/Off swatch → full page KPI2
+      // Loan On/Off swatch → full page (Projected KPI)
       if (e.target.closest(".loan-swatch")) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -1342,7 +1309,7 @@ if (isEmbed) {
         return;
       }
 
-      // Any checkbox interaction → full page KPI2
+      // Any checkbox interaction inside drawer tables → full page
       if (e.target.closest(".amort-wrap input[type='checkbox']")) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -1350,10 +1317,10 @@ if (isEmbed) {
         return;
       }
     },
-    true
+    true // capture so we beat existing handlers
   );
 
-  // Prevent visual toggle in iframe
+  // 3) Prevent visual toggle in iframe (mousedown fires before click)
   document.addEventListener(
     "mousedown",
     (e) => {
@@ -1369,27 +1336,6 @@ if (isEmbed) {
   );
 }
 
-        return;
-      }
-    },
-    true // capture so we beat the existing click handlers
-  );
-
-  // Bonus: prevent the checkbox from visually toggling on mousedown (some browsers)
-  document.addEventListener(
-    "mousedown",
-    (e) => {
-      if (
-        e.target.closest(".loan-swatch") ||
-        e.target.closest(".amort-wrap input[type='checkbox']")
-      ) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    },
-    true
-  );
-}
 
   
 function formatDate(d) {
