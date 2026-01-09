@@ -1139,18 +1139,23 @@ return {
 }
 
 async function init() {
-  // 1) Load + normalize data
+  /* =====================================================
+     1) LOAD + NORMALIZE DATA
+     ===================================================== */
 
-    /* ---------------------------------------------------------
-       DATA FREEZE POINT
-       After this line:
-       - allLoans
-       - currentLoans
-       MUST NOT be mutated
-       --------------------------------------------------------- */
+  /* ---------------------------------------------------------
+     DATA FREEZE POINT
+     After this line:
+     - allLoans
+     - currentLoans
+     MUST NOT be mutated
+     --------------------------------------------------------- */
   await loadAndNormalizeLoans();
 
-  // 2) KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
+  /* =====================================================
+     2) KPI COLOR MAP — MATCH ROI PAGE (SOURCE OF TRUTH)
+     ===================================================== */
+
   window.KPI_COLOR_MAP = {};
 
   const BASE_DISTINCT_COLORS = [
@@ -1178,64 +1183,96 @@ async function init() {
       BASE_DISTINCT_COLORS[i % BASE_DISTINCT_COLORS.length];
   });
 
-  // 3) NOW render + wire the UI (must happen AFTER data exists)
-renderAndWirePage();
-
-// 🔑 Deep-link KPI open (full UI + iframe redirect target)
-openAmortKpiFromUrl();
-
-/* =====================================================
-   REPORTING RETURN OVERRIDE
-   ===================================================== */
-if (PAGE_CONTEXT.cameFromReporting && currentLoans.length) {
-  requestAnimationFrame(() => {
-    openDrawerForLoan(currentLoans[0]);
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
-  });
-}
-
-    
-    /* =====================================================
-     EMBED / REPORTING AUTO-OPEN LOGIC
-     (MUST RUN AFTER RENDER)
+  /* =====================================================
+     3) RENDER + WIRE UI (MUST HAPPEN AFTER DATA)
      ===================================================== */
 
-if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
+  renderAndWirePage();
 
-  // 1️⃣ Explicit loan open (?open=loan&loanId=123)
-  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-    const loan = currentLoans.find(
-      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-    );
+  /* =====================================================
+     4) SINGLE ENTRY HANDLER (AUTHORITATIVE)
+     ===================================================== */
 
-    if (loan) {
-      requestAnimationFrame(() => {
-        openDrawerForLoan(loan);
-        drawer.classList.add("open");
-        drawer.setAttribute("aria-hidden", "false");
+  function forceTilesView() {
+    const loanTableWrap = document.getElementById("loanTableWrap");
+    const loanGrid = document.getElementById("loanGrid");
+    const toggle = document.getElementById("toggleTableView");
 
-        clearOpenParamFromUrl(); // 🔑 consume open=loan
-      });
-      return; // ✅ LEGAL (inside init)
-    }
+    if (loanTableWrap) loanTableWrap.hidden = true;
+    if (loanGrid) loanGrid.style.display = "";
+    if (toggle) toggle.checked = false;
+
+    // Persisted preference must NOT win for reporting entry
+    try {
+      localStorage.setItem("loanTableView", "false");
+    } catch (e) {}
   }
 
-  // 2️⃣ Open first loan (?open=first)
-  if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
+  function openLoanDrawerSafe(loan) {
+    if (!loan) return;
+
     requestAnimationFrame(() => {
-      openDrawerForLoan(currentLoans[0]);
+      openDrawerForLoan(loan);
       drawer.classList.add("open");
       drawer.setAttribute("aria-hidden", "false");
-
-      clearOpenParamFromUrl(); // 🔑 consume open=first
     });
-    return; // ✅ LEGAL (inside init)
   }
+
+  (function handleEntry() {
+    // 1️⃣ REPORTING ENTRY — STATELESS
+    if (PAGE_CONTEXT.cameFromReporting) {
+      forceTilesView();
+
+      if (currentLoans.length) {
+        openLoanDrawerSafe(currentLoans[0]);
+      }
+
+      clearOpenParamFromUrl();
+      return;
+    }
+
+    // 2️⃣ EMBED MODE WITH EXPLICIT OPEN
+    if (PAGE_CONTEXT.isEmbed) {
+      if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+        const loan = currentLoans.find(
+          l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+        );
+
+        if (loan) {
+          openLoanDrawerSafe(loan);
+          clearOpenParamFromUrl();
+          return;
+        }
+      }
+
+      if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
+        openLoanDrawerSafe(currentLoans[0]);
+        clearOpenParamFromUrl();
+        return;
+      }
+    }
+
+    // 3️⃣ NORMAL FULL PAGE DEEP-LINKING
+    if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+      const loan = currentLoans.find(
+        l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+      );
+
+      if (loan) {
+        openLoanDrawerSafe(loan);
+        clearOpenParamFromUrl();
+        return;
+      }
+    }
+
+    if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
+      openLoanDrawerSafe(currentLoans[0]);
+      clearOpenParamFromUrl();
+      return;
+    }
+  })();
 }
 
-
-}
     
 /* =========================================================
    STEP 5 — DERIVED DATA (PURE, READ-ONLY)
@@ -1794,12 +1831,6 @@ if (savedTableView !== null) {
   tableToggle.checked = savedTableView === "true";
 }
 
-// 🚨 OVERRIDE when returning from Reporting
-if (PAGE_CONTEXT.cameFromReporting) {
-  tableToggle.checked = false;
-  localStorage.removeItem("loanTableView");
-}
-
 
 // Apply initial state
 const showTable = tableToggle.checked;
@@ -1824,68 +1855,7 @@ tableToggle.addEventListener("change", () => {
   }
 });
 
-
-
-
-  
-document.querySelectorAll(".kpi").forEach(tile => {
-  tile.addEventListener("click", e => {
-    e.stopPropagation();
-
-    // 🚨 IFRAME MODE → FULL PAGE REDIRECT
-    if (PAGE_CONTEXT.isEmbed) {
-      const url = new URL(window.location.origin + "/loan-dashboard/amort");
-      url.searchParams.set("user", PAGE_CONTEXT.user);
-      url.searchParams.set("from", "reporting");
-
-      // optional: preserve which KPI was clicked
-      url.searchParams.set("open", tile.dataset.kpi);
-
-      window.top.location.href = url.toString();
-      return;
-    }
-
-    // FULL PAGE MODE → open drawers
-    const key = tile.dataset.kpi;
-    if (key === "distribution") renderDistributionDrawer();
-    if (key === "tpv") renderTPVDrawer();
-    if (key === "rates") renderRatesDrawer();
-    if (key === "payments") renderPaymentsDrawer();
-  });
-});
-
 }
-
-function openAmortKpiFromUrl() {
-  const kpi = PAGE_CONTEXT.open;
-  if (!kpi) return;
-
-  // ❌ These are NOT KPI drawers
-  if (kpi === "first" || kpi === "loan") return;
-
-  switch (kpi) {
-    case "tpv":
-      renderTPVDrawer();
-      break;
-    case "rates":
-      renderRatesDrawer();
-      break;
-    case "payments":
-      renderPaymentsDrawer();
-      break;
-    case "distribution":
-      renderDistributionDrawer();
-      break;
-    default:
-      console.warn("Unknown amort KPI:", kpi);
-      return;
-  }
-
-  // 🔑 IMPORTANT: consume open= so reloads don’t re-open
-  clearOpenParamFromUrl();
-}
-
-
 
     
     /* =========================
@@ -4034,54 +4004,6 @@ svg.setAttribute('preserveAspectRatio', 'none');
       setTheme(current === 'dark' ? 'light' : 'dark');
     });
 
-// =====================================================
-// URL-DRIVEN AUTO OPEN (FULL PAGE + EMBED)
-// =====================================================
-if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
-
-  // 1️⃣ Open first loan (?open=first)
-  if (PAGE_CONTEXT.open === "first" && currentLoans.length) {
-    const sorted = currentLoans
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(a.purchaseDate).getTime() -
-          new Date(b.purchaseDate).getTime()
-      );
-
-    const loan = sorted[0];
-    currentLoan = loan;
-
-    requestAnimationFrame(() => {
-      openDrawerForLoan(loan);
-
-      // Only force drawer visibility in embed mode
-      if (PAGE_CONTEXT.isEmbed) {
-        drawer.style.display = "flex";
-        drawer.classList.add("open");
-        drawer.setAttribute("aria-hidden", "false");
-      }
-
-      clearOpenParamFromUrl(); // 🔑 consume open=first
-    });
-  }
-
-  // 2️⃣ Explicit loan open (?open=loan&loanId=123)
-  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-    const loan = currentLoans.find(
-      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-    );
-
-    if (loan) {
-      currentLoan = loan;
-
-      requestAnimationFrame(() => {
-        openDrawerForLoan(loan);
-        clearOpenParamFromUrl(); // 🔑 consume open=loan
-      });
-    }
-  }
-}
 
 
   if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
@@ -4101,69 +4023,50 @@ if (PAGE_CONTEXT.isEmbed || PAGE_CONTEXT.cameFromReporting) {
 
 
 // =====================================================
-// EMBED MODE — AUTO OPEN FIRST LOAN (FALLBACK ONLY)
-// =====================================================
-if (PAGE_CONTEXT.isEmbed && currentLoans.length && !drawer.classList.contains("open") && !PAGE_CONTEXT.open) {
-  const sorted = currentLoans
-    .slice()
-    .sort(
-      (a, b) =>
-        new Date(a.purchaseDate).getTime() -
-        new Date(b.purchaseDate).getTime()
-    );
-
-  const loan = sorted[0];
-  currentLoan = loan;
-
-  drawer.style.display = "flex";
-  drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
-
-  requestAnimationFrame(() => openDrawerForLoan(loan));
-}
-
-
-// =====================================================
-// DOM READY — INIT + EMBED REDIRECT HANDLING
+// DOM READY — PAGE INIT (SINGLE ENTRY POINT)
 // =====================================================
 document.addEventListener("DOMContentLoaded", async () => {
   // Set Current Date
-  const currentDateEl = document.getElementById('currentDateLabel');
+  const currentDateEl = document.getElementById("currentDateLabel");
   if (currentDateEl) {
     const today = new Date();
     currentDateEl.textContent =
       `Current Date: ${today.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+        year: "numeric",
+        month: "long",
+        day: "numeric"
       })}`;
   }
 
-  // Initialize page (loads loans internally)
+  // Initialize page (runs exactly once)
   await init();
+});
 
 // =====================================================
 // EMBED MODE — REDIRECT TO FULL PAGE (SINGLE CONTRACT)
 // =====================================================
-if (!PAGE_CONTEXT.isEmbed) return;
-
-const user = PAGE_CONTEXT.user;
-
+if (PAGE_CONTEXT.isEmbed) {
+  const user = PAGE_CONTEXT.user;
   const baseUrl = `/loan-dashboard/amort/index.html?user=${user}`;
 
   function redirectToFullPage() {
     let url = baseUrl;
 
     if (currentLoan && (currentLoan.loanId || currentLoan.id)) {
-      url += `&open=loan&id=${currentLoan.loanId ?? currentLoan.id}`;
+      url += `&open=loan&loanId=${currentLoan.loanId ?? currentLoan.id}`;
     } else {
       url += `&open=first`;
+    }
+
+    // Preserve reporting context if present
+    if (PAGE_CONTEXT.cameFromReporting) {
+      url += `&from=reporting`;
     }
 
     window.top.location.href = url;
   }
 
-  // Redirect on any non-interactive click
+  // Redirect on non-interactive click
   document.addEventListener(
     "click",
     (e) => {
@@ -4178,9 +4081,8 @@ const user = PAGE_CONTEXT.user;
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener("click", redirectToFullPage, true);
   });
-});
+}
 
-    document.addEventListener("DOMContentLoaded", init);
     
 </script>
 
