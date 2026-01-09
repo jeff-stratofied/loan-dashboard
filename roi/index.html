@@ -1472,6 +1472,8 @@ if (Array.isArray(loan.events)) {
     let loans = [];
 
     let TABLE_SORT = { key: null, dir: 1 }; // identical to amort
+    let currentLoans = [];
+
 
     // =====================================================
 // Loan Table — Sorted view (MATCH AMORT)
@@ -1653,7 +1655,8 @@ const cumSchedule = scheduleWithOwnership
   };
 });
 
-      const currentLoans = loansWithAmort;
+      currentLoans = loansWithAmort;
+
 
       
     /* -------------------------
