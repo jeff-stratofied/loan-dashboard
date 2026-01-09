@@ -997,6 +997,10 @@ const PAGE_CONTEXT = (() => {
 // 🔑 ENTRY INTENT LATCH — MUST RUN BEFORE renderAndWirePage()
 let ENTRY_HANDLED = false;
 
+const HAS_HANDLED_REPORTING_ENTRY =
+  sessionStorage.getItem("handledReportingEntry") === "true";
+
+    
 // 🔑 EARLY KPI INTENT (prevents loan #1 auto-open on iframe redirect)
 if (
   PAGE_CONTEXT.cameFromReporting &&
@@ -1010,6 +1014,7 @@ if (PAGE_CONTEXT.isEmbed) {
   document.documentElement.classList.add("embed-mode");
 }
 
+    
     
 /* ============================
    GLOBAL STATE (mutable)
@@ -1248,36 +1253,40 @@ function openKpiDrawerSafe(key) {
 (function handleEntry() {
   // 1) REPORTING ENTRY — STATELESS
   // Tiles view always, BUT honor open= if present
-  if (PAGE_CONTEXT.cameFromReporting) {
-    forceTilesView();
+if (PAGE_CONTEXT.cameFromReporting && !HAS_HANDLED_REPORTING_ENTRY) {
+  forceTilesView();
 
-    // ✅ KPI deep-link from Reporting (open=tpv, rates, etc)
-    if (KPI_KEYS.has(PAGE_CONTEXT.open)) {
-      openKpiDrawerSafe(PAGE_CONTEXT.open);
-      clearOpenParamFromUrl();
-      return;
-    }
-
-    // ✅ Explicit loan from Reporting (?open=loan&loanId=123)
-    if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-      const loan = currentLoans.find(
-        l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
-      );
-      if (loan) {
-        openLoanDrawerSafe(loan);
-        clearOpenParamFromUrl();
-        return;
-      }
-    }
-
-    // ✅ Default Reporting behavior: first loan
-    if (currentLoans.length) {
-      openLoanDrawerSafe(currentLoans[0]);
-    }
-
+  // KPI deep-link from Reporting
+  if (KPI_KEYS.has(PAGE_CONTEXT.open)) {
+    openKpiDrawerSafe(PAGE_CONTEXT.open);
     clearOpenParamFromUrl();
+    sessionStorage.setItem("handledReportingEntry", "true");
     return;
   }
+
+  // Explicit loan from Reporting
+  if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+    const loan = currentLoans.find(
+      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+    );
+    if (loan) {
+      openLoanDrawerSafe(loan);
+      clearOpenParamFromUrl();
+      sessionStorage.setItem("handledReportingEntry", "true");
+      return;
+    }
+  }
+
+  // Default first loan ONLY on first entry
+  if (currentLoans.length) {
+    openLoanDrawerSafe(currentLoans[0]);
+  }
+
+  clearOpenParamFromUrl();
+  sessionStorage.setItem("handledReportingEntry", "true");
+  return;
+}
+
 
   // 2) EMBED MODE — never show the table in an iframe
   if (PAGE_CONTEXT.isEmbed) {
