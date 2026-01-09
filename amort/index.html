@@ -994,7 +994,19 @@ const PAGE_CONTEXT = (() => {
   };
 })();
 
+// 🔑 ENTRY INTENT LATCH — MUST RUN BEFORE renderAndWirePage()
 let ENTRY_HANDLED = false;
+
+// 🔑 EARLY KPI INTENT (prevents loan #1 auto-open on iframe redirect)
+if (
+  PAGE_CONTEXT.cameFromReporting &&
+  PAGE_CONTEXT.open &&
+  ["tpv", "rates", "payments", "distribution"].includes(PAGE_CONTEXT.open)
+) {
+  ENTRY_HANDLED = true;
+  currentMode = "kpi";
+}
+
 
     
 if (PAGE_CONTEXT.isEmbed) {
