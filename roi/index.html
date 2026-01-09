@@ -1506,7 +1506,20 @@ function getLoansForTableView() {
   // numbers (incl balance)
   return (Number(va) || 0) - (Number(vb) || 0);
 }
+    
+// =====================================================
+// ROI-safe loan drawer entry (shim for table + tiles)
+// =====================================================
+function openLoanDrawerSafe(loan) {
+  if (!loan) return;
 
+  currentMode = "loan";
+  currentLoan = loan;
+
+  openLoanDrawer(loan);
+}
+
+    
     async function loadLoans() {
       const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
       const data = await res.json();
