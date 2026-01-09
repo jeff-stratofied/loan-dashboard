@@ -4059,6 +4059,40 @@ if (e.target.closest(".tile")) return;
 closeDrawer();
 });
 
+// =======================================
+// LOAN DRAWER ENTRY (EARNINGS)
+// =======================================
+function openDrawerForLoan(loan) {
+  if (!loan) return;
+
+  console.log("[EARNINGS] openDrawerForLoan", loan.loanId);
+
+  currentLoan = loan;
+  currentMode = "loan";
+
+  // Header
+  drawerTitle.textContent = loan.loanName || `Loan ${loan.loanId}`;
+  drawerSub.textContent   = loan.school || "";
+
+  // Primary / secondary stats
+  drawerPrimaryTitle.textContent = "Purchase Price";
+  drawerPrimary.textContent =
+    formatCurrency(Number(loan.purchasePrice || 0));
+
+  drawerSecondaryTitle.textContent = "Rate";
+  drawerSecondary.textContent =
+    `${(Number(loan.nominalRate || 0) * 100).toFixed(2)}%`;
+
+  // Clear previous content
+  drawerChartArea.innerHTML = "";
+  drawerLegend.innerHTML = "";
+  drawerExtra.innerHTML = "";
+
+  // Render earnings-specific drawer content
+  renderEarningsLoanDrawer(loan);
+}
+
+  
 function openLoanDrawerSafe(loan) {
   if (!loan) return;
 
