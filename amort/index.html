@@ -1231,13 +1231,34 @@ function openKpiDrawerSafe(key) {
 
 (function handleEntry() {
   // 1) REPORTING ENTRY — STATELESS
-  // Always: tiles view + loan #1 drawer (ignore table view)
+  // Tiles view always, BUT honor open= if present
   if (PAGE_CONTEXT.cameFromReporting) {
     forceTilesView();
 
-    if (currentLoans.length) openLoanDrawerSafe(currentLoans[0]);
+    // ✅ KPI deep-link from Reporting (open=tpv, rates, etc)
+    if (KPI_KEYS.has(PAGE_CONTEXT.open)) {
+      openKpiDrawerSafe(PAGE_CONTEXT.open);
+      clearOpenParamFromUrl();
+      return;
+    }
 
-    // consume open= if any
+    // ✅ Explicit loan from Reporting (?open=loan&loanId=123)
+    if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
+      const loan = currentLoans.find(
+        l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+      );
+      if (loan) {
+        openLoanDrawerSafe(loan);
+        clearOpenParamFromUrl();
+        return;
+      }
+    }
+
+    // ✅ Default Reporting behavior: first loan
+    if (currentLoans.length) {
+      openLoanDrawerSafe(currentLoans[0]);
+    }
+
     clearOpenParamFromUrl();
     return;
   }
@@ -1247,7 +1268,7 @@ function openKpiDrawerSafe(key) {
     forceTilesView();
   }
 
-  // 3) KPI deep-linking (?open=tpv etc) — works for full page AND iframe redirects
+  // 3) KPI deep-linking (?open=tpv etc)
   if (KPI_KEYS.has(PAGE_CONTEXT.open)) {
     openKpiDrawerSafe(PAGE_CONTEXT.open);
     clearOpenParamFromUrl();
@@ -1256,7 +1277,9 @@ function openKpiDrawerSafe(key) {
 
   // 4) Explicit loan open (?open=loan&loanId=123)
   if (PAGE_CONTEXT.open === "loan" && PAGE_CONTEXT.loanId) {
-    const loan = currentLoans.find(l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId);
+    const loan = currentLoans.find(
+      l => (l.loanId ?? l.id) === PAGE_CONTEXT.loanId
+    );
     if (loan) {
       openLoanDrawerSafe(loan);
       clearOpenParamFromUrl();
@@ -1271,6 +1294,7 @@ function openKpiDrawerSafe(key) {
     return;
   }
 })();
+
 
 }
 
@@ -2208,7 +2232,7 @@ function tpvStackSeries(loansList) {
     const drawerExtra = document.getElementById('drawerExtra');
     const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
-/* delete
+
 // ==============================
 // KPI drawer opener (authoritative)
 // ==============================
@@ -2219,41 +2243,7 @@ function openDrawerForKPI() {
   currentLoan = null;
   currentMode = "kpi";
 }
-delete */
 
-    /* from Grok */
-    // ==============================
-// KPI drawer opener (authoritative)
-// ==============================
-function openDrawerForKPI() {
-  // Reset to KPI mode
-  currentMode = 'kpi';
-  currentLoan = null;
-
-  // Default: non-interactive (individual render functions will add .kpi-interactive if needed)
-  drawer.classList.remove('kpi-interactive');
-
-  // Hide loan-specific sections
-  drawerAmortContainer.style.display = 'none';
-  drawerLegend.style.display = 'none';
-
-  // Clear all dynamic content areas
-  drawerTitle.textContent = '';
-  drawerSub.textContent = '';
-  drawerPrimaryTitle.textContent = '';
-  drawerPrimary.textContent = '';
-  drawerSecondaryTitle.textContent = '';
-  drawerSecondary.textContent = '';
-  drawerChartArea.innerHTML = '';
-  drawerExtra.innerHTML = '';
-
-  // Open the drawer visually
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-
-  // Reset scroll position
-  drawerBody.scrollTop = 0;
-}
   
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
