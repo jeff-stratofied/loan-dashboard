@@ -988,6 +988,57 @@ delete */
   display: none !important;
 }
 
+.loan-table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+
+  padding: 8px 8px 0 8px;
+  margin-bottom: 12px;
+
+  max-height: calc(100vh - 320px); /* SAME logic as grid */
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+
+#loanTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+#loanTable th {
+  cursor: pointer;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  background: var(--table-header);
+}
+
+#loanTable th::after {
+  content: " ↕";
+  opacity: 0.35;
+  font-size: 11px;
+}
+
+    #loanTable th[data-sort="asc"]::after { content: " ↑"; opacity: 0.75; }
+#loanTable th[data-sort="desc"]::after { content: " ↓"; opacity: 0.75; }
+
+    
+#loanTable td,
+#loanTable th {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table-actions {
+  display: flex;
+  gap: 6px;
+}
+
+
     
 #feedback-btn:hover {
   transform: scale(1.05);
@@ -1081,6 +1132,29 @@ delete */
   
   <!-- Loan grid -->
   <section class="grid compact" id="loanGrid" aria-live="polite"></section>
+
+    <section id="loanTableWrap" class="loan-table-wrap" hidden>
+  <table id="loanTable">
+    <thead>
+      <tr>
+        <!-- 🔑 ROI instead of Balance -->
+        <th data-key="loanId">ID</th>
+        <th data-key="loanName">Loan Name</th>
+        <th data-key="school">School</th>
+        <th data-key="loanStartDate">Loan Start</th>
+        <th data-key="purchaseDate">Purchase Date</th>
+        <th data-key="principal">Orig Amt</th>
+        <th data-key="purchasePrice">Purchase Price</th>
+        <th data-key="nominalRate">Rate</th>
+        <th data-key="termYears">Term</th>
+        <th data-key="graceYears">Grace</th>
+        <th data-key="roiToDate">ROI</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</section>
+
   
     <!-- Drawer -->
    <aside id="drawer" class="drawer" aria-hidden="true">
@@ -1386,6 +1460,40 @@ if (Array.isArray(loan.events)) {
     // Dynamic loans loaded from backend
     let loans = [];
 
+    let TABLE_SORT = { key: null, dir: 1 }; // identical to amort
+
+    // =====================================================
+// Loan Table — Sorted view (MATCH AMORT)
+// =====================================================
+function getLoansForTableView() {
+  if (!TABLE_SORT.key) return currentLoans;
+
+  const { key, dir } = TABLE_SORT;
+  return currentLoans
+    .slice()
+    .sort((a, b) => dir * compareForKey(a, b, key));
+}
+
+    function compareForKey(a, b, key) {
+  const va = a?.[key];
+  const vb = b?.[key];
+
+  // dates
+  if (key === "loanStartDate" || key === "purchaseDate") {
+    const da = va ? new Date(va).getTime() : 0;
+    const db = vb ? new Date(vb).getTime() : 0;
+    return da - db;
+  }
+
+  // strings
+  if (typeof va === "string" || typeof vb === "string") {
+    return String(va ?? "").localeCompare(String(vb ?? ""), undefined, { numeric: true, sensitivity: "base" });
+  }
+
+  // numbers (incl balance)
+  return (Number(va) || 0) - (Number(vb) || 0);
+}
+
     async function loadLoans() {
       const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
       const data = await res.json();
@@ -1621,6 +1729,45 @@ function getCurrentOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
+
+      // =====================================================
+// ROI Loan Table Renderer (matches Amort table)
+// =====================================================
+function renderLoanTableROI(loans) {
+  const tbody = document.querySelector("#loanTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${(loan.roiToDate * 100).toFixed(2)}%</td>
+      <td>${loan.loanId}</td>
+      <td>${loan.loanName}</td>
+      <td>${loan.school}</td>
+      <td>${loan.loanStartDate ? formatMonthYear(parseISODateLocal(loan.loanStartDate)) : ""}</td>
+      <td>${loan.purchaseDate ? formatMonthYear(parseISODateLocal(loan.purchaseDate)) : ""}</td>
+      <td>$${formatCurrency(loan.principal)}</td>
+      <td>$${formatCurrency(loan.purchasePrice)}</td>
+      <td>${loan.nominalRate.toFixed(2)}%</td>
+      <td>${loan.termYears}</td>
+      <td>${loan.graceYears}</td>
+    `;
+
+    // Hover styling (same as Amort)
+    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
+    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
+
+    // Click → open loan drawer (SAFE entry point)
+    tr.addEventListener("click", () => {
+      openLoanDrawerSafe(loan);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
 
       
 function computeWeightedRoiAsOfMonth(loans, monthDate) {
@@ -4001,6 +4148,58 @@ console.log("[ROI DEBUG] KPI rect:", r);
 // 🔑 Open KPI drawer from ?open= (full UI + iframe redirect)
 openRoiKpiFromUrl();
 
+      // =====================================================
+// Table View toggle (MATCH AMORT BEHAVIOR)
+// =====================================================
+const toggleTableView = document.getElementById("toggleTableView");
+const loanGrid = document.getElementById("loanGrid");
+const loanTableWrap = document.getElementById("loanTableWrap");
+
+if (toggleTableView && loanGrid && loanTableWrap) {
+  toggleTableView.addEventListener("change", () => {
+    const showTable = toggleTableView.checked;
+
+    loanGrid.style.display = showTable ? "none" : "grid";
+    loanTableWrap.hidden = !showTable;
+
+    if (showTable) {
+      renderLoanTableROI(getLoansForTableView());
+    }
+  });
+}
+
+
+// =====================================================
+// Loan Table — Column Header Sorting (MATCH AMORT)
+// =====================================================
+document.querySelectorAll("#loanTable th").forEach(th => {
+  th.addEventListener("click", () => {
+    const key = th.dataset.key;
+    if (!key) return;
+
+    if (TABLE_SORT.key === key) {
+      TABLE_SORT.dir *= -1;
+    } else {
+      TABLE_SORT.key = key;
+      TABLE_SORT.dir = 1;
+    }
+
+    // Update header sort indicators
+    document
+      .querySelectorAll("#loanTable th")
+      .forEach(h => h.removeAttribute("data-sort"));
+
+    th.setAttribute(
+      "data-sort",
+      TABLE_SORT.dir === 1 ? "asc" : "desc"
+    );
+
+    // Re-render table using sorted loans
+    renderLoanTableROI(getLoansForTableView());
+  });
+});
+
+      
 
     } // END initROI()
 
