@@ -873,6 +873,49 @@ html[data-theme="dark"] .legend .sw {
   transform: scale(1.05);
 }
 
+    .loan-table-wrap {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 8px 8px 0 8px;
+  margin-bottom: 12px;
+  max-height: calc(100vh - 320px);
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+#loanTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+#loanTable th {
+  cursor: pointer;
+  user-select: none;
+  position: sticky;
+  top: 0;
+  background: var(--table-header);
+}
+
+#loanTable th::after {
+  content: " ↕";
+  opacity: 0.35;
+  font-size: 11px;
+}
+
+#loanTable td,
+#loanTable th {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+tr.row-hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+
     /* ============================================================
    EMBED MODE — EARNINGS IFRAME FINAL OVERRIDES (AUTHORITATIVE)
    ============================================================ */
@@ -1021,6 +1064,39 @@ html[data-theme="dark"] .legend .sw {
 
   <button class="btn reset-btn" id="resetFilters">Reset filters</button>
 
+  <label class="compact-toggle">
+  <input type="checkbox" id="toggleTableView" />
+  <span>Table View</span>
+</label>
+
+<div class="table-actions">
+  <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
+  <button class="btn" id="copyAllCsvBtn">Copy CSV</button>
+  <button class="btn" id="printAllBtn">Print</button>
+</div>
+
+
+</section>
+
+    <section id="loanTableWrap" class="loan-table-wrap" hidden>
+  <table id="loanTable">
+    <thead>
+      <tr>
+        <th data-key="loanId">ID</th>
+        <th data-key="loanName">Loan Name</th>
+        <th data-key="school">School</th>
+        <th data-key="loanStartDate">Loan Start</th>
+        <th data-key="purchaseDate">Purchase Date</th>
+        <th data-key="principal">Orig Amt</th>
+        <th data-key="purchasePrice">Purchase Price</th>
+        <th data-key="nominalRate">Rate</th>
+        <th data-key="termYears">Term</th>
+        <th data-key="graceYears">Grace</th>
+        <th data-key="balance">Balance</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 </section>
 
     
