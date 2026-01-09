@@ -3713,11 +3713,10 @@ function renderLoanTable(loans) {
     tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
     tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
 
-    const openLoan = () => {
-      openDrawerForLoan(loan);
-      drawer.classList.add("open");
-      drawer.setAttribute("aria-hidden", "false");
-    };
+  const openLoan = () => {
+  openLoanDrawerSafe(loan);
+};
+
 
     tr.addEventListener("click", openLoan);
     tr.addEventListener("keydown", (e) => {
@@ -4059,6 +4058,16 @@ if (e.target.closest(".tile")) return;
 closeDrawer();
 });
 
+function openLoanDrawerSafe(loan) {
+  if (!loan) return;
+  requestAnimationFrame(() => {
+    openDrawerForLoan(loan);
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  });
+}
+
+  
 function openLoanDrawer(loan){
   // --------------------------------------------------
   // EVENT LOOKUP (AUTHORITATIVE FROM AMORT)
