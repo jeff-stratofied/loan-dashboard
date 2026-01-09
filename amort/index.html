@@ -1701,6 +1701,9 @@ function renderAndWirePage() {
     const tile = e.target.closest(".kpi");
     if (!tile) return;
 
+  e.preventDefault();
+  e.stopImmediatePropagation();
+    
     const key = tile.dataset.kpi;
     if (!key) return;
 
