@@ -1221,7 +1221,8 @@ function openLoanDrawerSafe(loan) {
 function openKpiDrawerSafe(key) {
   if (!key) return;
 
-  // KPI drawers
+  openDrawerForKPI();
+
   if (key === "tpv") return renderTPVDrawer();
   if (key === "rates") return renderRatesDrawer();
   if (key === "payments") return renderPaymentsDrawer();
@@ -2205,6 +2206,16 @@ function tpvStackSeries(loansList) {
     const drawerExtra = document.getElementById('drawerExtra');
     const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
+// ==============================
+// KPI drawer opener (authoritative)
+// ==============================
+function openDrawerForKPI() {
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+
+  currentLoan = null;
+  currentMode = "kpi";
+}
 
   
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
