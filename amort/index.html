@@ -994,6 +994,15 @@ const PAGE_CONTEXT = (() => {
   };
 })();
 
+    const CAME_FROM_REPORTING =
+  PAGE_CONTEXT.cameFromReporting ||
+  sessionStorage.getItem("cameFromReporting") === "true";
+
+if (PAGE_CONTEXT.cameFromReporting) {
+  sessionStorage.setItem("cameFromReporting", "true");
+}
+
+
 // 🔑 ENTRY INTENT LATCH — MUST RUN BEFORE renderAndWirePage()
 let ENTRY_HANDLED = false;
 
@@ -1046,14 +1055,30 @@ const backBtn = document.getElementById("backToHoldingsBtn");
 const hiddenTPVLoans = new Set();
 
 // Show Back button when loaded inside Reporting iframe
+// 🔑 Durable Reporting provenance (survives back/forward + redirects)
+const CAME_FROM_REPORTING =
+  PAGE_CONTEXT.cameFromReporting ||
+  sessionStorage.getItem("cameFromReporting") === "true";
+
+// Persist once per session
 if (PAGE_CONTEXT.cameFromReporting) {
+  sessionStorage.setItem("cameFromReporting", "true");
+}
+
+// Show Back button if this session originated from Reporting
+if (CAME_FROM_REPORTING) {
   backRow.style.display = "block";
 
   backBtn.addEventListener("click", () => {
+    // Optional cleanup on explicit exit
+    sessionStorage.removeItem("cameFromReporting");
+    sessionStorage.removeItem("handledReportingEntry");
+
     window.location.href =
       "/loan-dashboard/reporting?user=" + PAGE_CONTEXT.user;
   });
 }
+
 
 // ------------------------------
 // URL helpers
@@ -4138,9 +4163,9 @@ if (PAGE_CONTEXT.isEmbed) {
     }
 
     // Preserve reporting context if present
-    if (PAGE_CONTEXT.cameFromReporting) {
-      url += `&from=reporting`;
-    }
+   if (CAME_FROM_REPORTING) {
+  url += `&from=reporting`;
+}
 
     window.top.location.href = url;
   }
