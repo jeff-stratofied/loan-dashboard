@@ -1466,11 +1466,13 @@ if (Array.isArray(loan.events)) {
     /* -------------------------
        Settings & data
        ------------------------- */
-    // Dynamic loans loaded from backend
-    let loans = [];
+// Dynamic loans loaded from backend
+let loans = [];
+let allLoans = [];        // 🔑 ADD THIS
+let currentLoans = [];
 
-    let TABLE_SORT = { key: null, dir: 1 }; // identical to amort
-    let currentLoans = [];
+let TABLE_SORT = { key: null, dir: 1 };
+
 
 
     // =====================================================
@@ -1653,7 +1655,9 @@ const cumSchedule = scheduleWithOwnership
   };
 });
 
-      currentLoans = loansWithAmort;
+      allLoans = loansWithAmort;   // 🔑 master list
+currentLoans = loansWithAmort;
+
 
 
       
