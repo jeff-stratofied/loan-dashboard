@@ -1984,14 +1984,19 @@ function applyLoanFilters() {
     renderLoanTable(currentLoans);
   }
 
-  // 🔑 Reporting return: always re-open first loan
-if (PAGE_CONTEXT.cameFromReporting && currentLoans.length) {
+ // 🔑 Reporting return: open first loan ONLY if no KPI is active
+if (
+  PAGE_CONTEXT.cameFromReporting &&
+  currentLoans.length &&
+  currentMode !== "kpi"
+) {
   requestAnimationFrame(() => {
     openDrawerForLoan(currentLoans[0]);
     drawer.classList.add("open");
     drawer.setAttribute("aria-hidden", "false");
   });
 }
+
 
 }
 
