@@ -3609,19 +3609,73 @@ async function initPage() {
     applyLoanFilters();
   });
 
-  // 6️⃣ Compact mode (persisted)
-  const savedCompact = localStorage.getItem("loanGridCompact");
-  if (savedCompact !== null) {
-    compactToggle.checked = savedCompact === "true";
+ /* =========================
+   COMPACT VIEW TOGGLE (EARNINGS)
+   ========================= */
+
+const compactToggle = document.getElementById("toggleCompact");
+
+// restore
+const savedCompact =
+  localStorage.getItem("earningsCompact");
+
+if (savedCompact !== null) {
+  compactToggle.checked = savedCompact === "true";
+  gridEl.classList.toggle("compact", compactToggle.checked);
+}
+
+// user toggle
+compactToggle.addEventListener("change", () => {
+  const on = compactToggle.checked;
+  gridEl.classList.toggle("compact", on);
+  localStorage.setItem("earningsCompact", on);
+});
+
+
+/* =========================
+   TABLE VIEW TOGGLE (EARNINGS)
+   ========================= */
+
+const tableToggle = document.getElementById("toggleTableView");
+const tableWrap   = document.getElementById("loanTableWrap");
+
+// 🚫 Table View is FULL-PAGE ONLY
+if (PAGE_CONTEXT.isEmbed) {
+  tableToggle.checked = false;
+  tableWrap.hidden = true;
+  gridEl.style.display = "none";
+} else {
+  // --- restore ---
+  const savedTableView =
+    localStorage.getItem("earningsTableView");
+
+  if (savedTableView !== null) {
+    tableToggle.checked = savedTableView === "true";
   }
 
-  loanGrid.classList.toggle("compact", compactToggle.checked);
+  const applyTableView = (on) => {
+    gridEl.style.display = on ? "none" : "";
+    tableWrap.hidden = !on;
 
-  compactToggle.addEventListener("change", () => {
-    loanGrid.classList.toggle("compact", compactToggle.checked);
-    localStorage.setItem("loanGridCompact", compactToggle.checked);
+    if (on) {
+      renderLoanTable(getLoansForTableView());
+    }
+  };
+
+  // initial apply
+  applyTableView(tableToggle.checked);
+
+  // user toggle
+  tableToggle.addEventListener("change", () => {
+    const on = tableToggle.checked;
+    localStorage.setItem("earningsTableView", on);
+    applyTableView(on);
   });
+}
 
+
+
+  
   // 7️⃣ Render UI
   buildLoanColorMap(loansWithEarnings);
   renderLoanTiles(loansWithEarnings);
