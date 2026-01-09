@@ -1870,19 +1870,34 @@ const tableWrap = document.getElementById("loanTableWrap");
 if (PAGE_CONTEXT.isEmbed) {
   tableToggle.checked = false;
   tableWrap.hidden = true;
-  gridEl.style.display = "none"; // grid already hidden by CSS, this is defensive
+  gridEl.style.display = "none";
 } else {
+  // --- restore ---
   const savedTableView = localStorage.getItem("loanTableView");
   if (savedTableView !== null) {
     tableToggle.checked = savedTableView === "true";
   }
 
-  const showTable = tableToggle.checked;
-  gridEl.style.display = showTable ? "none" : "";
-  tableWrap.hidden = !showTable;
+  const applyTableView = (on) => {
+    gridEl.style.display = on ? "none" : "";
+    tableWrap.hidden = !on;
 
-  if (showTable) renderLoanTable(currentLoans);
+    if (on) {
+      renderLoanTable(currentLoans);
+    }
+  };
+
+  // initial apply
+  applyTableView(tableToggle.checked);
+
+  // --- 🔑 USER TOGGLE (THIS WAS MISSING) ---
+  tableToggle.addEventListener("change", () => {
+    const on = tableToggle.checked;
+    localStorage.setItem("loanTableView", on);
+    applyTableView(on);
+  });
 }
+
 
 }
 
