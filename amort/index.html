@@ -1308,6 +1308,17 @@ if (PAGE_CONTEXT.cameFromReporting && !HAS_HANDLED_REPORTING_ENTRY) {
   }
 })();
 
+// 🔑 IFRAME DEFAULT — always show Loan 1 details
+if (
+  PAGE_CONTEXT.isEmbed &&
+  currentLoans.length &&
+  !drawer.classList.contains("open")
+) {
+  openDrawerForLoan(currentLoans[0]);
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+}
+  
 }
 
     
