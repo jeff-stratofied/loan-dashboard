@@ -994,6 +994,9 @@ const PAGE_CONTEXT = (() => {
   };
 })();
 
+let ENTRY_HANDLED = false;
+
+    
 if (PAGE_CONTEXT.isEmbed) {
   document.documentElement.classList.add("embed-mode");
 }
@@ -1221,6 +1224,9 @@ function openLoanDrawerSafe(loan) {
 function openKpiDrawerSafe(key) {
   if (!key) return;
 
+  ENTRY_HANDLED = true;          // 🔑 latch intent
+  currentMode = "kpi";
+
   openDrawerForKPI();
 
   if (key === "tpv") return renderTPVDrawer();
@@ -1228,6 +1234,7 @@ function openKpiDrawerSafe(key) {
   if (key === "payments") return renderPaymentsDrawer();
   if (key === "distribution") return renderDistributionDrawer();
 }
+
 
 (function handleEntry() {
   // 1) REPORTING ENTRY — STATELESS
@@ -1988,7 +1995,7 @@ function applyLoanFilters() {
 if (
   PAGE_CONTEXT.cameFromReporting &&
   currentLoans.length &&
-  currentMode !== "kpi"
+  !ENTRY_HANDLED
 ) {
   requestAnimationFrame(() => {
     openDrawerForLoan(currentLoans[0]);
@@ -1996,6 +2003,7 @@ if (
     drawer.setAttribute("aria-hidden", "false");
   });
 }
+
 
 
 }
