@@ -3713,10 +3713,10 @@ function renderLoanTable(loans) {
     tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
     tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
 
-  const openLoan = () => {
-  openLoanDrawerSafe(loan);
-};
-
+    const openLoan = () => {
+      currentLoan = loan;
+      openKpi2();
+    };
 
     tr.addEventListener("click", openLoan);
     tr.addEventListener("keydown", (e) => {
@@ -3729,6 +3729,7 @@ function renderLoanTable(loans) {
     tbody.appendChild(tr);
   });
 }
+
 
 
   // =========================================
