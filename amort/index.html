@@ -2043,8 +2043,10 @@ function applyLoanFilters() {
 if (
   PAGE_CONTEXT.cameFromReporting &&
   currentLoans.length &&
-  !ENTRY_HANDLED
+  !ENTRY_HANDLED &&
+  !document.getElementById("toggleTableView")?.checked
 ) {
+
   requestAnimationFrame(() => {
     openDrawerForLoan(currentLoans[0]);
     drawer.classList.add("open");
