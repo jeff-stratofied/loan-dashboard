@@ -4061,12 +4061,19 @@ closeDrawer();
 
 function openLoanDrawerSafe(loan) {
   if (!loan) return;
+
   requestAnimationFrame(() => {
-    openDrawerForLoan(loan);
+    // 🔑 Earnings is KPI-driven, not loan-driven
+    currentLoan = loan;
+
+    // Canonical loan-level drawer in Earnings
+    openKpi2(); // Projected Earnings
+
     drawer.classList.add("open");
     drawer.setAttribute("aria-hidden", "false");
   });
 }
+
 
   
 function openLoanDrawer(loan){
