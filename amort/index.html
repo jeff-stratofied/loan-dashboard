@@ -1054,16 +1054,6 @@ const backBtn = document.getElementById("backToHoldingsBtn");
 
 const hiddenTPVLoans = new Set();
 
-// Show Back button when loaded inside Reporting iframe
-// 🔑 Durable Reporting provenance (survives back/forward + redirects)
-const CAME_FROM_REPORTING =
-  PAGE_CONTEXT.cameFromReporting ||
-  sessionStorage.getItem("cameFromReporting") === "true";
-
-// Persist once per session
-if (PAGE_CONTEXT.cameFromReporting) {
-  sessionStorage.setItem("cameFromReporting", "true");
-}
 
 // Show Back button if this session originated from Reporting
 if (CAME_FROM_REPORTING) {
