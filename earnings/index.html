@@ -3704,7 +3704,7 @@ const tableToggle = document.getElementById("toggleTableView");
 const tableWrap   = document.getElementById("loanTableWrap");
 
 // 🚫 Table View is FULL-PAGE ONLY
-if (PAGE_CONTEXT.isEmbed) {
+if (isEmbed) {
   tableToggle.checked = false;
   tableWrap.hidden = true;
   gridEl.style.display = "none";
