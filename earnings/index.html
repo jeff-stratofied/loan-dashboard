@@ -296,11 +296,17 @@
 
 .loan-filters {
   display: flex;
-  gap: 10px;
   align-items: center;
+  gap: 10px;
   margin: 0 0 14px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;              /* 🔑 force single row */
 }
+
+/* Prevent shrinking / wrapping */
+.loan-filters > * {
+  flex-shrink: 0;
+}
+
 
 .loan-filters select {
   padding: 6px 10px;
@@ -311,15 +317,13 @@
   font-size: 13px;
 }
 
-/* Compact toggle */
 .compact-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
+  margin-left: 4px;
 }
+
 
 /* =========================================
    Loan event badges (match Amort layout/icons/classes)
@@ -873,13 +877,21 @@ html[data-theme="dark"] .legend .sw {
   transform: scale(1.05);
 }
 
-    .loan-table-wrap {
+/* =========================================
+   Loan Table (MATCH AMORT EXACTLY)
+   ========================================= */
+
+.loan-table-wrap {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow);
-  padding: 8px 8px 0 8px;
+
+  /* tighter vertical rhythm like Amort */
+  padding: 6px 6px 0 6px;
   margin-bottom: 12px;
+
+  /* SAME scroll behavior as grid */
   max-height: calc(100vh - 320px);
   overflow-y: auto;
   overflow-x: auto;
@@ -891,29 +903,71 @@ html[data-theme="dark"] .legend .sw {
   font-size: 13px;
 }
 
-#loanTable th {
+/* Header */
+#loanTable thead th {
   cursor: pointer;
   user-select: none;
+
   position: sticky;
   top: 0;
+  z-index: 2; /* 🔑 ensure header stays above rows */
+
   background: var(--table-header);
+  color: var(--muted);
+  font-weight: 700;
+
+  border-bottom: 1px solid var(--border);
 }
 
+/* Sorting indicators (match amort) */
 #loanTable th::after {
   content: " ↕";
   opacity: 0.35;
   font-size: 11px;
 }
 
+#loanTable th[data-sort="asc"]::after {
+  content: " ↑";
+  opacity: 0.75;
+}
+
+#loanTable th[data-sort="desc"]::after {
+  content: " ↓";
+  opacity: 0.75;
+}
+
+/* Cells */
 #loanTable td,
 #loanTable th {
   padding: 8px;
-  border-bottom: 1px solid var(--border);
+  text-align: left;
+  border-bottom: 1px dashed rgba(15, 23, 42, 0.08); /* 🔑 softer like Amort */
 }
 
+    /* Match Amort button background */
+.loan-filters .btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.loan-filters .btn:hover {
+  background: var(--tile-hover-bg);
+}
+
+    
+/* Row hover (match amort tone) */
+#loanTable tbody tr:hover,
 tr.row-hover {
   background: rgba(148, 163, 184, 0.12);
 }
+
+/* Remove hover on header row */
+#loanTable thead tr:hover {
+  background: inherit;
+}
+
+    
 
 
     /* ============================================================
