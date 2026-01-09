@@ -758,6 +758,10 @@ html[data-theme="dark"] .close-btn {
   font-size: 11px;
 }
 
+    #loanTable th[data-sort="asc"]::after { content: " ↑"; opacity: 0.75; }
+#loanTable th[data-sort="desc"]::after { content: " ↓"; opacity: 0.75; }
+
+    
 #loanTable td,
 #loanTable th {
   padding: 8px;
@@ -1047,6 +1051,38 @@ let tpvSeriesData = [];
     
     document.getElementById("currentUserLabel").textContent =
   USER_LABELS[PAGE_CONTEXT.user] || "Unknown User";
+
+    // Table-only sort override (does NOT affect tile ordering)
+let TABLE_SORT = { key: null, dir: 1 }; // dir: 1=asc, -1=desc
+
+function compareForKey(a, b, key) {
+  const va = a?.[key];
+  const vb = b?.[key];
+
+  // dates
+  if (key === "loanStartDate" || key === "purchaseDate") {
+    const da = va ? new Date(va).getTime() : 0;
+    const db = vb ? new Date(vb).getTime() : 0;
+    return da - db;
+  }
+
+  // strings
+  if (typeof va === "string" || typeof vb === "string") {
+    return String(va ?? "").localeCompare(String(vb ?? ""), undefined, { numeric: true, sensitivity: "base" });
+  }
+
+  // numbers (incl balance)
+  return (Number(va) || 0) - (Number(vb) || 0);
+}
+
+function getLoansForTableView() {
+  if (!TABLE_SORT.key) return currentLoans;
+
+  const { key, dir } = TABLE_SORT;
+  return currentLoans
+    .slice()
+    .sort((a, b) => dir * compareForKey(a, b, key));
+}
 
    
 const backRow = document.getElementById("backToHoldingsRow");
@@ -1825,7 +1861,12 @@ console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
   filterName.addEventListener("change", applyLoanFilters);
   filterSchool.addEventListener("change", applyLoanFilters);
   filterRate.addEventListener("change", applyLoanFilters);
-  sortLoans.addEventListener("change", applyLoanFilters);
+  sortLoans.addEventListener("change", () => {
+  TABLE_SORT.key = null;  // dropdown becomes the new default
+  TABLE_SORT.dir = 1;
+  applyLoanFilters();
+});
+
 
   resetBtn.addEventListener("click", () => {
     filterName.value = "";
@@ -1865,6 +1906,7 @@ compactToggle.addEventListener("change", () => {
 
 const tableToggle = document.getElementById("toggleTableView");
 const tableWrap = document.getElementById("loanTableWrap");
+  
 
 // 🚫 Table View is FULL-PAGE ONLY
 if (PAGE_CONTEXT.isEmbed) {
@@ -1897,7 +1939,8 @@ if (PAGE_CONTEXT.isEmbed) {
     applyTableView(on);
   });
 }
-
+// ✅ Wire table column sorting (table-only)
+wireLoanTableColumnSort();
 
 }
 
@@ -2035,45 +2078,67 @@ function applyLoanFilters() {
   // Re-render both views
   renderLoanTiles(currentLoans);
   if (!loanTableWrap.hidden) {
-    renderLoanTable(currentLoans);
+    renderLoanTable(getLoansForTableView());
   }
+}
+
+    /* =========================
+   TABLE SORTING (table-only)
+   ========================= */
+
+function wireLoanTableColumnSort() {
+  const ths = document.querySelectorAll("#loanTable thead th[data-key]");
+
+  ths.forEach(th => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.key;
+
+      if (TABLE_SORT.key === key) TABLE_SORT.dir *= -1;
+      else {
+        TABLE_SORT.key = key;
+        TABLE_SORT.dir = 1;
+      }
+
+      if (!loanTableWrap.hidden) {
+        renderLoanTable(getLoansForTableView());
+      }
+
+      ths.forEach(x => x.removeAttribute("data-sort"));
+      th.setAttribute(
+        "data-sort",
+        TABLE_SORT.dir === 1 ? "asc" : "desc"
+      );
+    });
+  });
 }
 
 
 function applyLoanSort() {
   const mode = document.getElementById("sortLoans").value;
 
+  const num = (x) => Number(x) || 0;
+  const dt  = (x) => x ? new Date(x).getTime() : 0;
+
   currentLoans.sort((a, b) => {
     switch (mode) {
-      case "purchase_asc":
-        return new Date(a.purchaseDate) - new Date(b.purchaseDate);
+      case "purchase_asc":  return dt(a.purchaseDate) - dt(b.purchaseDate);
+      case "purchase_desc": return dt(b.purchaseDate) - dt(a.purchaseDate);
 
-      case "purchase_desc":
-        return new Date(b.purchaseDate) - new Date(a.purchaseDate);
+      case "start_asc":     return dt(a.loanStartDate) - dt(b.loanStartDate);
+      case "start_desc":    return dt(b.loanStartDate) - dt(a.loanStartDate);
 
-      case "start_asc":
-        return new Date(a.loanStartDate) - new Date(b.loanStartDate);
+      // "Orig Amt" (matches your dropdown label)
+      case "amount_asc":    return num(a.principal) - num(b.principal);
+      case "amount_desc":   return num(b.principal) - num(a.principal);
 
-      case "start_desc":
-        return new Date(b.loanStartDate) - new Date(a.loanStartDate);
+      case "rate_asc":      return num(a.nominalRate) - num(b.nominalRate);
+      case "rate_desc":     return num(b.nominalRate) - num(a.nominalRate);
 
-      case "amount_asc":
-        return a.purchasePrice - b.purchasePrice;
-
-      case "amount_desc":
-        return b.purchasePrice - a.purchasePrice;
-
-      case "rate_asc":
-        return a.nominalRate - b.nominalRate;
-
-      case "rate_desc":
-        return b.nominalRate - a.nominalRate;
-
-      default:
-        return 0;
+      default:              return 0;
     }
   });
 }
+
 
 
 
