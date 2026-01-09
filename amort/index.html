@@ -1648,6 +1648,8 @@ function renderLoanTiles(loans) {
     
 function renderAndWirePage() {
 
+  const gridEl = document.getElementById("loanGrid");
+
   const derived = derivePortfolioData(currentLoans);
   assert(Array.isArray(currentLoans), "currentLoans must be an array");
   assert(derived, "derived data missing");
@@ -1833,7 +1835,6 @@ console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
    ========================= */
 
 const compactToggle = document.getElementById("toggleCompact");
-const gridEl = document.getElementById("loanGrid");
 
 // restore saved state
 const savedCompact = localStorage.getItem("loanCompact");
@@ -1849,33 +1850,34 @@ compactToggle.addEventListener("change", () => {
   localStorage.setItem("loanCompact", on);
 });
 
+
   
   /* =========================
      TABLE VIEW TOGGLE
      ========================= */
 
-  const tableToggle = document.getElementById("toggleTableView");
-  const tableWrap = document.getElementById("loanTableWrap");
-  const gridEl = document.getElementById("loanGrid");
+const tableToggle = document.getElementById("toggleTableView");
+const tableWrap = document.getElementById("loanTableWrap");
 
-  const savedTableView = localStorage.getItem("loanTableView");
-  if (savedTableView !== null) {
-    tableToggle.checked = savedTableView === "true";
-  }
+const savedTableView = localStorage.getItem("loanTableView");
+if (savedTableView !== null) {
+  tableToggle.checked = savedTableView === "true";
+}
 
-  const showTable = tableToggle.checked;
-  gridEl.style.display = showTable ? "none" : "";
-  tableWrap.hidden = !showTable;
+const showTable = tableToggle.checked;
+gridEl.style.display = showTable ? "none" : "";
+tableWrap.hidden = !showTable;
 
-  if (showTable) renderLoanTable(currentLoans);
+if (showTable) renderLoanTable(currentLoans);
 
-  tableToggle.addEventListener("change", () => {
-    const show = tableToggle.checked;
-    localStorage.setItem("loanTableView", show);
-    gridEl.style.display = show ? "none" : "";
-    tableWrap.hidden = !show;
-    if (show) renderLoanTable(currentLoans);
-  });
+tableToggle.addEventListener("change", () => {
+  const show = tableToggle.checked;
+  localStorage.setItem("loanTableView", show);
+  gridEl.style.display = show ? "none" : "";
+  tableWrap.hidden = !show;
+  if (show) renderLoanTable(currentLoans);
+});
+
 }
 
 
