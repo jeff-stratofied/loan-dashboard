@@ -117,11 +117,16 @@ html,body{
 
 .loan-filters {
   display: flex;
-  gap: 10px;
   align-items: center;
-  margin: 0 0 14px;
-  flex-wrap: wrap;
+  gap: 10px;
+  flex-wrap: nowrap;        /* 🔑 FORCE single row */
+  justify-content: space-between;
 }
+
+.loan-filters > * {
+  flex-shrink: 0;           /* 🔑 prevent wrapping */
+}
+
 
 .loan-filters select {
   padding: 6px 10px;
@@ -1033,6 +1038,14 @@ delete */
   border-bottom: 1px solid var(--border);
 }
 
+/* =========================================
+   Loan table row hover (MATCH AMORT)
+   ========================================= */
+#loanTable tbody tr.row-hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+    
 .table-actions {
   display: flex;
   gap: 6px;
@@ -1765,16 +1778,16 @@ function renderLoanTableROI(loans) {
       <td>${loan.purchaseDate ? formatMonthYear(parseISODateLocal(loan.purchaseDate)) : ""}</td>
       <td>$${formatCurrency(loan.principal)}</td>
       <td>$${formatCurrency(loan.purchasePrice)}</td>
-      <td>${loan.nominalRate.toFixed(2)}%</td>
+      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
       <td>${loan.termYears}</td>
       <td>${loan.graceYears}</td>
     `;
 
-    // Hover styling (same as Amort)
+    // 🔑 MATCH AMORT: hover via class, not inline style
     tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
     tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
 
-    // Click → open loan drawer (SAFE entry point)
+    // 🔑 MATCH AMORT: safe drawer entry
     tr.addEventListener("click", () => {
       openLoanDrawerSafe(loan);
     });
@@ -1782,6 +1795,7 @@ function renderLoanTableROI(loans) {
     tbody.appendChild(tr);
   });
 }
+
 
       
 function computeWeightedRoiAsOfMonth(loans, monthDate) {
@@ -2702,37 +2716,46 @@ badgeElements.forEach((badgeEl, index) => {
       schoolSelect.appendChild(opt);
     });
 
-      function applyLoanFilters() {
+function applyLoanFilters() {
   const nameVal = document.getElementById("filterName").value;
   const schoolVal = document.getElementById("filterSchool").value;
   const rateVal = document.getElementById("filterRate").value;
 
-  document.querySelectorAll("#loanGrid .tile").forEach(tile => {
-    let show = true;
-
-    if (nameVal && !tile.dataset.loanName.includes(nameVal)) {
-      show = false;
+  // 1️⃣ FILTER DATA (not DOM)
+  filteredLoans = allLoans.filter(loan => {
+    if (nameVal && !loan.loanName.includes(nameVal)) {
+      return false;
     }
 
-    if (schoolVal && !tile.dataset.school.includes(schoolVal)) {
-      show = false;
+    if (schoolVal && !loan.school.includes(schoolVal)) {
+      return false;
     }
 
     if (rateVal) {
-      const rate = Number(tile.dataset.rate) * 100;
+      const ratePct = loan.nominalRate * 100;
       if (
-        (rateVal === "low" && rate >= 5) ||
-        (rateVal === "mid" && (rate < 5 || rate > 8)) ||
-        (rateVal === "high" && rate <= 8)
+        (rateVal === "low" && ratePct >= 5) ||
+        (rateVal === "mid" && (ratePct < 5 || ratePct > 8)) ||
+        (rateVal === "high" && ratePct <= 8)
       ) {
-        show = false;
+        return false;
       }
     }
 
-    tile.style.display = show ? "" : "none";
+    return true;
   });
-    applyLoanSort();
+
+  // 2️⃣ APPLY SORT (shared for tiles + table)
+  currentLoans = sortLoansForUI(filteredLoans);
+
+  // 3️⃣ RENDER ACTIVE VIEW
+  if (toggleTableView.checked) {
+    renderLoanTableROI(getLoansForTableView());
+  } else {
+    renderLoanGrid(currentLoans);
+  }
 }
+
 
 function applyLoanSort() {
   const grid = document.getElementById("loanGrid");
