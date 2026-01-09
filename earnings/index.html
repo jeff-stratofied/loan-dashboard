@@ -3714,9 +3714,9 @@ function renderLoanTable(loans) {
     tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
 
     const openLoan = () => {
-      currentLoan = loan;
-      openKpi2();
-    };
+  console.log("[EARNINGS TABLE] row clicked", loan.loanId);
+  openLoanDrawerSafe(loan);
+};
 
     tr.addEventListener("click", openLoan);
     tr.addEventListener("keydown", (e) => {
@@ -4097,20 +4097,18 @@ function openLoanDrawerSafe(loan) {
   if (!loan) return;
 
   requestAnimationFrame(() => {
-    // 🔑 Earnings is KPI-driven, not loan-driven
-    currentLoan = loan;
-
-    // Canonical loan-level drawer in Earnings
-    openKpi2(); // Projected Earnings
-
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
+    console.log("[EARNINGS] openLoanDrawerSafe → openLoanDrawer", loan?.loanId);
+    openLoanDrawer(loan); // ✅ THIS is the real loan drawer renderer
   });
 }
 
 
+
   
 function openLoanDrawer(loan){
+
+  console.log("[OPEN LOAN DRAWER]", loan.loanId);
+
   // --------------------------------------------------
   // EVENT LOOKUP (AUTHORITATIVE FROM AMORT)
   // key: "YYYY-M" → { deferral, default, prepayment }
