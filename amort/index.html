@@ -1630,6 +1630,8 @@ function renderLoanTiles(loans) {
     
 function renderAndWirePage() {
 
+  
+
   /* =========================
      C. DERIVED DATA
      ========================= */
@@ -1702,6 +1704,13 @@ function renderAndWirePage() {
     const key = tile.dataset.kpi;
     if (!key) return;
 
+console.group("🟦 KPI TILE CLICK");
+console.log("key:", key);
+console.log("isEmbed:", PAGE_CONTEXT.isEmbed);
+console.log("before open — drawer.open:", drawer.classList.contains("open"));
+console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
+
+    
     // IFRAME / REPORTING → redirect to full page
     if (PAGE_CONTEXT.isEmbed) {
       const url = new URL(
@@ -1714,7 +1723,50 @@ function renderAndWirePage() {
       return;
     }
 
-openDrawerForKPI();
+  openDrawerForKPI();
+
+  if (key === "tpv") {
+    renderTPVDrawer();
+    console.log("AFTER renderTPVDrawer:", {
+      open: drawer.classList.contains("open"),
+      ariaHidden: drawer.getAttribute("aria-hidden"),
+      mode: currentMode
+    });
+    return;
+  }
+
+  if (key === "rates") {
+    renderRatesDrawer();
+    console.log("AFTER renderRatesDrawer:", {
+      open: drawer.classList.contains("open"),
+      ariaHidden: drawer.getAttribute("aria-hidden"),
+      mode: currentMode
+    });
+    return;
+  }
+
+  if (key === "payments") {
+    renderPaymentsDrawer();
+    console.log("AFTER renderPaymentsDrawer:", {
+      open: drawer.classList.contains("open"),
+      ariaHidden: drawer.getAttribute("aria-hidden"),
+      mode: currentMode
+    });
+    return;
+  }
+
+  if (key === "distribution") {
+    renderDistributionDrawer();
+    console.log("AFTER renderDistributionDrawer:", {
+      open: drawer.classList.contains("open"),
+      ariaHidden: drawer.getAttribute("aria-hidden"),
+      mode: currentMode
+    });
+    return;
+  }
+
+
+    
     
     // FULL PAGE → open KPI drawer
     if (key === "tpv") return renderTPVDrawer();
@@ -2219,6 +2271,27 @@ function tpvStackSeries(loansList) {
        Drawer helpers
        ============================ */
     const drawer = document.getElementById('drawer');
+
+// 🔥 DEBUG: detect ANY drawer close
+const _origRemove = drawer.classList.remove;
+drawer.classList.remove = function (...args) {
+  if (args.includes("open")) {
+    console.error("🚨 drawer.open REMOVED");
+    console.trace("who removed .open");
+  }
+  return _origRemove.apply(this, args);
+};
+
+const _origSetAttr = drawer.setAttribute;
+drawer.setAttribute = function (name, value) {
+  if (name === "aria-hidden" && value === "true") {
+    console.error("🚨 drawer aria-hidden set to true");
+    console.trace("who hid drawer");
+  }
+  return _origSetAttr.apply(this, arguments);
+};
+
+    
     const drawerTitle = document.getElementById('drawerTitle');
     const drawerSub = document.getElementById('drawerSub');
     const drawerPrimary = document.getElementById('drawerPrimary');
@@ -2232,16 +2305,27 @@ function tpvStackSeries(loansList) {
     const drawerExtra = document.getElementById('drawerExtra');
     const drawerAmortContainer = document.getElementById('drawerAmortContainer');
 
+    
+    
 
 // ==============================
 // KPI drawer opener (authoritative)
 // ==============================
 function openDrawerForKPI() {
+console.group("🟩 openDrawerForKPI()");
+  console.trace("called from");
+  
   drawer.classList.add("open");
   drawer.setAttribute("aria-hidden", "false");
 
   currentLoan = null;
   currentMode = "kpi";
+  
+  console.log("after open — drawer.open:", drawer.classList.contains("open"));
+  console.log("after open — aria-hidden:", drawer.getAttribute("aria-hidden"));
+  console.groupEnd();
+}
+
 }
 
   
