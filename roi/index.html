@@ -157,19 +157,15 @@ html,body{
   user-select: none;
 }
 
-.compact-toggle input {
+/* =========================================
+   Compact / Table toggle checkbox (Amort)
+   ========================================= */
+.compact-toggle input[type="checkbox"] {
   accent-color: var(--brand);
+  color-scheme: light;   /* 🔑 forces white checkmark */
   cursor: pointer;
 }
 
-/* Force checkbox checkmark to white (match Amort) */
-.compact-toggle input[type="checkbox"] {
-  accent-color: var(--brand);
-}
-
-.compact-toggle input[type="checkbox"]:checked {
-  color: #ffffff; /* 🔑 forces white checkmark */
-}
 
     
     .compact-toggle span {
@@ -1518,18 +1514,20 @@ function getLoansForTableView() {
   // numbers (incl balance)
   return (Number(va) || 0) - (Number(vb) || 0);
 }
-    
-// =====================================================
-// ROI-safe loan drawer entry (shim for table + tiles)
-// =====================================================
-function openLoanDrawerSafe(loan) {
+
+    function openLoanDrawerSafe(loan) {
   if (!loan) return;
 
-  currentMode = "loan";
-  currentLoan = loan;
+  // 🔑 ROI opens drawers ONLY through tile clicks
+  const tile = document.querySelector(
+    `.tile[data-loan-id="${loan.loanId}"]`
+  );
 
-  openLoanDrawer(loan);
+  if (tile) {
+    tile.click();
+  }
 }
+
 
     
     async function loadLoans() {
@@ -1807,11 +1805,10 @@ function renderLoanTableROI(loans) {
     tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
 
     // 🔑 MATCH AMORT: safe drawer entry
-  tr.addEventListener("click", () => {
-  currentMode = "loan";      // 🔑 force loan context
-  currentLoan = loan;        // 🔑 set active loan
-  openLoanDrawerSafe(loan);  // open drawer
+tr.addEventListener("click", () => {
+  openLoanDrawerSafe(loan);
 });
+
 
 
     tbody.appendChild(tr);
