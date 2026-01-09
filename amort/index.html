@@ -2041,31 +2041,41 @@ function applyLoanFilters() {
 
 
 function applyLoanSort() {
-  const grid = document.getElementById("loanGrid");
-  const sortLoans = document.getElementById("sortLoans");
-  const mode = sortLoans.value;
+  const mode = document.getElementById("sortLoans").value;
 
-  const tiles = Array.from(grid.children)
-    .filter(t => t.style.display !== "none");
-
-  const get = (el, k) => Number(el.dataset[k] || 0);
-
-  tiles.sort((a, b) => {
+  currentLoans.sort((a, b) => {
     switch (mode) {
-      case "purchase_asc": return get(a, "purchaseDate") - get(b, "purchaseDate");
-      case "purchase_desc": return get(b, "purchaseDate") - get(a, "purchaseDate");
-      case "start_asc": return get(a, "startDate") - get(b, "startDate");
-      case "start_desc": return get(b, "startDate") - get(a, "startDate");
-      case "amount_asc": return get(a, "amount") - get(b, "amount");
-      case "amount_desc": return get(b, "amount") - get(a, "amount");
-      case "rate_asc": return get(a, "rate") - get(b, "rate");
-      case "rate_desc": return get(b, "rate") - get(a, "rate");
-      default: return 0;
+      case "purchase_asc":
+        return new Date(a.purchaseDate) - new Date(b.purchaseDate);
+
+      case "purchase_desc":
+        return new Date(b.purchaseDate) - new Date(a.purchaseDate);
+
+      case "start_asc":
+        return new Date(a.loanStartDate) - new Date(b.loanStartDate);
+
+      case "start_desc":
+        return new Date(b.loanStartDate) - new Date(a.loanStartDate);
+
+      case "amount_asc":
+        return a.purchasePrice - b.purchasePrice;
+
+      case "amount_desc":
+        return b.purchasePrice - a.purchasePrice;
+
+      case "rate_asc":
+        return a.nominalRate - b.nominalRate;
+
+      case "rate_desc":
+        return b.nominalRate - a.nominalRate;
+
+      default:
+        return 0;
     }
   });
-
-  tiles.forEach(t => grid.appendChild(t));
 }
+
+
 
 
 // ---------- Date helpers (replace CURRENT_MONTH usage) ----------
