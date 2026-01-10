@@ -1580,7 +1580,8 @@ function openDrawerForLoan(loan){
     y: s.roi,
     date: s.date
   }));
-  createLineChart(drawerChartArea, series, {
+  window.createLineChart(drawerChartArea, series, {
+
     color: '#0ea5e9',
     loanStartDate: loan.loanStartDate,
     tickEvery: 12,
@@ -2151,6 +2152,8 @@ function computeKPIs(list) {
 
       containerEl.appendChild(svg); return svg;
     }
+
+window.createLineChart = createLineChart;
       
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
