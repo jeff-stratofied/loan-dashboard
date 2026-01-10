@@ -1566,24 +1566,6 @@ const rowClass = getEventRowClass(loan, cs || s);
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 
-
-// 🔒 FORCE drawer open (ROI table click fix)
-drawer.classList.add('open');
-drawer.setAttribute('aria-hidden', 'false');
-
-// 🔑 Kill any pending KPI reset
-clearTimeout(window.__closeDrawerTimer);
-
-  // =====================================================
-// 🔑 FINAL STEP — ACTUALLY OPEN THE DRAWER (ROI FIX)
-// =====================================================
-drawer.classList.add("open");
-drawer.setAttribute("aria-hidden", "false");
-
-// force reflow in case table/grid just toggled
-drawer.offsetHeight;
-
-  
 }
 
     
@@ -1598,7 +1580,6 @@ const KPI_CURRENT_MONTH = new Date(
   TODAY.getMonth(),
   1
 );
-
       
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
       // --------------------------------------------------
