@@ -1515,16 +1515,20 @@ function getLoansForTableView() {
   return (Number(va) || 0) - (Number(vb) || 0);
 }
 
- function openLoanDrawerSafe(loan) {
-  if (!loan) return;
+function openLoanDrawerSafe(loan) {
+  console.log("✅ openLoanDrawerSafe", loan?.loanId);
 
-  // 🔑 ROI: open drawer directly (matches Amort behavior)
+  if (!loan) {
+    console.warn("❌ loan missing");
+    return;
+  }
+
   currentMode = "loan";
   currentLoan = loan;
 
   openDrawerForLoan(loan);
-
 }
+
 
 
 
@@ -1548,6 +1552,13 @@ function getLoansForTableView() {
     }
 
 function openDrawerForLoan(loan){
+  console.log("✅ openDrawerForLoan ENTER", loan?.loanId);
+
+  console.log("drawer element:", drawer);
+  console.log("drawerChartArea:", drawerChartArea);
+
+try {
+  
   currentMode = 'loan';
   currentLoan = loan;
   drawerAmortContainer.style.display = '';
@@ -1645,6 +1656,11 @@ const rowClass = getEventRowClass(loan, cs || s);
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
+
+ } catch (err) {
+    console.error("❌ openDrawerForLoan CRASHED", err);
+  }
+
 }
 
     
@@ -1903,8 +1919,10 @@ function renderLoanTableROI(loans) {
 
     // 🔑 MATCH AMORT: safe drawer entry
 tr.addEventListener("click", () => {
+  console.log("✅ ROW CLICK", loan?.loanId, loan?.loanName);
   openLoanDrawerSafe(loan);
 });
+
 
 
 
