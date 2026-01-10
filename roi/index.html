@@ -742,13 +742,6 @@ tr.event-default td {
    EMBED MODE — UNIFIED LAYOUT (ALIGN WITH EARNINGS & AMORT)
    ============================================================ */
 
-/* delete
-.embed-mode .drawer {
-  height: auto !important;
-  min-height: 0 !important;
-}
-delete */
-
 .embed-mode .drawer-head {
   padding: 20px !important;
   min-height: 64px !important;
@@ -792,34 +785,6 @@ delete */
   margin-top: 0 !important;
 }
 
-    /* ============================================================
-   EMBED MODE — ROI KPI + DRAWER STACK
-   ============================================================ */
-
-/* delete
-.embed-mode .kpis {
-  display: grid !important;
-  order: 0 !important;
-}
-delete */
-/* Delete
-.embed-mode .drawer {
-  order: 1 !important;
-}
-delete */
-/* delete
-.embed-mode .app {
-  display: flex !important;
-  flex-direction: column !important;
-  height: auto !important;
-}
-delete */
-    /* delete
-    .embed-mode header {
-  display: none !important;
-}
-delete */
-
 
 .badge-tooltip {
   position: fixed !important;  /* Change from absolute to fixed to avoid clipping */
@@ -851,20 +816,7 @@ delete */
   font-size: 20px;
 }
 
-/* ============================================================
-   ROI IFRAME — SHOW KPIs ABOVE DRAWER (FIX)
-   ============================================================ */
 
-/* delete
-.embed-mode .app {
-  height: auto !important;
-}
-
-.embed-mode .drawer {
-  height: auto !important;
-  min-height: 0 !important;
-}
-delete */
     
     /* ROI iframe: grid must size naturally below KPIs */
 .embed-mode .grid {
@@ -873,14 +825,6 @@ delete */
   flex: 1 1 auto;
 }
 
-/* delete
-    .embed-mode .kpis {
-  display: grid !important;
-  margin-top: 8px !important;
-  margin-bottom: 12px !important;
-  flex-shrink: 0;
-}
-delete */
     
     .embed-mode .grid {
   overflow-y: auto;
@@ -893,44 +837,11 @@ delete */
   height: auto !important;
 }
 
-    /* delete
-.embed-mode .app {
-  height: auto !important;
-  min-height: 0 !important;
-  overflow: visible !important;
-}
-delete */
-
 .embed-mode .grid {
   height: auto !important;
   max-height: none !important;
   overflow-y: visible !important;
 }
-
-        /* delete
-    .embed-mode .kpis {
-  position: relative;
-  z-index: 1;
-}
-delete */
-    /* ============================================================
-   EMBED MODE — ROI FLOW LAYOUT (MATCH EARNINGS / AMORT)
-   ============================================================ */
-/* delete
-.embed-mode .drawer {
-  position: relative !important;  
-  top: auto !important;
-  right: auto !important;
-  left: auto !important;
-
-  height: auto !important;
-  max-height: none !important;
-  width: 100% !important;
-  max-width: none !important;
-
-  transform: none !important;
-}
-delete */
 
 /* ============================================================
    EMBED MODE — KPI + DRAWER STACK (CANONICAL)
@@ -1042,6 +953,13 @@ delete */
   gap: 6px;
 }
 
+/* =================================================
+   FORCE checkbox checkmark to match AMORT (ROI FIX)
+   ================================================= */
+.compact-toggle input[type="checkbox"] {
+  accent-color: var(--brand);
+  color-scheme: light !important;  /* 🔑 override html[data-theme] */
+}
 
     
 #feedback-btn:hover {
