@@ -1546,7 +1546,104 @@ function getLoansForTableView() {
       }));
     }
 
+function openDrawerForLoan(loan){
+  currentMode = 'loan';
+  currentLoan = loan;
+  drawerAmortContainer.style.display = '';
+  drawer.classList.add('loan-mode');
+  // --- loan drawer heading (match earnings structure) ---
+  drawerTitle.textContent = loan.name || ("Loan " + loan.id);
+  drawerSub.innerHTML = `
+    ${loan.school || "No school"}<br>
+    Purchased ${loan.purchaseDate}
+    • Orig Loan Amt $${Number(
+      loan.originalLoanAmount ||
+      loan.origLoanAmount ||
+      loan.loanAmount ||
+      0
+    ).toLocaleString()}
+    • Loan Purchase Price $${Number(loan.purchasePrice || 0).toLocaleString()}
+  `;
+  drawerPrimaryTitle.textContent = 'Orig Loan Amount';
+  drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
+  drawerSecondaryTitle.textContent = 'Nominal Rate';
+  drawerSecondary.textContent = (loan.nominalRate * 100).toFixed(2) + '%';
+  drawerExtra.innerHTML = '';
+  drawerLegend.style.display = 'none';
+  drawerLegend.innerHTML = '';
+  // --------------------------------------------------
+  // ROI LINE CHART (use canonical date)
+  // --------------------------------------------------
+  const series = loan.roiSeries.map(s => ({
+    x: formatMonthYear(s.date), // ✅ displayDate-derived
+    y: s.roi,
+    date: s.date
+  }));
+  createLineChart(drawerChartArea, series, {
+    color: '#0ea5e9',
+    loanStartDate: loan.loanStartDate,
+    tickEvery: 12,
+    labelFn: (pt) =>
+  `${formatMonthYear(pt.date)} • ROI ${(pt.y * 100).toFixed(2)}%`
 
+  });
+  // --------------------------------------------------
+  // ROI-BY-MONTH TABLE (use displayDate)
+  // --------------------------------------------------
+drawerAmortContainer.innerHTML = `
+  <h3 style="margin-top:8px">ROI by Month</h3>
+  <div class="amort-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Month</th>
+          <th style="text-align:right">Balance</th>
+          <th style="text-align:right">Loan Value</th>
+          <th style="text-align:right">ROI</th>
+        </tr>
+      </thead>
+      <tbody id="roiBody"></tbody>
+    </table>
+  </div>
+`;
+  const roiBody = document.getElementById('roiBody');
+  roiBody.innerHTML = '';
+loan.roiSeries.forEach(s => {
+  const cs =
+  loan.cumSchedule.find(r => {
+    if (!r.loanDate || !s.date) return false;
+    return (
+      r.loanDate.getFullYear() === s.date.getFullYear() &&
+      r.loanDate.getMonth() === s.date.getMonth()
+    );
+  }) || {};
+
+  const tr = document.createElement('tr');
+  
+  // Shade deferral months
+  if (cs.isDeferred) {
+    tr.style.background = 'rgba(234,179,8,0.08)';
+  }
+  
+const rowClass = getEventRowClass(loan, cs || s);
+
+  if (rowClass) tr.classList.add(rowClass);
+  const monthLabel =
+    cs.displayDate instanceof Date
+      ? formatMonthYear(cs.displayDate)
+      : '';
+  tr.innerHTML = `
+    <td style="text-align:left">${monthLabel}</td>
+    <td style="text-align:right">$${formatCurrency(cs.balance)}</td>
+    <td style="text-align:right">$${formatCurrency(s.loanValue)}</td>
+    <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
+  `;
+  roiBody.appendChild(tr);
+});
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  drawer.scrollTop = 0;
+}
 
     
     async function initROI() {
@@ -3056,107 +3153,6 @@ function getEventRowClass(loan, row) {
   return "";
 }
 
-
-
-      
-function openDrawerForLoan(loan){
-  currentMode = 'loan';
-  currentLoan = loan;
-  drawerAmortContainer.style.display = '';
-  drawer.classList.add('loan-mode');
-  // --- loan drawer heading (match earnings structure) ---
-  drawerTitle.textContent = loan.name || ("Loan " + loan.id);
-  drawerSub.innerHTML = `
-    ${loan.school || "No school"}<br>
-    Purchased ${loan.purchaseDate}
-    • Orig Loan Amt $${Number(
-      loan.originalLoanAmount ||
-      loan.origLoanAmount ||
-      loan.loanAmount ||
-      0
-    ).toLocaleString()}
-    • Loan Purchase Price $${Number(loan.purchasePrice || 0).toLocaleString()}
-  `;
-  drawerPrimaryTitle.textContent = 'Orig Loan Amount';
-  drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
-  drawerSecondaryTitle.textContent = 'Nominal Rate';
-  drawerSecondary.textContent = (loan.nominalRate * 100).toFixed(2) + '%';
-  drawerExtra.innerHTML = '';
-  drawerLegend.style.display = 'none';
-  drawerLegend.innerHTML = '';
-  // --------------------------------------------------
-  // ROI LINE CHART (use canonical date)
-  // --------------------------------------------------
-  const series = loan.roiSeries.map(s => ({
-    x: formatMonthYear(s.date), // ✅ displayDate-derived
-    y: s.roi,
-    date: s.date
-  }));
-  createLineChart(drawerChartArea, series, {
-    color: '#0ea5e9',
-    loanStartDate: loan.loanStartDate,
-    tickEvery: 12,
-    labelFn: (pt) =>
-  `${formatMonthYear(pt.date)} • ROI ${(pt.y * 100).toFixed(2)}%`
-
-  });
-  // --------------------------------------------------
-  // ROI-BY-MONTH TABLE (use displayDate)
-  // --------------------------------------------------
-drawerAmortContainer.innerHTML = `
-  <h3 style="margin-top:8px">ROI by Month</h3>
-  <div class="amort-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Month</th>
-          <th style="text-align:right">Balance</th>
-          <th style="text-align:right">Loan Value</th>
-          <th style="text-align:right">ROI</th>
-        </tr>
-      </thead>
-      <tbody id="roiBody"></tbody>
-    </table>
-  </div>
-`;
-  const roiBody = document.getElementById('roiBody');
-  roiBody.innerHTML = '';
-loan.roiSeries.forEach(s => {
-  const cs =
-  loan.cumSchedule.find(r => {
-    if (!r.loanDate || !s.date) return false;
-    return (
-      r.loanDate.getFullYear() === s.date.getFullYear() &&
-      r.loanDate.getMonth() === s.date.getMonth()
-    );
-  }) || {};
-
-  const tr = document.createElement('tr');
-  
-  // Shade deferral months
-  if (cs.isDeferred) {
-    tr.style.background = 'rgba(234,179,8,0.08)';
-  }
-  
-const rowClass = getEventRowClass(loan, cs || s);
-
-  if (rowClass) tr.classList.add(rowClass);
-  const monthLabel =
-    cs.displayDate instanceof Date
-      ? formatMonthYear(cs.displayDate)
-      : '';
-  tr.innerHTML = `
-    <td style="text-align:left">${monthLabel}</td>
-    <td style="text-align:right">$${formatCurrency(cs.balance)}</td>
-    <td style="text-align:right">$${formatCurrency(s.loanValue)}</td>
-    <td style="text-align:right">${((s.roi || 0) * 100).toFixed(2)}%</td>
-  `;
-  roiBody.appendChild(tr);
-});
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  drawer.scrollTop = 0;
-}
 
 
     /* ============================================
