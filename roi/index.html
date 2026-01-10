@@ -1437,12 +1437,6 @@ function getLoansForTableView() {
 }
 
 function openLoanDrawerSafe(loan) {
-  console.log("✅ openLoanDrawerSafe", loan?.loanId);
-
-  if (!loan) {
-    console.warn("❌ loan missing");
-    return;
-  }
 
   currentMode = "loan";
   currentLoan = loan;
@@ -1473,12 +1467,6 @@ function openLoanDrawerSafe(loan) {
     }
 
 function openDrawerForLoan(loan){
-  console.log("✅ openDrawerForLoan ENTER", loan?.loanId);
-
-  console.log("drawer element:", drawer);
-  console.log("drawerChartArea:", drawerChartArea);
-
-try {
   
   currentMode = 'loan';
   currentLoan = loan;
@@ -1578,9 +1566,6 @@ const rowClass = getEventRowClass(loan, cs || s);
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 
- } catch (err) {
-    console.error("❌ openDrawerForLoan CRASHED", err);
-  }
 
 // 🔒 FORCE drawer open (ROI table click fix)
 drawer.classList.add('open');
