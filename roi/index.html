@@ -2762,9 +2762,6 @@ badgeElements.forEach((badgeEl, index) => {
       schoolSelect.appendChild(opt);
     });
 
-// ✅ Globals used by filters/sort
-let filteredLoans = [];
-
 // ✅ Single source of truth sorter (data, not DOM)
 function sortLoansForUI(loans, sortMode) {
   const arr = (loans || []).slice();
