@@ -1515,18 +1515,16 @@ function getLoansForTableView() {
   return (Number(va) || 0) - (Number(vb) || 0);
 }
 
-    function openLoanDrawerSafe(loan) {
+ function openLoanDrawerSafe(loan) {
   if (!loan) return;
 
-  // 🔑 ROI opens drawers ONLY through tile clicks
-  const tile = document.querySelector(
-    `.tile[data-loan-id="${loan.loanId}"]`
-  );
+  // 🔑 ROI: open drawer directly (matches Amort behavior)
+  currentMode = "loan";
+  currentLoan = loan;
 
-  if (tile) {
-    tile.click();
-  }
+  openLoanDrawer(loan);
 }
+
 
 
     
