@@ -1265,6 +1265,9 @@ delete */
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
 
+window.__closeDrawerTimer = null;
+
+    
   const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
 
@@ -1661,6 +1664,14 @@ const rowClass = getEventRowClass(loan, cs || s);
     console.error("❌ openDrawerForLoan CRASHED", err);
   }
 
+// 🔒 FORCE drawer open (ROI table click fix)
+drawer.classList.add('open');
+drawer.setAttribute('aria-hidden', 'false');
+
+// 🔑 Kill any pending KPI reset
+clearTimeout(window.__closeDrawerTimer);
+
+  
 }
 
     
