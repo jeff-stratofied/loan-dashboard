@@ -1589,6 +1589,15 @@ drawer.setAttribute('aria-hidden', 'false');
 // 🔑 Kill any pending KPI reset
 clearTimeout(window.__closeDrawerTimer);
 
+  // =====================================================
+// 🔑 FINAL STEP — ACTUALLY OPEN THE DRAWER (ROI FIX)
+// =====================================================
+drawer.classList.add("open");
+drawer.setAttribute("aria-hidden", "false");
+
+// force reflow in case table/grid just toggled
+drawer.offsetHeight;
+
   
 }
 
