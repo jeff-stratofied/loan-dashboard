@@ -4228,8 +4228,12 @@ const k = document.getElementById("kpis");
 const r = k.getBoundingClientRect();
 console.log("[ROI DEBUG] KPI rect:", r);
 
-// 🔑 Open KPI drawer from ?open= (full UI + iframe redirect)
-openRoiKpiFromUrl();
+// 🔑 Open KPI drawer from ?open=
+// ❗ DO NOT override loan drawer
+if (currentMode !== "loan") {
+  openRoiKpiFromUrl();
+}
+
 
       // =====================================================
 // Table View toggle (MATCH AMORT BEHAVIOR)
