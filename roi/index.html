@@ -1568,9 +1568,6 @@ const rowClass = getEventRowClass(loan, cs || s);
 
 }
 
-    
-    async function initROI() {
-      const TODAY = new Date();
 
 // -------------------------------------
 // KPI-1 authoritative "current month"
@@ -1580,8 +1577,127 @@ const KPI_CURRENT_MONTH = new Date(
   TODAY.getMonth(),
   1
 );
+
+window.KPI_COLOR_MAP = {};
+
+const BASE_DISTINCT_COLORS = [
+  '#2563eb', '#dc2626', '#16a34a', '#7c3aed',
+  '#ea580c', '#0891b2', '#ca8a04', '#be185d',
+  '#15803d', '#1d4ed8', '#9333ea', '#b91c1c'
+];
+
+function generateExtraColors(n) {
+  const colors = [];
+  for (let i = 0; i < n; i++) {
+    const hue = (i * 137.508) % 360;
+    colors.push(`hsl(${hue.toFixed(0)} 80% 55%)`);
+  }
+  return colors;
+}
+
+    function buildKpiColorMap(loans) {
+  window.KPI_COLOR_MAP = {};
+
+  const sorted = loans
+    .slice()
+    .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
+
+  const extraNeeded = Math.max(0, sorted.length - BASE_DISTINCT_COLORS.length);
+  const palette = BASE_DISTINCT_COLORS.concat(generateExtraColors(extraNeeded));
+
+  sorted.forEach((loan, i) => {
+    const id = loan.id ?? loan.loanId;
+    window.KPI_COLOR_MAP[id] = palette[i];
+  });
+}
+
+   function getCurrentOwnedRoiEntry(loan) {
+  if (!Array.isArray(loan?.roiSeries) || !loan.roiSeries.length) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  const today = new Date();
+  for (let i = loan.roiSeries.length - 1; i >= 0; i--) {
+    const r = loan.roiSeries[i];
+    if (r.date && r.date <= today) return r;
+  }
+
+  return { roi: 0, loanValue: loan.purchasePrice };
+}
+ 
+ function getRoiEntryAsOfMonth(loan, monthDate) {
+  if (!Array.isArray(loan.roiSeries)) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  const eligible = loan.roiSeries.filter(
+    r => r.date && r.date <= monthDate
+  );
+
+  if (!eligible.length) {
+    return { roi: 0, loanValue: loan.purchasePrice };
+  }
+
+  return eligible[eligible.length - 1];
+}
+
+     // =====================================================
+// ROI Loan Table Renderer (matches Amort table)
+// =====================================================
+function renderLoanTableROI(loans) {
+  const tbody = document.querySelector("#loanTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+    
+      <td>${loan.loanId}</td>
+      <td>${loan.loanName}</td>
+      <td>${loan.school}</td>
+      <td>${loan.loanStartDate ? formatMonthYear(parseISODateLocal(loan.loanStartDate)) : ""}</td>
+      <td>${loan.purchaseDate ? formatMonthYear(parseISODateLocal(loan.purchaseDate)) : ""}</td>
+      <td>$${formatCurrency(loan.principal)}</td>
+      <td>$${formatCurrency(loan.purchasePrice)}</td>
+      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
+      <td>${loan.termYears}</td>
+      <td>${loan.graceYears}</td>
+        <td>${
+  Number.isFinite(loan.roiToDate)
+    ? `${(loan.roiToDate * 100).toFixed(2)}%`
+    : "—"
+}</td>
+    `;
+
+    // 🔑 MATCH AMORT: hover via class, not inline style
+    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
+    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
+
+tr.addEventListener("click", () => {
+  openLoanDrawerSafe(loan);
+});
+
+;
+
+    tbody.appendChild(tr);
+  });
+}
+
+
+    
+    
+    
+    async function initROI() {
+      const TODAY = new Date();
+
+
       
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
+
+/* delete
       // --------------------------------------------------
 // FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
 // --------------------------------------------------
@@ -1592,7 +1708,9 @@ const userLoans = loans
     visible: l.visible !== false
   }))
   .filter(l => l.user === PAGE_USER && l.visible === true);
+delete */
 
+/* delete      
 // --------------------------------------------------
 // Normalize numeric fields (ONLY user loans)
 // --------------------------------------------------
@@ -1601,7 +1719,9 @@ const formattedLoans = userLoans.map(l => ({
   purchasePrice: Number(l.purchasePrice ?? 0),
   nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
 }));
+delete */
 
+/* updated delete
       const loansWithAmort = formattedLoans.map(l => {
     
 const rawAmort = buildAmortSchedule(l);
@@ -1617,7 +1737,24 @@ const amortSchedule = (() => {
   }
   return out;
 })();
+updated delete */
 
+/* updated */
+        const loansWithAmort = currentLoans.map(l => {
+  const rawAmort = buildAmortSchedule(l);
+
+  const amortSchedule = [];
+  for (const r of rawAmort) {
+    amortSchedule.push(r);
+    if (r.isTerminal === true) break;
+  }
+
+  return {
+    ...l,
+    amortSchedule
+  };
+});
+/* updated */
 
       // Attach ownership flags
       const purchase = new Date(l.purchaseDate);
@@ -1657,7 +1794,7 @@ const cumSchedule = scheduleWithOwnership
     return rows;
   }, []);
 
-
+/* update delete
     // Compute proper ROI timeline using correct amort + fees
     const purchasePrice = Number(l.purchasePrice ?? 0);
     const roiSeries = cumSchedule
@@ -1682,7 +1819,32 @@ const cumSchedule = scheduleWithOwnership
 };
 
 });
+update delete */
 
+/* update */
+      const purchasePrice = Number(l.purchasePrice ?? 0);
+
+const roiSeries = purchasePrice > 0
+  ? cumSchedule.map(r => {
+      const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
+      const unrealized = r.balance * 0.95;
+      const loanValue = realized + unrealized;
+      const roi = (loanValue - purchasePrice) / purchasePrice;
+
+      return {
+        month: r.ownershipMonthIndex,
+        date: r.displayDate,
+        roi,
+        loanValue,
+        cumFees: r.cumFees,
+        realized,
+        remainingBalance: r.balance,
+        unrealized,
+        isTerminal: r.isTerminal === true
+      };
+    })
+  : [];
+/* update */
 
     // Return updated loan object
     return {
@@ -1695,19 +1857,14 @@ const cumSchedule = scheduleWithOwnership
   };
 });
 
+    /* delete
       allLoans = loansWithAmort;   // 🔑 master list
 currentLoans = loansWithAmort;
 
 filteredLoans = loansWithAmort.slice();
-
+delete */
       
-    /* -------------------------
-       KPI computations
-       ------------------------- */
-
-      // -------------------------------------
-      // KPI COLOR MAP — HIGH-CONTRAST FIRST
-      // -------------------------------------
+/* moved delete  
       window.KPI_COLOR_MAP = {};
       
       // 1) Hand-picked, visually maximized contrast palette
@@ -1736,6 +1893,7 @@ filteredLoans = loansWithAmort.slice();
         }
         return colors;
       }
+    
       
       // 3) Stable ordering (important!)
       const sortedLoansForColors = currentLoans
@@ -1752,7 +1910,9 @@ filteredLoans = loansWithAmort.slice();
         const id = loan.id ?? loan.loanId;
         window.KPI_COLOR_MAP[id] = palette[i];
       });
-      
+moved delete */
+
+/* moved updated
 function getCurrentOwnedRoiEntry(loan){
   const today = new Date();
   const ownedEntries = loan.roiSeries.filter(
@@ -1763,7 +1923,9 @@ function getCurrentOwnedRoiEntry(loan){
   }
   return ownedEntries[ownedEntries.length - 1];
 }
+moved updated */
 
+/* moved delete
       function getRoiEntryAsOfMonth(loan, monthDate) {
   if (!Array.isArray(loan.roiSeries)) {
     return { roi: 0, loanValue: loan.purchasePrice };
@@ -1779,13 +1941,16 @@ function getCurrentOwnedRoiEntry(loan){
 
   return eligible[eligible.length - 1];
 }
+moved delete */
 
-
+/* delete
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
+delete */
 
+/* moved delete
       // =====================================================
 // ROI Loan Table Renderer (matches Amort table)
 // =====================================================
@@ -1823,23 +1988,17 @@ function renderLoanTableROI(loans) {
 
 tr.addEventListener("click", () => {
   openLoanDrawerSafe(loan);
-
-  // 🔑 FORCE drawer open AFTER table-view layout settles
-  requestAnimationFrame(() => {
-    const drawer = document.getElementById("drawer");
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
-  });
 });
+
 ;
-
-
-
 
     tbody.appendChild(tr);
   });
 }
+moved delete */
+    
 
+/* stopped here */
 
       
 function computeWeightedRoiAsOfMonth(loans, monthDate) {
@@ -2804,7 +2963,7 @@ function applyLoanFilters() {
   }
 }
 
-
+    buildKpiColorMap(currentLoans);
 
 function applyLoanSort() {
   const grid = document.getElementById("loanGrid");
