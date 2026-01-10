@@ -2762,50 +2762,84 @@ badgeElements.forEach((badgeEl, index) => {
       schoolSelect.appendChild(opt);
     });
 
+// ✅ Globals used by filters/sort
+let filteredLoans = [];
+
+// ✅ Single source of truth sorter (data, not DOM)
+function sortLoansForUI(loans, sortMode) {
+  const arr = (loans || []).slice();
+
+  const ts = (d) => {
+    const t = new Date(d || 0).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+
+  const num = (v) => (Number.isFinite(+v) ? +v : 0);
+
+  arr.sort((a, b) => {
+    switch (sortMode) {
+      case "purchase_asc":  return ts(a.purchaseDate) - ts(b.purchaseDate);
+      case "purchase_desc": return ts(b.purchaseDate) - ts(a.purchaseDate);
+
+      case "start_asc":     return ts(a.loanStartDate) - ts(b.loanStartDate);
+      case "start_desc":    return ts(b.loanStartDate) - ts(a.loanStartDate);
+
+      case "amount_asc":    return num(a.principal) - num(b.principal);
+      case "amount_desc":   return num(b.principal) - num(a.principal);
+
+      case "rate_asc":      return num(a.nominalRate) - num(b.nominalRate);
+      case "rate_desc":     return num(b.nominalRate) - num(a.nominalRate);
+
+      default: return 0;
+    }
+  });
+
+  return arr;
+}
+
+// ✅ Render alias (fixes “renderLoanGridROI is not defined” / “renderLoanGrid is not defined”)
+// Keep whichever one you actually have, and alias the other.
+window.renderLoanGridROI = window.renderLoanGridROI || window.renderLoanGrid;
+window.renderLoanGrid    = window.renderLoanGrid    || window.renderLoanGridROI;
+
+
+      
 function applyLoanFilters() {
-  const nameVal = document.getElementById("filterName").value;
+  const nameVal   = document.getElementById("filterName").value;
   const schoolVal = document.getElementById("filterSchool").value;
-  const rateVal = document.getElementById("filterRate").value;
+  const rateVal   = document.getElementById("filterRate").value;
+  const sortMode  = document.getElementById("sortLoans").value;
 
-  // 1️⃣ FILTER DATA (not DOM)
+  // 1) FILTER DATA
   filteredLoans = allLoans.filter(loan => {
-    if (nameVal && loan.loanName !== nameVal) {
-      return false;
-    }
-
-    if (schoolVal && loan.school !== schoolVal) {
-      return false;
-    }
+    if (nameVal && loan.loanName !== nameVal) return false;
+    if (schoolVal && loan.school !== schoolVal) return false;
 
     if (rateVal) {
-      const ratePct = loan.nominalRate * 100;
+      const ratePct = (loan.nominalRate || 0) * 100;
       if (
-        (rateVal === "low" && ratePct >= 5) ||
-        (rateVal === "mid" && (ratePct < 5 || ratePct > 8)) ||
+        (rateVal === "low"  && ratePct >= 5) ||
+        (rateVal === "mid"  && (ratePct < 5 || ratePct > 8)) ||
         (rateVal === "high" && ratePct <= 8)
-      ) {
-        return false;
-      }
+      ) return false;
     }
 
     return true;
   });
 
-  // 2️⃣ APPLY SORT (shared for tiles + table)
-  currentLoans = filteredLoans.slice();
+  // 2) SORT DATA (shared for tiles + table)
+  currentLoans = sortLoansForUI(filteredLoans, sortMode);
 
-
-  // 3️⃣ RENDER ACTIVE VIEW
+  // 3) RENDER ACTIVE VIEW
   if (toggleTableView.checked) {
     renderLoanTableROI(getLoansForTableView());
   } else {
-    renderLoanGridROI(currentLoans);
-
+    renderLoanGrid(currentLoans);
   }
 }
 
 
-
+/* delete
 function applyLoanSort() {
   const grid = document.getElementById("loanGrid");
   const mode = sortLoans.value;
@@ -2828,11 +2862,12 @@ function applyLoanSort() {
 
   tiles.forEach(t => grid.appendChild(t));
 }
-
+delete */
+      
     document.getElementById("filterName").addEventListener("change", applyLoanFilters);
     document.getElementById("filterSchool").addEventListener("change", applyLoanFilters);
     document.getElementById("filterRate").addEventListener("change", applyLoanFilters);
-    document.getElementById("sortLoans").addEventListener("change", applyLoanSort);
+    document.getElementById("sortLoans").addEventListener("change", applyLoanFilters);
     document.getElementById("resetFilters").addEventListener("click", () => {
       document.getElementById("filterName").value = "";
       document.getElementById("filterSchool").value = "";
