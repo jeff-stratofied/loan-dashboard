@@ -1855,11 +1855,17 @@ function renderLoanTableROI(loans) {
     tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
     tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
 
-    // 🔑 MATCH AMORT: safe drawer entry
 tr.addEventListener("click", () => {
-  console.log("✅ ROW CLICK", loan?.loanId, loan?.loanName);
   openLoanDrawerSafe(loan);
+
+  // 🔑 FORCE drawer open AFTER table-view layout settles
+  requestAnimationFrame(() => {
+    const drawer = document.getElementById("drawer");
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  });
 });
+;
 
 
 
