@@ -1401,7 +1401,7 @@ let currentLoans = [];
 let TABLE_SORT = { key: null, dir: 1 };
 let currentMode = "kpi";   // 🔑 ROI defaults to KPI mode
 let currentLoan = null;   // 🔑 active loan for drawer
-
+let filteredLoans = [];
 
 
     // =====================================================
@@ -1698,7 +1698,7 @@ const cumSchedule = scheduleWithOwnership
       allLoans = loansWithAmort;   // 🔑 master list
 currentLoans = loansWithAmort;
 
-
+filteredLoans = loansWithAmort.slice();
 
       
     /* -------------------------
@@ -2769,11 +2769,11 @@ function applyLoanFilters() {
 
   // 1️⃣ FILTER DATA (not DOM)
   filteredLoans = allLoans.filter(loan => {
-    if (nameVal && !loan.loanName.includes(nameVal)) {
+    if (nameVal && loan.loanName !== nameVal) {
       return false;
     }
 
-    if (schoolVal && !loan.school.includes(schoolVal)) {
+    if (schoolVal && loan.school !== schoolVal) {
       return false;
     }
 
@@ -2801,6 +2801,7 @@ function applyLoanFilters() {
     renderLoanGrid(currentLoans);
   }
 }
+
 
 
 function applyLoanSort() {
