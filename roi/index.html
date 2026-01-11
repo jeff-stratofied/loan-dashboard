@@ -2379,25 +2379,16 @@ if (!loans.length || !loans[0].roiSeries) {
     // --------------------------------------------------
     const sparkSvg = tile.querySelector("svg.sparkline");
 
-if (sparkSvg) {
-  const ownedSeries = getOwnedRoiSeriesFromAmort(loan);
-
-  if (Array.isArray(ownedSeries) && ownedSeries.length) {
-    const series = ownedSeries.map(p => ({
-      x: formatMonthYear(p.date),
-      y: p.roi,
-      date: p.date
+    const series = getOwnedRoiSeries(loan).map(p => ({
+      date: p.date,
+      y: p.roi
     }));
 
     createMiniSparkline(sparkSvg, series, {
-  color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
-  todayDate: KPI_CURRENT_MONTH
-});
+      color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
+      todayDate: KPI_CURRENT_MONTH
+    });
 
-  }
-}
-  });
-}
 
  function renderLoanTableFromState() {
   const tbody = document.querySelector("#loanTable tbody");
