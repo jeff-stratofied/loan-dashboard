@@ -2008,7 +2008,69 @@ tr.addEventListener("click", () => {
   });
 }
 
+function renderLoanGrid(loans) {
+  const grid = document.getElementById("loanGrid");
+  if (!grid) return;
 
+  grid.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+
+    const badges = getLoanEventBadges(loan);
+
+    tile.innerHTML = `
+      <div class="tile-left">
+        <div class="loan-name">${loan.name}</div>
+
+        <div class="loan-sub">
+          ${loan.school || ""}
+        </div>
+
+        <div class="loan-meta">
+          <span>$${formatCurrency(loan.purchasePrice)}</span>
+          <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
+          <span>${loan.termYears}y</span>
+        </div>
+
+        ${
+          badges.length
+            ? `<div class="loan-badges">
+                ${badges
+                  .map(
+                    b =>
+                      `<span class="loan-badge ${b.type}">${b.label}</span>`
+                  )
+                  .join("")}
+              </div>`
+            : ""
+        }
+      </div>
+
+      <div class="chart-wrap">
+        <div class="mini-label">
+          ${(getCurrentOwnedRoiEntry(loan).roi * 100).toFixed(2)}%
+        </div>
+        <svg class="sparkline"></svg>
+      </div>
+    `;
+
+    // 🔑 Tooltip wiring for badges (matches existing behavior)
+    tile.querySelectorAll(".loan-badge").forEach((badge, i) => {
+      createBadgeTooltip(badge, badges[i].type);
+    });
+
+    // 🔑 Open drawer on click
+    tile.addEventListener("click", () => {
+      openLoanDrawerSafe(loan);
+    });
+
+    grid.appendChild(tile);
+  });
+}
+
+    
 
     
 
@@ -2094,7 +2156,9 @@ window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
     const kpis = computeKPIs(currentLoans);
 
-      
+      renderLoanGrid(filteredLoans);
+renderLoanTableROI(filteredLoans);
+
       
     /* -------------------------
        Small chart utilities (line & bar with hover)
