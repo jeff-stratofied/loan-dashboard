@@ -1616,6 +1616,15 @@ function getCurrentOwnedRoiEntry(loan) {
   return ownedEntries[ownedEntries.length - 1];
 }
 
+    function getOwnedRoiSeries(loan) {
+  if (!Array.isArray(loan.roiSeries)) return [];
+
+  // Full lifetime series (DO NOT truncate)
+  return loan.roiSeries
+    .filter(p => p?.date instanceof Date && !isNaN(+p.date))
+    .sort((a, b) => a.date - b.date);
+}
+
 
       function getRoiEntryAsOfMonth(loan, monthDate) {
   if (!Array.isArray(loan.roiSeries)) {
@@ -2009,7 +2018,11 @@ function buildKpiColorMap(loans) {
       svg.appendChild(el);
 
       // Static vertical line at "today" based on ownershipDate
-      const today = new Date();
+      const today =
+  opts.todayDate instanceof Date
+    ? opts.todayDate
+    : new Date();
+
       let todayIdx = -1;
       data.forEach((d, i) => {
   if (d.date && d.date <= today) {
