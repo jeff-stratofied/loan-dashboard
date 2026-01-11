@@ -4583,8 +4583,16 @@ if (toggleTableView && loanGrid && loanTableWrap) {
     loanTableWrap.hidden = !showTable;
 
     if (showTable) {
-      renderLoanTableROI(getLoansForTableView());
-    }
+  // hide tiles, render table
+  while (loanGrid.firstChild) {
+    loanGrid.removeChild(loanGrid.firstChild);
+  }
+  renderLoanTableROI(getLoansForTableView());
+} else {
+  // switching BACK to tiles → force canonical render
+  applyLoanFilters();
+}
+
   });
 }
 
