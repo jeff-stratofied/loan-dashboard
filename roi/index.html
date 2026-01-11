@@ -1064,7 +1064,8 @@ tr.event-default td {
 
   
   <!-- Loan grid -->
-  <section class="grid compact" id="loanGrid" aria-live="polite"></section>
+  <section class="grid" id="loanGrid"></section>
+
 
     <section id="loanTableWrap" class="loan-table-wrap" hidden>
   <table id="loanTable">
@@ -1649,22 +1650,23 @@ function getCurrentOwnedRoiEntry(loan) {
     }
 
 function getOwnedRoiSeriesFromAmort(loan) {
-  if (!Array.isArray(loan.amortSchedule)) return [];
+  if (!Array.isArray(loan.cumSchedule)) return [];
 
-  return loan.amortSchedule.map(row => {
-    const loanValue =
-      (row.remainingBalance ?? 0) +
-      (row.unrealizedValue ?? 0);
+  return loan.cumSchedule
+    .filter(r => r.isOwned && r.loanDate instanceof Date)
+    .map(r => {
+      const realized = (r.cumPrincipal + r.cumInterest) - (r.cumFees || 0);
+      const unrealized = (r.balance || 0) * 0.95;
+      const loanValue = realized + unrealized;
 
-    const roi =
-      (loanValue - loan.purchasePrice) / loan.purchasePrice;
-
-    return {
-      date: row.date,
-      roi
-    };
-  });
+      return {
+        date: r.loanDate,
+        roi: (loanValue - loan.purchasePrice) / loan.purchasePrice,
+        loanValue
+      };
+    });
 }
+
 
 
     
@@ -2316,6 +2318,25 @@ if (sparkSvg) {
    - Print / CSV / actions
    ============================================================ */
 
+    // ----------------------------
+// Table View Toggle (ROI)
+// ----------------------------
+const toggleTableView = document.getElementById("toggleTableView");
+const loanGrid = document.getElementById("loanGrid");
+const loanTableWrap = document.getElementById("loanTableWrap");
+
+if (toggleTableView && loanGrid && loanTableWrap) {
+  toggleTableView.addEventListener("change", () => {
+    const showTable = toggleTableView.checked;
+
+    loanGrid.hidden = showTable;
+    loanTableWrap.hidden = !showTable;
+
+    if (showTable) {
+      renderLoanTable();   // must already exist
+    }
+  });
+}
 
 
 /* ============================================================
