@@ -1568,94 +1568,269 @@ const rowClass = getEventRowClass(loan, cs || s);
 
 }
 
-    
-    async function initROI() {
-      const TODAY = new Date();
+
+/* ============================================================
+   0. IMPORTS & PAGE CONTEXT
+   - ES module imports
+   - URL params, embed/reporting context
+   - Back-navigation wiring
+   ============================================================ */
+
+
+
+/* ============================================================
+   1. GLOBAL CONSTANTS & CONFIGURATION
+   - Static labels
+   - Color palettes
+   - Magic numbers / defaults
+   - No runtime logic
+   ============================================================ */
 
 // -------------------------------------
 // KPI-1 authoritative "current month"
 // -------------------------------------
-const KPI_CURRENT_MONTH = new Date(
-  TODAY.getFullYear(),
-  TODAY.getMonth(),
-  1
-);
-      
-      const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-      // --------------------------------------------------
-// FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
-// --------------------------------------------------
-const userLoans = loans
-  .map(l => ({
-    ...l,
-    user: l.user ?? "jeff",
-    visible: l.visible !== false
-  }))
-  .filter(l => l.user === PAGE_USER && l.visible === true);
-
-// --------------------------------------------------
-// Normalize numeric fields (ONLY user loans)
-// --------------------------------------------------
-const formattedLoans = userLoans.map(l => ({
-  ...l,
-  purchasePrice: Number(l.purchasePrice ?? 0),
-  nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-}));
-
-      const loansWithAmort = formattedLoans.map(l => {
-    
-const rawAmort = buildAmortSchedule(l);
-
-// ----------------------------------
-// Respect terminal rows from engine
-// ----------------------------------
-const amortSchedule = (() => {
-  const out = [];
-  for (const r of rawAmort) {
-    out.push(r);
-    if (r.isTerminal === true) break; // 🔒 STOP at default
-  }
-  return out;
+const KPI_CURRENT_MONTH = (() => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), 1);
 })();
 
+  function buildKpiColorMap(loans) {
+  window.KPI_COLOR_MAP = {};
 
-      // Attach ownership flags
-      const purchase = new Date(l.purchaseDate);
-      const scheduleWithOwnership = amortSchedule.map(r => ({
-        ...r,
-        isOwned: r.loanDate >= purchase,
-        ownershipMonthIndex: r.loanDate >= purchase
-          ? monthDiff(purchase, r.loanDate) + 1
-        : 0,
-      ownershipDate: r.loanDate >= purchase ? r.loanDate : null
-    }));
-        
-let cumP = 0;
-let cumI = 0;
-let cumFees = 0;
-        
-const cumSchedule = scheduleWithOwnership
-  .filter(r => r.isOwned)
-  .reduce((rows, r) => {
-    cumP += r.principalPaid;
-    cumI += r.interest;
-    const feeThisMonth = Number(r.feeThisMonth ?? 0);
-    cumFees += feeThisMonth;
+  const sorted = loans
+    .slice()
+    .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
 
-    rows.push({
-      ...r,
-      cumPrincipal: +cumP.toFixed(2),
-      cumInterest: +cumI.toFixed(2),
-      cumFees: +cumFees.toFixed(2)
-    });
+  const extraNeeded = Math.max(0, sorted.length - BASE_DISTINCT_COLORS.length);
+  const palette = BASE_DISTINCT_COLORS.concat(generateExtraColors(extraNeeded));
 
-    // 🔒 HARD STOP at terminal row
-    if (r.isTerminal === true) {
-      return rows;
+  sorted.forEach((loan, i) => {
+    const id = loan.id ?? loan.loanId;
+    window.KPI_COLOR_MAP[id] = palette[i];
+  });
+}
+
+
+
+    
+
+
+/* ============================================================
+   2. PURE UTILITY FUNCTIONS (NO STATE, NO DOM)
+   - Formatting helpers
+   - Date helpers
+   - Comparators
+   - Math utilities
+   ============================================================ */
+
+
+
+/* ============================================================
+   3. LOAN DOMAIN LOGIC (PURE, DATA → DATA)
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   3.1 Loan Event & Badge Logic
+   - Event interpretation
+   - Badge derivation
+   - Row classification
+   ------------------------------------------------------------ */
+
+
+/* ------------------------------------------------------------
+   3.2 Loan Amortization & Ownership Logic
+   - Amort schedule slicing
+   - Ownership month calculation
+   - Terminal row handling
+   ------------------------------------------------------------ */
+
+
+/* ------------------------------------------------------------
+   3.3 Loan ROI Computation
+   - Amort → ownership → cumulative → ROI series
+   - Per-loan derived fields
+   - NO DOM, NO GLOBAL MUTATION
+   ------------------------------------------------------------ */
+
+
+
+/* ============================================================
+   4. KPI COMPUTATION (PORTFOLIO LEVEL, PURE)
+   - Weighted ROI
+   - Projected ROI
+   - Capital recovery
+   ============================================================ */
+
+
+
+/* ============================================================
+   5. GLOBAL APP STATE (DECLARATIONS ONLY)
+   - loans
+   - allLoans
+   - currentLoans
+   - filteredLoans
+   - view + sort state
+   ============================================================ */
+
+
+
+/* ============================================================
+   6. DATA LOADING & NORMALIZATION
+   - Backend fetch
+   - Base loan normalization
+   - No amort / ROI here
+   ============================================================ */
+
+
+
+/* ============================================================
+   7. DATA DERIVATION PIPELINE
+   - Build amort schedules
+   - Compute ROI series
+   - Populate allLoans / currentLoans / filteredLoans
+   ============================================================ */
+
+
+
+/* ============================================================
+   8. KPI COLOR & VISUAL MAPPING
+   - Deterministic color assignment
+   ============================================================ */
+
+
+
+/* ============================================================
+   9. FILTER, SORT & VIEW-STATE LOGIC
+   - Filter evaluation
+   - Sorting logic
+   - View mode state
+   - NO rendering
+   ============================================================ */
+
+
+
+/* ============================================================
+   10. RENDERING — LOAN LISTS
+   - Loan tiles
+   - Loan table
+   - Row / tile interactions
+   ============================================================ */
+
+
+
+/* ============================================================
+   11. RENDERING — KPIs & CHARTS
+   - KPI tiles
+   - Line charts
+   - Multi-series charts
+   ============================================================ */
+
+
+
+/* ============================================================
+   12. DRAWER LOGIC (LOAN & KPI)
+   - Drawer open/close
+   - Loan drawer rendering
+   - KPI drawer rendering
+   ============================================================ */
+
+
+
+/* ============================================================
+   13. GLOBAL EVENT WIRING
+   - Filter change handlers
+   - Sort handlers
+   - Toggle buttons
+   - Print / CSV / actions
+   ============================================================ */
+
+
+
+/* ============================================================
+   14. initROI() — APPLICATION ORCHESTRATION
+   - Order of operations only
+   - No helpers defined here
+   ============================================================ */
+
+
+
+
+
+
+
+    
+    
+async function initROI() {
+  const TODAY = new Date();
+
+  const formatLoanLabel = (loan) =>
+    `Loan ${loan.id} — ${loan.name} (${loan.school})`;
+
+  // --------------------------------------------------
+  // FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
+  // --------------------------------------------------
+  const userLoans = loans
+    .map(l => ({
+      ...l,
+      user: l.user ?? "jeff",
+      visible: l.visible !== false
+    }))
+    .filter(l => l.user === PAGE_USER && l.visible === true);
+
+  // --------------------------------------------------
+  // Normalize numeric fields (ONLY user loans)
+  // --------------------------------------------------
+  const formattedLoans = userLoans.map(l => ({
+    ...l,
+    purchasePrice: Number(l.purchasePrice ?? 0),
+    nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
+  }));
+
+  // --------------------------------------------------
+  // Build amort schedules (respect terminal rows)
+  // --------------------------------------------------
+  const loansWithAmort = formattedLoans.map(l => {
+    const rawAmort = buildAmortSchedule(l);
+
+    const amortSchedule = [];
+    for (const r of rawAmort) {
+      amortSchedule.push(r);
+      if (r.isTerminal === true) break;
     }
 
-    return rows;
-  }, []);
+    // Attach ownership flags
+    const purchase = new Date(l.purchaseDate);
+    const scheduleWithOwnership = amortSchedule.map(r => ({
+      ...r,
+      isOwned: r.loanDate >= purchase,
+      ownershipMonthIndex:
+        r.loanDate >= purchase
+          ? monthDiff(purchase, r.loanDate) + 1
+          : 0,
+      ownershipDate: r.loanDate >= purchase ? r.loanDate : null
+    }));
+
+    let cumP = 0;
+    let cumI = 0;
+    let cumFees = 0;
+
+    const cumSchedule = scheduleWithOwnership
+      .filter(r => r.isOwned)
+      .reduce((rows, r) => {
+        cumP += r.principalPaid;
+        cumI += r.interest;
+        cumFees += Number(r.feeThisMonth ?? 0);
+
+        rows.push({
+          ...r,
+          cumPrincipal: +cumP.toFixed(2),
+          cumInterest: +cumI.toFixed(2),
+          cumFees: +cumFees.toFixed(2)
+        });
+
+        if (r.isTerminal === true) return rows;
+        return rows;
+      }, []);
 
 
     // Compute proper ROI timeline using correct amort + fees
@@ -2738,6 +2913,10 @@ badgeElements.forEach((badgeEl, index) => {
       svg.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; const hoverG = svg.querySelector('g.mini-hover'); if(hoverG) hoverG.innerHTML=''; });
     });
 
+
+buildKpiColorMap(currentLoans);
+
+  
     // -------------------------
     // Populate filter dropdowns
     // -------------------------
