@@ -2123,6 +2123,13 @@ function buildKpiColorMap(loans) {
    - Row / tile interactions
    ============================================================ */
 function renderLoanGrid(loans) {
+
+// 🔒 Guard: only render fully-derived loans
+if (!loans.length || !loans[0].roiSeries) {
+  return;
+}
+
+  
   const grid = document.getElementById("loanGrid");
   if (!grid) return;
 
