@@ -1568,6 +1568,167 @@ const rowClass = getEventRowClass(loan, cs || s);
 
 }
 
+
+/* ============================================================
+   0. IMPORTS & PAGE CONTEXT
+   - ES module imports
+   - URL params, embed/reporting context
+   - Back-navigation wiring
+   ============================================================ */
+
+
+
+/* ============================================================
+   1. GLOBAL CONSTANTS & CONFIGURATION
+   - Static labels
+   - Color palettes
+   - Magic numbers / defaults
+   - No runtime logic
+   ============================================================ */
+
+
+
+/* ============================================================
+   2. PURE UTILITY FUNCTIONS (NO STATE, NO DOM)
+   - Formatting helpers
+   - Date helpers
+   - Comparators
+   - Math utilities
+   ============================================================ */
+
+
+
+/* ============================================================
+   3. LOAN DOMAIN LOGIC (PURE, DATA → DATA)
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   3.1 Loan Event & Badge Logic
+   - Event interpretation
+   - Badge derivation
+   - Row classification
+   ------------------------------------------------------------ */
+
+
+/* ------------------------------------------------------------
+   3.2 Loan Amortization & Ownership Logic
+   - Amort schedule slicing
+   - Ownership month calculation
+   - Terminal row handling
+   ------------------------------------------------------------ */
+
+
+/* ------------------------------------------------------------
+   3.3 Loan ROI Computation
+   - Amort → ownership → cumulative → ROI series
+   - Per-loan derived fields
+   - NO DOM, NO GLOBAL MUTATION
+   ------------------------------------------------------------ */
+
+
+
+/* ============================================================
+   4. KPI COMPUTATION (PORTFOLIO LEVEL, PURE)
+   - Weighted ROI
+   - Projected ROI
+   - Capital recovery
+   ============================================================ */
+
+
+
+/* ============================================================
+   5. GLOBAL APP STATE (DECLARATIONS ONLY)
+   - loans
+   - allLoans
+   - currentLoans
+   - filteredLoans
+   - view + sort state
+   ============================================================ */
+
+
+
+/* ============================================================
+   6. DATA LOADING & NORMALIZATION
+   - Backend fetch
+   - Base loan normalization
+   - No amort / ROI here
+   ============================================================ */
+
+
+
+/* ============================================================
+   7. DATA DERIVATION PIPELINE
+   - Build amort schedules
+   - Compute ROI series
+   - Populate allLoans / currentLoans / filteredLoans
+   ============================================================ */
+
+
+
+/* ============================================================
+   8. KPI COLOR & VISUAL MAPPING
+   - Deterministic color assignment
+   ============================================================ */
+
+
+
+/* ============================================================
+   9. FILTER, SORT & VIEW-STATE LOGIC
+   - Filter evaluation
+   - Sorting logic
+   - View mode state
+   - NO rendering
+   ============================================================ */
+
+
+
+/* ============================================================
+   10. RENDERING — LOAN LISTS
+   - Loan tiles
+   - Loan table
+   - Row / tile interactions
+   ============================================================ */
+
+
+
+/* ============================================================
+   11. RENDERING — KPIs & CHARTS
+   - KPI tiles
+   - Line charts
+   - Multi-series charts
+   ============================================================ */
+
+
+
+/* ============================================================
+   12. DRAWER LOGIC (LOAN & KPI)
+   - Drawer open/close
+   - Loan drawer rendering
+   - KPI drawer rendering
+   ============================================================ */
+
+
+
+/* ============================================================
+   13. GLOBAL EVENT WIRING
+   - Filter change handlers
+   - Sort handlers
+   - Toggle buttons
+   - Print / CSV / actions
+   ============================================================ */
+
+
+
+/* ============================================================
+   14. initROI() — APPLICATION ORCHESTRATION
+   - Order of operations only
+   - No helpers defined here
+   ============================================================ */
+
+
+
+
+    
     
     async function initROI() {
       const TODAY = new Date();
