@@ -3066,13 +3066,13 @@ function applyLoanFilters() {
   currentLoans = filteredLoans.slice();
 
 
-  // 3️⃣ RENDER ACTIVE VIEW
-  if (toggleTableView.checked) {
-    renderLoanTableROI(getLoansForTableView());
-  } else {
-    renderLoanGridROI(currentLoans);
+ // 3️⃣ RENDER ACTIVE VIEW
+if (toggleTableView.checked) {
+  renderLoanTableROI(getLoansForTableView());
+} else {
+  renderLoanGrid(currentLoans);
+}
 
-  }
 }
 
 
