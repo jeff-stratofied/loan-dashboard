@@ -1885,7 +1885,61 @@ console.assert(
    - Deterministic color assignment
    ============================================================ */
 
+function buildKpiColorMap(loans) {
+  const colorMap = {};
 
+  // 1) Hand-picked, visually maximized contrast palette
+  const BASE_DISTINCT_COLORS = [
+    '#2563eb', // blue
+    '#dc2626', // red
+    '#16a34a', // green
+    '#7c3aed', // purple
+    '#ea580c', // orange
+    '#0891b2', // cyan
+    '#ca8a04', // amber
+    '#be185d', // rose
+    '#15803d', // dark green
+    '#1d4ed8', // deep blue
+    '#9333ea', // violet
+    '#b91c1c'  // dark red
+  ];
+
+  // 2) Fallback generator ONLY if loans exceed base palette
+  function generateExtraColors(n) {
+    const colors = [];
+    for (let i = 0; i < n; i++) {
+      const hue = (i * 137.508) % 360;
+      colors.push(`hsl(${hue.toFixed(0)} 80% 55%)`);
+    }
+    return colors;
+  }
+
+  // 3) Stable ordering (important!)
+  const sortedLoansForColors = loans
+    .slice()
+    .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
+
+  // 4) Build final palette
+  const extraNeeded = Math.max(
+    0,
+    sortedLoansForColors.length - BASE_DISTINCT_COLORS.length
+  );
+  const palette =
+    BASE_DISTINCT_COLORS.concat(generateExtraColors(extraNeeded));
+
+  // 5) Assign colors deterministically
+  sortedLoansForColors.forEach((loan, i) => {
+    const id = loan.id ?? loan.loanId;
+    colorMap[id] = palette[i];
+  });
+
+  return colorMap;
+}
+
+
+
+
+    
 
 /* ============================================================
    9. FILTER, SORT & VIEW-STATE LOGIC
@@ -1981,53 +2035,7 @@ filteredLoans = loansWithAmort.slice();
        KPI computations
        ------------------------- */
 
-      // -------------------------------------
-      // KPI COLOR MAP — HIGH-CONTRAST FIRST
-      // -------------------------------------
-      window.KPI_COLOR_MAP = {};
-      
-      // 1) Hand-picked, visually maximized contrast palette
-      // Carefully ordered to avoid adjacent hue confusion
-      const BASE_DISTINCT_COLORS = [
-        '#2563eb', // blue
-        '#dc2626', // red
-        '#16a34a', // green
-        '#7c3aed', // purple
-        '#ea580c', // orange
-        '#0891b2', // cyan
-        '#ca8a04', // amber
-        '#be185d', // rose
-        '#15803d', // dark green
-        '#1d4ed8', // deep blue
-        '#9333ea', // violet
-        '#b91c1c'  // dark red
-      ];
-      
-      // 2) Fallback generator ONLY if loans exceed base palette
-      function generateExtraColors(n) {
-        const colors = [];
-        for (let i = 0; i < n; i++) {
-          const hue = (i * 137.508) % 360;
-          colors.push(`hsl(${hue.toFixed(0)} 80% 55%)`);
-        }
-        return colors;
-      }
-      
-      // 3) Stable ordering (important!)
-      const sortedLoansForColors = currentLoans
-      .slice()
-      .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
 
-      
-      // 4) Build final palette
-      const extraNeeded = Math.max(0, sortedLoansForColors.length - BASE_DISTINCT_COLORS.length);
-      const palette = BASE_DISTINCT_COLORS.concat(generateExtraColors(extraNeeded));
-      
-      // 5) Assign colors deterministically
-      sortedLoansForColors.forEach((loan, i) => {
-        const id = loan.id ?? loan.loanId;
-        window.KPI_COLOR_MAP[id] = palette[i];
-      });
       
 
 
@@ -2085,6 +2093,7 @@ tr.addEventListener("click", () => {
   });
 }
 
+window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
       
 
