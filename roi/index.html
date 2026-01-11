@@ -1958,7 +1958,59 @@ function buildKpiColorMap(loans) {
    - Row / tile interactions
    ============================================================ */
 
+      // =====================================================
+// ROI Loan Table Renderer (matches Amort table)
+// =====================================================
+function renderLoanTableROI(loans) {
+  const tbody = document.querySelector("#loanTable tbody");
+  if (!tbody) return;
 
+  tbody.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+    
+      <td>${loan.loanId}</td>
+      <td>${loan.loanName}</td>
+      <td>${loan.school}</td>
+      <td>${loan.loanStartDate ? formatMonthYear(parseISODateLocal(loan.loanStartDate)) : ""}</td>
+      <td>${loan.purchaseDate ? formatMonthYear(parseISODateLocal(loan.purchaseDate)) : ""}</td>
+      <td>$${formatCurrency(loan.principal)}</td>
+      <td>$${formatCurrency(loan.purchasePrice)}</td>
+      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
+      <td>${loan.termYears}</td>
+      <td>${loan.graceYears}</td>
+        <td>${
+  Number.isFinite(loan.roiToDate)
+    ? `${(loan.roiToDate * 100).toFixed(2)}%`
+    : "—"
+}</td>
+    `;
+
+    // 🔑 MATCH AMORT: hover via class, not inline style
+    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
+    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
+
+tr.addEventListener("click", () => {
+  openLoanDrawerSafe(loan);
+
+  // 🔑 FORCE drawer open AFTER table-view layout settles
+  requestAnimationFrame(() => {
+    const drawer = document.getElementById("drawer");
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  });
+});
+;
+    tbody.appendChild(tr);
+  });
+}
+
+
+
+    
 
 /* ============================================================
    11. RENDERING — KPIs & CHARTS
@@ -2030,68 +2082,10 @@ currentLoans = loansWithAmort;
 
 filteredLoans = loansWithAmort.slice();
 
-      
-    /* -------------------------
-       KPI computations
-       ------------------------- */
-
+ 
 
       
 
-
-      // =====================================================
-// ROI Loan Table Renderer (matches Amort table)
-// =====================================================
-function renderLoanTableROI(loans) {
-  const tbody = document.querySelector("#loanTable tbody");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  loans.forEach(loan => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-    
-      <td>${loan.loanId}</td>
-      <td>${loan.loanName}</td>
-      <td>${loan.school}</td>
-      <td>${loan.loanStartDate ? formatMonthYear(parseISODateLocal(loan.loanStartDate)) : ""}</td>
-      <td>${loan.purchaseDate ? formatMonthYear(parseISODateLocal(loan.purchaseDate)) : ""}</td>
-      <td>$${formatCurrency(loan.principal)}</td>
-      <td>$${formatCurrency(loan.purchasePrice)}</td>
-      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
-      <td>${loan.termYears}</td>
-      <td>${loan.graceYears}</td>
-        <td>${
-  Number.isFinite(loan.roiToDate)
-    ? `${(loan.roiToDate * 100).toFixed(2)}%`
-    : "—"
-}</td>
-    `;
-
-    // 🔑 MATCH AMORT: hover via class, not inline style
-    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
-    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
-
-tr.addEventListener("click", () => {
-  openLoanDrawerSafe(loan);
-
-  // 🔑 FORCE drawer open AFTER table-view layout settles
-  requestAnimationFrame(() => {
-    const drawer = document.getElementById("drawer");
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
-  });
-});
-;
-
-
-
-
-    tbody.appendChild(tr);
-  });
-}
 
 window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
