@@ -1780,7 +1780,6 @@ function computeKPIs(list) {
 
 function deriveLoansWithAmortAndRoi(formattedLoans) {
   return formattedLoans.map(l => {
-          const loansWithAmort = formattedLoans.map(l => {
     
 const rawAmort = buildAmortSchedule(l);
 
