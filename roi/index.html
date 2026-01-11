@@ -1971,6 +1971,66 @@ function buildKpiColorMap(loans) {
 }
 
 
+function createMiniSparkline(svg, series, opts = {}) {
+  const svgNS = "http://www.w3.org/2000/svg";
+
+  const w = 170;
+  const h = 48;
+  const pad = 4;
+
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", w);
+  svg.setAttribute("height", h);
+  svg.innerHTML = "";
+
+  const data = series.filter(p => p?.date instanceof Date);
+  if (!data.length) return;
+
+  const ys = data.map(d => d.y);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const rangeY = Math.max(1e-6, maxY - minY);
+
+  const minDate = data[0].date;
+  const maxDate = data[data.length - 1].date;
+  const dateSpan = Math.max(1, maxDate - minDate);
+
+  const xForDate = d =>
+    pad + ((d - minDate) / dateSpan) * (w - pad * 2);
+
+  const yForVal = v =>
+    pad + (h - pad * 2) - ((v - minY) / rangeY) * (h - pad * 2);
+
+  // ---- ROI curve ----
+  let path = "";
+  data.forEach((p, i) => {
+    const x = xForDate(p.date);
+    const y = yForVal(p.y);
+    path += i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`;
+  });
+
+  const line = document.createElementNS(svgNS, "path");
+  line.setAttribute("d", path);
+  line.setAttribute("fill", "none");
+  line.setAttribute("stroke", opts.color || "#0ea5e9");
+  line.setAttribute("stroke-width", "2");
+  svg.appendChild(line);
+
+  // ---- Today line (per-loan, per-tile) ----
+  const today = opts.todayDate instanceof Date ? opts.todayDate : new Date();
+  if (today >= minDate && today <= maxDate) {
+    const x = xForDate(today);
+    const v = document.createElementNS(svgNS, "line");
+    v.setAttribute("x1", x);
+    v.setAttribute("x2", x);
+    v.setAttribute("y1", pad);
+    v.setAttribute("y2", h - pad);
+    v.setAttribute("stroke", "#111827");
+    v.setAttribute("stroke-dasharray", "3 3");
+    v.setAttribute("stroke-opacity", "0.6");
+    svg.appendChild(v);
+  }
+}
 
 
     
@@ -2271,15 +2331,11 @@ if (sparkSvg) {
       date: p.date
     }));
 
-    createLineChart(sparkSvg, series, {
-      h: 48,
-      pad: 12,
-      tickEvery: 1000,
-      color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
-      todayDate: KPI_CURRENT_MONTH,
-      labelFn: p =>
-        `${formatMonthYear(p.date)} • ROI ${(p.roi * 100).toFixed(2)}%`
-    });
+    createMiniSparkline(sparkSvg, series, {
+  color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
+  todayDate: KPI_CURRENT_MONTH
+});
+
   }
 }
   });
