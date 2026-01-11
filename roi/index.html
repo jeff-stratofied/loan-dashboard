@@ -2399,7 +2399,46 @@ if (sparkSvg) {
   });
 }
 
-    
+ function renderLoanTableFromState() {
+  const tbody = document.querySelector("#loanTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  const rows = getLoansForTableView();
+
+  rows.forEach(loan => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${loan.id ?? ""}</td>
+      <td>${loan.name ?? ""}</td>
+      <td>${loan.school ?? ""}</td>
+      <td>${loan.loanStartDate ?? ""}</td>
+      <td>${loan.purchaseDate ?? ""}</td>
+      <td>$${formatCurrency(loan.originalLoanAmount || loan.principal)}</td>
+      <td>$${formatCurrency(loan.purchasePrice)}</td>
+      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
+      <td>${loan.termYears ?? ""}</td>
+      <td>${loan.graceYears ?? ""}</td>
+      <td>${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%</td>
+    `;
+
+    tr.addEventListener("click", () => {
+      openLoanDrawerSafe(loan);
+    });
+
+    tr.addEventListener("mouseenter", () => {
+      tr.classList.add("row-hover");
+    });
+    tr.addEventListener("mouseleave", () => {
+      tr.classList.remove("row-hover");
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+   
 
     
 
@@ -2447,7 +2486,15 @@ if (toggleTableView && loanGrid && loanTableWrap) {
     loanTableWrap.hidden = !showTable;
 
     if (showTable) {
-      renderLoanTable();   // must already exist
+  loanGrid.hidden = true;
+  loanTableWrap.hidden = false;
+  renderLoanTableFromState();
+} else {
+  loanTableWrap.hidden = true;
+  loanGrid.hidden = false;
+  applyLoanFilters(); // canonical tile render
+}
+
     }
   });
 }
