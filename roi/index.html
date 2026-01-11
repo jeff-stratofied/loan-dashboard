@@ -1951,162 +1951,6 @@ function buildKpiColorMap(loans) {
 
 
 
-/* ============================================================
-   10. RENDERING — LOAN LISTS
-   - Loan tiles
-   - Loan table
-   - Row / tile interactions
-   ============================================================ */
-
-      // =====================================================
-// ROI Loan Table Renderer (matches Amort table)
-// =====================================================
-function renderLoanTableROI(loans) {
-  const tbody = document.querySelector("#loanTable tbody");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  loans.forEach(loan => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-    
-      <td>${loan.loanId}</td>
-      <td>${loan.loanName}</td>
-      <td>${loan.school}</td>
-      <td>${loan.loanStartDate ? formatMonthYear(parseISODateLocal(loan.loanStartDate)) : ""}</td>
-      <td>${loan.purchaseDate ? formatMonthYear(parseISODateLocal(loan.purchaseDate)) : ""}</td>
-      <td>$${formatCurrency(loan.principal)}</td>
-      <td>$${formatCurrency(loan.purchasePrice)}</td>
-      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
-      <td>${loan.termYears}</td>
-      <td>${loan.graceYears}</td>
-        <td>${
-  Number.isFinite(loan.roiToDate)
-    ? `${(loan.roiToDate * 100).toFixed(2)}%`
-    : "—"
-}</td>
-    `;
-
-    // 🔑 MATCH AMORT: hover via class, not inline style
-    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
-    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
-
-tr.addEventListener("click", () => {
-  openLoanDrawerSafe(loan);
-
-  // 🔑 FORCE drawer open AFTER table-view layout settles
-  requestAnimationFrame(() => {
-    const drawer = document.getElementById("drawer");
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
-  });
-});
-;
-    tbody.appendChild(tr);
-  });
-}
-
-function renderLoanGrid(loans) {
-  const grid = document.getElementById("loanGrid");
-  if (!grid) return;
-
-  grid.innerHTML = "";
-
-  loans.forEach(loan => {
-    const tile = document.createElement("div");
-    tile.className = "tile";
-
-    const badges = getLoanEventBadges(loan);
-
-    tile.innerHTML = `
-      <div class="tile-left">
-        <div class="loan-name">${loan.name}</div>
-
-        <div class="loan-sub">
-          ${loan.school || ""}
-        </div>
-
-        <div class="loan-meta">
-          <span>$${formatCurrency(loan.purchasePrice)}</span>
-          <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
-          <span>${loan.termYears}y</span>
-        </div>
-
-        ${
-          badges.length
-            ? `<div class="loan-badges">
-                ${badges
-                  .map(
-                    b =>
-                      `<span class="loan-badge ${b.type}">${b.label}</span>`
-                  )
-                  .join("")}
-              </div>`
-            : ""
-        }
-      </div>
-
-      <div class="chart-wrap">
-        <div class="mini-label">
-          ${(getCurrentOwnedRoiEntry(loan).roi * 100).toFixed(2)}%
-        </div>
-        <svg class="sparkline"></svg>
-      </div>
-    `;
-
-    // 🔑 Tooltip wiring for badges (matches existing behavior)
-    tile.querySelectorAll(".loan-badge").forEach((badge, i) => {
-      createBadgeTooltip(badge, badges[i].type);
-    });
-
-    // 🔑 Open drawer on click
-    tile.addEventListener("click", () => {
-      openLoanDrawerSafe(loan);
-    });
-
-    grid.appendChild(tile);
-
-    // --------------------------------------------------
-// Mini ROI sparkline (loan tile)
-// --------------------------------------------------
-const sparkSvg = tile.querySelector("svg.sparkline");
-
-if (sparkSvg && Array.isArray(loan.roiSeries) && loan.roiSeries.length) {
-  const series = loan.roiSeries.map(s => ({
-    x: formatMonthYear(s.date),
-    y: s.roi,
-    date: s.date
-  }));
-
-  createLineChart(
-    sparkSvg,
-    series,
-    {
-      h: 48,
-      pad: 12,
-      tickEvery: 1000, // effectively hide x-axis labels
-      color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
-      labelFn: null
-    }
-  );
-}
-
-  });
-}
-
-    
-
-    
-
-/* ============================================================
-   11. RENDERING — KPIs & CHARTS
-   - KPI tiles
-   - Line charts
-   - Multi-series charts
-   ============================================================ */
-
     /* -------------------------
        Small chart utilities (line & bar with hover)
        ------------------------- */
@@ -2269,6 +2113,165 @@ if (sparkSvg && Array.isArray(loan.roiSeries) && loan.roiSeries.length) {
 
       containerEl.appendChild(svg); return svg;
     }
+    
+
+/* ============================================================
+   10. RENDERING — LOAN LISTS
+   - Loan tiles
+   - Loan table
+   - Row / tile interactions
+   ============================================================ */
+
+      // =====================================================
+// ROI Loan Table Renderer (matches Amort table)
+// =====================================================
+function renderLoanTableROI(loans) {
+  const tbody = document.querySelector("#loanTable tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+    
+      <td>${loan.loanId}</td>
+      <td>${loan.loanName}</td>
+      <td>${loan.school}</td>
+      <td>${loan.loanStartDate ? formatMonthYear(parseISODateLocal(loan.loanStartDate)) : ""}</td>
+      <td>${loan.purchaseDate ? formatMonthYear(parseISODateLocal(loan.purchaseDate)) : ""}</td>
+      <td>$${formatCurrency(loan.principal)}</td>
+      <td>$${formatCurrency(loan.purchasePrice)}</td>
+      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
+      <td>${loan.termYears}</td>
+      <td>${loan.graceYears}</td>
+        <td>${
+  Number.isFinite(loan.roiToDate)
+    ? `${(loan.roiToDate * 100).toFixed(2)}%`
+    : "—"
+}</td>
+    `;
+
+    // 🔑 MATCH AMORT: hover via class, not inline style
+    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
+    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
+
+tr.addEventListener("click", () => {
+  openLoanDrawerSafe(loan);
+
+  // 🔑 FORCE drawer open AFTER table-view layout settles
+  requestAnimationFrame(() => {
+    const drawer = document.getElementById("drawer");
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+  });
+});
+;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderLoanGrid(loans) {
+  const grid = document.getElementById("loanGrid");
+  if (!grid) return;
+
+  grid.innerHTML = "";
+
+  loans.forEach(loan => {
+    const tile = document.createElement("div");
+    tile.className = "tile";
+
+    const badges = getLoanEventBadges(loan);
+
+    tile.innerHTML = `
+      <div class="tile-left">
+        <div class="loan-name">${loan.name}</div>
+
+        <div class="loan-sub">
+          ${loan.school || ""}
+        </div>
+
+        <div class="loan-meta">
+          <span>$${formatCurrency(loan.purchasePrice)}</span>
+          <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
+          <span>${loan.termYears}y</span>
+        </div>
+
+        ${
+          badges.length
+            ? `<div class="loan-badges">
+                ${badges
+                  .map(
+                    b =>
+                      `<span class="loan-badge ${b.type}">${b.label}</span>`
+                  )
+                  .join("")}
+              </div>`
+            : ""
+        }
+      </div>
+
+      <div class="chart-wrap">
+        <div class="mini-label">
+          ${(getCurrentOwnedRoiEntry(loan).roi * 100).toFixed(2)}%
+        </div>
+        <svg class="sparkline"></svg>
+      </div>
+    `;
+
+    // 🔑 Tooltip wiring for badges (matches existing behavior)
+    tile.querySelectorAll(".loan-badge").forEach((badge, i) => {
+      createBadgeTooltip(badge, badges[i].type);
+    });
+
+    // 🔑 Open drawer on click
+    tile.addEventListener("click", () => {
+      openLoanDrawerSafe(loan);
+    });
+
+    grid.appendChild(tile);
+
+    // --------------------------------------------------
+// Mini ROI sparkline (loan tile)
+// --------------------------------------------------
+const sparkSvg = tile.querySelector("svg.sparkline");
+
+if (sparkSvg && Array.isArray(loan.roiSeries) && loan.roiSeries.length) {
+  const series = loan.roiSeries.map(s => ({
+    x: formatMonthYear(s.date),
+    y: s.roi,
+    date: s.date
+  }));
+
+  createLineChart(
+    sparkSvg,
+    series,
+    {
+      h: 48,
+      pad: 12,
+      tickEvery: 1000, // effectively hide x-axis labels
+      color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
+      labelFn: null
+    }
+  );
+}
+
+  });
+}
+
+    
+
+    
+
+/* ============================================================
+   11. RENDERING — KPIs & CHARTS
+   - KPI tiles
+   - Line charts
+   - Multi-series charts
+   ============================================================ */
+
+
 
     
 
@@ -2346,13 +2349,10 @@ window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
     const kpis = computeKPIs(currentLoans);
 
-      renderLoanGrid(filteredLoans);
-renderLoanTableROI(filteredLoans);
-
-      
+renderLoanGrid(filteredLoans);
 
 
-window.createLineChart = createLineChart;
+    
       
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
