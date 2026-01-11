@@ -1756,13 +1756,15 @@ function computeKPIs(list) {
     };
 
 }
-
+window.createLineChart = createLineChart;
 
     /* -------------------------
        Small chart utilities (line & bar with hover)
        ------------------------- */
     function createLineChart(containerEl, series, opts = {}) {
       containerEl.innerHTML = '';
+       const tooltip = opts.tooltip;
+  if (!tooltip) return;
       const svgNS = "http://www.w3.org/2000/svg";
       const rect = containerEl.getBoundingClientRect();
       const w = Math.max(360, rect.width || 600);
@@ -1921,407 +1923,13 @@ function computeKPIs(list) {
       containerEl.appendChild(svg); return svg;
     }
     
-    
-    
-    
-    async function initROI() {
-      const TODAY = new Date();
 
-
-      
-      const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-
-/* delete
-      // --------------------------------------------------
-// FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
-// --------------------------------------------------
-const userLoans = loans
-  .map(l => ({
-    ...l,
-    user: l.user ?? "jeff",
-    visible: l.visible !== false
-  }))
-  .filter(l => l.user === PAGE_USER && l.visible === true);
-delete */
-
-/* delete      
-// --------------------------------------------------
-// Normalize numeric fields (ONLY user loans)
-// --------------------------------------------------
-const formattedLoans = userLoans.map(l => ({
-  ...l,
-  purchasePrice: Number(l.purchasePrice ?? 0),
-  nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-}));
-delete */
-
-/* updated delete
-      const loansWithAmort = formattedLoans.map(l => {
-    
-const rawAmort = buildAmortSchedule(l);
-
-// ----------------------------------
-// Respect terminal rows from engine
-// ----------------------------------
-const amortSchedule = (() => {
-  const out = [];
-  for (const r of rawAmort) {
-    out.push(r);
-    if (r.isTerminal === true) break; // 🔒 STOP at default
-  }
-  return out;
-})();
-updated delete */
-
-/* updated */
-        const loansWithAmort = currentLoans.map(l => {
-  const rawAmort = buildAmortSchedule(l);
-
-  const amortSchedule = [];
-  for (const r of rawAmort) {
-    amortSchedule.push(r);
-    if (r.isTerminal === true) break;
-  }
-
-  return {
-    ...l,
-    amortSchedule
-  };
-});
-/* updated */
-
-      // Attach ownership flags
-      const purchase = new Date(l.purchaseDate);
-      const scheduleWithOwnership = amortSchedule.map(r => ({
-        ...r,
-        isOwned: r.loanDate >= purchase,
-        ownershipMonthIndex: r.loanDate >= purchase
-          ? monthDiff(purchase, r.loanDate) + 1
-        : 0,
-      ownershipDate: r.loanDate >= purchase ? r.loanDate : null
-    }));
-        
-let cumP = 0;
-let cumI = 0;
-let cumFees = 0;
-        
-const cumSchedule = scheduleWithOwnership
-  .filter(r => r.isOwned)
-  .reduce((rows, r) => {
-    cumP += r.principalPaid;
-    cumI += r.interest;
-    const feeThisMonth = Number(r.feeThisMonth ?? 0);
-    cumFees += feeThisMonth;
-
-    rows.push({
-      ...r,
-      cumPrincipal: +cumP.toFixed(2),
-      cumInterest: +cumI.toFixed(2),
-      cumFees: +cumFees.toFixed(2)
-    });
-
-    // 🔒 HARD STOP at terminal row
-    if (r.isTerminal === true) {
-      return rows;
-    }
-
-    return rows;
-  }, []);
-
-/* update delete
-    // Compute proper ROI timeline using correct amort + fees
-    const purchasePrice = Number(l.purchasePrice ?? 0);
-    const roiSeries = cumSchedule
-      .filter(r => r.isOwned)
-.map(r => {
-  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-  const unrealized = r.balance * 0.95;
-  const loanValue = realized + unrealized;
-  const roi = (loanValue - purchasePrice) / purchasePrice;
- return {
-  month: r.ownershipMonthIndex,
-  date: r.displayDate,
-  roi,
-  loanValue,
-  cumFees: r.cumFees,
-  realized,
-  remainingBalance: r.balance,
-  unrealized,
-
-  // 🔑 PROPAGATE TERMINAL STATE
-  isTerminal: r.isTerminal === true
-};
-
-});
-update delete */
-
-/* update */
-      const purchasePrice = Number(l.purchasePrice ?? 0);
-
-const roiSeries = purchasePrice > 0
-  ? cumSchedule.map(r => {
-      const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-      const unrealized = r.balance * 0.95;
-      const loanValue = realized + unrealized;
-      const roi = (loanValue - purchasePrice) / purchasePrice;
-
-      return {
-        month: r.ownershipMonthIndex,
-        date: r.displayDate,
-        roi,
-        loanValue,
-        cumFees: r.cumFees,
-        realized,
-        remainingBalance: r.balance,
-        unrealized,
-        isTerminal: r.isTerminal === true
-      };
-    })
-  : [];
-/* update */
-
-    // Return updated loan object
-    return {
-    ...l,
-    amort: { schedule: amortSchedule },
-    scheduleWithOwnership,
-    cumSchedule,
-    balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
-    roiSeries
-  };
-});
-
-    /* delete
-      allLoans = loansWithAmort;   // 🔑 master list
-currentLoans = loansWithAmort;
-
-filteredLoans = loansWithAmort.slice();
-delete */
-      
-/* moved delete  
-      window.KPI_COLOR_MAP = {};
-      
-      // 1) Hand-picked, visually maximized contrast palette
-      // Carefully ordered to avoid adjacent hue confusion
-      const BASE_DISTINCT_COLORS = [
-        '#2563eb', // blue
-        '#dc2626', // red
-        '#16a34a', // green
-        '#7c3aed', // purple
-        '#ea580c', // orange
-        '#0891b2', // cyan
-        '#ca8a04', // amber
-        '#be185d', // rose
-        '#15803d', // dark green
-        '#1d4ed8', // deep blue
-        '#9333ea', // violet
-        '#b91c1c'  // dark red
-      ];
-      
-      // 2) Fallback generator ONLY if loans exceed base palette
-      function generateExtraColors(n) {
-        const colors = [];
-        for (let i = 0; i < n; i++) {
-          const hue = (i * 137.508) % 360;
-          colors.push(`hsl(${hue.toFixed(0)} 80% 55%)`);
-        }
-        return colors;
-      }
-    
-      
-      // 3) Stable ordering (important!)
-      const sortedLoansForColors = currentLoans
-      .slice()
-      .sort((a, b) => (a.id ?? a.loanId) - (b.id ?? b.loanId));
-
-      
-      // 4) Build final palette
-      const extraNeeded = Math.max(0, sortedLoansForColors.length - BASE_DISTINCT_COLORS.length);
-      const palette = BASE_DISTINCT_COLORS.concat(generateExtraColors(extraNeeded));
-      
-      // 5) Assign colors deterministically
-      sortedLoansForColors.forEach((loan, i) => {
-        const id = loan.id ?? loan.loanId;
-        window.KPI_COLOR_MAP[id] = palette[i];
-      });
-moved delete */
-
-/* moved updated
-function getCurrentOwnedRoiEntry(loan){
-  const today = new Date();
-  const ownedEntries = loan.roiSeries.filter(
-    r => r.date && r.date <= today
-  );
-  if (!ownedEntries.length) {
-    return { roi: 0, loanValue: loan.purchasePrice };
-  }
-  return ownedEntries[ownedEntries.length - 1];
-}
-moved updated */
-
-/* moved delete
-      function getRoiEntryAsOfMonth(loan, monthDate) {
-  if (!Array.isArray(loan.roiSeries)) {
-    return { roi: 0, loanValue: loan.purchasePrice };
-  }
-
-  const eligible = loan.roiSeries.filter(
-    r => r.date && r.date <= monthDate
-  );
-
-  if (!eligible.length) {
-    return { roi: 0, loanValue: loan.purchasePrice };
-  }
-
-  return eligible[eligible.length - 1];
-}
-moved delete */
-
-/* delete
-    function getLastOwnedRoiEntry(loan){
-      if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
-      return loan.roiSeries[loan.roiSeries.length - 1];
-    }
-delete */
-
-/* moved delete
-      // =====================================================
-// ROI Loan Table Renderer (matches Amort table)
-// =====================================================
-function renderLoanTableROI(loans) {
-  const tbody = document.querySelector("#loanTable tbody");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  loans.forEach(loan => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-    
-      <td>${loan.loanId}</td>
-      <td>${loan.loanName}</td>
-      <td>${loan.school}</td>
-      <td>${loan.loanStartDate ? formatMonthYear(parseISODateLocal(loan.loanStartDate)) : ""}</td>
-      <td>${loan.purchaseDate ? formatMonthYear(parseISODateLocal(loan.purchaseDate)) : ""}</td>
-      <td>$${formatCurrency(loan.principal)}</td>
-      <td>$${formatCurrency(loan.purchasePrice)}</td>
-      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
-      <td>${loan.termYears}</td>
-      <td>${loan.graceYears}</td>
-        <td>${
-  Number.isFinite(loan.roiToDate)
-    ? `${(loan.roiToDate * 100).toFixed(2)}%`
-    : "—"
-}</td>
-    `;
-
-    // 🔑 MATCH AMORT: hover via class, not inline style
-    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
-    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
-
-tr.addEventListener("click", () => {
-  openLoanDrawerSafe(loan);
-});
-
-;
-
-    tbody.appendChild(tr);
-  });
-}
-moved delete */
-    
-
-/* stopped here */
-
-/* moved
-function computeWeightedRoiAsOfMonth(loans, monthDate) {
-  const total = loans.reduce((s, l) => s + l.purchasePrice, 0);
-
-  if (!total) return 0;
-
-  return loans.reduce((sum, loan) => {
-    const entry = getRoiEntryAsOfMonth(loan, monthDate);
-    return sum + loan.purchasePrice * (entry.roi || 0);
-  }, 0) / total;
-}
-moved */
-
-/* moved
-function computeKPIs(list) {
-  const total = list.reduce((s, l) => s + l.purchasePrice, 0);
-
-  // -------------------------------------
-  // Weighted ROI to Date (unchanged)
-  // -------------------------------------
-  const weightedROI =
-  computeWeightedRoiAsOfMonth(list, KPI_CURRENT_MONTH);
-
-
-
-  // -------------------------------------
-  // Projected Weighted ROI (unchanged)
-  // -------------------------------------
-  const projectedWeightedROI =
-    list.reduce(
-      (s, l) =>
-        s +
-        l.purchasePrice *
-          ((l.roiSeries[l.roiSeries.length - 1] || {}).roi || 0),
-      0
-    ) / Math.max(1, total);
-
-    // -------------------------------------
-    // Capital Recovery (TO TODAY, FIXED)
-    // -------------------------------------
-    const TODAY = new Date();
-    TODAY.setHours(23, 59, 59, 999);
-    
-    let recoveredPrincipalTotal = 0;
-    let investedPrincipalTotal = 0;
-    
-    list.forEach(l => {
-      if (!l.amort || !l.amort.schedule) return;
-    
-      // ✅ only owned rows through TODAY
-      const recovered = l.amort.schedule
-        .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
-        .reduce((s, r) => s + (r.principalPaid || 0), 0);
-    
-      recoveredPrincipalTotal += recovered;
-      investedPrincipalTotal += (l.purchasePrice || 0);
-    });
-    
-    const capitalRecoveryPct =
-      investedPrincipalTotal > 0
-        ? recoveredPrincipalTotal / investedPrincipalTotal
-        : 0;
-
-    
-        return {
-      total,
-      weightedROI,
-      projectedWeightedROI,
-      capitalRecoveredAmount: recoveredPrincipalTotal,
-      capitalRecoveryPct
-    };
-
-}
-moved */
-    
-    const kpis = computeKPIs(currentLoans);
-
-/* next */
-      
-
-
-window.createLineChart = createLineChart;
       
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
    ============================================================ */
 
-function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
+function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, loans, opts = {}) {
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
     // -----------------------------------
@@ -2591,7 +2199,8 @@ svg.addEventListener("mousemove", ev => {
 
   // weighted series
 const weightedAtDate =
-  computeWeightedRoiAsOfMonth(currentLoans, date);
+  computeWeightedRoiAsOfMonth(loans, date);
+
 
 html += `
   <div style="margin-bottom:6px">
@@ -2666,6 +2275,157 @@ svg.addEventListener("mouseleave", () => {
   svg.appendChild(axis);
   containerEl.appendChild(svg);
 }
+
+
+    
+    
+    
+    async function initROI() {
+      const TODAY = new Date();
+      
+      const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
+
+/* delete
+      // --------------------------------------------------
+// FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
+// --------------------------------------------------
+const userLoans = loans
+  .map(l => ({
+    ...l,
+    user: l.user ?? "jeff",
+    visible: l.visible !== false
+  }))
+  .filter(l => l.user === PAGE_USER && l.visible === true);
+delete */
+
+/* delete      
+// --------------------------------------------------
+// Normalize numeric fields (ONLY user loans)
+// --------------------------------------------------
+const formattedLoans = userLoans.map(l => ({
+  ...l,
+  purchasePrice: Number(l.purchasePrice ?? 0),
+  nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
+}));
+delete */
+
+
+/* updated */
+        const loansWithAmort = currentLoans.map(l => {
+  const rawAmort = buildAmortSchedule(l);
+
+  const amortSchedule = [];
+  for (const r of rawAmort) {
+    amortSchedule.push(r);
+    if (r.isTerminal === true) break;
+  }
+
+  return {
+    ...l,
+    amortSchedule
+  };
+});
+/* updated */
+
+      // Attach ownership flags
+      const purchase = new Date(l.purchaseDate);
+      const scheduleWithOwnership = amortSchedule.map(r => ({
+        ...r,
+        isOwned: r.loanDate >= purchase,
+        ownershipMonthIndex: r.loanDate >= purchase
+          ? monthDiff(purchase, r.loanDate) + 1
+        : 0,
+      ownershipDate: r.loanDate >= purchase ? r.loanDate : null
+    }));
+        
+let cumP = 0;
+let cumI = 0;
+let cumFees = 0;
+        
+const cumSchedule = scheduleWithOwnership
+  .filter(r => r.isOwned)
+  .reduce((rows, r) => {
+    cumP += r.principalPaid;
+    cumI += r.interest;
+    const feeThisMonth = Number(r.feeThisMonth ?? 0);
+    cumFees += feeThisMonth;
+
+    rows.push({
+      ...r,
+      cumPrincipal: +cumP.toFixed(2),
+      cumInterest: +cumI.toFixed(2),
+      cumFees: +cumFees.toFixed(2)
+    });
+
+    // 🔒 HARD STOP at terminal row
+    if (r.isTerminal === true) {
+      return rows;
+    }
+
+    return rows;
+  }, []);
+
+
+
+/* update */
+      const purchasePrice = Number(l.purchasePrice ?? 0);
+
+const roiSeries = purchasePrice > 0
+  ? cumSchedule.map(r => {
+      const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
+      const unrealized = r.balance * 0.95;
+      const loanValue = realized + unrealized;
+      const roi = (loanValue - purchasePrice) / purchasePrice;
+
+      return {
+        month: r.ownershipMonthIndex,
+        date: r.displayDate,
+        roi,
+        loanValue,
+        cumFees: r.cumFees,
+        realized,
+        remainingBalance: r.balance,
+        unrealized,
+        isTerminal: r.isTerminal === true
+      };
+    })
+  : [];
+/* update */
+
+    // Return updated loan object
+    return {
+    ...l,
+    amort: { schedule: amortSchedule },
+    scheduleWithOwnership,
+    cumSchedule,
+    balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
+    roiSeries
+  };
+});
+
+    /* delete
+      allLoans = loansWithAmort;   // 🔑 master list
+currentLoans = loansWithAmort;
+
+filteredLoans = loansWithAmort.slice();
+delete */
+      
+
+/* delete
+    function getLastOwnedRoiEntry(loan){
+      if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
+      return loan.roiSeries[loan.roiSeries.length - 1];
+    }
+delete */
+    
+    const kpis = computeKPIs(currentLoans);
+
+/* next */
+      
+
+
+
+
       
     /* -------------------------
        UI: Render KPI tiles
