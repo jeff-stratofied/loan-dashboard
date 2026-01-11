@@ -1869,6 +1869,11 @@ const cumSchedule = scheduleWithOwnership
     roiSeries
   };
 });
+console.assert(
+  loansWithAmort.every(l => Array.isArray(l.roiSeries)),
+  "❌ ROI series missing on some loans"
+);
+  
   }
 
 
