@@ -1586,7 +1586,15 @@ const rowClass = getEventRowClass(loan, cs || s);
    - No runtime logic
    ============================================================ */
 
+      const TODAY = new Date();
+const KPI_CURRENT_MONTH = new Date(
+  TODAY.getFullYear(),
+  TODAY.getMonth(),
+  1
+);
 
+
+    
 
 /* ============================================================
    2. PURE UTILITY FUNCTIONS (NO STATE, NO DOM)
@@ -1838,16 +1846,7 @@ function computeKPIs(list) {
     
     
     async function initROI() {
-      const TODAY = new Date();
 
-// -------------------------------------
-// KPI-1 authoritative "current month"
-// -------------------------------------
-const KPI_CURRENT_MONTH = new Date(
-  TODAY.getFullYear(),
-  TODAY.getMonth(),
-  1
-);
       
       const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
       // --------------------------------------------------
