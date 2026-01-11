@@ -1954,7 +1954,8 @@ function buildKpiColorMap(loans) {
     /* -------------------------
        Small chart utilities (line & bar with hover)
        ------------------------- */
-    function createLineChart(containerEl, series, opts = {}) {
+    window.createLineChart = function createLineChart(containerEl, series, opts = {}) {
+
       containerEl.innerHTML = '';
       const svgNS = "http://www.w3.org/2000/svg";
       const rect = containerEl.getBoundingClientRect();
@@ -2176,7 +2177,11 @@ function renderLoanGrid(loans) {
   const grid = document.getElementById("loanGrid");
   if (!grid) return;
 
-  grid.innerHTML = "";
+  // 🔒 HARD RESET — prevents duplicate tiles
+  while (grid.firstChild) {
+    grid.removeChild(grid.firstChild);
+  }
+
 
   loans.forEach(loan => {
     const tile = document.createElement("div");
@@ -2214,6 +2219,7 @@ function renderLoanGrid(loans) {
 
       <div class="chart-wrap">
         <div class="mini-label">
+  ROI
           ${(getCurrentOwnedRoiEntry(loan).roi * 100).toFixed(2)}%
         </div>
         <svg class="sparkline"></svg>
@@ -2349,7 +2355,10 @@ window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
     const kpis = computeKPIs(currentLoans);
 
+// 🔑 Single initial render
+filteredLoans = currentLoans.slice();
 renderLoanGrid(filteredLoans);
+
 
 
     
