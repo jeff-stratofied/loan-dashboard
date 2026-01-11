@@ -1648,7 +1648,26 @@ function getCurrentOwnedRoiEntry(loan) {
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
 
+function getOwnedRoiSeriesFromAmort(loan) {
+  if (!Array.isArray(loan.amortSchedule)) return [];
 
+  return loan.amortSchedule.map(row => {
+    const loanValue =
+      (row.remainingBalance ?? 0) +
+      (row.unrealizedValue ?? 0);
+
+    const roi =
+      (loanValue - loan.purchasePrice) / loan.purchasePrice;
+
+    return {
+      date: row.date,
+      roi
+    };
+  });
+}
+
+
+    
     
 
 /* ============================================================
@@ -2241,7 +2260,7 @@ if (!loans.length || !loans[0].roiSeries) {
     const sparkSvg = tile.querySelector("svg.sparkline");
 
 if (sparkSvg) {
-  const ownedSeries = getOwnedRoiSeries(loan);
+  const ownedSeries = getOwnedRoiSeriesFromAmort(loan);
 
   if (Array.isArray(ownedSeries) && ownedSeries.length) {
     const series = ownedSeries.map(p => ({
