@@ -2107,85 +2107,6 @@ if (sparkSvg && Array.isArray(loan.roiSeries) && loan.roiSeries.length) {
    - Multi-series charts
    ============================================================ */
 
-
-
-/* ============================================================
-   12. DRAWER LOGIC (LOAN & KPI)
-   - Drawer open/close
-   - Loan drawer rendering
-   - KPI drawer rendering
-   ============================================================ */
-
-
-
-/* ============================================================
-   13. GLOBAL EVENT WIRING
-   - Filter change handlers
-   - Sort handlers
-   - Toggle buttons
-   - Print / CSV / actions
-   ============================================================ */
-
-
-
-/* ============================================================
-   14. initROI() — APPLICATION ORCHESTRATION
-   - Order of operations only
-   - No helpers defined here
-   ============================================================ */
-
-
-
-
-    
-    
-    async function initROI() {
-
-      
-      const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
-      // --------------------------------------------------
-// FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
-// --------------------------------------------------
-const userLoans = loans
-  .map(l => ({
-    ...l,
-    user: l.user ?? "jeff",
-    visible: l.visible !== false
-  }))
-  .filter(l => l.user === PAGE_USER && l.visible === true);
-
-// --------------------------------------------------
-// Normalize numeric fields (ONLY user loans)
-// --------------------------------------------------
-const formattedLoans = userLoans.map(l => ({
-  ...l,
-  purchasePrice: Number(l.purchasePrice ?? 0),
-  nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-}));
-
-const loansWithAmort = deriveLoansWithAmortAndRoi(formattedLoans);
-      
-      allLoans = loansWithAmort;   // 🔑 master list
-currentLoans = loansWithAmort;
-
-filteredLoans = loansWithAmort.slice();
-
- 
-
-      
-
-
-window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
-
-      
-
-
-    const kpis = computeKPIs(currentLoans);
-
-      renderLoanGrid(filteredLoans);
-renderLoanTableROI(filteredLoans);
-
-      
     /* -------------------------
        Small chart utilities (line & bar with hover)
        ------------------------- */
@@ -2348,6 +2269,88 @@ renderLoanTableROI(filteredLoans);
 
       containerEl.appendChild(svg); return svg;
     }
+
+    
+
+
+/* ============================================================
+   12. DRAWER LOGIC (LOAN & KPI)
+   - Drawer open/close
+   - Loan drawer rendering
+   - KPI drawer rendering
+   ============================================================ */
+
+
+
+/* ============================================================
+   13. GLOBAL EVENT WIRING
+   - Filter change handlers
+   - Sort handlers
+   - Toggle buttons
+   - Print / CSV / actions
+   ============================================================ */
+
+
+
+/* ============================================================
+   14. initROI() — APPLICATION ORCHESTRATION
+   - Order of operations only
+   - No helpers defined here
+   ============================================================ */
+
+
+
+
+    
+    
+    async function initROI() {
+
+      
+      const formatLoanLabel = (loan) => `Loan ${loan.id} — ${loan.name} (${loan.school})`;
+      // --------------------------------------------------
+// FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
+// --------------------------------------------------
+const userLoans = loans
+  .map(l => ({
+    ...l,
+    user: l.user ?? "jeff",
+    visible: l.visible !== false
+  }))
+  .filter(l => l.user === PAGE_USER && l.visible === true);
+
+// --------------------------------------------------
+// Normalize numeric fields (ONLY user loans)
+// --------------------------------------------------
+const formattedLoans = userLoans.map(l => ({
+  ...l,
+  purchasePrice: Number(l.purchasePrice ?? 0),
+  nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
+}));
+
+const loansWithAmort = deriveLoansWithAmortAndRoi(formattedLoans);
+      
+      allLoans = loansWithAmort;   // 🔑 master list
+currentLoans = loansWithAmort;
+
+filteredLoans = loansWithAmort.slice();
+
+ 
+
+      
+
+
+window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
+
+      
+
+
+    const kpis = computeKPIs(currentLoans);
+
+      renderLoanGrid(filteredLoans);
+renderLoanTableROI(filteredLoans);
+
+      
+
 
 window.createLineChart = createLineChart;
       
