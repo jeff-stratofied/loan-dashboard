@@ -1967,170 +1967,166 @@ function buildKpiColorMap(loans) {
     /* -------------------------
        Small chart utilities (line & bar with hover)
        ------------------------- */
-    window.createLineChart = function createLineChart(containerEl, series, opts = {}) {
+window.createLineChart = function createLineChart(containerEl, series, opts = {}) {
+  containerEl.innerHTML = '';
+  const svgNS = "http://www.w3.org/2000/svg";
 
-      containerEl.innerHTML = '';
-      const svgNS = "http://www.w3.org/2000/svg";
-      const rect = containerEl.getBoundingClientRect();
-      const w = Math.max(360, rect.width || 600);
-      const h = opts.h || 260;
-      const pad = opts.pad || 48;
-      const svg = document.createElementNS(svgNS, "svg");
-      svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-      svg.setAttribute("width", "100%");
-      svg.setAttribute("height", "100%");
-      svg.style.display = "block";
+  const rect = containerEl.getBoundingClientRect();
+  const w = Math.max(360, rect.width || 600);
+  const h = opts.h || 260;
+  const pad = opts.pad || 48;
 
-      const data = series.length ? series.slice() : [{ x: 0, y: 0 }];
-      const ys = data.map(d => d.y);
-      const minY = Math.min(...ys);
-      const maxY = Math.max(...ys);
-      const rangeY = Math.max(1e-6, maxY - minY);
-      const stepX = (w - pad * 2) / Math.max(1, data.length - 1);
-      const xForMonth = month => pad + (Math.min(Math.max(month, 1), data.length) - 1) * stepX;
-      function toXY(d, i) {
-        const x = pad + i * stepX;
-        const y = pad + (h - pad * 2) - ((d.y - minY) / rangeY) * (h - pad * 2);
-        return [x, y];
-      }
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+  svg.style.display = "block";
 
-      for (let gy = 0; gy < 5; gy++) {
-        const y = pad + gy * ((h - pad * 2) / 4);
-        const line = document.createElementNS(svgNS, 'line');
-        line.setAttribute('x1', pad);
-        line.setAttribute('x2', w - pad);
-        line.setAttribute('y1', y);
-        line.setAttribute('y2', y);
-        line.setAttribute('stroke', '#eef2f7');
-        svg.appendChild(line);
-      }
+  const data = series.filter(d => d?.date instanceof Date);
+  if (!data.length) return;
 
-      let path = '';
-      data.forEach((p, i) => {
-        const xy = toXY(p, i);
-        path += (i === 0 ? ('M ' + xy[0] + ' ' + xy[1]) : (' L ' + xy[0] + ' ' + xy[1]));
-      });
-      const el = document.createElementNS(svgNS, 'path');
-      el.setAttribute('d', path);
-      el.setAttribute('fill', 'none');
-      el.setAttribute('stroke', opts.color || '#0ea5e9');
-      el.setAttribute('stroke-width', '2');
-      svg.appendChild(el);
+  // ----------------------------
+  // Y SCALE
+  // ----------------------------
+  const ys = data.map(d => d.y);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const rangeY = Math.max(1e-6, maxY - minY);
 
-      // Static vertical line at "today" based on ownershipDate
-      const today =
-  opts.todayDate instanceof Date
-    ? opts.todayDate
-    : new Date();
+  // ----------------------------
+  // X SCALE (DATE-BASED — FIX)
+  // ----------------------------
+  const dates = data.map(d => d.date);
+  const minDate = dates[0];
+  const maxDate = dates[dates.length - 1];
+  const dateSpan = Math.max(1, maxDate - minDate);
 
-      let todayIdx = -1;
-      data.forEach((d, i) => {
-  if (d.date && d.date <= today) {
-    todayIdx = i;
+  const xForDate = d =>
+    pad + ((d - minDate) / dateSpan) * (w - pad * 2);
+
+  const toXY = d => {
+    const x = xForDate(d.date);
+    const y =
+      pad +
+      (h - pad * 2) -
+      ((d.y - minY) / rangeY) * (h - pad * 2);
+    return [x, y];
+  };
+
+  // ----------------------------
+  // GRID
+  // ----------------------------
+  for (let gy = 0; gy < 5; gy++) {
+    const y = pad + gy * ((h - pad * 2) / 4);
+    const line = document.createElementNS(svgNS, 'line');
+    line.setAttribute('x1', pad);
+    line.setAttribute('x2', w - pad);
+    line.setAttribute('y1', y);
+    line.setAttribute('y2', y);
+    line.setAttribute('stroke', '#eef2f7');
+    svg.appendChild(line);
   }
-});
 
-      if (todayIdx === -1) todayIdx = 0;
-      const todayX = pad + todayIdx * stepX;
-      const todayLine = document.createElementNS(svgNS, "line");
-      todayLine.setAttribute("x1", todayX);
-      todayLine.setAttribute("x2", todayX);
-      todayLine.setAttribute("y1", pad);
-      todayLine.setAttribute("y2", h - pad);
-      todayLine.setAttribute("stroke", "#111827");
-      todayLine.setAttribute("stroke-dasharray", "3 3");
-      todayLine.setAttribute("stroke-opacity", "0.6");
-      svg.appendChild(todayLine);
+  // ----------------------------
+  // LINE PATH
+  // ----------------------------
+  let path = '';
+  data.forEach((p, i) => {
+    const [x, y] = toXY(p);
+    path += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+  });
 
-      const vLine = document.createElementNS(svgNS, 'line');
-      vLine.setAttribute('stroke', '#111827');
-      vLine.setAttribute('stroke-dasharray', '3 4');
-      vLine.setAttribute('stroke-opacity', '0.6');
-      svg.appendChild(vLine);
-      const hoverG = document.createElementNS(svgNS, 'g');
-      hoverG.setAttribute('class', 'hover');
-      svg.appendChild(hoverG);
-      svg.addEventListener('mousemove', function (ev) {
-        const rect = svg.getBoundingClientRect();
-        const svgX = ev.clientX - rect.left;
-        let idx = Math.round((svgX - pad) / stepX);
-        idx = Math.max(0, Math.min(data.length - 1, idx));
-        const point = data[idx];
-        const [cx, cy] = toXY(point, idx);
-        vLine.setAttribute('x1', cx);
-        vLine.setAttribute('x2', cx);
-        vLine.setAttribute('y1', pad);
-        vLine.setAttribute('y2', h - pad);
-        hoverG.innerHTML = '';
-        const c = document.createElementNS(svgNS, 'circle');
-        c.setAttribute('cx', cx);
-        c.setAttribute('cy', cy);
-        c.setAttribute('r', 4);
-        c.setAttribute('fill', opts.color || '#0ea5e9');
-        c.setAttribute('stroke', 'var(--card)');
-        c.setAttribute('stroke-width', '1');
-        hoverG.appendChild(c);
-        tooltip.style.display = 'block';
-        tooltip.style.left = (rect.left + cx) + 'px';
-        tooltip.style.top = (rect.top + cy - 28) + 'px';
-        tooltip.innerHTML = (
-  opts.labelFn
-    ? opts.labelFn(point, idx)
-    : (
-        point.date
-  ? `${formatMonthYear(point.date)} • ${(point.y * 100).toFixed(2)}%`
+  const el = document.createElementNS(svgNS, 'path');
+  el.setAttribute('d', path);
+  el.setAttribute('fill', 'none');
+  el.setAttribute('stroke', opts.color || '#0ea5e9');
+  el.setAttribute('stroke-width', '2');
+  svg.appendChild(el);
 
-          : (`M${point.x} • ${(point.y * 100).toFixed(2)}%`)
-      )
-);
+  // ----------------------------
+  // TODAY LINE (DATE-BASED — FIX)
+  // ----------------------------
+  const today =
+    opts.todayDate instanceof Date
+      ? opts.todayDate
+      : new Date();
 
-      });
-     svg.addEventListener('mouseleave', function () {
+  if (today >= minDate && today <= maxDate) {
+    const todayX = xForDate(today);
+    const todayLine = document.createElementNS(svgNS, "line");
+    todayLine.setAttribute("x1", todayX);
+    todayLine.setAttribute("x2", todayX);
+    todayLine.setAttribute("y1", pad);
+    todayLine.setAttribute("y2", h - pad);
+    todayLine.setAttribute("stroke", "#111827");
+    todayLine.setAttribute("stroke-dasharray", "3 3");
+    todayLine.setAttribute("stroke-opacity", "0.6");
+    svg.appendChild(todayLine);
+  }
+
+  // ----------------------------
+  // HOVER
+  // ----------------------------
+  const vLine = document.createElementNS(svgNS, 'line');
+  vLine.setAttribute('stroke', '#111827');
+  vLine.setAttribute('stroke-dasharray', '3 4');
+  vLine.setAttribute('stroke-opacity', '0.6');
+  svg.appendChild(vLine);
+
+  const hoverG = document.createElementNS(svgNS, 'g');
+  svg.appendChild(hoverG);
+
+  svg.addEventListener('mousemove', ev => {
+    const rect = svg.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+
+    // find nearest point by date-proportional X
+    let nearest = data[0];
+    let best = Infinity;
+
+    data.forEach(p => {
+      const dx = Math.abs(xForDate(p.date) - x);
+      if (dx < best) {
+        best = dx;
+        nearest = p;
+      }
+    });
+
+    const [cx, cy] = toXY(nearest);
+
+    vLine.setAttribute('x1', cx);
+    vLine.setAttribute('x2', cx);
+    vLine.setAttribute('y1', pad);
+    vLine.setAttribute('y2', h - pad);
+
+    hoverG.innerHTML = '';
+    const c = document.createElementNS(svgNS, 'circle');
+    c.setAttribute('cx', cx);
+    c.setAttribute('cy', cy);
+    c.setAttribute('r', 4);
+    c.setAttribute('fill', opts.color || '#0ea5e9');
+    hoverG.appendChild(c);
+
+    tooltip.style.display = 'block';
+    tooltip.style.left = (rect.left + cx) + 'px';
+    tooltip.style.top = (rect.top + cy - 28) + 'px';
+    tooltip.innerHTML =
+      opts.labelFn
+        ? opts.labelFn(nearest)
+        : `${formatMonthYear(nearest.date)} • ${(nearest.y * 100).toFixed(2)}%`;
+  });
+
+  svg.addEventListener('mouseleave', () => {
     hoverG.innerHTML = '';
     tooltip.style.display = 'none';
-    vLine.setAttribute('x1', -9999); 
+    vLine.setAttribute('x1', -9999);
     vLine.setAttribute('x2', -9999);
-});
-    // -----------------------------------
-    // X AXIS (Month / Year)
-    // -----------------------------------
-    const xAxis = document.createElementNS(svgNS, 'g');
-    const tickEvery = opts.tickEvery || 6;
-  
-    data.forEach((p, i) => {
-      if (i % tickEvery !== 0) return;
-  
-      const x = pad + i * stepX;
-      const lbl = document.createElementNS(svgNS, 'text');
-      lbl.setAttribute('x', x);
-      lbl.setAttribute('y', h - 8);
-      lbl.setAttribute('text-anchor', 'middle');
-      lbl.setAttribute('font-size', '10');
-      lbl.setAttribute('fill', 'var(--muted)');
-      lbl.textContent = p.date
-  ? formatMonthYear(p.date)
-  : `M${i + 1}`;
+  });
 
-  
-      xAxis.appendChild(lbl);
-    });
-  
-    svg.appendChild(xAxis);
-  
-    // -----------------------------------
-    // Y AXIS LABEL (% ROI)
-    // -----------------------------------
-    const yLabel = document.createElementNS(svgNS, 'text');
-    yLabel.setAttribute('x', 14);
-    yLabel.setAttribute('y', pad - 10);
-    yLabel.setAttribute('font-size', '10');
-    yLabel.setAttribute('fill', 'var(--muted)');
-    yLabel.setAttribute('text-anchor', 'start');
-    yLabel.textContent = 'ROI %';
-    svg.appendChild(yLabel);
+  containerEl.appendChild(svg);
+  return svg;
+};
 
-      containerEl.appendChild(svg); return svg;
-    }
     
 
 /* ============================================================
