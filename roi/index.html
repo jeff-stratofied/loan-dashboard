@@ -2067,6 +2067,32 @@ function renderLoanGrid(loans) {
     });
 
     grid.appendChild(tile);
+
+    // --------------------------------------------------
+// Mini ROI sparkline (loan tile)
+// --------------------------------------------------
+const sparkSvg = tile.querySelector("svg.sparkline");
+
+if (sparkSvg && Array.isArray(loan.roiSeries) && loan.roiSeries.length) {
+  const series = loan.roiSeries.map(s => ({
+    x: formatMonthYear(s.date),
+    y: s.roi,
+    date: s.date
+  }));
+
+  window.createLineChart(
+    sparkSvg,
+    series,
+    {
+      h: 48,
+      pad: 12,
+      tickEvery: 1000, // effectively hide x-axis labels
+      color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
+      labelFn: null
+    }
+  );
+}
+
   });
 }
 
