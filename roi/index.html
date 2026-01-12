@@ -2526,9 +2526,10 @@ function renderLoanTableROI() {
   if (!wrap || !grid || !tbody) return;
 
   // 🔑 canonical visibility
-  wrap.hidden = false;
-  grid.hidden = true;
-  grid.innerHTML = ""; // 🔑 REMOVE tiles from DOM so they cannot reappear
+wrap.style.display = "block";
+grid.style.display = "none";
+grid.innerHTML = ""; // destroy tiles so they cannot reappear
+
 
 
   tbody.innerHTML = "";
