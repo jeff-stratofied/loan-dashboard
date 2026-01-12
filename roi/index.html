@@ -2361,79 +2361,46 @@ window.createLineChart = function createLineChart(containerEl, series, opts = {}
   // ----------------------------
   // AXES
   // ----------------------------
-  const axisColor = '#94a3b8';
-
-  // Y axis line
-  const yAxis = document.createElementNS(svgNS, 'line');
-  yAxis.setAttribute('x1', pad);
-  yAxis.setAttribute('x2', pad);
-  yAxis.setAttribute('y1', pad);
-  yAxis.setAttribute('y2', h - pad);
-  yAxis.setAttribute('stroke', axisColor);
-  svg.appendChild(yAxis);
-
-  // X axis line
-  const xAxis = document.createElementNS(svgNS, 'line');
-  xAxis.setAttribute('x1', pad);
-  xAxis.setAttribute('x2', w - pad);
-  xAxis.setAttribute('y1', h - pad);
-  xAxis.setAttribute('y2', h - pad);
-  xAxis.setAttribute('stroke', axisColor);
-  svg.appendChild(xAxis);
-
+ 
   // ----------------------------
-  // Y AXIS LABELS (%)
-  // ----------------------------
-  for (let i = 0; i <= 4; i++) {
-    const t = i / 4;
-    const yVal = minY + (1 - t) * rangeY;
-    const y = pad + t * (h - pad * 2);
+// Y AXIS LABELS (MATCH PORTFOLIO)
+// ----------------------------
+for (let i = 0; i <= 4; i++) {
+  const t = i / 4;
+  const yVal = minY + (1 - t) * rangeY;
+  const y = pad + t * (h - pad * 2);
 
-    const tick = document.createElementNS(svgNS, 'line');
-    tick.setAttribute('x1', pad - 6);
-    tick.setAttribute('x2', pad);
-    tick.setAttribute('y1', y);
-    tick.setAttribute('y2', y);
-    tick.setAttribute('stroke', axisColor);
-    svg.appendChild(tick);
+  const label = document.createElementNS(svgNS, 'text');
+  label.setAttribute('x', pad - 12);
+  label.setAttribute('y', y + 4);
+  label.setAttribute('text-anchor', 'end');
+  label.setAttribute('font-size', '12');
+  label.setAttribute('font-weight', '500');
+  label.setAttribute('fill', '#64748b'); // 🔑 muted gray
+  label.textContent = `${(yVal * 100).toFixed(1)}%`;
+  svg.appendChild(label);
+}
 
-    const label = document.createElementNS(svgNS, 'text');
-    label.setAttribute('x', pad - 10);
-    label.setAttribute('y', y + 4);
-    label.setAttribute('text-anchor', 'end');
-    label.setAttribute('font-size', '11');
-    label.setAttribute('fill', 'currentColor');
-    label.textContent = `${(yVal * 100).toFixed(0)}%`;
-    svg.appendChild(label);
-  }
+// ----------------------------
+// X AXIS LABELS (MATCH PORTFOLIO)
+// ----------------------------
+const tickEvery = opts.tickEvery || 12;
 
-  // ----------------------------
-  // X AXIS LABELS (DATES)
-  // ----------------------------
-  const tickEvery = opts.tickEvery || 12;
+data.forEach((p, i) => {
+  if (i % tickEvery !== 0 && i !== data.length - 1) return;
 
-  data.forEach((p, i) => {
-    if (i % tickEvery !== 0 && i !== data.length - 1) return;
+  const x = xForDate(p.date);
 
-    const x = xForDate(p.date);
-
-    const tick = document.createElementNS(svgNS, 'line');
-    tick.setAttribute('x1', x);
-    tick.setAttribute('x2', x);
-    tick.setAttribute('y1', h - pad);
-    tick.setAttribute('y2', h - pad + 6);
-    tick.setAttribute('stroke', axisColor);
-    svg.appendChild(tick);
-
-    const label = document.createElementNS(svgNS, 'text');
-    label.setAttribute('x', x);
-    label.setAttribute('y', h - pad + 18);
-    label.setAttribute('text-anchor', 'middle');
-    label.setAttribute('font-size', '11');
-    label.setAttribute('fill', 'currentColor');
-    label.textContent = formatMonthYear(p.date);
-    svg.appendChild(label);
-  });
+  const label = document.createElementNS(svgNS, 'text');
+  label.setAttribute('x', x);
+  label.setAttribute('y', h - pad + 22);
+  label.setAttribute('text-anchor', 'middle');
+  label.setAttribute('font-size', '12');
+  label.setAttribute('font-weight', '500');
+  label.setAttribute('fill', '#64748b'); // 🔑 muted gray
+  label.textContent = formatMonthYear(p.date);
+  svg.appendChild(label);
+});
 
   // ----------------------------
   // LINE PATH
