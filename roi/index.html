@@ -2234,15 +2234,17 @@ function applyLoanFilters() {
   // -------------------------
   // RENDER
   // -------------------------
-  if (document.getElementById("toggleTableView")?.checked) {
-  renderLoanTableROI();
-} else {
-  renderLoanGrid(currentLoans);
-}
+   if (document.getElementById("toggleTableView")?.checked) {
+    renderLoanTableROI();
+  } else {
+    renderLoanGrid(currentLoans);
+  }
+} // ✅ ADD THIS LINE — closes applyLoanFilters()
 
 
 
 function populateLoanFilters(loans) {
+
   const schoolSel = document.getElementById("filterSchool");
   const nameSel   = document.getElementById("filterName");
 
@@ -2835,11 +2837,7 @@ filteredLoans = currentLoans.slice();
   "%cCalling renderLoanGrid from HERE",
   "color:#7c3aed;font-weight:bold"
 );
-renderLoanGrid(filteredLoans);
-
-
-
-    
+applyLoanFilters();
       
 /* ============================================================
    Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
@@ -3377,25 +3375,11 @@ function applyLoanSort() {
 // =========================================
 // Table View Toggle — RESTORE ON LOAD
 // =========================================
-const _tableToggle = document.getElementById("toggleTableView");
-if (_tableToggle) {
-  _tableToggle.checked = localStorage.getItem("roiTableView") === "1";
-}
-
-      
-// =========================================
-// Table View Toggle — RESTORE STATE (ROI)
-// =========================================
 const tableToggle = document.getElementById("toggleTableView");
-
 if (tableToggle) {
-  const savedTableView =
-    localStorage.getItem("roiTableView") === "1";
-
-  tableToggle.checked = savedTableView;
+  tableToggle.checked = localStorage.getItem("roiTableView") === "1";
 }
 
-      
 // =====================================================
 // TABLE VIEW TOGGLE — PERSISTENT (MATCH COMPACT)
 // =====================================================
@@ -3406,6 +3390,7 @@ document.getElementById("toggleTableView")?.addEventListener("change", (e) => {
   );
   applyLoanFilters();
 });
+
 
       
     /* -------------------------
