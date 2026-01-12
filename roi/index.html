@@ -3382,12 +3382,9 @@ function applyLoanSort() {
 // =========================================
 // Table View Toggle — RESTORE ON LOAD
 // =========================================
-const tableToggle = document.getElementById("toggleTableView");
+document.getElementById("toggleTableView")?.checked =
+  localStorage.getItem("roiTableView") === "1";
 
-if (tableToggle) {
-  tableToggle.checked =
-    localStorage.getItem("roiTableView") === "1";
-}
 
 
       
