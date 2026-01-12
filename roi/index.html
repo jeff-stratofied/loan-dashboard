@@ -2516,45 +2516,49 @@ data.forEach((p, i) => {
    - Loan table
    - Row / tile interactions
    ============================================================ */
-function renderLoanTableROI() {
+function renderLoanTableROI(list = currentLoans) {
   const wrap = document.getElementById("loanTableWrap");
-  const grid = document.getElementById("loanGrid");
   const tbody = document.querySelector("#loanTable tbody");
 
-  if (!wrap || !grid || !tbody) return;
+  if (!wrap || !tbody) return;
 
-  // 🔑 canonical visibility
-wrap.style.display = "block";
-grid.style.display = "none";
-grid.innerHTML = ""; // destroy tiles so they cannot reappear
-
-
+  wrap.hidden = false;
+  document.getElementById("loanGrid").style.display = "none";
 
   tbody.innerHTML = "";
 
-  getLoansForTableView().forEach(loan => {
+  list.forEach(loan => {
     const tr = document.createElement("tr");
+    tr.dataset.loanId = loan.id;
 
     tr.innerHTML = `
-      <td>${loan.id ?? ""}</td>
+      <td>${loan.id}</td>
       <td>${loan.name}</td>
-      <td>${loan.school ?? ""}</td>
-      <td>${loan.loanStartDate ?? ""}</td>
-      <td>${loan.purchaseDate ?? ""}</td>
-      <td style="text-align:right">$${formatCurrency(loan.principal)}</td>
-      <td style="text-align:right">$${formatCurrency(loan.purchasePrice)}</td>
-      <td style="text-align:right">${(loan.nominalRate * 100).toFixed(2)}%</td>
-      <td>${loan.termYears ?? ""}</td>
-      <td>${loan.graceYears ?? ""}</td>
-      <td style="text-align:right">
-        ${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%
-      </td>
+      <td>${loan.school || ""}</td>
+      <td>${loan.loanStartDate || ""}</td>
+      <td>${loan.purchaseDate || ""}</td>
+      <td>$${loan.originalLoanAmount?.toLocaleString() || "0"}</td>
+      <td>$${loan.purchasePrice.toLocaleString()}</td>
+      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
+      <td>${loan.termYears}</td>
+      <td>${loan.graceYears}</td>
+      <td>${((getCurrentOwnedRoiEntry(loan).roi || 0) * 100).toFixed(2)}%</td>
     `;
 
-    tr.addEventListener("click", () => openLoanDrawerSafe(loan));
+    // ✅ HOVER
+    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
+    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
+
+    // ✅ CLICK → OPEN DRAWER
+    tr.addEventListener("click", (e) => {
+      e.stopPropagation(); // 🔑 critical
+      openLoanDrawerSafe(loan);
+    });
+
     tbody.appendChild(tr);
   });
 }
+
 
 
     
@@ -4549,7 +4553,18 @@ document.body.style.height = 'auto';
     /* -------------------------
        Close drawer on outside click; hide tooltip on scroll
        ------------------------- */
-    document.addEventListener('click', function(e){ if(!drawer.classList.contains('open')) return; const clickedInside=drawer.contains(e.target); const clickedTile=!!e.target.closest('.tile'); if(!clickedInside && !clickedTile) closeDrawer(); });
+   document.addEventListener("click", function (e) {
+  if (!drawer.classList.contains("open")) return;
+
+  const clickedInsideDrawer = drawer.contains(e.target);
+  const clickedTile = !!e.target.closest(".tile");
+  const clickedTableRow = !!e.target.closest("#loanTable tr");
+
+  if (!clickedInsideDrawer && !clickedTile && !clickedTableRow) {
+    closeDrawer();
+  }
+});
+
     document.querySelector('.grid').addEventListener('scroll', ()=>{ tooltip.style.display='none'; });
 
     /* -------------------------
