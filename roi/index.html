@@ -2342,54 +2342,27 @@ function renderLoanTableROI() {
 
     
     
-    function renderLoanGrid(loans) {
-const grid = document.getElementById("loanGrid");
-
-      
-// ===============================
-// DEBUG: renderLoanGrid invocation
-// ===============================
-window.__gridRenderCount = (window.__gridRenderCount || 0) + 1;
-
-console.group(
-  `%c[GRID RENDER #${window.__gridRenderCount}]`,
-  "color:#dc2626;font-weight:bold"
-);
-
-console.log("loans.length:", loans?.length);
-console.log("first loan has roiSeries:", !!loans?.[0]?.roiSeries);
-console.log(
-  "caller stack:",
-  new Error().stack.split("\n").slice(1, 5).join("\n")
-);
-
-console.groupEnd();
-
-      
-// 🔒 Guard: only render fully-derived loans
-if (!loans.length || !loans[0].roiSeries) {
-  return;
-}
-
-  
+function renderLoanGrid(loans) {
   const grid = document.getElementById("loanGrid");
-  if (!grid) return;
 
-  // 🔒 HARD RESET — prevents duplicate tiles
-  while (grid.firstChild) {
-    grid.removeChild(grid.firstChild);
-  }
-// DEBUG: detect pre-derived render
-if (!loans[0]?.roiSeries) {
-  console.warn(
-    "%c[PRE-ROI GRID RENDER — SHOULD NOT HAPPEN]",
-    "color:#f59e0b;font-weight:bold",
-    loans
+  // 🔑 HARD RESET — prevents duplicate tiles
+  grid.innerHTML = "";
+
+  // ===============================
+  // DEBUG: renderLoanGrid invocation
+  // ===============================
+  window.__gridRenderCount = (window.__gridRenderCount || 0) + 1;
+
+  console.group(
+    `%c[GRID RENDER #${window.__gridRenderCount}]`,
+    "color:#dc2626;font-weight:bold"
   );
-}
+  console.log("loans.length:", loans?.length);
+  console.log("first loan has roiSeries:", !!loans?.[0]?.roiSeries);
+  console.groupEnd();
 
+  if (!Array.isArray(loans) || !loans.length) return;
 
-      
   loans.forEach(loan => {
     const tile = document.createElement("div");
     tile.className = "tile";
