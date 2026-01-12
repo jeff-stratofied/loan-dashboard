@@ -2297,6 +2297,13 @@ document.getElementById("resetFilters")?.addEventListener("click", () => {
   applyLoanFilters();
 });
 
+    // =====================================================
+// TABLE VIEW TOGGLE — REQUIRED WIRING
+// =====================================================
+document.getElementById("toggleTableView")?.addEventListener("change", () => {
+  applyLoanFilters();
+});
+
 
     /* -------------------------
        Small chart utilities (line & bar with hover)
@@ -2538,7 +2545,20 @@ function renderLoanTableROI() {
       </td>
     `;
 
-    tr.addEventListener("click", () => openLoanDrawerSafe(loan));
+   tr.addEventListener("mouseenter", () => {
+  tr.classList.add("row-hover");
+});
+
+tr.addEventListener("mouseleave", () => {
+  tr.classList.remove("row-hover");
+});
+
+tr.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  openLoanDrawerSafe(loan);
+});
+
     tbody.appendChild(tr);
   });
 }
