@@ -2568,8 +2568,9 @@ const wrap = document.getElementById("loanTableWrap");
 if (!grid) return;
 
 // 🔑 canonical visibility reset
-if (wrap) wrap.hidden = true;
-grid.hidden = false;
+if (wrap) wrap.style.display = "none";
+grid.style.display = "grid";
+
 
 
   console.log(
