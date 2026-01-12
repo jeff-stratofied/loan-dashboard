@@ -3398,6 +3398,19 @@ function applyLoanSort() {
       localStorage.setItem("loanGridCompact", compactToggle.checked);
     });
 
+// =========================================
+// Table View Toggle — PERSISTENT (MATCH COMPACT)
+// =========================================
+const tableToggle = document.getElementById("toggleTableView");
+
+if (tableToggle) {
+  const savedTableView =
+    localStorage.getItem("roiTableView") === "1";
+
+  tableToggle.checked = savedTableView;
+}
+
+      
       
     /* -------------------------
        Drawer helpers & openers
