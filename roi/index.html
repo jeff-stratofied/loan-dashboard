@@ -1528,12 +1528,13 @@ function openDrawerForLoan(loan){
   drawerSub.innerHTML = `
     ${loan.school || "No school"}<br>
     Purchased ${loan.purchaseDate}
-    • Orig Loan Amt $${Number(
-      loan.originalLoanAmount ||
-      loan.origLoanAmount ||
-      loan.loanAmount ||
-      0
-    ).toLocaleString()}
+• Orig Loan Amt $${Number(
+  loan.originalLoanAmount ||
+  loan.origLoanAmount ||
+  loan.loanAmount ||
+  0
+).toLocaleString()}
+
     • Loan Purchase Price $${Number(loan.purchasePrice || 0).toLocaleString()}
   `;
   drawerPrimaryTitle.textContent = 'Orig Loan Amount';
