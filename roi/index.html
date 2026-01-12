@@ -3398,19 +3398,17 @@ function applyLoanSort() {
       localStorage.setItem("loanGridCompact", compactToggle.checked);
     });
 
-// =========================================
-// Table View Toggle — PERSISTENT (MATCH COMPACT)
-// =========================================
-const tableToggle = document.getElementById("toggleTableView");
+// =====================================================
+// TABLE VIEW TOGGLE — PERSISTENT (MATCH COMPACT)
+// =====================================================
+document.getElementById("toggleTableView")?.addEventListener("change", (e) => {
+  localStorage.setItem(
+    "roiTableView",
+    e.target.checked ? "1" : "0"
+  );
+  applyLoanFilters();
+});
 
-if (tableToggle) {
-  const savedTableView =
-    localStorage.getItem("roiTableView") === "1";
-
-  tableToggle.checked = savedTableView;
-}
-
-      
       
     /* -------------------------
        Drawer helpers & openers
