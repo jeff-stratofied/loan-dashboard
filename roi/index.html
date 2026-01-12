@@ -1186,6 +1186,24 @@ tr.event-default td {
 
 window.__closeDrawerTimer = null;
 
+const PAGE_CONTEXT = (() => {
+  const p = new URLSearchParams(window.location.search);
+  return {
+    isEmbed: p.get("embed") === "true",
+    open: p.get("open"),
+    fromReporting: p.get("from") === "reporting"
+  };
+})();
+
+    // 🔒 EMBED MODE OVERRIDES — MATCH AMORT
+if (PAGE_CONTEXT.isEmbed) {
+  // Table view is a full-page feature ONLY
+  localStorage.removeItem("roiTableView");
+
+  const toggle = document.getElementById("toggleTableView");
+  if (toggle) toggle.checked = false;
+}
+
     
   const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
@@ -2241,11 +2259,17 @@ function applyLoanFilters() {
   // -------------------------
   // RENDER
   // -------------------------
-   if (document.getElementById("toggleTableView")?.checked) {
-    renderLoanTableROI();
-  } else {
-    renderLoanGrid(currentLoans);
-  }
+// 🔑 EMBED MODE NEVER SHOWS TABLE OR GRID
+if (PAGE_CONTEXT.isEmbed) {
+  return; // iframe only renders KPI drawer
+}
+
+if (document.getElementById("toggleTableView")?.checked) {
+  renderLoanTableROI();
+} else {
+  renderLoanGrid(currentLoans);
+}
+
 } // ✅ ADD THIS LINE — closes applyLoanFilters()
 
 
@@ -4751,6 +4775,24 @@ if (localStorage.getItem("roiTableView") === "1") {
   renderLoanGrid(currentLoans);
 }
 
+// =====================================================
+// EMBED MODE — FORCE KPI DRAWER (MATCH AMORT)
+// Must run ONCE, after initial render
+// =====================================================
+const params = new URLSearchParams(window.location.search);
+
+if (params.get("embed") === "true" && params.get("open")) {
+  // Table view is FULL-PAGE ONLY — never iframe
+  localStorage.removeItem("roiTableView");
+
+  const tableToggle = document.getElementById("toggleTableView");
+  if (tableToggle) tableToggle.checked = false;
+
+  // Open exactly one KPI drawer
+  openRoiKpiDrawer(params.get("open"));
+}
+
+      
       document.getElementById("currentDate").textContent =
   formatMonthYear(new Date());
 
