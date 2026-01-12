@@ -2095,6 +2095,36 @@ function createMiniSparkline(svg, series, opts = {}) {
    - View mode state
    - NO rendering
    ============================================================ */
+function applyLoanFilters() {
+  const nameVal   = document.getElementById("filterName")?.value || "";
+  const schoolVal = document.getElementById("filterSchool")?.value || "";
+  const rateVal   = document.getElementById("filterRate")?.value || "";
+  const sortVal   = document.getElementById("sortLoans")?.value || "";
+
+  filteredLoans = allLoans.filter(loan => {
+    if (nameVal && !loan.name.toLowerCase().includes(nameVal.toLowerCase())) {
+      return false;
+    }
+
+    if (schoolVal && loan.school !== schoolVal) {
+      return false;
+    }
+
+    if (rateVal === "low" && loan.nominalRate >= 0.05) return false;
+    if (rateVal === "mid" && (loan.nominalRate < 0.05 || loan.nominalRate > 0.08)) return false;
+    if (rateVal === "high" && loan.nominalRate <= 0.08) return false;
+
+    return true;
+  });
+
+  currentLoans = filteredLoans;
+
+  if (document.getElementById("toggleTableView")?.checked) {
+    renderLoanTableROI();
+  } else {
+    renderLoanGrid(currentLoans);
+  }
+}
 
 
 
