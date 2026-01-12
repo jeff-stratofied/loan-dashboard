@@ -3380,6 +3380,18 @@ function applyLoanSort() {
     });
 
 // =========================================
+// Table View Toggle — RESTORE ON LOAD
+// =========================================
+const tableToggle = document.getElementById("toggleTableView");
+
+if (tableToggle) {
+  tableToggle.checked =
+    localStorage.getItem("roiTableView") === "1";
+}
+
+
+      
+// =========================================
 // Table View Toggle — RESTORE STATE (ROI)
 // =========================================
 const tableToggle = document.getElementById("toggleTableView");
