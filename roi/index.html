@@ -2122,6 +2122,10 @@ function applyLoanFilters() {
   if (document.getElementById("toggleTableView")?.checked) {
     renderLoanTableROI();
   } else {
+console.log(
+  "%cCalling renderLoanGrid from HERE",
+  "color:#7c3aed;font-weight:bold"
+);
     renderLoanGrid(currentLoans);
   }
 }
@@ -2340,6 +2344,26 @@ function renderLoanTableROI() {
     
     function renderLoanGrid(loans) {
 
+// ===============================
+// DEBUG: renderLoanGrid invocation
+// ===============================
+window.__gridRenderCount = (window.__gridRenderCount || 0) + 1;
+
+console.group(
+  `%c[GRID RENDER #${window.__gridRenderCount}]`,
+  "color:#dc2626;font-weight:bold"
+);
+
+console.log("loans.length:", loans?.length);
+console.log("first loan has roiSeries:", !!loans?.[0]?.roiSeries);
+console.log(
+  "caller stack:",
+  new Error().stack.split("\n").slice(1, 5).join("\n")
+);
+
+console.groupEnd();
+
+      
 // 🔒 Guard: only render fully-derived loans
 if (!loans.length || !loans[0].roiSeries) {
   return;
@@ -2353,7 +2377,17 @@ if (!loans.length || !loans[0].roiSeries) {
   while (grid.firstChild) {
     grid.removeChild(grid.firstChild);
   }
+// DEBUG: detect pre-derived render
+if (!loans[0]?.roiSeries) {
+  console.warn(
+    "%c[PRE-ROI GRID RENDER — SHOULD NOT HAPPEN]",
+    "color:#f59e0b;font-weight:bold",
+    loans
+  );
+}
 
+
+      
   loans.forEach(loan => {
     const tile = document.createElement("div");
     tile.className = "tile";
@@ -2614,6 +2648,11 @@ window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
 // 🔑 Single initial render
 filteredLoans = currentLoans.slice();
+
+      console.log(
+  "%cCalling renderLoanGrid from HERE",
+  "color:#7c3aed;font-weight:bold"
+);
 renderLoanGrid(filteredLoans);
 
 
