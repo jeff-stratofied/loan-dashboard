@@ -2344,20 +2344,18 @@ function renderLoanTableROI() {
     
 function renderLoanGrid(loans) {
   const grid = document.getElementById("loanGrid");
+  if (!grid) return;
 
-  // ===============================
-  // DEBUG: state before clearing
-  // ===============================
   console.log(
     "%c[PRE-CLEAR GRID STATE]",
     "color:#dc2626;font-weight:bold",
     {
       childCount: grid.children.length,
-      sample: grid.innerHTML.slice(0, 200)
+      htmlSample: grid.innerHTML.slice(0, 200)
     }
   );
 
-  // 🔑 HARD RESET — required to prevent duplicates
+  // 🔑 HARD RESET — prevents duplicate tiles
   grid.innerHTML = "";
 
   // ===============================
@@ -3040,7 +3038,9 @@ function openRoiKpiFromUrl() {
     /* -------------------------
        Render loan tiles + mini charts
        ------------------------- */
-    const grid = document.getElementById('loanGrid');
+  
+/* delete      
+      const grid = document.getElementById('loanGrid');
     const tooltip = document.getElementById('tooltip');
 
     currentLoans
@@ -3242,6 +3242,7 @@ badgeElements.forEach((badgeEl, index) => {
  const hoverG = svg.querySelector('g.mini-hover'); hoverG.innerHTML=''; const cx = pad + idxNearest*step; const cy = pad + (h - pad*2) - ((p.roi - minY)/rangeY)*(h - pad*2); const c=document.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r',3.6); c.setAttribute('fill','#0ea5e9'); c.setAttribute('stroke','var(--card)'); c.setAttribute('stroke-width','1'); hoverG.appendChild(c); });
       svg.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; const hoverG = svg.querySelector('g.mini-hover'); if(hoverG) hoverG.innerHTML=''; });
     });
+delete */
 
     // -------------------------
     // Populate filter dropdowns
