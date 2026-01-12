@@ -2328,30 +2328,27 @@ window.createLineChart = function createLineChart(containerEl, series, opts = {}
   const rangeY = Math.max(1e-6, maxY - minY);
 
   // ----------------------------
-  // X SCALE (DATE-BASED — FIX)
+  // X SCALE (DATE-BASED)
   // ----------------------------
-  const dates = data.map(d => d.date);
-  const minDate = dates[0];
-  const maxDate = dates[dates.length - 1];
+  const minDate = data[0].date;
+  const maxDate = data[data.length - 1].date;
   const dateSpan = Math.max(1, maxDate - minDate);
 
   const xForDate = d =>
     pad + ((d - minDate) / dateSpan) * (w - pad * 2);
 
-  const toXY = d => {
-    const x = xForDate(d.date);
-    const y =
-      pad +
-      (h - pad * 2) -
-      ((d.y - minY) / rangeY) * (h - pad * 2);
-    return [x, y];
-  };
+  const yForVal = v =>
+    pad +
+    (h - pad * 2) -
+    ((v - minY) / rangeY) * (h - pad * 2);
+
+  const toXY = d => [xForDate(d.date), yForVal(d.y)];
 
   // ----------------------------
   // GRID
   // ----------------------------
-  for (let gy = 0; gy < 5; gy++) {
-    const y = pad + gy * ((h - pad * 2) / 4);
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + i * ((h - pad * 2) / 4);
     const line = document.createElementNS(svgNS, 'line');
     line.setAttribute('x1', pad);
     line.setAttribute('x2', w - pad);
@@ -2362,6 +2359,83 @@ window.createLineChart = function createLineChart(containerEl, series, opts = {}
   }
 
   // ----------------------------
+  // AXES
+  // ----------------------------
+  const axisColor = '#94a3b8';
+
+  // Y axis line
+  const yAxis = document.createElementNS(svgNS, 'line');
+  yAxis.setAttribute('x1', pad);
+  yAxis.setAttribute('x2', pad);
+  yAxis.setAttribute('y1', pad);
+  yAxis.setAttribute('y2', h - pad);
+  yAxis.setAttribute('stroke', axisColor);
+  svg.appendChild(yAxis);
+
+  // X axis line
+  const xAxis = document.createElementNS(svgNS, 'line');
+  xAxis.setAttribute('x1', pad);
+  xAxis.setAttribute('x2', w - pad);
+  xAxis.setAttribute('y1', h - pad);
+  xAxis.setAttribute('y2', h - pad);
+  xAxis.setAttribute('stroke', axisColor);
+  svg.appendChild(xAxis);
+
+  // ----------------------------
+  // Y AXIS LABELS (%)
+  // ----------------------------
+  for (let i = 0; i <= 4; i++) {
+    const t = i / 4;
+    const yVal = minY + (1 - t) * rangeY;
+    const y = pad + t * (h - pad * 2);
+
+    const tick = document.createElementNS(svgNS, 'line');
+    tick.setAttribute('x1', pad - 6);
+    tick.setAttribute('x2', pad);
+    tick.setAttribute('y1', y);
+    tick.setAttribute('y2', y);
+    tick.setAttribute('stroke', axisColor);
+    svg.appendChild(tick);
+
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('x', pad - 10);
+    label.setAttribute('y', y + 4);
+    label.setAttribute('text-anchor', 'end');
+    label.setAttribute('font-size', '11');
+    label.setAttribute('fill', 'currentColor');
+    label.textContent = `${(yVal * 100).toFixed(0)}%`;
+    svg.appendChild(label);
+  }
+
+  // ----------------------------
+  // X AXIS LABELS (DATES)
+  // ----------------------------
+  const tickEvery = opts.tickEvery || 12;
+
+  data.forEach((p, i) => {
+    if (i % tickEvery !== 0 && i !== data.length - 1) return;
+
+    const x = xForDate(p.date);
+
+    const tick = document.createElementNS(svgNS, 'line');
+    tick.setAttribute('x1', x);
+    tick.setAttribute('x2', x);
+    tick.setAttribute('y1', h - pad);
+    tick.setAttribute('y2', h - pad + 6);
+    tick.setAttribute('stroke', axisColor);
+    svg.appendChild(tick);
+
+    const label = document.createElementNS(svgNS, 'text');
+    label.setAttribute('x', x);
+    label.setAttribute('y', h - pad + 18);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-size', '11');
+    label.setAttribute('fill', 'currentColor');
+    label.textContent = formatMonthYear(p.date);
+    svg.appendChild(label);
+  });
+
+  // ----------------------------
   // LINE PATH
   // ----------------------------
   let path = '';
@@ -2370,31 +2444,27 @@ window.createLineChart = function createLineChart(containerEl, series, opts = {}
     path += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
   });
 
-  const el = document.createElementNS(svgNS, 'path');
-  el.setAttribute('d', path);
-  el.setAttribute('fill', 'none');
-  el.setAttribute('stroke', opts.color || '#0ea5e9');
-  el.setAttribute('stroke-width', '2');
-  svg.appendChild(el);
+  const linePath = document.createElementNS(svgNS, 'path');
+  linePath.setAttribute('d', path);
+  linePath.setAttribute('fill', 'none');
+  linePath.setAttribute('stroke', opts.color || '#0ea5e9');
+  linePath.setAttribute('stroke-width', '2');
+  svg.appendChild(linePath);
 
   // ----------------------------
-  // TODAY LINE (DATE-BASED — FIX)
+  // TODAY LINE
   // ----------------------------
-  const today =
-    opts.todayDate instanceof Date
-      ? opts.todayDate
-      : new Date();
-
+  const today = opts.todayDate instanceof Date ? opts.todayDate : new Date();
   if (today >= minDate && today <= maxDate) {
-    const todayX = xForDate(today);
-    const todayLine = document.createElementNS(svgNS, "line");
-    todayLine.setAttribute("x1", todayX);
-    todayLine.setAttribute("x2", todayX);
-    todayLine.setAttribute("y1", pad);
-    todayLine.setAttribute("y2", h - pad);
-    todayLine.setAttribute("stroke", "#111827");
-    todayLine.setAttribute("stroke-dasharray", "3 3");
-    todayLine.setAttribute("stroke-opacity", "0.6");
+    const x = xForDate(today);
+    const todayLine = document.createElementNS(svgNS, 'line');
+    todayLine.setAttribute('x1', x);
+    todayLine.setAttribute('x2', x);
+    todayLine.setAttribute('y1', pad);
+    todayLine.setAttribute('y2', h - pad);
+    todayLine.setAttribute('stroke', '#111827');
+    todayLine.setAttribute('stroke-dasharray', '3 3');
+    todayLine.setAttribute('stroke-opacity', '0.6');
     svg.appendChild(todayLine);
   }
 
@@ -2414,7 +2484,6 @@ window.createLineChart = function createLineChart(containerEl, series, opts = {}
     const rect = svg.getBoundingClientRect();
     const x = ev.clientX - rect.left;
 
-    // find nearest point by date-proportional X
     let nearest = data[0];
     let best = Infinity;
 
@@ -2460,6 +2529,7 @@ window.createLineChart = function createLineChart(containerEl, series, opts = {}
   containerEl.appendChild(svg);
   return svg;
 };
+
 
     
 
