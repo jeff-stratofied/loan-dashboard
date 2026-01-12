@@ -2343,6 +2343,15 @@ function renderLoanTableROI() {
     
     
 function renderLoanGrid(loans) {
+console.log(
+  "%c[PRE-CLEAR GRID STATE]",
+  "color:#dc2626;font-weight:bold",
+  {
+    childCount: grid.children.length,
+    htmlSample: grid.innerHTML.slice(0, 200)
+  }
+);
+  
   const grid = document.getElementById("loanGrid");
 
   // 🔑 HARD RESET — prevents duplicate tiles
