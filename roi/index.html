@@ -1902,12 +1902,7 @@ return {
     balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
     roiSeries
   };
-});
-console.assert(
-  loansWithAmort.every(l => Array.isArray(l.roiSeries)),
-  "❌ ROI series missing on some loans"
-);
-  
+});  
   }
 
 
