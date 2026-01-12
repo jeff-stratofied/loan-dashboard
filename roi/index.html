@@ -2297,12 +2297,17 @@ document.getElementById("resetFilters")?.addEventListener("click", () => {
   applyLoanFilters();
 });
 
-    // =====================================================
-// TABLE VIEW TOGGLE — REQUIRED WIRING
 // =====================================================
-document.getElementById("toggleTableView")?.addEventListener("change", () => {
+// TABLE VIEW TOGGLE — SINGLE SOURCE OF TRUTH
+// =====================================================
+document.getElementById("toggleTableView")?.addEventListener("change", (e) => {
+  localStorage.setItem(
+    "roiTableView",
+    e.target.checked ? "1" : "0"
+  );
   applyLoanFilters();
 });
+
 
 
     /* -------------------------
@@ -2771,31 +2776,7 @@ tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
    - Print / CSV / actions
    ============================================================ */
 
-    // ----------------------------
-// Table View Toggle (ROI)
-// ----------------------------
-const toggleTableView = document.getElementById("toggleTableView");
-const loanGrid = document.getElementById("loanGrid");
-const loanTableWrap = document.getElementById("loanTableWrap");
 
-if (toggleTableView && loanGrid && loanTableWrap) {
-  toggleTableView.addEventListener("change", () => {
-    const showTable = toggleTableView.checked;
-
-    loanGrid.hidden = showTable;
-    loanTableWrap.hidden = !showTable;
-
-    if (showTable) {
-  loanGrid.hidden = true;
-  loanTableWrap.hidden = false;
-  renderLoanTableFromState();
-} else {
-  loanTableWrap.hidden = true;
-  loanGrid.hidden = false;
-  applyLoanFilters(); // canonical tile render
-}
-  });
-}
 
 
 /* ============================================================
@@ -3398,6 +3379,19 @@ function applyLoanSort() {
       localStorage.setItem("loanGridCompact", compactToggle.checked);
     });
 
+// =========================================
+// Table View Toggle — RESTORE STATE (ROI)
+// =========================================
+const tableToggle = document.getElementById("toggleTableView");
+
+if (tableToggle) {
+  const savedTableView =
+    localStorage.getItem("roiTableView") === "1";
+
+  tableToggle.checked = savedTableView;
+}
+
+      
 // =====================================================
 // TABLE VIEW TOGGLE — PERSISTENT (MATCH COMPACT)
 // =====================================================
@@ -4650,33 +4644,6 @@ if (currentMode !== "loan") {
   openRoiKpiFromUrl();
 }
 
-
-      // =====================================================
-// Table View toggle (MATCH AMORT BEHAVIOR)
-// =====================================================
-const toggleTableView = document.getElementById("toggleTableView");
-const loanTableWrap = document.getElementById("loanTableWrap");
-
-if (toggleTableView && loanGrid && loanTableWrap) {
-  toggleTableView.addEventListener("change", () => {
-    const showTable = toggleTableView.checked;
-
-    loanGrid.style.display = showTable ? "none" : "grid";
-    loanTableWrap.hidden = !showTable;
-
-    if (showTable) {
-  // hide tiles, render table
-  while (loanGrid.firstChild) {
-    loanGrid.removeChild(loanGrid.firstChild);
-  }
-  renderLoanTableROI(getLoansForTableView());
-} else {
-  // switching BACK to tiles → force canonical render
-  applyLoanFilters();
-}
-
-  });
-}
 
 
 // =====================================================
