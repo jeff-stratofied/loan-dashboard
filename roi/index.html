@@ -1537,7 +1537,9 @@ function openDrawerForLoan(loan){
     • Loan Purchase Price $${Number(loan.purchasePrice || 0).toLocaleString()}
   `;
   drawerPrimaryTitle.textContent = 'Orig Loan Amount';
-  drawerPrimary.textContent = '$' + loan.purchasePrice.toLocaleString();
+drawerPrimary.textContent =
+  '$' + Number(loan.originalLoanAmount || 0).toLocaleString();
+
   drawerSecondaryTitle.textContent = 'Nominal Rate';
   drawerSecondary.textContent = (loan.nominalRate * 100).toFixed(2) + '%';
   drawerExtra.innerHTML = '';
@@ -2556,11 +2558,7 @@ function renderLoanTableROI(list = currentLoans) {
       <td>${loan.school || ""}</td>
       <td>${loan.loanStartDate || ""}</td>
       <td>${loan.purchaseDate || ""}</td>
-      <td>$${Number(
-        loan.originalLoanAmount ||
-        loan.loanAmount ||
-        0
-      ).toLocaleString()}</td>
+      <td>$${Number(loan.originalLoanAmount || 0).toLocaleString()}</td>
       <td>$${Number(loan.purchasePrice || 0).toLocaleString()}</td>
       <td>${((loan.nominalRate || 0) * 100).toFixed(2)}%</td>
       <td>${loan.termYears ?? ""}</td>
