@@ -2379,15 +2379,51 @@ function renderLoanGrid(loans) {
     tile.dataset.renderId = window.__gridRenderCount;
 
     tile.innerHTML = `
-      <div class="tile-left">
-        <div class="loan-name">${loan.name}</div>
-        <div class="loan-sub">${loan.school || ""}</div>
-      </div>
-      <div class="chart-wrap">
-        <div class="mini-label">ROI</div>
-        <svg class="sparkline"></svg>
-      </div>
-    `;
+  <div class="tile-left">
+    <div class="loan-name">${loan.name}</div>
+
+    ${
+      getLoanEventBadges(loan).length
+        ? `<div class="loan-badges">
+            ${getLoanEventBadges(loan)
+              .map(
+                b =>
+                  `<span class="loan-badge ${b.type}">${b.label}</span>`
+              )
+              .join("")}
+          </div>`
+        : ""
+    }
+
+    <div class="loan-sub">
+      ${loan.school || ""}
+    </div>
+
+    <div class="loan-meta">
+      <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
+      <span>·</span>
+      <span>${loan.termYears} yrs</span>
+      <span>·</span>
+      <span>
+        Matures: ${
+          getLoanMaturityFromAmort(loan)
+            ? formatMonthYear(getLoanMaturityFromAmort(loan))
+            : "—"
+        }
+      </span>
+    </div>
+
+    <div class="loan-meta">
+      Loan ${loan.id}
+    </div>
+  </div>
+
+  <div class="chart-wrap">
+    <div class="mini-label">ROI</div>
+    <svg class="sparkline"></svg>
+  </div>
+`;
+
 
     tile.addEventListener("click", () => openLoanDrawerSafe(loan));
 
