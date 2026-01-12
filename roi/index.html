@@ -2181,6 +2181,40 @@ console.log(
   }
 }
 
+function populateLoanFilters(loans) {
+  const schoolSel = document.getElementById("filterSchool");
+  const nameSel   = document.getElementById("filterName");
+
+  if (!schoolSel || !nameSel) return;
+
+  // Reset (keep first "All" option)
+  schoolSel.length = 1;
+  nameSel.length = 1;
+
+  const schools = new Set();
+  const names   = new Set();
+
+  loans.forEach(l => {
+    if (l.school) schools.add(l.school);
+    if (l.name)   names.add(l.name);
+  });
+
+  [...schools].sort().forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    schoolSel.appendChild(opt);
+  });
+
+  [...names].sort().forEach(n => {
+    const opt = document.createElement("option");
+    opt.value = n;
+    opt.textContent = n;
+    nameSel.appendChild(opt);
+  });
+}
+
+    
 // =====================================================
 // FILTER UI EVENT WIRING (ROI PAGE)
 // =====================================================
@@ -4843,11 +4877,15 @@ allLoans = derivedLoans;
 currentLoans = derivedLoans;
 filteredLoans = derivedLoans;
 
-window.__debug = { allLoans, currentLoans };
+// 🔑 Populate filter dropdowns from real data
+populateLoanFilters(allLoans);
 
-      
+// 🔎 DEBUG ACCESS (TEMPORARY)
+window.__debug = { allLoans, currentLoans, filteredLoans };
+
 // Initial render
 renderLoanGrid(currentLoans);
+
 
       
       document.getElementById("currentDate").textContent =
