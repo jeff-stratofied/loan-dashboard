@@ -2235,15 +2235,11 @@ function applyLoanFilters() {
   // RENDER
   // -------------------------
   if (document.getElementById("toggleTableView")?.checked) {
-    renderLoanTableROI();
-  } else {
-    console.log(
-      "%cCalling renderLoanGrid from HERE",
-      "color:#7c3aed;font-weight:bold"
-    );
-    renderLoanGrid(currentLoans);
-  }
+  renderLoanTableROI();
+} else {
+  renderLoanGrid(currentLoans);
 }
+
 
 
 function populateLoanFilters(loans) {
