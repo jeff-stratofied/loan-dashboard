@@ -2343,22 +2343,25 @@ function renderLoanTableROI() {
     
     
 function renderLoanGrid(loans) {
-console.log(
-  "%c[PRE-CLEAR GRID STATE]",
-  "color:#dc2626;font-weight:bold",
-  {
-    childCount: grid.children.length,
-    htmlSample: grid.innerHTML.slice(0, 200)
-  }
-);
-  
   const grid = document.getElementById("loanGrid");
 
-  // 🔑 HARD RESET — prevents duplicate tiles
+  // ===============================
+  // DEBUG: state before clearing
+  // ===============================
+  console.log(
+    "%c[PRE-CLEAR GRID STATE]",
+    "color:#dc2626;font-weight:bold",
+    {
+      childCount: grid.children.length,
+      sample: grid.innerHTML.slice(0, 200)
+    }
+  );
+
+  // 🔑 HARD RESET — required to prevent duplicates
   grid.innerHTML = "";
 
   // ===============================
-  // DEBUG: renderLoanGrid invocation
+  // DEBUG: render invocation
   // ===============================
   window.__gridRenderCount = (window.__gridRenderCount || 0) + 1;
 
@@ -2375,104 +2378,46 @@ console.log(
   loans.forEach(loan => {
     const tile = document.createElement("div");
     tile.className = "tile";
+    tile.dataset.renderId = window.__gridRenderCount;
 
-    const badges = getLoanEventBadges(loan);
-
-    // ---- Derived display values (match old tile) ----
-    const ratePct = Number.isFinite(loan.nominalRate)
-      ? (loan.nominalRate * 100).toFixed(2) + "%"
-      : "—";
-
-    const termLabel =
-      Number.isFinite(loan.termYears) && loan.termYears > 0
-        ? `${loan.termYears} yrs`
-        : "—";
-
-    const maturityDate = getLoanMaturityFromAmort(loan);
-    const maturityLabel =
-      maturityDate instanceof Date
-        ? formatMonthYear(maturityDate)
-        : "—";
-
-    const roiEntry = getCurrentOwnedRoiEntry(loan);
-    const roiPct = ((roiEntry?.roi || 0) * 100).toFixed(2);
-
-    // ---- Tile markup (MATCH OLD UI) ----
     tile.innerHTML = `
       <div class="tile-left">
         <div class="loan-name">${loan.name}</div>
-
-        <div class="loan-sub">
-          ${loan.school || ""}
-        </div>
-
-        <div class="loan-meta">
-          <span>Rate: ${ratePct}</span>
-          <span>·</span>
-          <span>Term: ${termLabel}</span>
-          <span>·</span>
-          <span>Matures: ${maturityLabel}</span>
-        </div>
-
-        ${
-          loan.id
-            ? `<div class="loan-sub" style="margin-top:6px">
-                 Loan ${loan.id}
-               </div>`
-            : ""
-        }
-
-        ${
-          badges.length
-            ? `<div class="loan-badges">
-                ${badges
-                  .map(
-                    b =>
-                      `<span class="loan-badge ${b.type}">${b.label}</span>`
-                  )
-                  .join("")}
-               </div>`
-            : ""
-        }
+        <div class="loan-sub">${loan.school || ""}</div>
       </div>
-
       <div class="chart-wrap">
-        <div class="mini-label">
-          ROI ${roiPct}%
-        </div>
+        <div class="mini-label">ROI</div>
         <svg class="sparkline"></svg>
       </div>
     `;
 
-    // ---- Badge tooltips (unchanged behavior) ----
-    tile.querySelectorAll(".loan-badge").forEach((badge, i) => {
-      createBadgeTooltip(badge, badges[i].type);
-    });
+    tile.addEventListener("click", () => openLoanDrawerSafe(loan));
 
-    // ---- Open drawer on click ----
-    tile.addEventListener("click", () => {
-      openLoanDrawerSafe(loan);
+    const svg = tile.querySelector("svg.sparkline");
+    const series = getOwnedRoiSeries(loan).map(p => ({
+      date: p.date,
+      y: p.roi
+    }));
+
+    createMiniSparkline(svg, series, {
+      color: window.KPI_COLOR_MAP?.[loan.id],
+      todayDate: KPI_CURRENT_MONTH
     });
 
     grid.appendChild(tile);
-
-    // --------------------------------------------------
-    // Mini ROI sparkline (MATCH OLD HOVER + TODAY LOGIC)
-    // --------------------------------------------------
-    const sparkSvg = tile.querySelector("svg.sparkline");
-
-    const series = getOwnedRoiSeries(loan).map(p => ({
-  date: p.date,
-  y: p.roi
-}));
-
-
-    createMiniSparkline(sparkSvg, series, {
-      color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
-      todayDate: KPI_CURRENT_MONTH
-    });
   });
+
+  // ===============================
+  // DEBUG: post-render tile sources
+  // ===============================
+  const counts = [...grid.children].reduce((m, el) => {
+    const id = el.dataset.renderId || "unknown";
+    m[id] = (m[id] || 0) + 1;
+    return m;
+  }, {});
+  console.log("%c[POST-RENDER TILE COUNTS]", "color:#16a34a;font-weight:bold", counts);
 }
+
 
 
 
