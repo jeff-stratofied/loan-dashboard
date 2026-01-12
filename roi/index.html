@@ -2375,9 +2375,10 @@ if (!loans.length || !loans[0].roiSeries) {
     const sparkSvg = tile.querySelector("svg.sparkline");
 
     const series = getOwnedRoiSeries(loan).map(p => ({
-      date: p.date,
-      y: p.roi
-    }));
+  date: p.date,
+  y: p.roi
+}));
+
 
     createMiniSparkline(sparkSvg, series, {
       color: window.KPI_COLOR_MAP?.[loan.id] || "#0ea5e9",
