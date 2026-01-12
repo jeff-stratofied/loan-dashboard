@@ -2419,7 +2419,10 @@ function renderLoanGrid(loans) {
   </div>
 
   <div class="chart-wrap">
-    <div class="mini-label">ROI</div>
+    <div class="mini-label">
+  ROI ${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%
+</div>
+
     <svg class="sparkline"></svg>
   </div>
 `;
