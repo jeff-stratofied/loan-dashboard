@@ -2528,6 +2528,8 @@ function renderLoanTableROI() {
   // 🔑 canonical visibility
   wrap.hidden = false;
   grid.hidden = true;
+  grid.innerHTML = ""; // 🔑 REMOVE tiles from DOM so they cannot reappear
+
 
   tbody.innerHTML = "";
 
