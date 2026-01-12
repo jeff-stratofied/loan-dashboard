@@ -1337,6 +1337,52 @@ function getLoanEventBadges(loan) {
 
   return badges;
 }
+
+// ----------------------------------
+// Badge tooltip text (ROI tiles)
+// ----------------------------------
+function getBadgeTooltipText(loan, badgeType) {
+  if (!Array.isArray(loan.events)) return "";
+
+  const event = loan.events.find(e => e.type === badgeType);
+  if (!event) return "";
+
+  // PREPAYMENT
+  if (badgeType === "prepayment") {
+    const amt =
+      event.amount != null
+        ? `$${formatCurrency(event.amount)}`
+        : "$0";
+
+    const d = parseISODateLocal(event.date);
+    const dateLabel = d ? formatMonthYear(d) : "";
+
+    return `Prepayment: ${amt} · ${dateLabel}`;
+  }
+
+  // DEFERRAL
+  if (badgeType === "deferral") {
+    const start = parseISODateLocal(event.startDate || event.date);
+    const months =
+      event.months ?? event.durationMonths ?? 0;
+
+    return `Deferral: ${start ? formatMonthYear(start) : ""} · ${months} Months`;
+  }
+
+  // DEFAULT
+  if (badgeType === "default") {
+    const d = parseISODateLocal(event.date);
+    const recovered =
+      event.recoveredAmount != null
+        ? `$${formatCurrency(event.recoveredAmount)}`
+        : "$0";
+
+    return `Default: ${d ? formatMonthYear(d) : ""} · Recovered Amount ${recovered}`;
+  }
+
+  return "";
+}
+
     
 function getEventRowClass(loan, row) {  
   if (!row) return "";
@@ -2130,6 +2176,22 @@ console.log(
   }
 }
 
+// =====================================================
+// FILTER UI EVENT WIRING (ROI PAGE)
+// =====================================================
+["filterName", "filterSchool", "filterRate", "sortLoans"].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener("change", applyLoanFilters);
+});
+
+document.getElementById("resetFilters")?.addEventListener("click", () => {
+  document.getElementById("filterName").value = "";
+  document.getElementById("filterSchool").value = "";
+  document.getElementById("filterRate").value = "";
+  document.getElementById("sortLoans").value = "purchase_asc";
+  applyLoanFilters();
+});
 
 
     /* -------------------------
@@ -2427,24 +2489,22 @@ function renderLoanGrid(loans) {
   </div>
 `;
 
-    // 🔑 Reattach loan badge hover tooltips (lost in new renderer)
+// 🔑 Attach loan badge hover tooltips (canonical copy)
 tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
-  const label = badgeEl.textContent || "";
+  const type =
+    badgeEl.classList.contains("prepayment") ? "prepayment" :
+    badgeEl.classList.contains("deferral") ? "deferral" :
+    badgeEl.classList.contains("default") ? "default" :
+    null;
 
-  let tooltipText = "";
+  if (!type) return;
 
-  if (label.includes("Prepay")) {
-    tooltipText = "Loan was prepaid early";
-  } else if (label.includes("Deferral")) {
-    tooltipText = "Payments were deferred for this loan";
-  } else if (label.includes("Default")) {
-    tooltipText = "Loan entered default status";
-  }
-
+  const tooltipText = getBadgeTooltipText(loan, type);
   if (tooltipText) {
     createBadgeTooltip(badgeEl, tooltipText);
   }
 });
+
 
 
     tile.addEventListener("click", () => openLoanDrawerSafe(loan));
@@ -3617,6 +3677,7 @@ function populateProjectedROILoanTable(){
   });
 }
 
+ /* delete
 function getEventRowClass(loan, row) {
   if (!row.loanDate) return "";
 
@@ -3651,7 +3712,7 @@ function getEventRowClass(loan, row) {
 
   return "";
 }
-
+delete */
 
 
     /* ============================================
