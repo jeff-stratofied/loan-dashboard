@@ -2427,6 +2427,25 @@ function renderLoanGrid(loans) {
   </div>
 `;
 
+    // 🔑 Reattach loan badge hover tooltips (lost in new renderer)
+tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
+  const label = badgeEl.textContent || "";
+
+  let tooltipText = "";
+
+  if (label.includes("Prepay")) {
+    tooltipText = "Loan was prepaid early";
+  } else if (label.includes("Deferral")) {
+    tooltipText = "Payments were deferred for this loan";
+  } else if (label.includes("Default")) {
+    tooltipText = "Loan entered default status";
+  }
+
+  if (tooltipText) {
+    createBadgeTooltip(badgeEl, tooltipText);
+  }
+});
+
 
     tile.addEventListener("click", () => openLoanDrawerSafe(loan));
 
