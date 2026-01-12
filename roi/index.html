@@ -3380,6 +3380,10 @@ if (tableToggle) {
   tableToggle.checked = localStorage.getItem("roiTableView") === "1";
 }
 
+// 🔑 CRITICAL: render based on restored view state
+applyLoanFilters();
+
+
 // =====================================================
 // TABLE VIEW TOGGLE — PERSISTENT (MATCH COMPACT)
 // =====================================================
