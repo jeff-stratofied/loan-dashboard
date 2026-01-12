@@ -2517,16 +2517,31 @@ data.forEach((p, i) => {
    - Row / tile interactions
    ============================================================ */
 function renderLoanTableROI(list = currentLoans) {
-  const wrap = document.getElementById("loanTableWrap");
-  const tbody = document.querySelector("#loanTable tbody");
+  const tableWrap = document.getElementById("loanTableWrap");
+  const table = document.getElementById("loanTable");
+  const tbody = table?.querySelector("tbody");
+  const grid = document.getElementById("loanGrid");
 
-  if (!wrap || !tbody) return;
+  if (!tableWrap || !tbody) {
+    console.warn("renderLoanTableROI: table elements missing");
+    return;
+  }
 
-  wrap.hidden = false;
-  document.getElementById("loanGrid").style.display = "none";
+  // =====================================================
+  // VIEW TOGGLE (SINGLE SOURCE OF TRUTH)
+  // =====================================================
+  tableWrap.hidden = false;
+  tableWrap.style.display = "block";
+  if (grid) grid.style.display = "none";
 
+  // =====================================================
+  // RESET TABLE
+  // =====================================================
   tbody.innerHTML = "";
 
+  // =====================================================
+  // ROWS
+  // =====================================================
   list.forEach(loan => {
     const tr = document.createElement("tr");
     tr.dataset.loanId = loan.id;
@@ -2537,33 +2552,50 @@ function renderLoanTableROI(list = currentLoans) {
       <td>${loan.school || ""}</td>
       <td>${loan.loanStartDate || ""}</td>
       <td>${loan.purchaseDate || ""}</td>
-      <td>$${loan.originalLoanAmount?.toLocaleString() || "0"}</td>
-      <td>$${loan.purchasePrice.toLocaleString()}</td>
-      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
-      <td>${loan.termYears}</td>
-      <td>${loan.graceYears}</td>
-      <td>${((getCurrentOwnedRoiEntry(loan).roi || 0) * 100).toFixed(2)}%</td>
+      <td>$${Number(
+        loan.originalLoanAmount ||
+        loan.loanAmount ||
+        0
+      ).toLocaleString()}</td>
+      <td>$${Number(loan.purchasePrice || 0).toLocaleString()}</td>
+      <td>${((loan.nominalRate || 0) * 100).toFixed(2)}%</td>
+      <td>${loan.termYears ?? ""}</td>
+      <td>${loan.graceYears ?? ""}</td>
+      <td>${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%</td>
     `;
 
-    // ✅ HOVER
-    tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
-    tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
+    // =====================================================
+    // HOVER (MATCH AMORT)
+    // =====================================================
+    tr.addEventListener("mouseenter", () => {
+      tr.classList.add("row-hover");
+    });
 
-    // ✅ CLICK → OPEN DRAWER
+    tr.addEventListener("mouseleave", () => {
+      tr.classList.remove("row-hover");
+    });
+
+    // =====================================================
+    // CLICK → OPEN LOAN DRAWER
+    // =====================================================
     tr.addEventListener("click", (e) => {
-      e.stopPropagation(); // 🔑 critical
+      e.preventDefault();
+      e.stopPropagation(); // 🔑 prevents global close handler
       openLoanDrawerSafe(loan);
     });
 
     tbody.appendChild(tr);
   });
 }
-
-
-
     
     
 function renderLoanGrid(loans) {
+const tableWrap = document.getElementById("loanTableWrap");
+if (tableWrap) {
+  tableWrap.hidden = true;
+  tableWrap.style.display = "none";
+}
+  
 const grid = document.getElementById("loanGrid");
 const wrap = document.getElementById("loanTableWrap");
 
@@ -4708,16 +4740,19 @@ populateLoanFilters(allLoans);
 window.__debug = { allLoans, currentLoans, filteredLoans };
 
 // Initial render
-renderLoanGrid(currentLoans);
+// 🔑 INITIAL RENDER — RESPECT TABLE VIEW
+if (localStorage.getItem("roiTableView") === "1") {
+  document.getElementById("toggleTableView").checked = true;
+  renderLoanTableROI();
+} else {
+  renderLoanGrid(currentLoans);
+}
 
-
-      
       document.getElementById("currentDate").textContent =
   formatMonthYear(new Date());
 
       initROI();
     });
-
 
     
     // theme toggle
