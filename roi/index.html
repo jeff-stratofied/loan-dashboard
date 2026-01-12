@@ -2269,7 +2269,46 @@ window.createLineChart = function createLineChart(containerEl, series, opts = {}
    - Loan table
    - Row / tile interactions
    ============================================================ */
-function renderLoanGrid(loans) {
+function renderLoanTableROI() {
+  const wrap = document.getElementById("loanTableWrap");
+  const grid = document.getElementById("loanGrid");
+  const tbody = document.querySelector("#loanTable tbody");
+
+  if (!wrap || !grid || !tbody) return;
+
+  // show table, hide grid
+  wrap.hidden = false;
+  grid.style.display = "none";
+
+  tbody.innerHTML = "";
+
+  getLoansForTableView().forEach(loan => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${loan.id ?? ""}</td>
+      <td>${loan.name}</td>
+      <td>${loan.school ?? ""}</td>
+      <td>${loan.loanStartDate ?? ""}</td>
+      <td>${loan.purchaseDate ?? ""}</td>
+      <td style="text-align:right">$${formatCurrency(loan.principal)}</td>
+      <td style="text-align:right">$${formatCurrency(loan.purchasePrice)}</td>
+      <td style="text-align:right">${(loan.nominalRate * 100).toFixed(2)}%</td>
+      <td>${loan.termYears ?? ""}</td>
+      <td>${loan.graceYears ?? ""}</td>
+      <td style="text-align:right">
+        ${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%
+      </td>
+    `;
+
+    tr.addEventListener("click", () => openLoanDrawerSafe(loan));
+    tbody.appendChild(tr);
+  });
+}
+
+    
+    
+    function renderLoanGrid(loans) {
 
 // 🔒 Guard: only render fully-derived loans
 if (!loans.length || !loans[0].roiSeries) {
