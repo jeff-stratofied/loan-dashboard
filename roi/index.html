@@ -2525,9 +2525,9 @@ function renderLoanTableROI() {
 
   if (!wrap || !grid || !tbody) return;
 
-  // show table, hide grid
+  // 🔑 canonical visibility
   wrap.hidden = false;
-  grid.style.display = "none";
+  grid.hidden = true;
 
   tbody.innerHTML = "";
 
@@ -2550,29 +2550,24 @@ function renderLoanTableROI() {
       </td>
     `;
 
-   tr.addEventListener("mouseenter", () => {
-  tr.classList.add("row-hover");
-});
-
-tr.addEventListener("mouseleave", () => {
-  tr.classList.remove("row-hover");
-});
-
-tr.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  openLoanDrawerSafe(loan);
-});
-
+    tr.addEventListener("click", () => openLoanDrawerSafe(loan));
     tbody.appendChild(tr);
   });
 }
 
+
     
     
 function renderLoanGrid(loans) {
-  const grid = document.getElementById("loanGrid");
-  if (!grid) return;
+const grid = document.getElementById("loanGrid");
+const wrap = document.getElementById("loanTableWrap");
+
+if (!grid) return;
+
+// 🔑 canonical visibility reset
+if (wrap) wrap.hidden = true;
+grid.hidden = false;
+
 
   console.log(
     "%c[PRE-CLEAR GRID STATE]",
