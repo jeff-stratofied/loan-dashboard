@@ -2142,6 +2142,11 @@ function createMiniSparkline(svg, series, opts = {}) {
    - NO rendering
    ============================================================ */
 function applyLoanFilters() {
+if (!Array.isArray(allLoans) || !allLoans.length) {
+  console.warn("applyLoanFilters called before loans initialized");
+  return;
+}
+  
   const nameVal   = document.getElementById("filterName")?.value || "";
   const schoolVal = document.getElementById("filterSchool")?.value || "";
   const rateVal   = document.getElementById("filterRate")?.value || "";
@@ -3386,6 +3391,7 @@ delete */
       schoolSelect.appendChild(opt);
     });
 
+/* delete      
 function applyLoanFilters() {
   const nameVal = document.getElementById("filterName").value;
   const schoolVal = document.getElementById("filterSchool").value;
@@ -3418,16 +3424,16 @@ function applyLoanFilters() {
   // 2️⃣ APPLY SORT (shared for tiles + table)
   currentLoans = filteredLoans.slice();
 
-/* delete?
+
  // 3️⃣ RENDER ACTIVE VIEW
 if (toggleTableView.checked) {
   renderLoanTableROI(getLoansForTableView());
 } else {
   renderLoanGrid(currentLoans);
 }
-delete? */
-}
 
+}
+delete */
 
 
 function applyLoanSort() {
@@ -4826,6 +4832,20 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
+
+// =========================================
+// DERIVE + INITIALIZE FILTER STATE (REQUIRED)
+// =========================================
+const derivedLoans = deriveLoansWithAmortAndRoi(loans);
+
+// 🔑 SOURCE OF TRUTH
+allLoans = derivedLoans;
+currentLoans = derivedLoans;
+filteredLoans = derivedLoans;
+
+// Initial render
+renderLoanGrid(currentLoans);
+
       
       document.getElementById("currentDate").textContent =
   formatMonthYear(new Date());
