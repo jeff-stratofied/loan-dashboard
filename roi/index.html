@@ -1491,27 +1491,31 @@ function openLoanDrawerSafe(loan) {
   openDrawerForLoan(loan);
 }
 
-
-
-
     
-    async function loadLoans() {
-      const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
-      const data = await res.json();
-      loans = (data.loans || []).map(l => ({
-        ...l,
-        id: l.loanId,
-        name: l.loanName ?? `Loan ${l.loanId}`,
-        school: l.school ?? "",
-        loanStartDate: l.loanStartDate || "",
-        termYears: Number(l.termYears ?? 0),
-        graceYears: Number(l.graceYears ?? 0),
-        purchasePrice: Number(l.purchasePrice ?? 0),
-        nominalRate: Number(l.nominalRate ?? 0),
-        upfrontFee: Number(l.upfrontFee ?? 150),
-        monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
-      }));
-    }
+async function loadLoans() {
+  const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
+  const data = await res.json();
+
+  loans = (data.loans || []).map(l => {
+    const purchasePrice = Number(l.purchasePrice ?? 0);
+
+    return {
+      ...l,
+      id: l.loanId,
+      name: l.loanName ?? `Loan ${l.loanId}`,
+      school: l.school ?? "",
+      loanStartDate: l.loanStartDate || "",
+      termYears: Number(l.termYears ?? 0),
+      graceYears: Number(l.graceYears ?? 0),
+      purchasePrice,
+      originalLoanAmount: purchasePrice,   // 🔑 FIX
+      nominalRate: Number(l.nominalRate ?? 0),
+      upfrontFee: Number(l.upfrontFee ?? 150),
+      monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
+    };
+  });
+}
+
 
 function openDrawerForLoan(loan){
   
