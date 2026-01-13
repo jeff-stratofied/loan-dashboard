@@ -1509,6 +1509,26 @@ function openLoanDrawerSafe(loan) {
   openDrawerForLoan(loan);
 }
 
+ // =====================================================
+// KPI DRAWER OPEN — ROI (REQUIRED FOR EMBED)
+// =====================================================
+function openRoiKpiDrawer(kpiId) {
+  currentMode = "kpi";
+  currentLoan = null;
+
+  // Hide loan-only UI
+  drawerAmortContainer.style.display = "none";
+  drawerLegend.style.display = "none";
+  drawerExtra.innerHTML = "";
+
+  // Delegate to existing KPI renderer
+  renderKpiDrawer(kpiId);
+
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+  drawer.scrollTop = 0;
+}
+   
     
 async function loadLoans() {
   const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
