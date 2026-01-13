@@ -1597,28 +1597,38 @@ function openRoiKpiFromUrl(kpiOverride = null) {
 
   if (!kpi) return;
 
+  currentMode = "kpi";
+  currentLoan = null;
+
+  drawer.classList.remove("loan-mode");
+  drawerAmortContainer.style.display = "none";
+  drawerLegend.style.display = "none";
+  drawerExtra.innerHTML = "";
 
   switch (kpi) {
     case "tpv":
       renderTPVDrawer();
       break;
-
     case "rates":
       renderRatesDrawer();
       break;
-
     case "capitalRecovery":
       renderCapitalRecoveryDrawer();
       break;
-
     case "spread":
       renderROISpreadDrawer();
       break;
-
     default:
       console.warn("Unknown ROI KPI:", kpi);
+      return;
   }
+
+  // ✅ THIS WAS MISSING
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+  drawer.scrollTop = 0;
 }
+
 
     
 async function loadLoans() {
