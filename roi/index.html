@@ -4766,14 +4766,20 @@ populateLoanFilters(allLoans);
 // 🔎 DEBUG ACCESS (TEMPORARY)
 window.__debug = { allLoans, currentLoans, filteredLoans };
 
-// Initial render
-// 🔑 INITIAL RENDER — RESPECT TABLE VIEW
-if (localStorage.getItem("roiTableView") === "1") {
+// =========================================
+// INITIAL RENDER — EMBED SAFE
+// =========================================
+if (PAGE_CONTEXT.isEmbed) {
+  // iframe shows ONLY KPIs + drawer
+  document.getElementById("loanGrid")?.remove();
+  document.getElementById("loanTableWrap")?.remove();
+} else if (localStorage.getItem("roiTableView") === "1") {
   document.getElementById("toggleTableView").checked = true;
   renderLoanTableROI();
 } else {
   renderLoanGrid(currentLoans);
 }
+
 
 // =====================================================
 // EMBED MODE — FORCE KPI DRAWER (MATCH AMORT)
