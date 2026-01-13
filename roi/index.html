@@ -1612,7 +1612,7 @@ function openRoiKpiFromUrl(kpiOverride = null) {
       break;
 
     case "spread":
-      renderRoiSpreadDrawer();
+      renderROISpreadDrawer();
       break;
 
     default:
@@ -2267,7 +2267,355 @@ function createMiniSparkline(svg, series, opts = {}) {
   
 }
 
+/* ============================================================
+   Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
+   ============================================================ */
 
+function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
+  containerEl.innerHTML = "";
+  const svgNS = "http://www.w3.org/2000/svg";
+    // -----------------------------------
+  // Path refs (REQUIRED)
+  // -----------------------------------
+  const loanPaths = [];
+  let weightedPath = null;
+
+
+  const rect = containerEl.getBoundingClientRect();
+  const w = Math.max(360, rect.width || 700);
+  const h = opts.h || (isEmbed ? 240 : 260);
+  const pad = opts.pad || (isEmbed ? 20 : 48);
+
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  svg.setAttribute("width", "100%");
+  svg.setAttribute("height", "100%");
+  svg.style.display = "block";
+
+  // -------------------------
+  // Build a unified date axis
+  // -------------------------
+  const globalDates = opts.dates || [];
+
+  
+  if (!globalDates.length) {
+    containerEl.appendChild(svg);
+    return;
+  }
+
+  const ms0 = globalDates[0].getTime();
+  const ms1 = globalDates[globalDates.length - 1].getTime();
+  const msRange = ms1 - ms0 || 1;
+
+  const dateToX = (d) => {
+    const ratio = (d.getTime() - ms0) / msRange;
+    return pad + ratio * (w - pad * 2);
+  };
+
+  // -------------------------
+  // Y scale (shared)
+  // -------------------------
+  let ys = [];
+
+  if (!opts.hideWeighted && Array.isArray(weightedSeries)) {
+    weightedSeries.forEach(p => ys.push(p.y));
+  }
+
+  loanSeriesList.forEach(ls =>
+    ls.data.forEach(p => ys.push(p.y))
+  );
+
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const rangeY = maxY - minY || 1;
+
+  const yScale = (yVal) =>
+    pad + (h - pad * 2) - ((yVal - minY) / rangeY) * (h - pad * 2);
+
+  // -----------------------------------
+  // Grid + Y labels
+  // -----------------------------------
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const y = pad + (i / steps) * (h - pad * 2);
+
+    const grid = document.createElementNS(svgNS, "line");
+    grid.setAttribute("x1", pad);
+    grid.setAttribute("x2", w - pad);
+    grid.setAttribute("y1", y);
+    grid.setAttribute("y2", y);
+    grid.setAttribute("stroke", "var(--border)");
+    grid.setAttribute("stroke-opacity", "0.16");
+    svg.appendChild(grid);
+
+    const val = maxY - (i / steps) * rangeY;
+    const label = document.createElementNS(svgNS, "text");
+    label.setAttribute("x", pad - 4);
+    label.setAttribute("y", y);
+    label.setAttribute("text-anchor", "end");
+    label.setAttribute("dominant-baseline", "middle");
+    label.setAttribute("font-size", "10");
+    label.setAttribute("fill", "var(--muted)");
+    label.textContent = (val * 100).toFixed(1) + "%";
+    svg.appendChild(label);
+  }
+
+function smoothPathFromPointsCubic(points, isTruncated = false) {
+  if (points.length < 2) return "";
+
+  let d = `M ${points[0][0]} ${points[0][1]}`;
+
+  for (let i = 1; i < points.length; i++) {
+    const [x0, y0] = points[i - 1];
+    const [x1, y1] = points[i];
+    d += ` Q ${x0} ${y0}, ${(x0 + x1) / 2} ${(y0 + y1) / 2}`;
+  }
+
+  // 🚫 DO NOT extend defaulted / truncated series
+  if (!isTruncated) {
+    d += ` T ${points.at(-1)[0]} ${points.at(-1)[1]}`;
+  }
+
+  return d;
+}
+
+
+
+// -----------------------------------
+// Loan lines (ALWAYS draw)
+// -----------------------------------
+loanSeriesList.forEach(ls => {
+  const pts = ls.data
+    .filter(p => p.y != null)
+    .map(p => [dateToX(p.date), yScale(p.y)]);
+
+  if (!pts.length) return;
+
+  // ✅ ADD THIS LINE
+  const isTruncated = ls.data.length < globalDates.length;
+
+  // ✅ CHANGE THIS LINE
+  const pathD = smoothPathFromPointsCubic(pts, isTruncated);
+
+  const path = document.createElementNS(svgNS, "path");
+  path.setAttribute("d", pathD);
+  path.setAttribute("fill", "none");
+  path.setAttribute("stroke", ls.color || "#888");
+  path.setAttribute("stroke-width", "1.2");
+  path.setAttribute("stroke-opacity", "0.9");
+  path.dataset.type = "loan";
+  path.dataset.loanId = String(ls.id);
+  svg.appendChild(path);
+  loanPaths.push(path);
+});
+
+
+
+  // -----------------------------------
+  // Weighted line (OPTIONAL)
+  // -----------------------------------
+  if (!opts.hideWeighted && Array.isArray(weightedSeries) && weightedSeries.length) {
+    const pts = weightedSeries.map(p => [dateToX(p.date), yScale(p.y)]);
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute("d", smoothPathFromPointsCubic(pts));
+    path.setAttribute("fill", "none");
+    path.setAttribute("stroke", opts.weightedColor || "#000");
+    path.setAttribute("stroke-width", opts.weightedWidth || "2.6");
+    path.dataset.type = "weighted";
+    path.dataset.role = "weighted-line"; 
+    path.style.pointerEvents = "none"; 
+    weightedPath = path;
+    svg.appendChild(path);
+  }
+
+  // -----------------------------------
+  // TODAY vertical reference line
+  // -----------------------------------
+  const today = new Date();
+  let todayIdx = -1;
+  globalDates.forEach((d, i) => {
+    if (d <= today) todayIdx = i;
+  });
+
+  if (todayIdx >= 0) {
+    const todayX = dateToX(globalDates[todayIdx]);
+    const todayLine = document.createElementNS(svgNS, "line");
+    todayLine.setAttribute("x1", todayX);
+    todayLine.setAttribute("x2", todayX);
+    todayLine.setAttribute("y1", pad);
+    todayLine.setAttribute("y2", h - pad);
+    todayLine.setAttribute("stroke", "#111827");
+    todayLine.setAttribute("stroke-dasharray", "4 4");
+    todayLine.setAttribute("stroke-opacity", "0.55");
+    svg.appendChild(todayLine);
+  }
+
+  // -----------------------------------
+  // X-axis
+  // -----------------------------------
+  const axis = document.createElementNS(svgNS, "g");
+  const tickSpacing = opts.tickSpacingX || 24;
+
+  globalDates.forEach((d, i) => {
+    if (i % tickSpacing !== 0) return;
+    const t = document.createElementNS(svgNS, "text");
+    t.setAttribute("x", dateToX(d));
+    t.setAttribute("y", h - 4);
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("font-size", "10");
+    t.setAttribute("fill", "var(--muted)");
+    t.textContent = formatMonthYear(d);
+    axis.appendChild(t);
+  });
+
+// -----------------------------------
+// Hover dimming helpers (EXACT)
+// -----------------------------------
+function dimWeightedLine() {
+  if (!weightedPath) return;
+  weightedPath.setAttribute("stroke-opacity", "0.15");
+}
+
+function restoreWeightedLine() {
+  if (!weightedPath) return;
+  weightedPath.setAttribute("stroke-opacity", "0.9");
+}
+
+window.__roiChartFocusLoan = function (loanId) {
+  loanPaths.forEach(p => {
+    const active = p.dataset.loanId === String(loanId);
+    p.setAttribute("stroke-opacity", active ? "1" : "0.15");
+    p.setAttribute("stroke-width", active ? "2.6" : "1.2");
+  });
+  dimWeightedLine();
+};
+
+window.__roiChartClearFocus = function () {
+  loanPaths.forEach(p => {
+    p.setAttribute("stroke-opacity", "0.9");
+    p.setAttribute("stroke-width", "1.2");
+  });
+  restoreWeightedLine();
+};
+
+
+  
+// -----------------------------------
+// Hover interaction (REFINED)
+// -----------------------------------
+const tooltip = document.getElementById("tooltip");
+
+const vLine = document.createElementNS(svgNS, "line");
+vLine.setAttribute("stroke", "#111827");
+vLine.setAttribute("stroke-dasharray", "3 4");
+vLine.setAttribute("stroke-opacity", "0.6");
+svg.appendChild(vLine);
+
+svg.addEventListener("mousemove", ev => {
+  const rect = svg.getBoundingClientRect();
+  const svgX = ev.clientX - rect.left;
+
+  // snap to nearest date index
+  let idx = Math.round(
+    ((svgX - pad) / (w - pad * 2)) * (globalDates.length - 1)
+  );
+  idx = Math.max(0, Math.min(globalDates.length - 1, idx));
+
+  const date = globalDates[idx];
+  const x = dateToX(date);
+
+  // vertical hover line
+  vLine.setAttribute("x1", x);
+  vLine.setAttribute("x2", x);
+  vLine.setAttribute("y1", pad);
+  vLine.setAttribute("y2", h - pad);
+
+  // -------------------------
+  // Build tooltip content
+  // -------------------------
+  let html = `
+    <div style="font-weight:700;margin-bottom:6px">
+      ${formatMonthYear(date)}
+    </div>
+  `;
+
+  // weighted series
+const weightedAtDate =
+  computeWeightedRoiAsOfMonth(currentLoans, date);
+
+html += `
+  <div style="margin-bottom:6px">
+    <span style="font-weight:600">Weighted:</span>
+    ${(weightedAtDate * 100).toFixed(2)}%
+  </div>
+`;
+
+  // per-loan series (SQUARE swatches)
+loanSeriesList.forEach(ls => {
+  // find last owned point at or before hovered date
+  const pt = ls.data
+    .filter(p => p.date && p.date <= date && p.y != null)
+    .slice(-1)[0];
+
+  // 🚫 not owned yet → do not show
+  if (!pt) return;
+
+  html += `
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px">
+      <span style="
+        width:10px;
+        height:10px;
+        background:${ls.color || "#888"};
+        display:inline-block;
+        flex-shrink:0;
+      "></span>
+      <span>${(pt.y * 100).toFixed(2)}%</span>
+    </div>
+  `;
+});
+
+
+  tooltip.innerHTML = html;
+  tooltip.style.display = "block";
+
+  // -------------------------
+  // Cursor-based smart positioning (FIXED)
+  // -------------------------
+  const ttRect = tooltip.getBoundingClientRect();
+  const margin = 12;
+
+  // start from cursor position
+  let left = ev.clientX + 14;
+  let top  = ev.clientY + 14;
+
+  // flip horizontally if overflowing right edge
+  if (left + ttRect.width > window.innerWidth - margin) {
+    left = ev.clientX - ttRect.width - 14;
+  }
+
+  // flip vertically if overflowing bottom edge
+  if (top + ttRect.height > window.innerHeight - margin) {
+    top = ev.clientY - ttRect.height - 14;
+  }
+
+  // final clamp (safety)
+  left = Math.max(margin, Math.min(left, window.innerWidth - ttRect.width - margin));
+  top  = Math.max(margin, Math.min(top, window.innerHeight - ttRect.height - margin));
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top  = `${top}px`;
+
+});
+
+svg.addEventListener("mouseleave", () => {
+  tooltip.style.display = "none";
+  vLine.setAttribute("x1", -9999);
+  vLine.setAttribute("x2", -9999);
+});
+
+  svg.appendChild(axis);
+  containerEl.appendChild(svg);
+}
     
 
 /* ============================================================
@@ -3013,355 +3361,6 @@ filteredLoans = currentLoans.slice();
 );
 applyLoanFilters();
       
-/* ============================================================
-   Multi-Series ROI Chart (Aligned by Purchase Date, Smoothed)
-   ============================================================ */
-
-function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
-  containerEl.innerHTML = "";
-  const svgNS = "http://www.w3.org/2000/svg";
-    // -----------------------------------
-  // Path refs (REQUIRED)
-  // -----------------------------------
-  const loanPaths = [];
-  let weightedPath = null;
-
-
-  const rect = containerEl.getBoundingClientRect();
-  const w = Math.max(360, rect.width || 700);
-  const h = opts.h || (isEmbed ? 240 : 260);
-  const pad = opts.pad || (isEmbed ? 20 : 48);
-
-  const svg = document.createElementNS(svgNS, "svg");
-  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
-  svg.setAttribute("width", "100%");
-  svg.setAttribute("height", "100%");
-  svg.style.display = "block";
-
-  // -------------------------
-  // Build a unified date axis
-  // -------------------------
-  const globalDates = opts.dates || [];
-
-  
-  if (!globalDates.length) {
-    containerEl.appendChild(svg);
-    return;
-  }
-
-  const ms0 = globalDates[0].getTime();
-  const ms1 = globalDates[globalDates.length - 1].getTime();
-  const msRange = ms1 - ms0 || 1;
-
-  const dateToX = (d) => {
-    const ratio = (d.getTime() - ms0) / msRange;
-    return pad + ratio * (w - pad * 2);
-  };
-
-  // -------------------------
-  // Y scale (shared)
-  // -------------------------
-  let ys = [];
-
-  if (!opts.hideWeighted && Array.isArray(weightedSeries)) {
-    weightedSeries.forEach(p => ys.push(p.y));
-  }
-
-  loanSeriesList.forEach(ls =>
-    ls.data.forEach(p => ys.push(p.y))
-  );
-
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const rangeY = maxY - minY || 1;
-
-  const yScale = (yVal) =>
-    pad + (h - pad * 2) - ((yVal - minY) / rangeY) * (h - pad * 2);
-
-  // -----------------------------------
-  // Grid + Y labels
-  // -----------------------------------
-  const steps = 4;
-  for (let i = 0; i <= steps; i++) {
-    const y = pad + (i / steps) * (h - pad * 2);
-
-    const grid = document.createElementNS(svgNS, "line");
-    grid.setAttribute("x1", pad);
-    grid.setAttribute("x2", w - pad);
-    grid.setAttribute("y1", y);
-    grid.setAttribute("y2", y);
-    grid.setAttribute("stroke", "var(--border)");
-    grid.setAttribute("stroke-opacity", "0.16");
-    svg.appendChild(grid);
-
-    const val = maxY - (i / steps) * rangeY;
-    const label = document.createElementNS(svgNS, "text");
-    label.setAttribute("x", pad - 4);
-    label.setAttribute("y", y);
-    label.setAttribute("text-anchor", "end");
-    label.setAttribute("dominant-baseline", "middle");
-    label.setAttribute("font-size", "10");
-    label.setAttribute("fill", "var(--muted)");
-    label.textContent = (val * 100).toFixed(1) + "%";
-    svg.appendChild(label);
-  }
-
-function smoothPathFromPointsCubic(points, isTruncated = false) {
-  if (points.length < 2) return "";
-
-  let d = `M ${points[0][0]} ${points[0][1]}`;
-
-  for (let i = 1; i < points.length; i++) {
-    const [x0, y0] = points[i - 1];
-    const [x1, y1] = points[i];
-    d += ` Q ${x0} ${y0}, ${(x0 + x1) / 2} ${(y0 + y1) / 2}`;
-  }
-
-  // 🚫 DO NOT extend defaulted / truncated series
-  if (!isTruncated) {
-    d += ` T ${points.at(-1)[0]} ${points.at(-1)[1]}`;
-  }
-
-  return d;
-}
-
-
-
-// -----------------------------------
-// Loan lines (ALWAYS draw)
-// -----------------------------------
-loanSeriesList.forEach(ls => {
-  const pts = ls.data
-    .filter(p => p.y != null)
-    .map(p => [dateToX(p.date), yScale(p.y)]);
-
-  if (!pts.length) return;
-
-  // ✅ ADD THIS LINE
-  const isTruncated = ls.data.length < globalDates.length;
-
-  // ✅ CHANGE THIS LINE
-  const pathD = smoothPathFromPointsCubic(pts, isTruncated);
-
-  const path = document.createElementNS(svgNS, "path");
-  path.setAttribute("d", pathD);
-  path.setAttribute("fill", "none");
-  path.setAttribute("stroke", ls.color || "#888");
-  path.setAttribute("stroke-width", "1.2");
-  path.setAttribute("stroke-opacity", "0.9");
-  path.dataset.type = "loan";
-  path.dataset.loanId = String(ls.id);
-  svg.appendChild(path);
-  loanPaths.push(path);
-});
-
-
-
-  // -----------------------------------
-  // Weighted line (OPTIONAL)
-  // -----------------------------------
-  if (!opts.hideWeighted && Array.isArray(weightedSeries) && weightedSeries.length) {
-    const pts = weightedSeries.map(p => [dateToX(p.date), yScale(p.y)]);
-    const path = document.createElementNS(svgNS, "path");
-    path.setAttribute("d", smoothPathFromPointsCubic(pts));
-    path.setAttribute("fill", "none");
-    path.setAttribute("stroke", opts.weightedColor || "#000");
-    path.setAttribute("stroke-width", opts.weightedWidth || "2.6");
-    path.dataset.type = "weighted";
-    path.dataset.role = "weighted-line"; 
-    path.style.pointerEvents = "none"; 
-    weightedPath = path;
-    svg.appendChild(path);
-  }
-
-  // -----------------------------------
-  // TODAY vertical reference line
-  // -----------------------------------
-  const today = new Date();
-  let todayIdx = -1;
-  globalDates.forEach((d, i) => {
-    if (d <= today) todayIdx = i;
-  });
-
-  if (todayIdx >= 0) {
-    const todayX = dateToX(globalDates[todayIdx]);
-    const todayLine = document.createElementNS(svgNS, "line");
-    todayLine.setAttribute("x1", todayX);
-    todayLine.setAttribute("x2", todayX);
-    todayLine.setAttribute("y1", pad);
-    todayLine.setAttribute("y2", h - pad);
-    todayLine.setAttribute("stroke", "#111827");
-    todayLine.setAttribute("stroke-dasharray", "4 4");
-    todayLine.setAttribute("stroke-opacity", "0.55");
-    svg.appendChild(todayLine);
-  }
-
-  // -----------------------------------
-  // X-axis
-  // -----------------------------------
-  const axis = document.createElementNS(svgNS, "g");
-  const tickSpacing = opts.tickSpacingX || 24;
-
-  globalDates.forEach((d, i) => {
-    if (i % tickSpacing !== 0) return;
-    const t = document.createElementNS(svgNS, "text");
-    t.setAttribute("x", dateToX(d));
-    t.setAttribute("y", h - 4);
-    t.setAttribute("text-anchor", "middle");
-    t.setAttribute("font-size", "10");
-    t.setAttribute("fill", "var(--muted)");
-    t.textContent = formatMonthYear(d);
-    axis.appendChild(t);
-  });
-
-// -----------------------------------
-// Hover dimming helpers (EXACT)
-// -----------------------------------
-function dimWeightedLine() {
-  if (!weightedPath) return;
-  weightedPath.setAttribute("stroke-opacity", "0.15");
-}
-
-function restoreWeightedLine() {
-  if (!weightedPath) return;
-  weightedPath.setAttribute("stroke-opacity", "0.9");
-}
-
-window.__roiChartFocusLoan = function (loanId) {
-  loanPaths.forEach(p => {
-    const active = p.dataset.loanId === String(loanId);
-    p.setAttribute("stroke-opacity", active ? "1" : "0.15");
-    p.setAttribute("stroke-width", active ? "2.6" : "1.2");
-  });
-  dimWeightedLine();
-};
-
-window.__roiChartClearFocus = function () {
-  loanPaths.forEach(p => {
-    p.setAttribute("stroke-opacity", "0.9");
-    p.setAttribute("stroke-width", "1.2");
-  });
-  restoreWeightedLine();
-};
-
-
-  
-// -----------------------------------
-// Hover interaction (REFINED)
-// -----------------------------------
-const tooltip = document.getElementById("tooltip");
-
-const vLine = document.createElementNS(svgNS, "line");
-vLine.setAttribute("stroke", "#111827");
-vLine.setAttribute("stroke-dasharray", "3 4");
-vLine.setAttribute("stroke-opacity", "0.6");
-svg.appendChild(vLine);
-
-svg.addEventListener("mousemove", ev => {
-  const rect = svg.getBoundingClientRect();
-  const svgX = ev.clientX - rect.left;
-
-  // snap to nearest date index
-  let idx = Math.round(
-    ((svgX - pad) / (w - pad * 2)) * (globalDates.length - 1)
-  );
-  idx = Math.max(0, Math.min(globalDates.length - 1, idx));
-
-  const date = globalDates[idx];
-  const x = dateToX(date);
-
-  // vertical hover line
-  vLine.setAttribute("x1", x);
-  vLine.setAttribute("x2", x);
-  vLine.setAttribute("y1", pad);
-  vLine.setAttribute("y2", h - pad);
-
-  // -------------------------
-  // Build tooltip content
-  // -------------------------
-  let html = `
-    <div style="font-weight:700;margin-bottom:6px">
-      ${formatMonthYear(date)}
-    </div>
-  `;
-
-  // weighted series
-const weightedAtDate =
-  computeWeightedRoiAsOfMonth(currentLoans, date);
-
-html += `
-  <div style="margin-bottom:6px">
-    <span style="font-weight:600">Weighted:</span>
-    ${(weightedAtDate * 100).toFixed(2)}%
-  </div>
-`;
-
-  // per-loan series (SQUARE swatches)
-loanSeriesList.forEach(ls => {
-  // find last owned point at or before hovered date
-  const pt = ls.data
-    .filter(p => p.date && p.date <= date && p.y != null)
-    .slice(-1)[0];
-
-  // 🚫 not owned yet → do not show
-  if (!pt) return;
-
-  html += `
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px">
-      <span style="
-        width:10px;
-        height:10px;
-        background:${ls.color || "#888"};
-        display:inline-block;
-        flex-shrink:0;
-      "></span>
-      <span>${(pt.y * 100).toFixed(2)}%</span>
-    </div>
-  `;
-});
-
-
-  tooltip.innerHTML = html;
-  tooltip.style.display = "block";
-
-  // -------------------------
-  // Cursor-based smart positioning (FIXED)
-  // -------------------------
-  const ttRect = tooltip.getBoundingClientRect();
-  const margin = 12;
-
-  // start from cursor position
-  let left = ev.clientX + 14;
-  let top  = ev.clientY + 14;
-
-  // flip horizontally if overflowing right edge
-  if (left + ttRect.width > window.innerWidth - margin) {
-    left = ev.clientX - ttRect.width - 14;
-  }
-
-  // flip vertically if overflowing bottom edge
-  if (top + ttRect.height > window.innerHeight - margin) {
-    top = ev.clientY - ttRect.height - 14;
-  }
-
-  // final clamp (safety)
-  left = Math.max(margin, Math.min(left, window.innerWidth - ttRect.width - margin));
-  top  = Math.max(margin, Math.min(top, window.innerHeight - ttRect.height - margin));
-
-  tooltip.style.left = `${left}px`;
-  tooltip.style.top  = `${top}px`;
-
-});
-
-svg.addEventListener("mouseleave", () => {
-  tooltip.style.display = "none";
-  vLine.setAttribute("x1", -9999);
-  vLine.setAttribute("x2", -9999);
-});
-
-  svg.appendChild(axis);
-  containerEl.appendChild(svg);
-}
       
     /* -------------------------
        UI: Render KPI tiles
