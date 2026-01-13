@@ -1590,9 +1590,13 @@ function openRoiKpiDrawer(kpiId) {
 /* ============================
    KPI deep-link router (ROI)
    ============================ */
-function openRoiKpiFromUrl() {
-  const kpi = new URLSearchParams(window.location.search).get("open");
+function openRoiKpiFromUrl(kpiOverride = null) {
+  const kpi =
+    kpiOverride ??
+    new URLSearchParams(window.location.search).get("open");
+
   if (!kpi) return;
+
 
   switch (kpi) {
     case "tpv":
@@ -3386,6 +3390,25 @@ svg.addEventListener("mouseleave", () => {
       </div>
     `;
 
+// -----------------------------------
+// KPI tile click → open drawer (ROI)
+// -----------------------------------
+document.querySelectorAll("#kpis .kpi").forEach(tile => {
+  tile.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    const kpi = tile.dataset.kpi;
+    if (!kpi) return;
+
+    // FULL ROI PAGE: open drawer in place
+    if (!PAGE_CONTEXT.isEmbed) {
+      openRoiKpiFromUrl(kpi);
+      return;
+    }
+  });
+});
+
+      
 // ROI iframe KPI redirect (open correct drawer on full ROI page)
 if (isEmbed) {
   document.querySelectorAll(".kpi").forEach(tile => {
