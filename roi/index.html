@@ -4224,108 +4224,143 @@ const data = dates.map(date => {
 }
 move to roiEngione */
 
-    function renderRatesDrawer(){
+function renderRatesDrawer() {
 
-console.log("%c[RENDER RATES DRAWER]", "color:#ec4899;font-weight:bold");
-      
-  currentMode = 'kpi';
-currentLoan = null;
+  console.log(
+    "%c[RENDER RATES DRAWER]",
+    "color:#ec4899;font-weight:bold"
+  );
 
-    drawer.classList.remove('loan-mode');
+  currentMode = "kpi";
+  currentLoan = null;
 
-drawerAmortContainer.style.display = 'none';
-drawerLegend.style.display = 'none';
-drawerChartArea.innerHTML = '';
-drawerExtra.innerHTML = '';
+  drawer.classList.remove("loan-mode");
 
-drawerTitle.textContent = "Projected Weighted ROI";
-drawerSub.textContent = "Projection to Maturity";
+  drawerAmortContainer.style.display = "none";
+  drawerLegend.style.display = "none";
+  drawerChartArea.innerHTML = "";
+  drawerExtra.innerHTML = "";
 
-// ===============================
-// 1. Compute projected weighted ROI
-// ===============================
-const totalInv = allLoans.reduce((s,l)=> s + l.purchasePrice, 0);
+  drawerTitle.textContent = "Projected Weighted ROI";
+  drawerSub.textContent = "Projection to Maturity";
 
-let projWeightedROI = 0;
-allLoans.forEach(l => {
-  const last = getLastOwnedRoiEntry(l);
-  projWeightedROI += l.purchasePrice * (last.roi || 0);
-});
-projWeightedROI = projWeightedROI / Math.max(1, totalInv);
+  // =====================================================
+  // 1. Compute projected weighted ROI (headline KPI)
+  // =====================================================
+  const totalInv = allLoans.reduce(
+    (s, l) => s + (l.purchasePrice || 0),
+    0
+  );
 
-drawerPrimaryTitle.textContent = "Projected Weighted ROI";
-drawerPrimary.textContent = (projWeightedROI * 100).toFixed(2) + "%";
+  let projWeightedROI = 0;
 
-// ===============================
-// 2. Compute projected portfolio value
-// ===============================
-let projPortfolioValue = 0;
-allLoans.forEach(l => {
-  const last = getLastOwnedRoiEntry(l);
-  projPortfolioValue += last.loanValue || 0;
-});
+  allLoans.forEach(l => {
+    const last = getLastOwnedRoiEntry(l);
+    if (!last) return;
+    projWeightedROI += l.purchasePrice * (last.roi || 0);
+  });
 
-drawerSecondaryTitle.textContent = "Projected Portfolio Value";
-drawerSecondary.textContent = "$" + projPortfolioValue.toLocaleString();
+  projWeightedROI =
+    projWeightedROI / Math.max(1, totalInv);
 
-// ===============================
-// 3. Build timeline (calendar aligned)
-// ===============================
-const timeline = roiEngine.buildProjectedRoiTimeline(allLoans);
+  drawerPrimaryTitle.textContent = "Projected Weighted ROI";
+  drawerPrimary.textContent =
+    (projWeightedROI * 100).toFixed(2) + "%";
 
-      
-// ===============================
-// 4. Render multi-series chart WITH hover
-// ===============================
-      
-      createMultiSeriesChart(
-  drawerChartArea,
-  timeline.perLoanSeries,
-  timeline.weightedSeries,
-  {
-    weightedColor: "#000",
-    weightedWidth: 2.6,
-    dates: timeline.dates
+  // =====================================================
+  // 2. Compute projected portfolio value
+  // =====================================================
+  let projPortfolioValue = 0;
+
+  allLoans.forEach(l => {
+    const last = getLastOwnedRoiEntry(l);
+    if (!last) return;
+    projPortfolioValue += last.loanValue || 0;
+  });
+
+  drawerSecondaryTitle.textContent =
+    "Projected Portfolio Value";
+  drawerSecondary.textContent =
+    "$" + projPortfolioValue.toLocaleString();
+
+  // =====================================================
+  // 3. Build ROI timeline (PORTFOLIO LEVEL)
+  // =====================================================
+  const timeline = buildProjectedRoiTimeline(allLoans);
+
+  // 🔒 Guard: never partially render KPI drawer
+  if (
+    !timeline ||
+    !timeline.dates?.length ||
+    !timeline.perLoanSeries?.length
+  ) {
+    drawerChartArea.innerHTML =
+      `<div class="muted">No projected ROI data available</div>`;
+    drawerExtra.innerHTML = "";
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+    return;
   }
-);
 
-// ===============================
-// 5. Table of projected ROI for each loan
-// ===============================
-drawerExtra.innerHTML = `
-  <div style="margin-top:12px">
-    <h3 style="margin:0 0 8px 0">Projected ROI at Maturity — All Loans</h3>
-    <div style="
-      max-height:300px;
-      overflow:auto;
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:6px;
-      background:var(--card);
-    ">
-      <table id="roiProjectedLoansTable" class="roi-table" style="width:100%;font-size:13px;">
-        <thead>
-          <tr>
-            <th style="text-align:left;">Loan</th>
-            <th style="text-align:left;">Purchase Date</th>
-            <th style="text-align:left;">Maturity Date</th>
-            <th style="text-align:right;">Projected ROI</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+  // =====================================================
+  // 4. Render multi-series chart
+  // =====================================================
+  createMultiSeriesChart(
+    drawerChartArea,
+    timeline.perLoanSeries,
+    timeline.weightedSeries,
+    {
+      weightedColor: "#000",
+      weightedWidth: 2.6,
+      dates: timeline.dates
+    }
+  );
+
+  // =====================================================
+  // 5. Table: Projected ROI per loan
+  // =====================================================
+  drawerExtra.innerHTML = `
+    <div style="margin-top:12px">
+      <h3 style="margin:0 0 8px 0">
+        Projected ROI at Maturity — All Loans
+      </h3>
+      <div style="
+        max-height:300px;
+        overflow:auto;
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:6px;
+        background:var(--card);
+      ">
+        <table
+          id="roiProjectedLoansTable"
+          class="roi-table"
+          style="width:100%;font-size:13px;"
+        >
+          <thead>
+            <tr>
+              <th style="text-align:left;">Loan</th>
+              <th style="text-align:left;">Purchase Date</th>
+              <th style="text-align:left;">Maturity Date</th>
+              <th style="text-align:right;">Projected ROI</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
-  </div>
-`;
+  `;
 
-populateProjectedROILoanTable();
+  populateProjectedROILoanTable();
 
-
-drawer.classList.add('open');
-drawer.setAttribute('aria-hidden','false');
-drawer.scrollTop = 0;
-
+  // =====================================================
+  // 6. Open drawer
+  // =====================================================
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+  drawer.scrollTop = 0;
 }
+
 
 // ============================================================
 // KPI4 — ROI SPREAD DRAWER
