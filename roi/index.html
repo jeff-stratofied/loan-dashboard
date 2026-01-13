@@ -3492,37 +3492,39 @@ function applyLoanSort() {
       applyLoanFilters();
     });
     
-    /* -------------------------
-   Compact tile toggle (persisted)
-   ------------------------- */
-    const compactToggle = document.getElementById("toggleCompact");
-    const loanGrid = document.getElementById("loanGrid");
-    
-    // Restore saved preference
+// -------------------------------------
+// Compact view toggle (FULL PAGE ONLY)
+// -------------------------------------
+if (!PAGE_CONTEXT.isEmbed) {
+  const compactToggle = document.getElementById("toggleCompact");
+  const loanGrid = document.getElementById("loanGrid");
+
+  if (compactToggle && loanGrid) {
     const savedCompact = localStorage.getItem("loanGridCompact");
     if (savedCompact !== null) {
       compactToggle.checked = savedCompact === "true";
     }
-    
-    // Apply initial state
+
     loanGrid.classList.toggle("compact", compactToggle.checked);
-    
-    // Persist on change
+
     compactToggle.addEventListener("change", () => {
       loanGrid.classList.toggle("compact", compactToggle.checked);
       localStorage.setItem("loanGridCompact", compactToggle.checked);
     });
-
-// =========================================
-// Table View Toggle — RESTORE ON LOAD
-// =========================================
-const tableToggle = document.getElementById("toggleTableView");
-if (tableToggle) {
-  tableToggle.checked = localStorage.getItem("roiTableView") === "1";
+  }
 }
 
-// 🔑 CRITICAL: render based on restored view state
-applyLoanFilters();
+
+  // Table View Toggle — FULL PAGE ONLY
+  const tableToggle = document.getElementById("toggleTableView");
+  if (tableToggle) {
+    tableToggle.checked = localStorage.getItem("roiTableView") === "1";
+    tableToggle.addEventListener("change", (e) => {
+      localStorage.setItem("roiTableView", e.target.checked ? "1" : "0");
+      applyLoanFilters();
+    });
+  }
+}
 
 
 // =====================================================
