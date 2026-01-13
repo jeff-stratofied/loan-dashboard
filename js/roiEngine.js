@@ -14,8 +14,7 @@
  * - never depend on UI state (currentLoan, embed mode, etc.)
  */
 
-(function () {
-  "use strict";
+
 
   // =====================================================
   // PUBLIC API
@@ -135,7 +134,7 @@ const data = dates.map(date => {
    * @param {Date} monthDate
    * @returns {number}
    */
-  function computeWeightedRoiAsOfMonth(loans, monthDate) {
+ export function computeWeightedRoiAsOfMonth(loans, monthDate) {
     if (!Array.isArray(loans) || !monthDate) return 0;
 
     const totalInvested = loans.reduce(
@@ -164,7 +163,7 @@ const data = dates.map(date => {
    * @param {Date} monthDate
    * @returns {{roi:number}|null}
    */
-  function getRoiEntryAsOfMonth(loan, monthDate) {
+ export function getRoiEntryAsOfMonth(loan, monthDate) {
     if (
       !loan ||
       !Array.isArray(loan.roiSeries) ||
@@ -183,14 +182,6 @@ const data = dates.map(date => {
     return null;
   }
 
-  // =====================================================
-  // EXPORTS (window namespace — no bundler required)
-  // =====================================================
 
-  window.roiEngine = {
-    buildProjectedRoiTimeline,
-    computeWeightedRoiAsOfMonth,
-    getRoiEntryAsOfMonth
-  };
 
-})();
+
