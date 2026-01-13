@@ -1643,7 +1643,9 @@ drawer.classList.add("open");
 drawer.setAttribute("aria-hidden", "false");
 
 // 🔑 FORCE VISIBILITY (ROI KPI FIX)
-forceDrawerVisible();
+if (!PAGE_CONTEXT.isEmbed) {
+  forceDrawerVisible();
+}
 
 drawer.scrollTop = 0;
 
@@ -3304,6 +3306,21 @@ tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
    - Print / CSV / actions
    ============================================================ */
 
+    document.getElementById("closeBtn")
+  .addEventListener("click", closeDrawer);
+
+    document.addEventListener("click", (e) => {
+  if (!drawer.classList.contains("open")) return;
+
+  const clickedInsideDrawer = drawer.contains(e.target);
+  const clickedKpi = e.target.closest(".kpi");
+  const clickedTile = e.target.closest(".tile");
+
+  if (!clickedInsideDrawer && !clickedKpi && !clickedTile) {
+    closeDrawer();
+  }
+});
+
 
 
 
@@ -3599,6 +3616,7 @@ document.getElementById("toggleTableView")?.addEventListener("change", (e) => {
     document.getElementById('closeBtn').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
 
+    /* delete
     function closeDrawer(){ 
   drawer.classList.remove('open'); 
   drawer.setAttribute('aria-hidden','true'); 
@@ -3606,10 +3624,35 @@ document.getElementById("toggleTableView")?.addEventListener("change", (e) => {
   currentLoan = null; 
   currentMode = "kpi";   // reset to default, not null
 }
+delet */
 
 function forceDrawerVisible() {
   drawer.style.transform = "translateX(0)";
   drawer.style.right = "0";
+}
+
+    function closeDrawer() {
+  // Clear state
+  currentLoan = null;
+  currentMode = null;
+
+  // Remove open state
+  drawer.classList.remove("open", "loan-mode");
+  drawer.setAttribute("aria-hidden", "true");
+
+  // 🔑 UNDO forceDrawerVisible
+  drawer.style.transform = "";
+  drawer.style.right = "";
+
+  // Optional cleanup
+  drawerExtra.innerHTML = "";
+  drawerLegend.style.display = "none";
+  drawerAmortContainer.style.display = "none";
+
+  // Clear URL param if present
+  const url = new URL(window.location);
+  url.searchParams.delete("open");
+  window.history.replaceState({}, "", url);
 }
 
     
