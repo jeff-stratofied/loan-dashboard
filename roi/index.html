@@ -4127,7 +4127,9 @@ console.log("%c[RENDER TPV DRAWER]", "color:#ec4899;font-weight:bold");
    PROJECTED ROI TIMELINE ENGINE
    Extends to each loan's maturity (NOT to today's date)
    ============================================================ */
-function buildProjectedRoiTimeline(loans) {
+
+  /* move to roiEngine
+    function buildProjectedRoiTimeline(loans) {
   // ---- 1. Determine global start (earliest purchase) ----
   const earliestPurchase = loans.reduce((earliest, l) => {
     const d = new Date(l.purchaseDate);
@@ -4218,7 +4220,7 @@ const data = dates.map(date => {
     weightedSeries
   };
 }
-
+move to roiEngione */
 
     function renderRatesDrawer(){
 
@@ -4267,7 +4269,8 @@ drawerSecondary.textContent = "$" + projPortfolioValue.toLocaleString();
 // ===============================
 // 3. Build timeline (calendar aligned)
 // ===============================
-const timeline = buildProjectedRoiTimeline(allLoans);
+const timeline = roiEngine.buildProjectedRoiTimeline(allLoans);
+
       
 // ===============================
 // 4. Render multi-series chart WITH hover
