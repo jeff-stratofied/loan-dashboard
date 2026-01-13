@@ -1660,20 +1660,32 @@ function renderLoanTiles(loans) {
       `;
 
       svg.addEventListener("mousemove", ev => {
-        const rect = svg.getBoundingClientRect();
-        const frac = (ev.clientX - rect.left) / rect.width;
-        const idxNearest = Math.round(frac * (fullSched.length - 1));
-        const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
-        if (!p) return;
+  const rect = svg.getBoundingClientRect();
+  const frac = (ev.clientX - rect.left) / rect.width;
+  const idxNearest = Math.round(frac * (fullSched.length - 1));
+  const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
+  if (!p) return;
 
-        tooltip.style.left = `${ev.clientX}px`;
-        tooltip.style.top = `${ev.clientY - 10}px`;
-        tooltip.style.display = "block";
-        tooltip.innerHTML =
-          `${chartDateLabel(loan.loanStartDate, p.monthIndex)} • ` +
-          `Principal $${p.cumPrincipal.toLocaleString()} • ` +
-          `Interest $${p.cumInterest.toLocaleString()}`;
-      });
+  // ✅ Prefer real schedule date
+  let hoverDate = null;
+
+  if (p.displayDate instanceof Date) {
+    hoverDate = p.displayDate;
+  } else if (p.loanDate instanceof Date) {
+    hoverDate = p.loanDate;
+  } else if (p.monthDate) {
+    hoverDate = new Date(p.monthDate + "T00:00:00");
+  }
+
+  tooltip.style.left = `${ev.clientX}px`;
+  tooltip.style.top = `${ev.clientY - 10}px`;
+  tooltip.style.display = "block";
+  tooltip.innerHTML =
+    `${formatMonthYearSafe(hoverDate)} • ` +
+    `Principal $${p.cumPrincipal.toLocaleString()} • ` +
+    `Interest $${p.cumInterest.toLocaleString()}`;
+});
+
 
       svg.addEventListener("mouseleave", () => {
         tooltip.style.display = "none";
