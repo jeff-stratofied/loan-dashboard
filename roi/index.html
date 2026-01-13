@@ -3859,12 +3859,14 @@ function toDate(d) {
   return (d instanceof Date) ? d : new Date(d);
 }
 
+/* delete
 // Difference in months between two dates
 function monthDiff(a, b) {
   a = toDate(a);
   b = toDate(b);
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 }
+delete */
 
 // Format ticks (Jan 2024)
 function formatMonthYear(d) {
