@@ -3321,6 +3321,44 @@ tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
   }
 });
 
+// =====================================================
+// KPI CLICK HANDLERS — ROI (REQUIRED)
+// =====================================================
+document.querySelectorAll(".kpi").forEach(kpi => {
+  kpi.addEventListener("click", (e) => {
+    e.stopPropagation(); // 🔑 prevent outside-close
+
+    const key = kpi.dataset.kpi;
+    console.log("[KPI CLICK]", key);
+
+    switch (key) {
+      case "tpv":
+        renderTPVDrawer();
+        break;
+      case "rates":
+        renderRatesDrawer();
+        break;
+      case "capitalRecovery":
+        renderCapitalRecoveryDrawer();
+        break;
+      case "spread":
+        renderROISpreadDrawer();
+        break;
+      default:
+        console.warn("Unknown KPI:", key);
+        return;
+    }
+
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+
+    if (!PAGE_CONTEXT.isEmbed) {
+      forceDrawerVisible();
+    }
+
+    drawer.scrollTop = 0;
+  });
+});
 
 
 
@@ -4789,11 +4827,19 @@ document.body.style.height = 'auto';
 
   const clickedInsideDrawer = drawer.contains(e.target);
   const clickedTile = !!e.target.closest(".tile");
+const clickedKpi  = !!e.target.closest(".kpi");
+
   const clickedTableRow = !!e.target.closest("#loanTable tr");
 
-  if (!clickedInsideDrawer && !clickedTile && !clickedTableRow) {
-    closeDrawer();
-  }
+if (
+  !clickedInsideDrawer &&
+  !clickedTile &&
+  !clickedTableRow &&
+  !clickedKpi
+) {
+  closeDrawer();
+}
+
 });
 
     document.querySelector('.grid').addEventListener('scroll', ()=>{ tooltip.style.display='none'; });
