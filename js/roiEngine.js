@@ -31,16 +31,102 @@
    *   weightedSeries: Array<{date,y}>
    * }}
    */
-  function buildProjectedRoiTimeline(loans) {
-    // NOTE: full implementation lives here
-    // (paste the hardened version we just finalized)
-    console.warn("buildProjectedRoiTimeline not yet implemented");
-    return {
-      dates: [],
-      perLoanSeries: [],
-      weightedSeries: []
-    };
+
+      /* ============================================================
+   PROJECTED ROI TIMELINE ENGINE
+   Extends to each loan's maturity (NOT to today's date)
+   ============================================================ */
+export function buildProjectedRoiTimeline(loans) {
+  // ---- 1. Determine global start (earliest purchase) ----
+  const earliestPurchase = loans.reduce((earliest, l) => {
+    const d = new Date(l.purchaseDate);
+    return d < earliest ? d : earliest;
+  }, new Date(loans[0].purchaseDate));
+
+  // ---- 2. Determine global end (latest maturity date) ----
+  const latestMaturity = loans.reduce((latest, l) => {
+    const mat = new Date(l.purchaseDate);
+    mat.setMonth(mat.getMonth() + Math.round((l.termYears + l.graceYears) * 12));
+    return mat > latest ? mat : latest;
+  }, new Date(earliestPurchase));
+
+  // ---- 3. Build monthly date list earliest → latest maturity ----
+  const dates = [];
+  const cursor = new Date(earliestPurchase);
+  while (cursor <= latestMaturity) {
+    dates.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
   }
+
+  // ---- 4. Align per-loan ROI series ----
+  const perLoanSeries = loans.map((loan, idx) => {
+    const purchase = new Date(loan.purchaseDate);
+const roiMap = {};
+
+loan.cumSchedule.forEach(row => {
+  if (!row.isOwned) return;
+
+  const realized = (row.cumPrincipal + row.cumInterest) - row.cumFees;
+  const unrealized = row.balance * 0.95;
+  const loanValue = realized + unrealized;
+
+  const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
+
+  const key = row.loanDate.toISOString().slice(0, 7);
+  roiMap[key] = roi;
+});
+
+
+
+    // Determine the very first ROI value for this loan
+const roiKeys = Object.keys(roiMap).sort();
+const firstRoiValue = roiKeys.length ? roiMap[roiKeys[0]] : 0;
+
+let lastKnownROI = firstRoiValue;   // <-- FIX: start correctly
+
+const data = dates.map(date => {
+  if (date < purchase) return { date, y: null };
+
+  const key = date.toISOString().slice(0,7);
+  if (roiMap[key] != null) {
+    lastKnownROI = roiMap[key];
+  }
+
+  return { date, y: lastKnownROI };
+});
+
+
+    const loanId = loan.id ?? loan.loanId ?? idx;
+
+    return {
+      id: loanId,
+      name: loan.name || `Loan ${loanId}`,
+      color: window.KPI_COLOR_MAP?.[loanId] || loanColors[idx % loanColors.length],
+      data
+    };
+
+  });
+
+  // ---- 5. Weighted ROI series ----
+  const totalInvested = loans.reduce((s,l)=> s + l.purchasePrice, 0);
+
+  const weightedSeries = dates.map((date, i) => {
+    let weightedSum = 0;
+    loans.forEach((loan, idx) => {
+      const roi = perLoanSeries[idx].data[i].y;
+      if (roi != null) {
+        weightedSum += roi * loan.purchasePrice;
+      }
+    });
+    return { date, y: weightedSum / totalInvested };
+  });
+
+  return {
+    dates,
+    perLoanSeries,
+    weightedSeries
+  };
+}
 
   /**
    * Compute weighted ROI for a portfolio as of a given month.
