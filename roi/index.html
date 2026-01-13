@@ -1594,22 +1594,39 @@ function openRoiKpiDrawer(kpiId) {
    ============================ */
 function openRoiKpiFromUrl(kpiOverride = null) {
 
-console.log(
-  "%c[ROUTER ENTER]",
-  "color:#3b82f6;font-weight:bold",
-  {
-    kpiOverride,
-    urlOpen: new URLSearchParams(window.location.search).get("open"),
-    currentMode
-  }
-);
+  console.log(
+    "%c[ROUTER ENTER]",
+    "color:#3b82f6;font-weight:bold",
+    {
+      kpiOverride,
+      urlOpen: new URLSearchParams(window.location.search).get("open"),
+      currentMode
+    }
+  );
 
-  
-  const kpi =
+  let kpi =
     kpiOverride ??
     new URLSearchParams(window.location.search).get("open");
 
   if (!kpi) return;
+
+  // =====================================================
+  // 🔑 FIX: normalize legacy KPI ids (reporting iframe)
+  // =====================================================
+  const KPI_ALIAS_MAP = {
+    kpi1: "tpv",
+    kpi2: "rates",
+    kpi3: "capitalRecovery",
+    kpi4: "spread"
+  };
+
+  if (KPI_ALIAS_MAP[kpi]) {
+    console.log(
+      `%c[KPI ALIAS] ${kpi} → ${KPI_ALIAS_MAP[kpi]}`,
+      "color:#22c55e;font-weight:bold"
+    );
+    kpi = KPI_ALIAS_MAP[kpi];
+  }
 
   currentMode = "kpi";
   currentLoan = null;
@@ -1641,22 +1658,24 @@ console.log(
       return;
   }
 
-drawer.classList.add("open");
-drawer.setAttribute("aria-hidden", "false");
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
 
-// 🔑 FORCE VISIBILITY (ROI KPI FIX)
-if (!PAGE_CONTEXT.isEmbed) {
-  forceDrawerVisible();
+  // 🔑 FORCE VISIBILITY (ROI KPI FIX)
+  if (!PAGE_CONTEXT.isEmbed) {
+    forceDrawerVisible();
+  }
+
+  drawer.scrollTop = 0;
+
+  requestAnimationFrame(() => {
+    console.log(
+      "[POST-FORCE]",
+      getComputedStyle(drawer).transform
+    );
+  });
 }
 
-drawer.scrollTop = 0;
-
-requestAnimationFrame(() => {
-  console.log("[POST-FORCE]", getComputedStyle(drawer).transform);
-});
-
-  
-}
 
 
     
