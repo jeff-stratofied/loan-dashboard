@@ -3866,12 +3866,13 @@ function monthDiff(a, b) {
   b = toDate(b);
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
 }
-delete */
+
 
 // Format ticks (Jan 2024)
 function formatMonthYear(d) {
   return d.toLocaleString("en-US", { month: "short", year: "numeric" });
 }
+delete */
 
 // Simple catmull-rom smoothing
 function smoothPath(points) {
