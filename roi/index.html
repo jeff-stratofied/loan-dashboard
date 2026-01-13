@@ -1591,6 +1591,18 @@ function openRoiKpiDrawer(kpiId) {
    KPI deep-link router (ROI)
    ============================ */
 function openRoiKpiFromUrl(kpiOverride = null) {
+
+console.log(
+  "%c[ROUTER ENTER]",
+  "color:#3b82f6;font-weight:bold",
+  {
+    kpiOverride,
+    urlOpen: new URLSearchParams(window.location.search).get("open"),
+    currentMode
+  }
+);
+
+  
   const kpi =
     kpiOverride ??
     new URLSearchParams(window.location.search).get("open");
@@ -1607,15 +1619,19 @@ function openRoiKpiFromUrl(kpiOverride = null) {
 
   switch (kpi) {
     case "tpv":
+      console.log("%c[ROUTER → TPV]", "color:#eab308;font-weight:bold");
       renderTPVDrawer();
       break;
     case "rates":
+      console.log("%c[ROUTER → Rates]", "color:#eab308;font-weight:bold");
       renderRatesDrawer();
       break;
     case "capitalRecovery":
+      console.log("%c[ROUTER → CapRecov]", "color:#eab308;font-weight:bold");
       renderCapitalRecoveryDrawer();
       break;
     case "spread":
+      console.log("%c[ROUTER → spread]", "color:#eab308;font-weight:bold");
       renderROISpreadDrawer();
       break;
     default:
@@ -1625,6 +1641,20 @@ function openRoiKpiFromUrl(kpiOverride = null) {
 
   // ✅ THIS WAS MISSING
   drawer.classList.add("open");
+
+console.log(
+  "%c[DRAWER STATE]",
+  "color:#ef4444;font-weight:bold",
+  {
+    hasOpenClass: drawer.classList.contains("open"),
+    aria: drawer.getAttribute("aria-hidden"),
+    transform: getComputedStyle(drawer).transform,
+    position: getComputedStyle(drawer).position,
+    embedMode: document.documentElement.classList.contains("embed-mode")
+  }
+);
+
+  
   drawer.setAttribute("aria-hidden", "false");
   drawer.scrollTop = 0;
 }
@@ -1769,6 +1799,11 @@ const rowClass = getEventRowClass(loan, cs || s);
    - Back-navigation wiring
    ============================================================ */
 
+console.log(
+  "%c[DRAWER COUNT]",
+  "color:#0ea5e9;font-weight:bold",
+  document.querySelectorAll("#drawer").length
+);
 
 
 /* ============================================================
@@ -3364,6 +3399,18 @@ applyLoanFilters();
       </div>
     `;
 
+// 🔎 DEBUG 1: KPI tile click fires
+document.querySelectorAll("#kpis .kpi").forEach(tile => {
+  tile.addEventListener("click", () => {
+    console.log(
+      "%c[KPI CLICK]",
+      "color:#22c55e;font-weight:bold",
+      tile.dataset.kpi
+    );
+  });
+});
+
+      
 // -----------------------------------
 // KPI tile click → open drawer (ROI)
 // -----------------------------------
@@ -3887,6 +3934,9 @@ function smoothPath(points) {
    Using the same stable timeline engine as Projected ROI
    ============================================================ */
 function renderTPVDrawer() {
+
+console.log("%c[RENDER TPV DRAWER]", "color:#ec4899;font-weight:bold");
+  
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -4091,6 +4141,9 @@ const data = dates.map(date => {
 
 
     function renderRatesDrawer(){
+
+console.log("%c[RENDER RATES DRAWER]", "color:#ec4899;font-weight:bold");
+      
   currentMode = 'kpi';
 currentLoan = null;
 
@@ -4366,6 +4419,9 @@ drawerExtra.innerHTML = `
 }
 
 function renderCapitalRecoveryDrawer() {
+
+console.log("%c[RENDER CAPITAL RECOVERY DRAWER]", "color:#ec4899;font-weight:bold");
+  
   currentMode = 'kpi';
   currentLoan = null;
 
