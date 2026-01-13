@@ -1509,6 +1509,64 @@ function openLoanDrawerSafe(loan) {
   openDrawerForLoan(loan);
 }
 
+// =====================================================
+// KPI DRAWER RENDERER — ROI (MISSING, REQUIRED)
+// =====================================================
+function renderKpiDrawer(kpiId) {
+  const kpis = computeKPIs(allLoans);
+
+  drawerTitle.textContent = "";
+  drawerSub.textContent = "";
+
+  drawerLegend.style.display = "none";
+  drawerAmortContainer.style.display = "none";
+
+  // Clear chart + extra
+  drawerChartArea.innerHTML = "";
+  drawerExtra.innerHTML = "";
+
+  // -------------------------
+  // KPI SWITCH
+  // -------------------------
+  if (kpiId === "kpi1") {
+    drawerTitle.textContent = "Weighted ROI to Date";
+    drawerPrimaryTitle.textContent = "ROI to Date";
+    drawerPrimary.textContent =
+      (kpis.weightedROI * 100).toFixed(2) + "%";
+
+    drawerSecondaryTitle.textContent = "As of";
+    drawerSecondary.textContent =
+      formatMonthYear(KPI_CURRENT_MONTH);
+  }
+
+  else if (kpiId === "kpi2") {
+    drawerTitle.textContent = "Projected Portfolio ROI";
+    drawerPrimaryTitle.textContent = "Projected ROI";
+    drawerPrimary.textContent =
+      (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
+
+    drawerSecondaryTitle.textContent = "Lifetime";
+    drawerSecondary.textContent = "All Loans";
+  }
+
+  else if (kpiId === "kpi3") {
+    drawerTitle.textContent = "Capital Recovered";
+    drawerPrimaryTitle.textContent = "Recovered";
+    drawerPrimary.textContent =
+      "$" + formatCurrency(kpis.capitalRecoveredAmount);
+
+    drawerSecondaryTitle.textContent = "Recovery %";
+    drawerSecondary.textContent =
+      (kpis.capitalRecoveryPct * 100).toFixed(1) + "%";
+  }
+
+  else {
+    console.warn("Unknown KPI:", kpiId);
+  }
+}
+
+
+    
  // =====================================================
 // KPI DRAWER OPEN — ROI (REQUIRED FOR EMBED)
 // =====================================================
