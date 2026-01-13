@@ -1639,24 +1639,19 @@ console.log(
       return;
   }
 
-  // ✅ THIS WAS MISSING
-  drawer.classList.add("open");
+drawer.classList.add("open");
+drawer.setAttribute("aria-hidden", "false");
 
-console.log(
-  "%c[DRAWER STATE]",
-  "color:#ef4444;font-weight:bold",
-  {
-    hasOpenClass: drawer.classList.contains("open"),
-    aria: drawer.getAttribute("aria-hidden"),
-    transform: getComputedStyle(drawer).transform,
-    position: getComputedStyle(drawer).position,
-    embedMode: document.documentElement.classList.contains("embed-mode")
-  }
-);
+// 🔑 FORCE VISIBILITY (ROI KPI FIX)
+forceDrawerVisible();
+
+drawer.scrollTop = 0;
+
+requestAnimationFrame(() => {
+  console.log("[POST-FORCE]", getComputedStyle(drawer).transform);
+});
 
   
-  drawer.setAttribute("aria-hidden", "false");
-  drawer.scrollTop = 0;
 }
 
 
@@ -3612,6 +3607,10 @@ document.getElementById("toggleTableView")?.addEventListener("change", (e) => {
   currentMode = "kpi";   // reset to default, not null
 }
 
+function forceDrawerVisible() {
+  drawer.style.transform = "translateX(0)";
+  drawer.style.right = "0";
+}
 
     
 function populateROILoanTable(){
