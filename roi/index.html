@@ -3597,7 +3597,7 @@ function populateROILoanTable(){
   const tbody = document.querySelector("#roiLoansTable tbody");
   if(!tbody) return;
 
-  tbody.innerHTML = loansWithAmort.map(l => {
+  tbody.innerHTML = allLoans.map(l => {
     const roiEntry = getCurrentOwnedRoiEntry(l);
 
     let matStr = '';
@@ -3673,7 +3673,7 @@ function populateProjectedROILoanTable(){
   const tbody = document.querySelector("#roiProjectedLoansTable tbody");
   if(!tbody) return;
 
-  tbody.innerHTML = loansWithAmort.map(l => {
+  tbody.innerHTML = allLoans.map(l => {
     const roiEntry = getLastOwnedRoiEntry(l);
 
     let matStr = '';
@@ -3944,10 +3944,10 @@ function renderTPVDrawer() {
   // ===============================
   // 1. Compute weighted ROI to date
   // ===============================
-  const totalInv = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
+  const totalInv = allLoans.reduce((s,l)=> s + l.purchasePrice, 0);
 
   let weightedROI = 0;
-  loansWithAmort.forEach(l => {
+  allLoans.forEach(l => {
     const last = getCurrentOwnedRoiEntry(l); // TODAY'S ROI ENTRY
     weightedROI += l.purchasePrice * (last.roi || 0);
   });
@@ -3960,7 +3960,7 @@ function renderTPVDrawer() {
   // 2. Compute portfolio value today
   // ===============================
   let portfolioValue = 0;
-  loansWithAmort.forEach(l => {
+  allLoans.forEach(l => {
     const last = getCurrentOwnedRoiEntry(l);
     portfolioValue += last.loanValue || 0;
   });
@@ -3973,7 +3973,7 @@ function renderTPVDrawer() {
   //    existing stable Projected ROI engine
   //    BUT using today's ROI values
   // ===============================
-  const timeline = buildHistoricalRoiTimeline(loansWithAmort);
+  const timeline = buildHistoricalRoiTimeline(allLoans);
 
   // ===============================
   // 4. Render multi-series chart
@@ -4146,10 +4146,10 @@ drawerSub.textContent = "Projection to Maturity";
 // ===============================
 // 1. Compute projected weighted ROI
 // ===============================
-const totalInv = loansWithAmort.reduce((s,l)=> s + l.purchasePrice, 0);
+const totalInv = allLoans.reduce((s,l)=> s + l.purchasePrice, 0);
 
 let projWeightedROI = 0;
-loansWithAmort.forEach(l => {
+allLoans.forEach(l => {
   const last = getLastOwnedRoiEntry(l);
   projWeightedROI += l.purchasePrice * (last.roi || 0);
 });
@@ -4162,7 +4162,7 @@ drawerPrimary.textContent = (projWeightedROI * 100).toFixed(2) + "%";
 // 2. Compute projected portfolio value
 // ===============================
 let projPortfolioValue = 0;
-loansWithAmort.forEach(l => {
+allLoans.forEach(l => {
   const last = getLastOwnedRoiEntry(l);
   projPortfolioValue += last.loanValue || 0;
 });
@@ -4173,7 +4173,7 @@ drawerSecondary.textContent = "$" + projPortfolioValue.toLocaleString();
 // ===============================
 // 3. Build timeline (calendar aligned)
 // ===============================
-const timeline = buildProjectedRoiTimeline(loansWithAmort);
+const timeline = buildProjectedRoiTimeline(allLoans);
       
 // ===============================
 // 4. Render multi-series chart WITH hover
@@ -4247,7 +4247,7 @@ function renderROISpreadDrawer() {
   // -------------------------------
   // Compute spread stats
   // -------------------------------
-  const rows = loansWithAmort.map(l => {
+  const rows = allLoans.map(l => {
     const e = getCurrentOwnedRoiEntry(l);
     return {
       id: l.id,
@@ -4273,7 +4273,7 @@ function renderROISpreadDrawer() {
   // -------------------------------
   // Chart for Spread Drawer (multi-series)
   // -------------------------------
- const timeline = buildHistoricalRoiTimeline(loansWithAmort);
+ const timeline = buildHistoricalRoiTimeline(allLoans);
 
 const globalDates = buildGlobalDatesFromLoans(currentLoans);
   
@@ -4315,7 +4315,7 @@ drawerExtra.innerHTML = `
         </thead>
         <tbody>
           ${rows.map(r => {
-            const loan = loansWithAmort.find(l => l.id === r.id);
+            const loan = allLoans.find(l => l.id === r.id);
             if (!loan) return '';
 
             let maturity = '';
@@ -4716,7 +4716,7 @@ document.body.style.height = 'auto';
     /* -------------------------
        CSV / clipboard / download / print
        ------------------------- */
-    function copyPortfolioCSV(){ let rows=[['Loan','Purchase Date','Amount','Rate']]; loansWithAmort.forEach(l=>rows.push([formatLoanLabel(l),l.purchaseDate,l.purchasePrice,(l.nominalRate*100).toFixed(2)+'%'])); const csv=rows.map(r=>r.join(',')).join('\n'); navigator.clipboard.writeText(csv); alert('CSV copied to clipboard'); }
+    function copyPortfolioCSV(){ let rows=[['Loan','Purchase Date','Amount','Rate']]; allLoans.forEach(l=>rows.push([formatLoanLabel(l),l.purchaseDate,l.purchasePrice,(l.nominalRate*100).toFixed(2)+'%'])); const csv=rows.map(r=>r.join(',')).join('\n'); navigator.clipboard.writeText(csv); alert('CSV copied to clipboard'); }
     function amortToCSV(loan){ const rows=[['Month','Payment','Principal','Interest','Balance']]; loan.amort.schedule.forEach(r=>rows.push([r.monthIndex,r.payment.toFixed(2),r.principalPaid.toFixed(2),r.interest.toFixed(2),r.balance.toFixed(2)])); return rows.map(r=>r.join(',')).join('\n'); }
     document.getElementById('copyCsvBtn')?.addEventListener('click', async ()=>{ if(currentMode!=='loan' || !currentLoan) return alert('Open an individual loan drawer to copy CSV'); const csv=amortToCSV(currentLoan); try{ await navigator.clipboard.writeText(csv); alert('CSV copied to clipboard'); }catch(e){ alert('Copy failed — browser denied clipboard access'); } });
     document.getElementById('downloadCsvBtn')?.addEventListener('click', ()=>{ if(currentMode==='loan' && currentLoan){ const csv=amortToCSV(currentLoan); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='loan-'+currentLoan.id+'-amort.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); } else alert('Download CSV is supported for individual loan drawers only.'); });
