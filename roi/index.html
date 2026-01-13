@@ -3103,30 +3103,9 @@ grid.style.display = "grid";
 
 
 
-  console.log(
-    "%c[PRE-CLEAR GRID STATE]",
-    "color:#dc2626;font-weight:bold",
-    {
-      childCount: grid.children.length,
-      htmlSample: grid.innerHTML.slice(0, 200)
-    }
-  );
-
   // 🔑 HARD RESET — prevents duplicate tiles
   grid.innerHTML = "";
 
-  // ===============================
-  // DEBUG: render invocation
-  // ===============================
-  window.__gridRenderCount = (window.__gridRenderCount || 0) + 1;
-
-  console.group(
-    `%c[GRID RENDER #${window.__gridRenderCount}]`,
-    "color:#dc2626;font-weight:bold"
-  );
-  console.log("loans.length:", loans?.length);
-  console.log("first loan has roiSeries:", !!loans?.[0]?.roiSeries);
-  console.groupEnd();
 
   if (!Array.isArray(loans) || !loans.length) return;
 
@@ -3217,16 +3196,6 @@ tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
 
     grid.appendChild(tile);
   });
-
-  // ===============================
-  // DEBUG: post-render tile sources
-  // ===============================
-  const counts = [...grid.children].reduce((m, el) => {
-    const id = el.dataset.renderId || "unknown";
-    m[id] = (m[id] || 0) + 1;
-    return m;
-  }, {});
-  console.log("%c[POST-RENDER TILE COUNTS]", "color:#16a34a;font-weight:bold", counts);
 }
 
 
@@ -3365,10 +3334,6 @@ window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 // 🔑 Single initial render
 filteredLoans = currentLoans.slice();
 
-      console.log(
-  "%cCalling renderLoanGrid from HERE",
-  "color:#7c3aed;font-weight:bold"
-);
 applyLoanFilters();
       
       
@@ -4790,6 +4755,7 @@ if (_IS_EMBED) {
   const feedbackBtn = document.getElementById('feedback-btn');
   if (feedbackBtn) feedbackBtn.style.display = 'none';
 
+/* delete
   // Restore auto-open KPI2 drawer (runs after initROI/loans)
   if (_OPEN_TARGET === "kpi2" || _OPEN_TARGET === "projectedROI") {
     // Slight delay ensures initROI() has run and drawer is ready
@@ -4797,6 +4763,7 @@ if (_IS_EMBED) {
       renderRatesDrawer();
     }, 100);
   }
+delete */
 
   // Enable full iframe scrolling (override root hidden overflow, matches Earnings/Amort)
   document.documentElement.style.overflow = 'auto';
@@ -4810,9 +4777,6 @@ if (_IS_EMBED) {
     drawerBody.style.overflow = 'visible'; // No internal scroll; full height
   }
 }
-const k = document.getElementById("kpis");
-const r = k.getBoundingClientRect();
-console.log("[ROI DEBUG] KPI rect:", r);
 
 // 🔑 Open KPI drawer from ?open=
 // ❗ DO NOT override loan drawer
@@ -4869,8 +4833,7 @@ filteredLoans = derivedLoans;
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
 
-// 🔎 DEBUG ACCESS (TEMPORARY)
-window.__debug = { allLoans, currentLoans, filteredLoans };
+
 
 // =========================================
 // INITIAL RENDER — EMBED SAFE
