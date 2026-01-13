@@ -3884,20 +3884,7 @@ function toDate(d) {
   return (d instanceof Date) ? d : new Date(d);
 }
 
-/* delete
-// Difference in months between two dates
-function monthDiff(a, b) {
-  a = toDate(a);
-  b = toDate(b);
-  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-}
 
-
-// Format ticks (Jan 2024)
-function formatMonthYear(d) {
-  return d.toLocaleString("en-US", { month: "short", year: "numeric" });
-}
-delete */
 
 // Simple catmull-rom smoothing
 function smoothPath(points) {
@@ -4856,10 +4843,6 @@ document.querySelectorAll("#loanTable th").forEach(th => {
   });
 });
 
-      
-/* delete
-    } // END initROI()
-delete */
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
