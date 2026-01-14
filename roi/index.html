@@ -1183,13 +1183,10 @@ tr.event-default td {
        ==================================== -->
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
+    import { buildProjectedRoiTimeline } from "../js/roiEngine.js?v=dev";
     import {
-  buildProjectedRoiTimeline,
-  computeKPIs,
-  normalizeLoansForRoi,
-      getRoiEntryAsOfMonth
+  computeKPIs
 } from "../js/roiEngine.js?v=dev";
-
 
 
 
@@ -1744,17 +1741,11 @@ drawerPrimary.textContent =
   // --------------------------------------------------
   // ROI LINE CHART (use canonical date)
   // --------------------------------------------------
-  const { perLoanSeries } = buildProjectedRoiTimeline([loan]);
-
-const series =
-  perLoanSeries[0]?.data
-    .filter(p => p.y != null)
-    .map(p => ({
-      x: formatMonthYear(p.date),
-      y: p.y,
-      date: p.date
-    }));
-
+  const series = loan.roiSeries.map(s => ({
+    x: formatMonthYear(s.date), // ✅ displayDate-derived
+    y: s.roi,
+    date: s.date
+  }));
   window.createLineChart(drawerChartArea, series, {
 
     color: '#0ea5e9',
@@ -1785,10 +1776,7 @@ drawerAmortContainer.innerHTML = `
 `;
   const roiBody = document.getElementById('roiBody');
   roiBody.innerHTML = '';
-
-perLoanSeries[0].data.forEach(s => {
-  if (s.y == null) return;
-
+loan.roiSeries.forEach(s => {
   const cs =
   loan.cumSchedule.find(r => {
     if (!r.loanDate || !s.date) return false;
@@ -1867,12 +1855,17 @@ const KPI_CURRENT_MONTH = new Date(
    - Math utilities
    ============================================================ */
 
-
-// TEMP UI COMPATIBILITY LAYER — REMOVE AFTER FULL MIGRATION
 function getCurrentOwnedRoiEntry(loan) {
-  return getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
-}
+  // ✅ anchor to the app’s “current month”, not wall-clock
+  const asOf = new Date(KPI_CURRENT_MONTH);
+  asOf.setMonth(asOf.getMonth() + 1);
+  asOf.setDate(0); // last day of KPI month
+  asOf.setHours(23, 59, 59, 999);
 
+  const ownedEntries = (loan.roiSeries || []).filter(r => r?.date && r.date <= asOf);
+  if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
+  return ownedEntries[ownedEntries.length - 1];
+}
 
     function getOwnedRoiSeries(loan) {
   if (!Array.isArray(loan.roiSeries)) return [];
@@ -1883,21 +1876,7 @@ function getCurrentOwnedRoiEntry(loan) {
     .sort((a, b) => a.date - b.date);
 }
 
-// ============================================================
-// TEMP UI COMPATIBILITY LAYER — REMOVE AFTER FULL MIGRATION
-// ============================================================
 
-
-// Used by Rates / Projected ROI tables
-function getLastOwnedRoiEntry(loan) {
-  const series = loan?.roiSeries || [];
-  return series.length
-    ? series[series.length - 1]
-    : { roi: 0, loanValue: loan.purchasePrice || 0 };
-}
-
-    
-/* delete
       function getRoiEntryAsOfMonth(loan, monthDate) {
   if (!Array.isArray(loan.roiSeries)) {
     return { roi: 0, loanValue: loan.purchasePrice };
@@ -1913,16 +1892,13 @@ function getLastOwnedRoiEntry(loan) {
 
   return eligible[eligible.length - 1];
 }
-delete */
 
-/* delete
+
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
-delete */
 
-/* delete
 function getOwnedRoiSeriesFromAmort(loan) {
   if (!Array.isArray(loan.cumSchedule)) return [];
 
@@ -1940,7 +1916,7 @@ function getOwnedRoiSeriesFromAmort(loan) {
       };
     });
 }
-delete */
+
 
 
     
@@ -1982,7 +1958,7 @@ delete */
    - Capital recovery
    ============================================================ */
 
-
+ /* delete
 function computeWeightedRoiAsOfMonth(loans, monthDate) {
   const total = loans.reduce((s, l) => s + l.purchasePrice, 0);
 
@@ -1990,12 +1966,10 @@ function computeWeightedRoiAsOfMonth(loans, monthDate) {
 
   return loans.reduce((sum, loan) => {
     const entry = getRoiEntryAsOfMonth(loan, monthDate);
-    const roi = entry?.roi ?? 0;
-return sum + loan.purchasePrice * roi;
-
+    return sum + loan.purchasePrice * (entry.roi || 0);
   }, 0) / total;
 }
-
+delete */
     
 /* delete      
 function computeKPIs(list) {
@@ -3172,23 +3146,26 @@ function renderLoanTableROI(list = currentLoans) {
     
     
 function renderLoanGrid(loans) {
-  const tableWrap = document.getElementById("loanTableWrap");
-  if (tableWrap) {
-    tableWrap.hidden = true;
-    tableWrap.style.display = "none";
-  }
+const tableWrap = document.getElementById("loanTableWrap");
+if (tableWrap) {
+  tableWrap.hidden = true;
+  tableWrap.style.display = "none";
+}
+  
+const grid = document.getElementById("loanGrid");
+const wrap = document.getElementById("loanTableWrap");
 
-  const grid = document.getElementById("loanGrid");
-  const wrap = document.getElementById("loanTableWrap");
+if (!grid) return;
 
-  if (!grid) return;
+// 🔑 canonical visibility reset
+if (wrap) wrap.style.display = "none";
+grid.style.display = "grid";
 
-  // 🔑 canonical visibility reset
-  if (wrap) wrap.style.display = "none";
-  grid.style.display = "grid";
+
 
   // 🔑 HARD RESET — prevents duplicate tiles
   grid.innerHTML = "";
+
 
   if (!Array.isArray(loans) || !loans.length) return;
 
@@ -3197,96 +3174,80 @@ function renderLoanGrid(loans) {
     tile.className = "tile";
     tile.dataset.renderId = window.__gridRenderCount;
 
-    // -----------------------------
-    // ROI TO DATE (ENGINE-SOURCE)
-    // -----------------------------
-    const roiEntry = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
-    const roiPct = ((roiEntry?.roi || 0) * 100).toFixed(2);
-
     tile.innerHTML = `
-      <div class="tile-left">
-        <div class="loan-name">${loan.name}</div>
+  <div class="tile-left">
+    <div class="loan-name">${loan.name}</div>
 
-        ${
-          getLoanEventBadges(loan).length
-            ? `<div class="loan-badges">
-                ${getLoanEventBadges(loan)
-                  .map(
-                    b =>
-                      `<span class="loan-badge ${b.type}">${b.label}</span>`
-                  )
-                  .join("")}
-              </div>`
-            : ""
+    ${
+      getLoanEventBadges(loan).length
+        ? `<div class="loan-badges">
+            ${getLoanEventBadges(loan)
+              .map(
+                b =>
+                  `<span class="loan-badge ${b.type}">${b.label}</span>`
+              )
+              .join("")}
+          </div>`
+        : ""
+    }
+
+    <div class="loan-sub">
+      ${loan.school || ""}
+    </div>
+
+    <div class="loan-meta">
+      <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
+      <span>·</span>
+      <span>${loan.termYears} yrs</span>
+      <span>·</span>
+      <span>
+        Matures: ${
+          getLoanMaturityFromAmort(loan)
+            ? formatMonthYear(getLoanMaturityFromAmort(loan))
+            : "—"
         }
+      </span>
+    </div>
 
-        <div class="loan-sub">
-          ${loan.school || ""}
-        </div>
+    <div class="loan-meta">
+      Loan ${loan.id}
+    </div>
+  </div>
 
-        <div class="loan-meta">
-          <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
-          <span>·</span>
-          <span>${loan.termYears} yrs</span>
-          <span>·</span>
-          <span>
-            Matures: ${
-              getLoanMaturityFromAmort(loan)
-                ? formatMonthYear(getLoanMaturityFromAmort(loan))
-                : "—"
-            }
-          </span>
-        </div>
+  <div class="chart-wrap">
+    <div class="mini-label">
+  ROI ${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%
+</div>
 
-        <div class="loan-meta">
-          Loan ${loan.id}
-        </div>
-      </div>
+    <svg class="sparkline"></svg>
+  </div>
+`;
 
-      <div class="chart-wrap">
-        <div class="mini-label">
-          ROI ${roiPct}%
-        </div>
-        <svg class="sparkline"></svg>
-      </div>
-    `;
+// 🔑 Attach loan badge hover tooltips (canonical copy)
+tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
+  const type =
+    badgeEl.classList.contains("prepayment") ? "prepayment" :
+    badgeEl.classList.contains("deferral") ? "deferral" :
+    badgeEl.classList.contains("default") ? "default" :
+    null;
 
-    // -----------------------------
-    // Badge hover tooltips
-    // -----------------------------
-    tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
-      const type =
-        badgeEl.classList.contains("prepayment") ? "prepayment" :
-        badgeEl.classList.contains("deferral") ? "deferral" :
-        badgeEl.classList.contains("default") ? "default" :
-        null;
+  if (!type) return;
 
-      if (!type) return;
+  const tooltipText = getBadgeTooltipText(loan, type);
+  if (tooltipText) {
+    createBadgeTooltip(badgeEl, tooltipText);
+  }
+});
 
-      const tooltipText = getBadgeTooltipText(loan, type);
-      if (tooltipText) {
-        createBadgeTooltip(badgeEl, tooltipText);
-      }
-    });
+
 
     tile.addEventListener("click", () => openLoanDrawerSafe(loan));
 
-    // -----------------------------
-    // MINI ROI SPARKLINE (ENGINE)
-    // -----------------------------
     const svg = tile.querySelector("svg.sparkline");
-
-    const { perLoanSeries } = buildProjectedRoiTimeline([loan], {
-      colorMap: window.KPI_COLOR_MAP
-    });
-
-    const series =
-      perLoanSeries[0]?.data
-        .filter(p => p.y != null)
-        .map(p => ({
-          date: p.date,
-          y: p.y
-        })) || [];
+    const series = getOwnedRoiSeries(loan).map(p => ({
+      date: p.date,
+      y: p.roi
+    }));
 
     createMiniSparkline(svg, series, {
       color: window.KPI_COLOR_MAP?.[loan.id],
@@ -3296,7 +3257,6 @@ function renderLoanGrid(loans) {
     grid.appendChild(tile);
   });
 }
-
 
 
 
@@ -3749,11 +3709,10 @@ function forceDrawerVisible() {
     
 function populateROILoanTable(){
   const tbody = document.querySelector("#roiLoansTable tbody");
-  if (!tbody) return;
+  if(!tbody) return;
 
   tbody.innerHTML = allLoans.map(l => {
-    const roiEntry = getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH);
-    const roiPct = ((roiEntry?.roi ?? 0) * 100);
+    const roiEntry = getCurrentOwnedRoiEntry(l);
 
     let matStr = '';
     try {
@@ -3761,11 +3720,15 @@ function populateROILoanTable(){
       const months = Math.round((l.termYears + l.graceYears) * 12);
       pd.setMonth(pd.getMonth() + months);
       matStr = pd.toISOString().slice(0,10);
-    } catch(e) {}
+    } catch(e) {
+      matStr = '';
+    }
 
+    const roiPct = (roiEntry.roi || 0) * 100;
     const id = l.id ?? l.loanId;
     const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
 
+    // ✅ ADD data-loan-id HERE
     return `<tr data-loan-id="${id}">
       <td style="text-align:left;">
         <span style="
@@ -3787,8 +3750,38 @@ function populateROILoanTable(){
       </td>
     </tr>`;
   }).join('');
-}
+    
+      const chartSvg = drawerChartArea.querySelector("svg");
+      if (!chartSvg) return;
+    
+      const table = document.getElementById("roiLoansTable");
+      if (!table) return;
+    
+      const loanPaths = Array.from(
+        chartSvg.querySelectorAll('path[data-type="loan"]')
+      );
 
+      table.querySelectorAll("tbody tr").forEach(row => {
+        const rowLoanId = row.dataset.loanId;
+        if (!rowLoanId) return;
+    
+    row.addEventListener("mouseenter", () => {
+      loanPaths.forEach(p => {
+        const isTarget = p.dataset.loanId === rowLoanId;
+    
+        p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
+        p.setAttribute("stroke-width", "1.2"); // KEEP ALL LINES SAME WIDTH
+      });
+    });
+    
+    row.addEventListener("mouseleave", () => {
+      loanPaths.forEach(p => {
+        p.setAttribute("stroke-opacity", "0.9");
+        p.setAttribute("stroke-width", "1.2");
+      });
+    });
+   });
+ }
 
 function populateProjectedROILoanTable(){
   const tbody = document.querySelector("#roiProjectedLoansTable tbody");
@@ -3807,8 +3800,7 @@ function populateProjectedROILoanTable(){
       matStr = '';
     }
 
-    const roiPct = ((roiEntry?.roi ?? 0) * 100);
-
+    const roiPct = (roiEntry.roi || 0) * 100;
     const id = l.id ?? l.loanId;
     const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
 
@@ -4883,50 +4875,9 @@ document.body.style.height = 'auto';
        ------------------------- */
     function copyPortfolioCSV(){ let rows=[['Loan','Purchase Date','Amount','Rate']]; allLoans.forEach(l=>rows.push([formatLoanLabel(l),l.purchaseDate,l.purchasePrice,(l.nominalRate*100).toFixed(2)+'%'])); const csv=rows.map(r=>r.join(',')).join('\n'); navigator.clipboard.writeText(csv); alert('CSV copied to clipboard'); }
     function amortToCSV(loan){ const rows=[['Month','Payment','Principal','Interest','Balance']]; loan.amort.schedule.forEach(r=>rows.push([r.monthIndex,r.payment.toFixed(2),r.principalPaid.toFixed(2),r.interest.toFixed(2),r.balance.toFixed(2)])); return rows.map(r=>r.join(',')).join('\n'); }
-    const copyCsvBtn = document.getElementById('copyCsvBtn');
-if (copyCsvBtn) {
-  copyCsvBtn.addEventListener('click', async () => {
-    if (currentMode !== 'loan' || !currentLoan) {
-      alert('Open an individual loan drawer to copy CSV');
-      return;
-    }
-
-    const csv = amortToCSV(currentLoan);
-    try {
-      await navigator.clipboard.writeText(csv);
-      alert('CSV copied to clipboard');
-    } catch (e) {
-      alert('Copy failed — browser denied clipboard access');
-    }
-  });
-}
-
-const downloadCsvBtn = document.getElementById('downloadCsvBtn');
-if (downloadCsvBtn) {
-  downloadCsvBtn.addEventListener('click', () => {
-    if (currentMode === 'loan' && currentLoan) {
-      const csv = amortToCSV(currentLoan);
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `loan-${currentLoan.id}-amort.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } else {
-      alert('Download CSV is supported for individual loan drawers only.');
-    }
-  });
-}
-
-const printBtn = document.getElementById('printBtn');
-if (printBtn) {
-  printBtn.addEventListener('click', () => window.print());
-}
-
+    document.getElementById('copyCsvBtn')?.addEventListener('click', async ()=>{ if(currentMode!=='loan' || !currentLoan) return alert('Open an individual loan drawer to copy CSV'); const csv=amortToCSV(currentLoan); try{ await navigator.clipboard.writeText(csv); alert('CSV copied to clipboard'); }catch(e){ alert('Copy failed — browser denied clipboard access'); } });
+    document.getElementById('downloadCsvBtn')?.addEventListener('click', ()=>{ if(currentMode==='loan' && currentLoan){ const csv=amortToCSV(currentLoan); const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='loan-'+currentLoan.id+'-amort.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); } else alert('Download CSV is supported for individual loan drawers only.'); });
+    document.getElementById('printBtn')?.addEventListener('click', ()=>window.print());
 
     /* -------------------------
        Close drawer on outside click; hide tooltip on scroll
@@ -5071,55 +5022,62 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 });
 
 
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadLoans();
+    document.addEventListener("DOMContentLoaded", async () => {
+      await loadLoans();
 
-  // =========================================
-  // 🔑 NORMALIZE → DERIVE ROI (REQUIRED)
-  // =========================================
-  const normalizedLoans = normalizeLoansForRoi(loans);
-  const derivedLoans = deriveLoansWithAmortAndRoi(normalizedLoans);
+// =========================================
+// DERIVE + INITIALIZE FILTER STATE (REQUIRED)
+// =========================================
+const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 
-  // 🔑 SINGLE SOURCE OF TRUTH
-  allLoans = derivedLoans;
-  currentLoans = derivedLoans.slice();
-  filteredLoans = derivedLoans.slice();
+// 🔑 SOURCE OF TRUTH
+allLoans = derivedLoans;
+currentLoans = derivedLoans;
+filteredLoans = derivedLoans;
 
-  populateLoanFilters(allLoans);
+// 🔑 Populate filter dropdowns from real data
+populateLoanFilters(allLoans);
 
-  // =========================================
-  // INITIAL RENDER — EMBED SAFE
-  // =========================================
-  if (PAGE_CONTEXT.isEmbed) {
-    const loanGrid = document.getElementById("loanGrid");
-if (loanGrid) loanGrid.remove();
 
-const loanTableWrap = document.getElementById("loanTableWrap");
-if (loanTableWrap) loanTableWrap.remove();
-;
-  } else if (localStorage.getItem("roiTableView") === "1") {
-    document.getElementById("toggleTableView").checked = true;
-    renderLoanTableROI();
-  } else {
-    renderLoanGrid(currentLoans);
-  }
 
-  // =========================================
-  // EMBED MODE — FORCE KPI DRAWER
-  // =========================================
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("embed") === "true" && params.get("open")) {
-    localStorage.removeItem("roiTableView");
-    const toggle = document.getElementById("toggleTableView");
-if (toggle) toggle.checked = false;
+// =========================================
+// INITIAL RENDER — EMBED SAFE
+// =========================================
+if (PAGE_CONTEXT.isEmbed) {
+  // iframe shows ONLY KPIs + drawer
+  document.getElementById("loanGrid")?.remove();
+  document.getElementById("loanTableWrap")?.remove();
+} else if (localStorage.getItem("roiTableView") === "1") {
+  document.getElementById("toggleTableView").checked = true;
+  renderLoanTableROI();
+} else {
+  renderLoanGrid(currentLoans);
+}
 
-    openRoiKpiDrawer(params.get("open"));
-  }
 
-  document.getElementById("currentDate").textContent =
-    formatMonthYear(new Date());
-});
+// =====================================================
+// EMBED MODE — FORCE KPI DRAWER (MATCH AMORT)
+// Must run ONCE, after initial render
+// =====================================================
+const params = new URLSearchParams(window.location.search);
 
+if (params.get("embed") === "true" && params.get("open")) {
+  // Table view is FULL-PAGE ONLY — never iframe
+  localStorage.removeItem("roiTableView");
+
+  const tableToggle = document.getElementById("toggleTableView");
+  if (tableToggle) tableToggle.checked = false;
+
+  // Open exactly one KPI drawer
+  openRoiKpiDrawer(params.get("open"));
+}
+
+      
+      document.getElementById("currentDate").textContent =
+  formatMonthYear(new Date());
+
+      initROI();
+    });
 
     
     // theme toggle
