@@ -1645,6 +1645,23 @@ function renderLoanTiles(loans) {
         return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
       };
 
+const allYValues = [
+  ...pPoints.map(p => p.y),
+  ...iPoints.map(p => p.y)
+];
+
+const minY = Math.min(...allYValues);
+const maxY = Math.max(...allYValues);
+
+const yForValue = v => {
+  if (maxY === minY) return h / 2;
+  return (
+    h - pad -
+    ((v - minY) / (maxY - minY)) * (h - pad * 2)
+  );
+};
+
+      
       svg.innerHTML = `
         <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6" />
         <path d="${pathP}" fill="none" stroke="#06b6d4" stroke-width="1.6" />
@@ -1713,17 +1730,8 @@ svg.addEventListener("mousemove", ev => {
     />
   `;
 
-  // principal dot (cyan)
-  const yP =
-    h - pad -
-    (p.cumPrincipal / Math.max(p.cumPrincipal + p.cumInterest, 1)) *
-      (h - pad * 2);
-
-  // interest dot (purple)
-  const yI =
-    h - pad -
-    (p.cumInterest / Math.max(p.cumPrincipal + p.cumInterest, 1)) *
-      (h - pad * 2);
+  const yP = yForValue(p.cumPrincipal);
+const yI = yForValue(p.cumInterest);
 
   hoverG.innerHTML += `
     <circle cx="${x}" cy="${yP}" r="3"
@@ -1732,8 +1740,6 @@ svg.addEventListener("mousemove", ev => {
             fill="#a78bfa" />
   `;
 });
-
-
 
 
       svg.addEventListener("mouseleave", () => {
