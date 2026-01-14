@@ -2567,24 +2567,20 @@ function openDrawerForLoan(loan) {
   assert(loan, "openDrawerForLoan called with null loan");
 
   // =====================================================
-  // HARD RESET KPI-ONLY STATE (restore loan mode)
+  // HARD RESET KPI-ONLY STATE
   // =====================================================
   drawer.classList.remove("kpi-interactive");
   drawerExtra.innerHTML = "";
   drawerChartArea.innerHTML = "";
   drawerLegend.style.display = "none";
 
-  // =====================================================
-  // FORCE STATE FOR PROGRAMMATIC OPEN (URL / embed)
-  // =====================================================
   currentMode = "loan";
   currentLoan = loan;
 
   // ------------------------------------
-  // ROI / Earnings–style amort header
+  // Header
   // ------------------------------------
   drawerTitle.textContent = loan.name || loan.loanName;
-
   drawerSub.innerHTML = `
     <div>${loan.school || ""}</div>
     <div>
@@ -2601,12 +2597,11 @@ function openDrawerForLoan(loan) {
   drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
 
   // =====================================================
-  // AMORT TABLE
+  // Amort table
   // =====================================================
   drawerAmortContainer.style.display = "block";
   amortBody.innerHTML = "";
 
-  // 🔑 Canonical month anchor (FIRST of loan start month)
   const loanStartDate = new Date(loan.loanStartDate + "T00:00:00");
   const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
   const monthAnchor = new Date(
@@ -2615,51 +2610,6 @@ function openDrawerForLoan(loan) {
     1
   );
 
-  // -------------------------------------
-  // Event lookup by monthIndex (READ-ONLY)
-  // -------------------------------------
-  const eventByMonth = {};
-
-  (loan.events || []).forEach(e => {
-    if (!e.type) return;
-
-    if (e.type === "deferral" && (e.startDate || e.date) && e.months) {
-      const startIdx = monthIndexFromDate(
-        e.startDate || e.date,
-        loan.amort.schedule
-      );
-      if (startIdx !== null) {
-        for (let i = 0; i < e.months; i++) {
-          eventByMonth[startIdx + i] = "deferral";
-        }
-      }
-      return;
-    }
-
-    if (e.type === "prepayment") {
-      const row = loan.amort.schedule.find(
-        r => r.prepayment && r.prepayment > 0
-      );
-      if (row) eventByMonth[row.monthIndex] = "prepayment";
-      return;
-    }
-  });
-
-  const defaultEvent = (loan.events || []).find(
-    e => e.type === "default" && e.date
-  );
-
-  if (defaultEvent) {
-    const idx = monthIndexFromDate(
-      defaultEvent.date,
-      loan.amort.schedule
-    );
-    if (idx !== null) eventByMonth[idx] = "default";
-  }
-
-  // -------------------------------------
-  // Render amort rows
-  // -------------------------------------
   loan.amort.schedule.forEach(r => {
     const rowDate = displayDateForMonthIndex(r.monthIndex, monthAnchor);
     const isBeforePurchase = rowDate < purchaseDate;
@@ -2676,10 +2626,7 @@ function openDrawerForLoan(loan) {
       <td style="text-align:right">${formatCurrency(r.balance)}</td>
     `;
 
-    const eventType = eventByMonth[r.monthIndex];
-    if (eventType) tr.classList.add(`event-${eventType}`);
     if (isBeforePurchase) tr.style.opacity = "0.45";
-
     if (isPurchaseMonth) {
       tr.querySelectorAll("td").forEach(td => {
         td.style.borderTop = "2px solid #22c55e";
@@ -2690,7 +2637,7 @@ function openDrawerForLoan(loan) {
   });
 
   // =====================================================
-  // DRAWER CHART
+  // Drawer chart
   // =====================================================
   drawerLegend.style.display = "flex";
   drawerLegend.innerHTML = `
@@ -2707,128 +2654,151 @@ function openDrawerForLoan(loan) {
   svg.setAttribute("width", "100%");
   svg.setAttribute("height", "100%");
 
-  const schedule = loan.amort?.schedule || [];
-  if (!schedule.length) {
-    drawerChartArea.innerHTML = "<p>No schedule data available</p>";
-    return;
-  }
+  const schedule = loan.amort.schedule;
+  if (!schedule.length) return;
 
-  // ---- cumulative values
-  let cumInterest = 0, cumPrincipal = 0, cumTotal = 0;
+  // cumulative values
+  let ci = 0, cp = 0, ct = 0;
   schedule.forEach(s => {
-    cumInterest += s.interest;
-    cumPrincipal += s.principalPaid;
-    cumTotal += s.payment;
-    s.cumInterest = Math.round(cumInterest * 100) / 100;
-    s.cumPrincipal = Math.round(cumPrincipal * 100) / 100;
-    s.cumTotal = Math.round(cumTotal * 100) / 100;
+    ci += s.interest;
+    cp += s.principalPaid;
+    ct += s.payment;
+    s.cumInterest = ci;
+    s.cumPrincipal = cp;
+    s.cumTotal = ct;
   });
 
-  const balances = schedule.map(s => ({ y: s.balance }));
-  const cumP = schedule.map(s => ({ y: s.cumPrincipal }));
-  const cumI = schedule.map(s => ({ y: s.cumInterest }));
-  const cumT = schedule.map(s => ({ y: s.cumTotal }));
+  const series = {
+    bal: schedule.map(s => s.balance),
+    cp: schedule.map(s => s.cumPrincipal),
+    ci: schedule.map(s => s.cumInterest),
+    ct: schedule.map(s => s.cumTotal)
+  };
 
-  const allYs = [
-    ...balances.map(p => p.y),
-    ...cumP.map(p => p.y),
-    ...cumI.map(p => p.y),
-    ...cumT.map(p => p.y)
-  ];
-
-  const maxY = Math.max(...allYs);
-  const minY = Math.min(...allYs);
+  const allY = Object.values(series).flat();
+  const minY = Math.min(...allY);
+  const maxY = Math.max(...allY);
   const range = Math.max(1, maxY - minY);
   const stepX = (w - pad * 2) / Math.max(1, schedule.length - 1);
 
-  const toXY = (val, i) => {
-    const x = pad + i * stepX;
-    const y =
-      pad +
-      (h - pad * 2) -
-      ((val - minY) / range) * (h - pad * 2);
-    return [x, y];
-  };
+  const toXY = (y, i) => [
+    pad + i * stepX,
+    pad + (h - pad * 2) - ((y - minY) / range) * (h - pad * 2)
+  ];
 
-  const buildPath = arr =>
-    arr.map((p, i) => {
-      const [x, y] = toXY(p.y, i);
-      return i === 0 ? `M ${x} ${y}` : `L ${x} ${y}`;
-    }).join(" ");
+  // grid
+  for (let i = 0; i < 5; i++) {
+    const y = pad + i * ((h - pad * 2) / 4);
+    const gl = document.createElementNS(svgNS, "line");
+    gl.setAttribute("x1", pad);
+    gl.setAttribute("x2", w - pad);
+    gl.setAttribute("y1", y);
+    gl.setAttribute("y2", y);
+    gl.setAttribute("stroke", "#eef2f7");
+    svg.appendChild(gl);
+  }
 
-  const addPath = (d, stroke, width) => {
+  // Y axis
+  for (let i = 0; i <= 4; i++) {
+    const val = minY + ((4 - i) / 4) * range;
+    const y = pad + i * ((h - pad * 2) / 4);
+    const t = document.createElementNS(svgNS, "text");
+    t.setAttribute("x", pad - 6);
+    t.setAttribute("y", y + 4);
+    t.setAttribute("text-anchor", "end");
+    t.setAttribute("font-size", "11");
+    t.textContent = `$${Math.round(val).toLocaleString()}`;
+    svg.appendChild(t);
+  }
+
+  // X axis
+  for (let i = 0; i <= 4; i++) {
+    const idx = Math.round((i / 4) * (schedule.length - 1));
+    const d = displayDateForMonthIndex(
+      schedule[idx].monthIndex,
+      monthAnchor
+    );
+    const [x] = toXY(0, idx);
+    const t = document.createElementNS(svgNS, "text");
+    t.setAttribute("x", x);
+    t.setAttribute("y", h - pad + 16);
+    t.setAttribute("text-anchor", "middle");
+    t.setAttribute("font-size", "11");
+    t.textContent = formatMonthYearSafe(d);
+    svg.appendChild(t);
+  }
+
+  const draw = (arr, color, wgt) => {
     const p = document.createElementNS(svgNS, "path");
-    p.setAttribute("d", d);
+    p.setAttribute(
+      "d",
+      arr.map((y, i) => {
+        const [x, yy] = toXY(y, i);
+        return `${i ? "L" : "M"} ${x} ${yy}`;
+      }).join(" ")
+    );
     p.setAttribute("fill", "none");
-    p.setAttribute("stroke", stroke);
-    p.setAttribute("stroke-width", width);
+    p.setAttribute("stroke", color);
+    p.setAttribute("stroke-width", wgt);
     svg.appendChild(p);
   };
 
-  addPath(buildPath(balances), "#0f172a", "2");
-  addPath(buildPath(cumP), "#06b6d4", "1.6");
-  addPath(buildPath(cumI), "#a78bfa", "1.6");
-  addPath(buildPath(cumT), "#fb7185", "1.4");
+  draw(series.bal, "#0f172a", 2);
+  draw(series.cp, "#06b6d4", 1.6);
+  draw(series.ci, "#a78bfa", 1.6);
+  draw(series.ct, "#fb7185", 1.4);
 
-  // =====================================================
-  // DRAWER HOVER — ✅ FIXED
-  // =====================================================
+  // TODAY LINE
+  const curIdx = getCurrentScheduleIndex(loan) - 1;
+  if (curIdx >= 0 && curIdx < schedule.length) {
+    const [cx] = toXY(0, curIdx);
+    const l = document.createElementNS(svgNS, "line");
+    l.setAttribute("x1", cx);
+    l.setAttribute("x2", cx);
+    l.setAttribute("y1", pad);
+    l.setAttribute("y2", h - pad);
+    l.setAttribute("stroke", "#111827");
+    l.setAttribute("stroke-dasharray", "3 4");
+    l.setAttribute("stroke-opacity", "0.6");
+    svg.appendChild(l);
+  }
+
+  // HOVER
   const vLine = document.createElementNS(svgNS, "line");
   vLine.setAttribute("stroke", "#0f172a");
   vLine.setAttribute("stroke-dasharray", "3 4");
   vLine.setAttribute("opacity", "0.6");
   svg.appendChild(vLine);
 
-  const dots = document.createElementNS(svgNS, "g");
-  svg.appendChild(dots);
-
   svg.addEventListener("mousemove", ev => {
-    const rect = svg.getBoundingClientRect();
-    let idx = Math.round((ev.clientX - rect.left - pad) / stepX);
+    const r = svg.getBoundingClientRect();
+    let idx = Math.round((ev.clientX - r.left - pad) / stepX);
     idx = Math.max(0, Math.min(schedule.length - 1, idx));
-    const px = pad + idx * stepX;
+    const [x] = toXY(0, idx);
 
-    const row = schedule[idx];
-    const hoverDate = displayDateForMonthIndex(
-      row.monthIndex,
-      monthAnchor
-    );
-
-    vLine.setAttribute("x1", px);
-    vLine.setAttribute("x2", px);
+    vLine.setAttribute("x1", x);
+    vLine.setAttribute("x2", x);
     vLine.setAttribute("y1", pad);
     vLine.setAttribute("y2", h - pad);
 
-    dots.innerHTML = "";
-    [
-      { y: row.balance, c: "#0f172a" },
-      { y: row.cumPrincipal, c: "#06b6d4" },
-      { y: row.cumInterest, c: "#a78bfa" },
-      { y: row.cumTotal, c: "#fb7185" }
-    ].forEach(s => {
-      const [cx, cy] = toXY(s.y, idx);
-      const dot = document.createElementNS(svgNS, "circle");
-      dot.setAttribute("cx", cx);
-      dot.setAttribute("cy", cy);
-      dot.setAttribute("r", 4);
-      dot.setAttribute("fill", s.c);
-      dot.setAttribute("stroke", "#fff");
-      dot.setAttribute("stroke-width", "1.2");
-      dots.appendChild(dot);
-    });
+    const d = displayDateForMonthIndex(
+      schedule[idx].monthIndex,
+      monthAnchor
+    );
 
     tooltip.style.display = "block";
     tooltip.style.left = ev.clientX + "px";
     tooltip.style.top = ev.clientY - 10 + "px";
     tooltip.innerHTML =
-      `${formatMonthYearSafe(hoverDate)}<br>` +
-      `Balance ${formatCurrency(row.balance)}<br>` +
-      `Principal ${formatCurrency(row.cumPrincipal)}<br>` +
-      `Interest ${formatCurrency(row.cumInterest)}`;
+      `${formatMonthYearSafe(d)}<br>` +
+      `Balance ${formatCurrency(schedule[idx].balance)}<br>` +
+      `Principal ${formatCurrency(schedule[idx].cumPrincipal)}<br>` +
+      `Interest ${formatCurrency(schedule[idx].cumInterest)}`;
   });
 
   svg.addEventListener("mouseleave", () => {
-    dots.innerHTML = "";
+    vLine.setAttribute("y1", 0);
+    vLine.setAttribute("y2", 0);
     tooltip.style.display = "none";
   });
 
@@ -2838,6 +2808,7 @@ function openDrawerForLoan(loan) {
   drawer.setAttribute("aria-hidden", "false");
   drawerBody.scrollTop = 0;
 }
+
 
 
 
