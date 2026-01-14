@@ -1636,8 +1636,22 @@ function renderLoanTiles(loans) {
       const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
       const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
 
-      const pathP = buildPathFromPoints(pPoints, w, h, pad);
-      const pathI = buildPathFromPoints(iPoints, w, h, pad);
+      const pathP = pPoints
+  .map((p, i) => {
+    const x = pad + i * ((w - pad * 2) / Math.max(1, pPoints.length - 1));
+    const y = yForValue(p.y);
+    return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+  })
+  .join(" ");
+
+const pathI = iPoints
+  .map((p, i) => {
+    const x = pad + i * ((w - pad * 2) / Math.max(1, iPoints.length - 1));
+    const y = yForValue(p.y);
+    return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+  })
+  .join(" ");
+
 
       const maxMonth = Math.max(1, fullSched.length);
       const xForMonth = month => {
