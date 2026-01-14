@@ -1183,10 +1183,12 @@ tr.event-default td {
        ==================================== -->
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
-    import { buildProjectedRoiTimeline } from "../js/roiEngine.js?v=dev";
     import {
-  computeKPIs
+  buildProjectedRoiTimeline,
+  computeKPIs,
+  normalizeLoansForRoi
 } from "../js/roiEngine.js?v=dev";
+
 
 
 
@@ -5040,17 +5042,18 @@ document.querySelectorAll("#loanTable th").forEach(th => {
       await loadLoans();
 
 // =========================================
-// DERIVE + INITIALIZE FILTER STATE (REQUIRED)
+// DERIVE + NORMALIZE ROI STATE (REQUIRED)
 // =========================================
 const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 
-// 🔑 SOURCE OF TRUTH
-allLoans = derivedLoans;
-currentLoans = derivedLoans;
-filteredLoans = derivedLoans;
+// 🔑 ROI ENGINE NORMALIZATION — SINGLE SOURCE OF TRUTH
+allLoans = normalizeLoansForRoi(derivedLoans);
+currentLoans = allLoans;
+filteredLoans = allLoans.slice();
 
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
+
 
 
 
