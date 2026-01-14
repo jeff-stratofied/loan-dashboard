@@ -1554,8 +1554,9 @@ else if (kpiId === "kpi2") {
   // KPI2 — Projected Portfolio ROI chart (WITH COLORS)
   // =====================================================
 const timeline = buildProjectedRoiTimeline(allLoans, {
-  colorMap: buildKpiColorMap(allLoans)
+  colors: buildKpiColorMap(allLoans)   // 🔑 correct option name
 });
+
 
 console.group("%c[KPI2 DEBUG] timeline.perLoanSeries", "color:#22c55e;font-weight:bold");
 
