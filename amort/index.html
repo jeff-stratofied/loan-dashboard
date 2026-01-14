@@ -1636,6 +1636,22 @@ function renderLoanTiles(loans) {
       const pPoints = fullSched.map(s => ({ y: s.cumPrincipal }));
       const iPoints = fullSched.map(s => ({ y: s.cumInterest }));
 
+      const allYValues = [
+  ...pPoints.map(p => p.y),
+  ...iPoints.map(p => p.y)
+];
+
+const minY = Math.min(...allYValues);
+const maxY = Math.max(...allYValues);
+
+const yForValue = v => {
+  if (maxY === minY) return h / 2;
+  return (
+    h - pad -
+    ((v - minY) / (maxY - minY)) * (h - pad * 2)
+  );
+};
+
       const pathP = pPoints
   .map((p, i) => {
     const x = pad + i * ((w - pad * 2) / Math.max(1, pPoints.length - 1));
@@ -1652,30 +1668,12 @@ const pathI = iPoints
   })
   .join(" ");
 
-
       const maxMonth = Math.max(1, fullSched.length);
       const xForMonth = month => {
         const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
         return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
       };
 
-const allYValues = [
-  ...pPoints.map(p => p.y),
-  ...iPoints.map(p => p.y)
-];
-
-const minY = Math.min(...allYValues);
-const maxY = Math.max(...allYValues);
-
-const yForValue = v => {
-  if (maxY === minY) return h / 2;
-  return (
-    h - pad -
-    ((v - minY) / (maxY - minY)) * (h - pad * 2)
-  );
-};
-
-      
       svg.innerHTML = `
         <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6" />
         <path d="${pathP}" fill="none" stroke="#06b6d4" stroke-width="1.6" />
