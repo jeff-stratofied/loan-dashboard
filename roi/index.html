@@ -1190,7 +1190,7 @@ tr.event-default td {
       getRoiEntryAsOfMonth
 } from "../js/roiEngine.js?v=dev";
 
-
+const isEmbed = new URLSearchParams(window.location.search).get('embed') === 'true';
 
 
 window.__closeDrawerTimer = null;
@@ -4870,9 +4870,3 @@ window.addEventListener("DOMContentLoaded", () => {
     
 </body>
 </html>
-
-<script>
-
-const isEmbed = new URLSearchParams(window.location.search).get('embed') === 'true';
-
-</script>
