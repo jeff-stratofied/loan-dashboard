@@ -1741,11 +1741,17 @@ drawerPrimary.textContent =
   // --------------------------------------------------
   // ROI LINE CHART (use canonical date)
   // --------------------------------------------------
-  const series = loan.roiSeries.map(s => ({
-    x: formatMonthYear(s.date), // ✅ displayDate-derived
-    y: s.roi,
-    date: s.date
-  }));
+  const { perLoanSeries } = buildProjectedRoiTimeline([loan]);
+
+const series =
+  perLoanSeries[0]?.data
+    .filter(p => p.y != null)
+    .map(p => ({
+      x: formatMonthYear(p.date),
+      y: p.y,
+      date: p.date
+    }));
+
   window.createLineChart(drawerChartArea, series, {
 
     color: '#0ea5e9',
@@ -1776,7 +1782,11 @@ drawerAmortContainer.innerHTML = `
 `;
   const roiBody = document.getElementById('roiBody');
   roiBody.innerHTML = '';
-loan.roiSeries.forEach(s => {
+const { perLoanSeries } = buildProjectedRoiTimeline([loan]);
+
+perLoanSeries[0].data.forEach(s => {
+  if (s.y == null) return;
+
   const cs =
   loan.cumSchedule.find(r => {
     if (!r.loanDate || !s.date) return false;
@@ -1855,6 +1865,7 @@ const KPI_CURRENT_MONTH = new Date(
    - Math utilities
    ============================================================ */
 
+/* delete
 function getCurrentOwnedRoiEntry(loan) {
   // ✅ anchor to the app’s “current month”, not wall-clock
   const asOf = new Date(KPI_CURRENT_MONTH);
@@ -1866,7 +1877,7 @@ function getCurrentOwnedRoiEntry(loan) {
   if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
   return ownedEntries[ownedEntries.length - 1];
 }
-
+delete */
     function getOwnedRoiSeries(loan) {
   if (!Array.isArray(loan.roiSeries)) return [];
 
@@ -1876,7 +1887,7 @@ function getCurrentOwnedRoiEntry(loan) {
     .sort((a, b) => a.date - b.date);
 }
 
-
+/* delete
       function getRoiEntryAsOfMonth(loan, monthDate) {
   if (!Array.isArray(loan.roiSeries)) {
     return { roi: 0, loanValue: loan.purchasePrice };
@@ -1892,13 +1903,16 @@ function getCurrentOwnedRoiEntry(loan) {
 
   return eligible[eligible.length - 1];
 }
+delete */
 
-
+/* delete
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
     }
+delete */
 
+/* delete
 function getOwnedRoiSeriesFromAmort(loan) {
   if (!Array.isArray(loan.cumSchedule)) return [];
 
@@ -1916,7 +1930,7 @@ function getOwnedRoiSeriesFromAmort(loan) {
       };
     });
 }
-
+delete */
 
 
     
