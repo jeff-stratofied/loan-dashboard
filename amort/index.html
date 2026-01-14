@@ -2763,45 +2763,37 @@ function openDrawerForLoan(loan) {
     svg.appendChild(l);
   }
 
-  // HOVER
-  const vLine = document.createElementNS(svgNS, "line");
-  vLine.setAttribute("stroke", "#0f172a");
-  vLine.setAttribute("stroke-dasharray", "3 4");
-  vLine.setAttribute("opacity", "0.6");
-  svg.appendChild(vLine);
+// -------------------------------------------------
+// Drawer chart hover — ROI-style (RESTORED)
+// -------------------------------------------------
+const hoverG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+svg.appendChild(hoverG);
 
 svg.addEventListener("mousemove", ev => {
   const r = svg.getBoundingClientRect();
 
-  // ----------------------------------
-  // Mouse position (single source)
-  // ----------------------------------
+  // Single source of truth
   const mouseX = ev.clientX;
   const mouseY = ev.clientY;
 
-  // ----------------------------------
-  // Convert mouse → index
-  // ----------------------------------
   let idx = Math.round((mouseX - r.left - pad) / stepX);
   idx = Math.max(0, Math.min(schedule.length - 1, idx));
+  const pt = schedule[idx];
+  if (!pt) return;
 
   const [x] = toXY(0, idx);
 
-  // ----------------------------------
-  // Vertical hover line (SVG space)
-  // ----------------------------------
+  // Vertical hover line
   vLine.setAttribute("x1", x);
   vLine.setAttribute("x2", x);
   vLine.setAttribute("y1", pad);
   vLine.setAttribute("y2", h - pad);
   vLine.style.display = "block";
 
-  // ----------------------------------
-  // Hover dots (RESTORED)
-  // ----------------------------------
+  // Hover dots (match legend colors)
   hoverG.innerHTML = "";
 
-  const addDot = (y, color) => {
+  const dot = (y, color) => {
     const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     c.setAttribute("cx", x);
     c.setAttribute("cy", y);
@@ -2812,20 +2804,15 @@ svg.addEventListener("mousemove", ev => {
     hoverG.appendChild(c);
   };
 
-  const pt = schedule[idx];
-  addDot(toY(pt.balance),   "#2563eb"); // balance
-  addDot(toY(pt.cumPrincipal), "#16a34a"); // principal
-  addDot(toY(pt.cumInterest),  "#dc2626"); // interest
+  dot(toY(pt.balance),       "#2563eb"); // Balance
+  dot(toY(pt.cumPrincipal), "#16a34a"); // Principal
+  dot(toY(pt.cumInterest),  "#dc2626"); // Interest
 
-  // ----------------------------------
-  // Tooltip — FOLLOW THE MOUSE (RESTORED)
-  // ----------------------------------
   const d = displayDateForMonthIndex(pt.monthIndex, monthAnchor);
 
   tooltip.style.display = "block";
   tooltip.style.left = mouseX + "px";
   tooltip.style.top  = mouseY - 12 + "px";
-
   tooltip.innerHTML =
     `${formatMonthYearSafe(d)}<br>` +
     `Balance ${formatCurrency(pt.balance)}<br>` +
@@ -2838,6 +2825,7 @@ svg.addEventListener("mouseleave", () => {
   hoverG.innerHTML = "";
   tooltip.style.display = "none";
 });
+
 
 
 
