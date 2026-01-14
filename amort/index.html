@@ -1669,21 +1669,13 @@ svg.addEventListener("mousemove", ev => {
   const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
   if (!p) return;
 
-  // Prefer real schedule date
-  let hoverDate = null;
+  const hoverDate = displayDateForMonthIndex(
+  p.monthIndex,
+  loan.loanStartDate + "T00:00:00"
+);
 
-  if (p.displayDate instanceof Date) {
-    hoverDate = p.displayDate;
-  } else if (p.loanDate instanceof Date) {
-    hoverDate = p.loanDate;
-  } else if (p.monthDate) {
-    hoverDate = new Date(p.monthDate + "T00:00:00");
-  }
+const dateLabel = formatMonthYearSafe(hoverDate);
 
-  const dateLabel =
-    hoverDate instanceof Date && !isNaN(hoverDate)
-      ? formatMonthYearSafe(hoverDate)
-      : `Month ${p.monthIndex}`;
 
   tooltip.innerHTML =
     `${dateLabel} • ` +
