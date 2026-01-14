@@ -5091,8 +5091,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   // INITIAL RENDER — EMBED SAFE
   // =========================================
   if (PAGE_CONTEXT.isEmbed) {
-    document.getElementById("loanGrid")?.remove();
-    document.getElementById("loanTableWrap")?.remove();
+    const loanGrid = document.getElementById("loanGrid");
+if (loanGrid) loanGrid.remove();
+
+const loanTableWrap = document.getElementById("loanTableWrap");
+if (loanTableWrap) loanTableWrap.remove();
+;
   } else if (localStorage.getItem("roiTableView") === "1") {
     document.getElementById("toggleTableView").checked = true;
     renderLoanTableROI();
@@ -5106,7 +5110,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
   if (params.get("embed") === "true" && params.get("open")) {
     localStorage.removeItem("roiTableView");
-    document.getElementById("toggleTableView")?.checked = false;
+    const toggle = document.getElementById("toggleTableView");
+if (toggle) toggle.checked = false;
+
     openRoiKpiDrawer(params.get("open"));
   }
 
