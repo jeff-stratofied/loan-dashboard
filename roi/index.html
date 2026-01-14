@@ -1184,10 +1184,6 @@ tr.event-default td {
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
     import { buildProjectedRoiTimeline } from "../js/roiEngine.js?v=dev";
-    import {
-  computeKPIs
-} from "../js/roiEngine.js?v=dev";
-
 
 
 window.__closeDrawerTimer = null;
@@ -1519,8 +1515,7 @@ function openLoanDrawerSafe(loan) {
 // KPI DRAWER RENDERER — ROI (MISSING, REQUIRED)
 // =====================================================
 function renderKpiDrawer(kpiId) {
-  const kpis = computeKPIs(allLoans, KPI_CURRENT_MONTH);
-
+  const kpis = computeKPIs(allLoans);
 
   drawerTitle.textContent = "";
   drawerSub.textContent = "";
@@ -1958,7 +1953,6 @@ function getOwnedRoiSeriesFromAmort(loan) {
    - Capital recovery
    ============================================================ */
 
- /* delete
 function computeWeightedRoiAsOfMonth(loans, monthDate) {
   const total = loans.reduce((s, l) => s + l.purchasePrice, 0);
 
@@ -1969,9 +1963,8 @@ function computeWeightedRoiAsOfMonth(loans, monthDate) {
     return sum + loan.purchasePrice * (entry.roi || 0);
   }, 0) / total;
 }
-delete */
-    
-/* delete      
+
+      
 function computeKPIs(list) {
   const total = list.reduce((s, l) => s + l.purchasePrice, 0);
 
@@ -2031,7 +2024,7 @@ function computeKPIs(list) {
     };
 
 }
-delete */
+
 
     
 
