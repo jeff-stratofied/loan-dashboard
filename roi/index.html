@@ -1557,6 +1557,22 @@ const timeline = buildProjectedRoiTimeline(allLoans, {
   colorMap: buildKpiColorMap(allLoans)
 });
 
+console.group("%c[KPI2 DEBUG] timeline.perLoanSeries", "color:#22c55e;font-weight:bold");
+
+timeline.perLoanSeries.forEach((s, i) => {
+  console.log(
+    `series[${i}]`,
+    {
+      id: s.id,
+      color: s.color,
+      firstY: s.data.find(p => p.y != null)?.y
+    }
+  );
+});
+
+console.groupEnd();
+
+  
 createMultiSeriesChart(
   drawerChartArea,
   timeline.perLoanSeries,   // 🔑 includes colors
@@ -2487,6 +2503,12 @@ loanSeriesList.forEach(ls => {
   path.setAttribute("d", pathD);
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", ls.color || "#888");
+  console.log(
+  "[PATH CREATE]",
+  "loanId:", ls.id,
+  "stroke:", path.getAttribute("stroke")
+);
+
   path.setAttribute("stroke-width", "1.2");
   path.setAttribute("stroke-opacity", "0.9");
   path.dataset.type = "loan";
@@ -2495,6 +2517,24 @@ loanSeriesList.forEach(ls => {
   loanPaths.push(path);
 });
 
+// ================================
+// DEBUG: detect stroke mutations
+// ================================
+const strokeObserver = new MutationObserver(mutations => {
+  mutations.forEach(m => {
+    if (m.type === "attributes" && m.attributeName === "stroke") {
+      console.warn(
+        "[STROKE MUTATED]",
+        "loanId:", m.target.dataset.loanId,
+        "new stroke:", m.target.getAttribute("stroke")
+      );
+    }
+  });
+});
+
+loanPaths.forEach(p => {
+  strokeObserver.observe(p, { attributes: true });
+});
 
 
   // -----------------------------------
@@ -2701,6 +2741,19 @@ svg.addEventListener("mouseleave", () => {
 
   svg.appendChild(axis);
   containerEl.appendChild(svg);
+
+  setTimeout(() => {
+  console.group("%c[POST-RENDER STROKES]", "color:#ef4444;font-weight:bold");
+  svg.querySelectorAll('path[data-type="loan"]').forEach(p => {
+    console.log(
+      "loanId:", p.dataset.loanId,
+      "stroke:", p.getAttribute("stroke"),
+      "opacity:", p.getAttribute("stroke-opacity")
+    );
+  });
+  console.groupEnd();
+}, 0);
+
 }
     
 
