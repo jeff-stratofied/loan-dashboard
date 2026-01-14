@@ -2770,37 +2770,51 @@ function openDrawerForLoan(loan) {
   vLine.setAttribute("opacity", "0.6");
   svg.appendChild(vLine);
 
-  svg.addEventListener("mousemove", ev => {
-    const r = svg.getBoundingClientRect();
-    let idx = Math.round((ev.clientX - r.left - pad) / stepX);
-    idx = Math.max(0, Math.min(schedule.length - 1, idx));
-    const [x] = toXY(0, idx);
+svg.addEventListener("mousemove", ev => {
+  const r = svg.getBoundingClientRect();
 
-    vLine.setAttribute("x1", x);
-    vLine.setAttribute("x2", x);
-    vLine.setAttribute("y1", pad);
-    vLine.setAttribute("y2", h - pad);
+  let idx = Math.round((ev.clientX - r.left - pad) / stepX);
+  idx = Math.max(0, Math.min(schedule.length - 1, idx));
 
-    const d = displayDateForMonthIndex(
-      schedule[idx].monthIndex,
-      monthAnchor
-    );
+  // SVG-space X
+  const [x] = toXY(0, idx);
 
-    tooltip.style.display = "block";
-    tooltip.style.left = ev.clientX + "px";
-    tooltip.style.top = ev.clientY - 10 + "px";
-    tooltip.innerHTML =
-      `${formatMonthYearSafe(d)}<br>` +
-      `Balance ${formatCurrency(schedule[idx].balance)}<br>` +
-      `Principal ${formatCurrency(schedule[idx].cumPrincipal)}<br>` +
-      `Interest ${formatCurrency(schedule[idx].cumInterest)}`;
-  });
+  // -----------------------------
+  // Vertical hover line (SVG)
+  // -----------------------------
+  vLine.setAttribute("x1", x);
+  vLine.setAttribute("x2", x);
+  vLine.setAttribute("y1", pad);
+  vLine.setAttribute("y2", h - pad);
+  vLine.style.display = "block";
 
-  svg.addEventListener("mouseleave", () => {
-    vLine.setAttribute("y1", 0);
-    vLine.setAttribute("y2", 0);
-    tooltip.style.display = "none";
-  });
+  // -----------------------------
+  // Tooltip — ALIGN TO SAME X
+  // -----------------------------
+  const tooltipX = r.left + x;
+  const tooltipY = r.top - 10;
+
+  tooltip.style.display = "block";
+  tooltip.style.left = `${tooltipX}px`;
+  tooltip.style.top = `${tooltipY}px`;
+
+  const d = displayDateForMonthIndex(
+    schedule[idx].monthIndex,
+    monthAnchor
+  );
+
+  tooltip.innerHTML =
+    `${formatMonthYearSafe(d)}<br>` +
+    `Balance ${formatCurrency(schedule[idx].balance)}<br>` +
+    `Principal ${formatCurrency(schedule[idx].cumPrincipal)}<br>` +
+    `Interest ${formatCurrency(schedule[idx].cumInterest)}`;
+});
+
+svg.addEventListener("mouseleave", () => {
+  vLine.style.display = "none";
+  tooltip.style.display = "none";
+});
+
 
   drawerChartArea.appendChild(svg);
 
