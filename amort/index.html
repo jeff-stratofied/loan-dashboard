@@ -2966,85 +2966,74 @@ for (let i = 0; i <= xTickCount; i++) {
   const circles = document.createElementNS(svgNS, 'g');
   svg.appendChild(circles);
 
-  // Drawer hover interactions
+// Drawer hover interactions
 svg.addEventListener('mousemove', (ev) => {
+  const rect = svg.getBoundingClientRect();
 
-  // 🔑 ROI-style SVG-local coordinates
-  const mouseX = ev.offsetX;
+  // Use normalized position → maps mouse to viewBox units reliably
+  // This is usually more accurate than offsetX when there is container padding or zoom
+  const mouseXInViewBox = ((ev.clientX - rect.left) / rect.width) * w;
 
-  // Find nearest data X
+  // Find nearest data point
   let idx = 0;
   let best = Infinity;
-
   for (let i = 0; i < schedule.length; i++) {
     const xAtI = pad + i * stepX;
-    const d = Math.abs(mouseX - xAtI);
+    const d = Math.abs(mouseXInViewBox - xAtI);
     if (d < best) {
       best = d;
       idx = i;
     }
   }
 
-  const px = pad + idx * stepX;
+  const px = pad + idx * stepX;  // snap X in viewBox coordinates
   const row = schedule[idx];
 
-  // vertical hover line
+  // Vertical hover line (in viewBox coords)
   vLine.setAttribute('x1', px);
   vLine.setAttribute('x2', px);
   vLine.setAttribute('y1', pad);
   vLine.setAttribute('y2', h - pad);
-    circles.innerHTML = '';
-    // 4 series: Balance, Cum P, Cum I, Total
-    const series = [
-      { val: balances[idx].y, color: '#0f172a' },
-      { val: cumP[idx].y, color: '#06b6d4' },
-      { val: cumI[idx].y, color: '#a78bfa' },
-      { val: cumT[idx].y, color: '#fb7185' }
-    ];
-    // draw hover dots
-    series.forEach(s => {
-      const [cx, cy] = toXY({ y: s.val }, idx);
-      const dot = document.createElementNS(svgNS, 'circle');
-      dot.setAttribute('cx', cx);
-      dot.setAttribute('cy', cy);
-      dot.setAttribute('r', 4);
-      dot.setAttribute('fill', s.color);
-      dot.setAttribute('stroke', '#fff');
-      dot.setAttribute('stroke-width', '1.2');
-      circles.appendChild(dot);
-    });
-    // Calendar date label
-    const hoverDate = displayDateForMonthIndex(
-  row.monthIndex,
-  monthAnchor
-);
-const dateLabel = formatMonthYear(hoverDate);
 
-// Tooltip — align to hover line X (SVG → viewport)
-const svgRect = svg.getBoundingClientRect();
+  // Clear and redraw hover dots
+  circles.innerHTML = '';
 
-// 🔑 SCALE SVG X → RENDERED X (this is the missing piece)
-const scaleX = svgRect.width / w;
-const renderedX = svgRect.left + px * scaleX;
+  const series = [
+    { val: balances[idx].y, color: '#0f172a' },
+    { val: cumP[idx].y, color: '#06b6d4' },
+    { val: cumI[idx].y, color: '#a78bfa' },
+    { val: cumT[idx].y, color: '#fb7185' }
+  ];
 
-// Clamp Y so tooltip stays inside chart vertically
-const yInSvg = Math.max(
-  pad,
-  Math.min(ev.clientY - svgRect.top, h - pad)
-);
+  series.forEach(s => {
+    const [cx, cy] = toXY({ y: s.val }, idx);
+    const dot = document.createElementNS(svgNS, 'circle');
+    dot.setAttribute('cx', cx);
+    dot.setAttribute('cy', cy);
+    dot.setAttribute('r', 4);
+    dot.setAttribute('fill', s.color);
+    dot.setAttribute('stroke', '#fff');
+    dot.setAttribute('stroke-width', '1.2');
+    circles.appendChild(dot);
+  });
 
-tooltip.style.display = 'block';
-tooltip.style.left = renderedX + 'px';
-tooltip.style.top  = (svgRect.top + yInSvg) + 'px';
+  // Calendar date label
+  const hoverDate = displayDateForMonthIndex(row.monthIndex, monthAnchor);
+  const dateLabel = formatMonthYear(hoverDate);
 
-tooltip.innerHTML =
-  `${dateLabel}<br>
-   Balance $${row.balance.toLocaleString()}<br>
-   Principal $${row.cumPrincipal.toLocaleString()}<br>
-   Interest $${row.cumInterest.toLocaleString()}`;
+  // Tooltip: position directly at mouse screen coordinates (like ROI page)
+  // This avoids all manual scaling math and usually aligns perfectly
+  tooltip.style.display = 'block';
+  tooltip.style.left = `${ev.clientX}px`;
+  tooltip.style.top = `${ev.clientY - 12}px`;   // small offset above cursor
 
-
-  }); // <-- closes mousemove listener
+  tooltip.innerHTML = `
+    ${dateLabel}<br>
+    Balance $${row.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}<br>
+    Principal $${row.cumPrincipal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}<br>
+    Interest $${row.cumInterest.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+  `;
+});
 
   // Hide hover state on leave
   svg.addEventListener('mouseleave', () => {
