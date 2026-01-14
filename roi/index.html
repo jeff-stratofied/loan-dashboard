@@ -2403,8 +2403,13 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   }
 
   loanSeriesList.forEach(ls =>
-    ls.data.forEach(p => ys.push(p.y))
-  );
+  ls.data.forEach(p => {
+    if (p.y != null && Number.isFinite(p.y)) {
+      ys.push(p.y);
+    }
+  })
+);
+
 
   const minY = Math.min(...ys);
   const maxY = Math.max(...ys);
