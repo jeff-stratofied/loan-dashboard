@@ -1717,7 +1717,8 @@ svg.addEventListener("mousemove", ev => {
   // ---------------------------
   hoverG.innerHTML = "";
 
-  const x = xForMonth(p.monthIndex);
+  const x = pad + idx * ((w - pad * 2) / Math.max(1, fullSched.length - 1));
+
 
   // vertical dotted line
   hoverG.innerHTML += `
