@@ -294,6 +294,8 @@ export function buildProjectedRoiTimeline(loans, opts = {}) {
   return { dates, perLoanSeries, weightedSeries };
 }
 
+//  ----- Helpers ------
+
 export function normalizeLoansForRoi(loans) {
   return loans.map(l => ({
     ...l,
@@ -304,7 +306,39 @@ export function normalizeLoansForRoi(loans) {
   }));
 }
 
+export function getLastRoiEntry(loan) {
+  if (!loan || !Array.isArray(loan.roiSeries) || !loan.roiSeries.length) {
+    return null;
+  }
+  return loan.roiSeries[loan.roiSeries.length - 1];
+}
 
+export function getRoiSeriesAsOfMonth(loans, monthDate) {
+  if (!Array.isArray(loans) || !(monthDate instanceof Date)) return [];
+
+  return loans.map(loan => {
+    const entry = getRoiEntryAsOfMonth(loan, monthDate);
+    return {
+      loanId: loan.id ?? loan.loanId,
+      loan,
+      entry
+    };
+  });
+}
+
+
+export function getLoanMaturityDate(loan) {
+  if (!loan?.purchaseDate) return null;
+
+  const d = new Date(loan.purchaseDate);
+  if (isNaN(+d)) return null;
+
+  const months =
+    Math.round((safeNum(loan.termYears) + safeNum(loan.graceYears)) * 12);
+
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
 
 
 
