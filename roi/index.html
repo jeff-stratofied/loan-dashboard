@@ -1186,7 +1186,8 @@ tr.event-default td {
     import {
   buildProjectedRoiTimeline,
   computeKPIs,
-  normalizeLoansForRoi
+  normalizeLoansForRoi,
+      getRoiEntryAsOfMonth
 } from "../js/roiEngine.js?v=dev";
 
 
@@ -3727,7 +3728,8 @@ function populateROILoanTable(){
   if(!tbody) return;
 
   tbody.innerHTML = allLoans.map(l => {
-    const roiEntry = getCurrentOwnedRoiEntry(l);
+    const roiEntry = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
+const roiToDate = roiEntry?.roi ?? 0;
 
     let matStr = '';
     try {
