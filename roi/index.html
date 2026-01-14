@@ -1182,6 +1182,8 @@ tr.event-default td {
        Script (organized with sections)
        ==================================== -->
   <script type="module">
+console.log("SCRIPT START");
+    
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
     import {
   buildProjectedRoiTimeline,
@@ -4862,7 +4864,7 @@ window.addEventListener("DOMContentLoaded", () => {
     applyTheme(nextTheme);
   });
 });
-
+console.log("SCRIPT END");
 </script>
 
 <script src="/loan-dashboard/js/feedback.js"></script>
