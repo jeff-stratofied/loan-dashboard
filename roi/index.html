@@ -1541,46 +1541,41 @@ function renderKpiDrawer(kpiId) {
       formatMonthYear(KPI_CURRENT_MONTH);
   }
 
-  else if (kpiId === "kpi2") {
-    drawerTitle.textContent = "Projected Portfolio ROI";
-    drawerPrimaryTitle.textContent = "Projected ROI";
-    drawerPrimary.textContent =
-      (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
+else if (kpiId === "kpi2") {
+  drawerTitle.textContent = "Projected Portfolio ROI";
+  drawerPrimaryTitle.textContent = "Projected ROI";
+  drawerPrimary.textContent =
+    (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
 
-    drawerSecondaryTitle.textContent = "Lifetime";
-    drawerSecondary.textContent = "All Loans";
-  }
+  drawerSecondaryTitle.textContent = "Lifetime";
+  drawerSecondary.textContent = "All Loans";
 
-// =====================================================
-// KPI2 — Projected Portfolio ROI chart (FIX COLORS)
-// =====================================================
+  // =====================================================
+  // KPI2 — Projected Portfolio ROI chart (WITH COLORS)
+  // =====================================================
 
-// 1) Build deterministic color map
-const colorMap = buildKpiColorMap(allLoans);
+  const colorMap = buildKpiColorMap(allLoans);
 
-// 2) Build per-loan series WITH color
-const loanSeriesList = allLoans.map(l => ({
-  id: l.id,
-  color: colorMap[l.id],   // 🔑 THIS IS THE FIX
-  data: l.roiSeries.map(p => ({
-    x: p.date,
-    y: p.roi
-  }))
-}));
+  const loanSeriesList = allLoans.map(l => ({
+    id: l.id,
+    color: colorMap[l.id],   // 🔑 FIX
+    data: l.roiSeries.map(p => ({
+      x: p.date,
+      y: p.roi
+    }))
+  }));
 
-// 3) Build weighted portfolio series
-const weightedSeries = buildProjectedRoiTimeline(allLoans);
+  const weightedSeries = buildProjectedRoiTimeline(allLoans);
+  const dates = buildGlobalDatesFromLoans(allLoans);
 
-// 4) Shared date axis
-const dates = buildGlobalDatesFromLoans(allLoans);
+  createMultiSeriesChart(
+    drawerChartArea,
+    loanSeriesList,
+    weightedSeries,
+    { dates }
+  );
+}
 
-// 5) Render chart
-createMultiSeriesChart(
-  drawerChartArea,
-  loanSeriesList,
-  weightedSeries,
-  { dates }
-);
 
     
   else if (kpiId === "kpi3") {
