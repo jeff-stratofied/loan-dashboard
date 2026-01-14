@@ -1669,13 +1669,19 @@ function renderLoanTiles(loans) {
   // ✅ Prefer real schedule date
   let hoverDate = null;
 
-  if (p.displayDate instanceof Date) {
-    hoverDate = p.displayDate;
-  } else if (p.loanDate instanceof Date) {
-    hoverDate = p.loanDate;
-  } else if (p.monthDate) {
-    hoverDate = new Date(p.monthDate + "T00:00:00");
-  }
+if (p.displayDate instanceof Date) {
+  hoverDate = p.displayDate;
+} else if (p.loanDate instanceof Date) {
+  hoverDate = p.loanDate;
+} else if (p.monthDate) {
+  hoverDate = new Date(p.monthDate + "T00:00:00");
+} else if (Number.isFinite(p.monthIndex)) {
+  // 🔑 FINAL FALLBACK — anchor to loan start date
+  const anchor = new Date(loan.loanStartDate + "T00:00:00");
+  anchor.setMonth(anchor.getMonth() + (p.monthIndex - 1));
+  hoverDate = anchor;
+}
+
 
   tooltip.style.left = `${ev.clientX}px`;
   tooltip.style.top = `${ev.clientY - 10}px`;
@@ -2517,14 +2523,14 @@ function formatCurrency(val) {
   })}`;
 }
 
-  
-function formatMonthYear(d) {
-  if (!(d instanceof Date)) return "";
+function formatMonthYearSafe(d) {
+  if (!(d instanceof Date) || isNaN(d)) return "—";
   return d.toLocaleDateString(undefined, {
     month: "short",
     year: "numeric"
   });
 }
+
 
     /* =========================
    TABLE EXPORT
