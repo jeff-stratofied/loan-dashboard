@@ -1469,7 +1469,7 @@ let TABLE_SORT = { key: null, dir: 1 };
 let currentMode = "kpi";   // 🔑 ROI defaults to KPI mode
 let currentLoan = null;   // 🔑 active loan for drawer
 let filteredLoans = [];
-
+let DATA_READY = false;
 
     // =====================================================
 // Loan Table — Sorted view (MATCH AMORT)
@@ -3425,16 +3425,17 @@ currentLoans = loansWithAmort;
 
 filteredLoans = loansWithAmort.slice();
 
- 
+ DATA_READY = true;
 
-      
+// 🔑 NOW it is safe to open KPI drawers
+if (PAGE_CONTEXT.open) {
+  openRoiKpiFromUrl();
+}
 
 
 window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
-      
-
-
+  
     const kpis = computeKPIs(currentLoans);
 
 // 🔑 Single initial render
@@ -4981,12 +4982,13 @@ delete */
   }
 }
 
+/*    delete 
 // 🔑 Open KPI drawer from ?open=
 // ❗ DO NOT override loan drawer
 if (currentMode !== "loan") {
   openRoiKpiFromUrl();
 }
-
+delete */
 
 
 // =====================================================
