@@ -264,10 +264,17 @@
 
 /* MATCH EARNINGS TOOLTIP POSITIONING */
 .tooltip {
-  transform: translate(-50%, -100%); /* was -120% */
+  position: fixed;
+  pointer-events: none;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  transform: translate(-50%, -120%);
+  display: none;
+  z-index: 9999;
 }
-
-
     
     .loan-badge.default {
       background: rgba(239, 68, 68, 0.12);
@@ -2777,6 +2784,20 @@ function openDrawerForLoan(loan) {
     svg.appendChild(l);
   }
 
+function svgXToClientX(svg, x) {
+  const pt = svg.createSVGPoint();
+  pt.x = x;
+  pt.y = 0;
+  return pt.matrixTransform(svg.getScreenCTM()).x;
+}
+
+  const tooltipX = svgXToClientX(svg, x);
+const tooltipY = ev.clientY - 12;
+
+tooltip.style.left = tooltipX + "px";
+tooltip.style.top  = tooltipY + "px";
+
+  
   // HOVER
   const vLine = document.createElementNS(svgNS, "line");
   vLine.setAttribute("stroke", "#0f172a");
@@ -2791,34 +2812,27 @@ const hoverG = document.createElementNS("http://www.w3.org/2000/svg", "g");
 svg.appendChild(hoverG);
 
 svg.addEventListener("mousemove", ev => {
+  TOOLTIP_LOCK = "drawer";
+
   const r = svg.getBoundingClientRect();
 
-  // Single source of truth
-  const mouseX = ev.clientX;
-  const mouseY = ev.clientY;
-
-  let idx = Math.round((mouseX - r.left - pad) / stepX);
+  let idx = Math.round((ev.clientX - r.left - pad) / stepX);
   idx = Math.max(0, Math.min(schedule.length - 1, idx));
   const pt = schedule[idx];
   if (!pt) return;
 
-TOOLTIP_LOCK = "drawer";
-
-  
   const [x] = toXY(0, idx);
 
-  // Vertical hover line
   vLine.setAttribute("x1", x);
   vLine.setAttribute("x2", x);
   vLine.setAttribute("y1", pad);
   vLine.setAttribute("y2", h - pad);
   vLine.style.display = "block";
 
-  // Hover dots (match legend colors)
   hoverG.innerHTML = "";
 
   const dot = (y, color) => {
-    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    const c = document.createElementNS(svgNS, "circle");
     c.setAttribute("cx", x);
     c.setAttribute("cy", y);
     c.setAttribute("r", 4);
@@ -2828,19 +2842,17 @@ TOOLTIP_LOCK = "drawer";
     hoverG.appendChild(c);
   };
 
-  dot(toY(pt.balance),       "#2563eb"); // Balance
-  dot(toY(pt.cumPrincipal), "#16a34a"); // Principal
-  dot(toY(pt.cumInterest),  "#dc2626"); // Interest
+  dot(toY(pt.balance),       "#2563eb");
+  dot(toY(pt.cumPrincipal), "#16a34a");
+  dot(toY(pt.cumInterest),  "#dc2626");
+
+  const screenX = svgXToClientX(svg, x);
 
   const d = displayDateForMonthIndex(pt.monthIndex, monthAnchor);
-
+  
   tooltip.style.display = "block";
- const svgX = r.left + x;     // align with hover line
-const svgY = r.top + pad;   // stable vertical anchor
-
-tooltip.style.left = svgX + "px";
-tooltip.style.top  = svgY + "px";
-
+  tooltip.style.left = screenX + "px";
+  tooltip.style.top  = ev.clientY - 12 + "px";
   tooltip.innerHTML =
     `${formatMonthYearSafe(d)}<br>` +
     `Balance ${formatCurrency(pt.balance)}<br>` +
@@ -2849,11 +2861,10 @@ tooltip.style.top  = svgY + "px";
 });
 
 svg.addEventListener("mouseleave", () => {
+  TOOLTIP_LOCK = null;
   vLine.style.display = "none";
   hoverG.innerHTML = "";
   tooltip.style.display = "none";
-  TOOLTIP_LOCK = null;
-
 });
 
 
