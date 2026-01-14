@@ -1551,6 +1551,38 @@ function renderKpiDrawer(kpiId) {
     drawerSecondary.textContent = "All Loans";
   }
 
+// =====================================================
+// KPI2 — Projected Portfolio ROI chart (FIX COLORS)
+// =====================================================
+
+// 1) Build deterministic color map
+const colorMap = buildKpiColorMap(allLoans);
+
+// 2) Build per-loan series WITH color
+const loanSeriesList = allLoans.map(l => ({
+  id: l.id,
+  color: colorMap[l.id],   // 🔑 THIS IS THE FIX
+  data: l.roiSeries.map(p => ({
+    x: p.date,
+    y: p.roi
+  }))
+}));
+
+// 3) Build weighted portfolio series
+const weightedSeries = buildProjectedRoiTimeline(allLoans);
+
+// 4) Shared date axis
+const dates = buildGlobalDatesFromLoans(allLoans);
+
+// 5) Render chart
+createMultiSeriesChart(
+  drawerChartArea,
+  loanSeriesList,
+  weightedSeries,
+  { dates }
+);
+
+    
   else if (kpiId === "kpi3") {
     drawerTitle.textContent = "Capital Recovered";
     drawerPrimaryTitle.textContent = "Recovered";
