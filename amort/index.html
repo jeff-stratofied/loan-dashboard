@@ -2967,33 +2967,32 @@ for (let i = 0; i <= xTickCount; i++) {
   svg.appendChild(circles);
 
   // Drawer hover interactions
-  svg.addEventListener('mousemove', (ev) => {
-    const rect = svg.getBoundingClientRect();
-const mouseX = ev.clientX - rect.left;
+svg.addEventListener('mousemove', (ev) => {
 
-// -------------------------------------------------
-// ROI-style: snap to nearest DATA X (not index math)
-// -------------------------------------------------
-let idx = 0;
-let best = Infinity;
+  // 🔑 ROI-style SVG-local coordinates
+  const mouseX = ev.offsetX;
 
-for (let i = 0; i < schedule.length; i++) {
-  const xAtI = pad + i * stepX;
-  const d = Math.abs(mouseX - xAtI);
-  if (d < best) {
-    best = d;
-    idx = i;
+  // Find nearest data X
+  let idx = 0;
+  let best = Infinity;
+
+  for (let i = 0; i < schedule.length; i++) {
+    const xAtI = pad + i * stepX;
+    const d = Math.abs(mouseX - xAtI);
+    if (d < best) {
+      best = d;
+      idx = i;
+    }
   }
-}
 
-const px = pad + idx * stepX;
-const row = schedule[idx];
+  const px = pad + idx * stepX;
+  const row = schedule[idx];
 
-    // vertical hover line
-    vLine.setAttribute('x1', px);
-    vLine.setAttribute('x2', px);
-    vLine.setAttribute('y1', pad);
-    vLine.setAttribute('y2', h - pad);
+  // vertical hover line
+  vLine.setAttribute('x1', px);
+  vLine.setAttribute('x2', px);
+  vLine.setAttribute('y1', pad);
+  vLine.setAttribute('y2', h - pad);
     circles.innerHTML = '';
     // 4 series: Balance, Cum P, Cum I, Total
     const series = [
