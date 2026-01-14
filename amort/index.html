@@ -3009,6 +3009,10 @@ const dateLabel = formatMonthYear(hoverDate);
 // Tooltip — align to hover line X (SVG → viewport)
 const svgRect = svg.getBoundingClientRect();
 
+// 🔑 SCALE SVG X → RENDERED X (this is the missing piece)
+const scaleX = svgRect.width / w;
+const renderedX = svgRect.left + px * scaleX;
+
 // Clamp Y so tooltip stays inside chart vertically
 const yInSvg = Math.max(
   pad,
@@ -3016,15 +3020,15 @@ const yInSvg = Math.max(
 );
 
 tooltip.style.display = 'block';
-tooltip.style.left = (svgRect.left + px) + 'px';
+tooltip.style.left = renderedX + 'px';
 tooltip.style.top  = (svgRect.top + yInSvg) + 'px';
-
 
 tooltip.innerHTML =
   `${dateLabel}<br>
    Balance $${row.balance.toLocaleString()}<br>
    Principal $${row.cumPrincipal.toLocaleString()}<br>
    Interest $${row.cumInterest.toLocaleString()}`;
+
 
   }); // <-- closes mousemove listener
 
