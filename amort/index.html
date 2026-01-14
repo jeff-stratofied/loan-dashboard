@@ -1680,10 +1680,18 @@ function renderLoanTiles(loans) {
   tooltip.style.left = `${ev.clientX}px`;
   tooltip.style.top = `${ev.clientY - 10}px`;
   tooltip.style.display = "block";
-  tooltip.innerHTML =
-    `${formatMonthYearSafe(hoverDate)} • ` +
-    `Principal $${p.cumPrincipal.toLocaleString()} • ` +
-    `Interest $${p.cumInterest.toLocaleString()}`;
+  claimTooltip("mini");
+
+const dateLabel =
+  hoverDate instanceof Date && !isNaN(hoverDate)
+    ? formatMonthYearSafe(hoverDate)
+    : `Month ${p.monthIndex}`;
+
+tooltip.innerHTML =
+  `${dateLabel} • ` +
+  `Principal $${p.cumPrincipal.toLocaleString()} • ` +
+  `Interest $${p.cumInterest.toLocaleString()}`;
+
 });
 
 
@@ -2049,13 +2057,22 @@ function buildEventBadges(events = []) {
   `;
 }
 
-    
+   // =========================================
+// TOOLTIP OWNERSHIP — HARD SEPARATION
+// =========================================
+function claimTooltip(owner) {
+  tooltip.dataset.owner = owner;
+  tooltip.innerHTML = "";
+  tooltip.style.display = "none";
+}
+ 
 
 function setMiniTooltipContent(lines) {
   tooltip.innerHTML = lines.join("<br>");
   tooltip.style.display = "block";
 }
 
+    
 function positionMiniTooltip(x, y, offset = 12) {
   tooltip.style.left = `${x}px`;
   tooltip.style.top = `${y - offset}px`;
@@ -2064,6 +2081,8 @@ function positionMiniTooltip(x, y, offset = 12) {
 function hideMiniTooltip() {
   tooltip.style.display = "none";
 }
+
+    
 
 function applyLoanFilters() {
   const nameVal   = filterName.value;
@@ -2558,6 +2577,7 @@ function loansToCSV(loans) {
 
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
+  claimTooltip("drawer");
 assert(loan, "openDrawerForLoan called with null loan");
   
   // =====================================================
@@ -2922,6 +2942,17 @@ for (let i = 0; i <= xTickCount; i++) {
     // Calendar date label
     const dateLabel = formatDate(displayDateForMonthIndex(row.monthIndex));
 
+const hoverDate =
+  d instanceof Date && !isNaN(d)
+    ? d
+    : null;
+
+if (!hoverDate) {
+  tooltip.style.display = "none";
+  return;
+}
+
+    
     // Tooltip
     tooltip.style.display = 'block';
     tooltip.style.left = ev.clientX + 'px';
