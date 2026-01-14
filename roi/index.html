@@ -1558,7 +1558,7 @@ else if (kpiId === "kpi2") {
 
   const loanSeriesList = allLoans.map(l => ({
     id: l.id,
-    color: colorMap[l.id],   // 🔑 FIX
+    color: colorMap[l.id],   // 🔑 THIS ENABLES COLORS
     data: l.roiSeries.map(p => ({
       x: p.date,
       y: p.roi
@@ -1575,6 +1575,7 @@ else if (kpiId === "kpi2") {
     { dates }
   );
 }
+
 
 
     
