@@ -1868,17 +1868,11 @@ const KPI_CURRENT_MONTH = new Date(
    ============================================================ */
 
 
+// TEMP UI COMPATIBILITY LAYER — REMOVE AFTER FULL MIGRATION
 function getCurrentOwnedRoiEntry(loan) {
-  // ✅ anchor to the app’s “current month”, not wall-clock
-  const asOf = new Date(KPI_CURRENT_MONTH);
-  asOf.setMonth(asOf.getMonth() + 1);
-  asOf.setDate(0); // last day of KPI month
-  asOf.setHours(23, 59, 59, 999);
-
-  const ownedEntries = (loan.roiSeries || []).filter(r => r?.date && r.date <= asOf);
-  if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
-  return ownedEntries[ownedEntries.length - 1];
+  return getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
 }
+
 
     function getOwnedRoiSeries(loan) {
   if (!Array.isArray(loan.roiSeries)) return [];
@@ -1996,7 +1990,9 @@ function computeWeightedRoiAsOfMonth(loans, monthDate) {
 
   return loans.reduce((sum, loan) => {
     const entry = getRoiEntryAsOfMonth(loan, monthDate);
-    return sum + loan.purchasePrice * (entry.roi || 0);
+    const roi = entry?.roi ?? 0;
+return sum + loan.purchasePrice * roi;
+
   }, 0) / total;
 }
 
@@ -3753,11 +3749,11 @@ function forceDrawerVisible() {
     
 function populateROILoanTable(){
   const tbody = document.querySelector("#roiLoansTable tbody");
-  if(!tbody) return;
+  if (!tbody) return;
 
   tbody.innerHTML = allLoans.map(l => {
-    const roiEntry = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
-const roiToDate = roiEntry?.roi ?? 0;
+    const roiEntry = getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH);
+    const roiPct = ((roiEntry?.roi ?? 0) * 100);
 
     let matStr = '';
     try {
@@ -3765,15 +3761,11 @@ const roiToDate = roiEntry?.roi ?? 0;
       const months = Math.round((l.termYears + l.graceYears) * 12);
       pd.setMonth(pd.getMonth() + months);
       matStr = pd.toISOString().slice(0,10);
-    } catch(e) {
-      matStr = '';
-    }
+    } catch(e) {}
 
-    const roiPct = (roiEntry.roi || 0) * 100;
     const id = l.id ?? l.loanId;
     const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
 
-    // ✅ ADD data-loan-id HERE
     return `<tr data-loan-id="${id}">
       <td style="text-align:left;">
         <span style="
@@ -3795,38 +3787,8 @@ const roiToDate = roiEntry?.roi ?? 0;
       </td>
     </tr>`;
   }).join('');
-    
-      const chartSvg = drawerChartArea.querySelector("svg");
-      if (!chartSvg) return;
-    
-      const table = document.getElementById("roiLoansTable");
-      if (!table) return;
-    
-      const loanPaths = Array.from(
-        chartSvg.querySelectorAll('path[data-type="loan"]')
-      );
+}
 
-      table.querySelectorAll("tbody tr").forEach(row => {
-        const rowLoanId = row.dataset.loanId;
-        if (!rowLoanId) return;
-    
-    row.addEventListener("mouseenter", () => {
-      loanPaths.forEach(p => {
-        const isTarget = p.dataset.loanId === rowLoanId;
-    
-        p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
-        p.setAttribute("stroke-width", "1.2"); // KEEP ALL LINES SAME WIDTH
-      });
-    });
-    
-    row.addEventListener("mouseleave", () => {
-      loanPaths.forEach(p => {
-        p.setAttribute("stroke-opacity", "0.9");
-        p.setAttribute("stroke-width", "1.2");
-      });
-    });
-   });
- }
 
 function populateProjectedROILoanTable(){
   const tbody = document.querySelector("#roiProjectedLoansTable tbody");
@@ -3845,7 +3807,8 @@ function populateProjectedROILoanTable(){
       matStr = '';
     }
 
-    const roiPct = (roiEntry.roi || 0) * 100;
+    const roiPct = ((roiEntry?.roi ?? 0) * 100);
+
     const id = l.id ?? l.loanId;
     const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
 
