@@ -1553,27 +1553,17 @@ else if (kpiId === "kpi2") {
   // =====================================================
   // KPI2 — Projected Portfolio ROI chart (WITH COLORS)
   // =====================================================
+const timeline = buildProjectedRoiTimeline(allLoans, {
+  colorMap: buildKpiColorMap(allLoans)
+});
 
-  const colorMap = buildKpiColorMap(allLoans);
+createMultiSeriesChart(
+  drawerChartArea,
+  timeline.perLoanSeries,   // 🔑 includes colors
+  timeline.weightedSeries,
+  { dates: timeline.dates }
+);
 
-  const loanSeriesList = allLoans.map(l => ({
-    id: l.id,
-    color: colorMap[l.id],   // 🔑 THIS ENABLES COLORS
-    data: l.roiSeries.map(p => ({
-      x: p.date,
-      y: p.roi
-    }))
-  }));
-
-  const weightedSeries = buildProjectedRoiTimeline(allLoans);
-  const dates = buildGlobalDatesFromLoans(allLoans);
-
-  createMultiSeriesChart(
-    drawerChartArea,
-    loanSeriesList,
-    weightedSeries,
-    { dates }
-  );
 }
 
 
