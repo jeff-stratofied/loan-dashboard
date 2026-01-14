@@ -2968,82 +2968,73 @@ for (let i = 0; i <= xTickCount; i++) {
 
 // Drawer hover interactions
 svg.addEventListener('mousemove', (ev) => {
-const rect = svg.getBoundingClientRect();
-// Normalized mouse X in viewBox units — fixes edge drift by mapping precisely
-const mouseX = ((ev.clientX - rect.left) / rect.width) * w;
-// Find nearest data X
-let idx = 0;
-let best = Infinity;
-for (let i = 0; i < schedule.length; i++) {
-const xAtI = pad + i * stepX;
-const d = Math.abs(mouseX - xAtI);
-if (d < best) {
-best = d;
-idx = i;
-}
-}
-const px = pad + idx * stepX;
-const row = schedule[idx];
-// vertical hover line
-vLine.setAttribute('x1', px);
-vLine.setAttribute('x2', px);
-vLine.setAttribute('y1', pad);
-vLine.setAttribute('y2', h - pad);
-circles.innerHTML = '';
-// 4 series: Balance, Cum P, Cum I, Total
-const series = [
-{ val: balances[idx].y, color: '#0f172a' },
-{ val: cumP[idx].y, color: '#06b6d4' },
-{ val: cumI[idx].y, color: '#a78bfa' },
-{ val: cumT[idx].y, color: '#fb7185' }
-];
-// draw hover dots
-series.forEach(s => {
-const [cx, cy] = toXY({ y: s.val }, idx);
-const dot = document.createElementNS(svgNS, 'circle');
-dot.setAttribute('cx', cx);
-dot.setAttribute('cy', cy);
-dot.setAttribute('r', 4);
-dot.setAttribute('fill', s.color);
-dot.setAttribute('stroke', '#fff');
-dot.setAttribute('stroke-width', '1.2');
-circles.appendChild(dot);
-});
-// Calendar date label
-const hoverDate = displayDateForMonthIndex(row.monthIndex, monthAnchor);
-const dateLabel = formatMonthYear(hoverDate);
-// Calculate the screen X position of the hover line for precise alignment
-const lineScreenX = rect.left + (px / w) * rect.width;
-// Tooltip — position exactly at the hover line's screen X (centers on line due to CSS translate(-50%))
-// This keeps it "tight" on the line regardless of any minor drift
-tooltip.style.display = 'block';
-tooltip.style.left = ${lineScreenX}px;
-tooltip.style.top = ${ev.clientY - 12}px;  // Keep Y near mouse for vertical positioning
-tooltip.innerHTML =     ${dateLabel}<br>     Balance $$    {row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>     Principal     $${row.cumPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>     Interest $$    {row.cumInterest.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>     Total     $${row.cumTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}  ;
-});
-// Add mouseleave to clean up
-svg.addEventListener('mouseleave', () => {
-vLine.setAttribute('x1', 0);  // Hide line by moving off-screen
-vLine.setAttribute('x2', 0);
-circles.innerHTML = '';
-tooltip.style.display = 'none';
+  const rect = svg.getBoundingClientRect();
+  const mouseX = ((ev.clientX - rect.left) / rect.width) * w;
+
+  let idx = 0;
+  let best = Infinity;
+  for (let i = 0; i < schedule.length; i++) {
+    const xAtI = pad + i * stepX;
+    const d = Math.abs(mouseX - xAtI);
+    if (d < best) {
+      best = d;
+      idx = i;
+    }
+  }
+
+  const px = pad + idx * stepX;
+  const row = schedule[idx];
+
+  vLine.setAttribute('x1', px);
+  vLine.setAttribute('x2', px);
+  vLine.setAttribute('y1', pad);
+  vLine.setAttribute('y2', h - pad);
+
+  circles.innerHTML = '';
+
+  const series = [
+    { val: balances[idx].y, color: '#0f172a' },
+    { val: cumP[idx].y, color: '#06b6d4' },
+    { val: cumI[idx].y, color: '#a78bfa' },
+    { val: cumT[idx].y, color: '#fb7185' }
+  ];
+
+  series.forEach(s => {
+    const [cx, cy] = toXY({ y: s.val }, idx);
+    const dot = document.createElementNS(svgNS, 'circle');
+    dot.setAttribute('cx', cx);
+    dot.setAttribute('cy', cy);
+    dot.setAttribute('r', 4);
+    dot.setAttribute('fill', s.color);
+    dot.setAttribute('stroke', '#fff');
+    dot.setAttribute('stroke-width', '1.2');
+    circles.appendChild(dot);
+  });
+
+  const hoverDate = displayDateForMonthIndex(row.monthIndex, monthAnchor);
+  const dateLabel = formatMonthYear(hoverDate);
+
+  const lineScreenX = rect.left + (px / w) * rect.width;
+
+  tooltip.style.display = 'block';
+  tooltip.style.left = `${lineScreenX}px`;
+  tooltip.style.top = `${ev.clientY - 12}px`;
+
+  tooltip.innerHTML = `
+    ${dateLabel}<br>
+    Balance $${row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+    Principal $${row.cumPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+    Interest $${row.cumInterest.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+    Total $${row.cumTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+  `;
 });
 
-// Add mouseleave to clean up
 svg.addEventListener('mouseleave', () => {
-  vLine.setAttribute('x1', 0);  // Hide line by moving off-screen
+  vLine.setAttribute('x1', 0);
   vLine.setAttribute('x2', 0);
   circles.innerHTML = '';
   tooltip.style.display = 'none';
 });
-
-  // Hide hover state on leave
-  svg.addEventListener('mouseleave', () => {
-    vLine.setAttribute('y1', 0);
-    vLine.setAttribute('y2', 0);
-    circles.innerHTML = '';
-    tooltip.style.display = 'none';
-  }); // <-- closes mouseleave listener
 
   drawerChartArea.appendChild(svg);
 
