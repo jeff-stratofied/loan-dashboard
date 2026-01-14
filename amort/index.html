@@ -2773,47 +2773,72 @@ function openDrawerForLoan(loan) {
 svg.addEventListener("mousemove", ev => {
   const r = svg.getBoundingClientRect();
 
-  let idx = Math.round((ev.clientX - r.left - pad) / stepX);
+  // ----------------------------------
+  // Mouse position (single source)
+  // ----------------------------------
+  const mouseX = ev.clientX;
+  const mouseY = ev.clientY;
+
+  // ----------------------------------
+  // Convert mouse → index
+  // ----------------------------------
+  let idx = Math.round((mouseX - r.left - pad) / stepX);
   idx = Math.max(0, Math.min(schedule.length - 1, idx));
 
-  // SVG-space X
   const [x] = toXY(0, idx);
 
-  // -----------------------------
-  // Vertical hover line (SVG)
-  // -----------------------------
+  // ----------------------------------
+  // Vertical hover line (SVG space)
+  // ----------------------------------
   vLine.setAttribute("x1", x);
   vLine.setAttribute("x2", x);
   vLine.setAttribute("y1", pad);
   vLine.setAttribute("y2", h - pad);
   vLine.style.display = "block";
 
-  // -----------------------------
-  // Tooltip — ALIGN TO SAME X
-  // -----------------------------
-  const tooltipX = r.left + x;
-  const tooltipY = r.top - 10;
+  // ----------------------------------
+  // Hover dots (RESTORED)
+  // ----------------------------------
+  hoverG.innerHTML = "";
+
+  const addDot = (y, color) => {
+    const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    c.setAttribute("cx", x);
+    c.setAttribute("cy", y);
+    c.setAttribute("r", 4);
+    c.setAttribute("fill", color);
+    c.setAttribute("stroke", "#fff");
+    c.setAttribute("stroke-width", 1.5);
+    hoverG.appendChild(c);
+  };
+
+  const pt = schedule[idx];
+  addDot(toY(pt.balance),   "#2563eb"); // balance
+  addDot(toY(pt.cumPrincipal), "#16a34a"); // principal
+  addDot(toY(pt.cumInterest),  "#dc2626"); // interest
+
+  // ----------------------------------
+  // Tooltip — FOLLOW THE MOUSE (RESTORED)
+  // ----------------------------------
+  const d = displayDateForMonthIndex(pt.monthIndex, monthAnchor);
 
   tooltip.style.display = "block";
-  tooltip.style.left = `${tooltipX}px`;
-  tooltip.style.top = `${tooltipY}px`;
-
-  const d = displayDateForMonthIndex(
-    schedule[idx].monthIndex,
-    monthAnchor
-  );
+  tooltip.style.left = mouseX + "px";
+  tooltip.style.top  = mouseY - 12 + "px";
 
   tooltip.innerHTML =
     `${formatMonthYearSafe(d)}<br>` +
-    `Balance ${formatCurrency(schedule[idx].balance)}<br>` +
-    `Principal ${formatCurrency(schedule[idx].cumPrincipal)}<br>` +
-    `Interest ${formatCurrency(schedule[idx].cumInterest)}`;
+    `Balance ${formatCurrency(pt.balance)}<br>` +
+    `Principal ${formatCurrency(pt.cumPrincipal)}<br>` +
+    `Interest ${formatCurrency(pt.cumInterest)}`;
 });
 
 svg.addEventListener("mouseleave", () => {
   vLine.style.display = "none";
+  hoverG.innerHTML = "";
   tooltip.style.display = "none";
 });
+
 
 
   drawerChartArea.appendChild(svg);
