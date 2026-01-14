@@ -377,11 +377,6 @@
       transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
 
-.drawer-chart svg {
-  cursor: none;
-}
-
-    
 /* =========================================
    KPI table hover — ONLY interactive KPIs
    (KPI 2 + KPI 4)
@@ -2968,37 +2963,16 @@ for (let i = 0; i <= xTickCount; i++) {
   vLine.setAttribute('opacity', '0.6');
   svg.appendChild(vLine);
 
-// Fake cursor dot (replaces OS cursor)
-const fakeCursor = document.createElementNS(svgNS, "circle");
-fakeCursor.setAttribute("r", 4);
-fakeCursor.setAttribute("fill", "#0f172a");
-fakeCursor.setAttribute("stroke", "#fff");
-fakeCursor.setAttribute("stroke-width", "1.2");
-fakeCursor.style.pointerEvents = "none";
-svg.appendChild(fakeCursor);
-
-  
   const circles = document.createElementNS(svgNS, 'g');
   svg.appendChild(circles);
 
   // Drawer hover interactions
   svg.addEventListener('mousemove', (ev) => {
-    fakeCursor.setAttribute("r", 4);
-    // 🔑 ROI-style mouse alignment — use SVG-local coordinates
-const x = ev.offsetX;
-
-// snap to data index
-let idx = Math.round((x - pad) / stepX);
-
+    const rect = svg.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    let idx = Math.round((x - pad) / stepX);
     idx = Math.max(0, Math.min(schedule.length - 1, idx));
     const px = pad + idx * stepX;
-    // Move fake cursor to EXACT hover line position
-fakeCursor.setAttribute("cx", px);
-fakeCursor.setAttribute(
-  "cy",
-  pad + (h - pad * 2) / 2
-);
-
     const row = schedule[idx];
     // vertical hover line
     vLine.setAttribute('x1', px);
@@ -3064,7 +3038,6 @@ tooltip.innerHTML =
     vLine.setAttribute('y2', 0);
     circles.innerHTML = '';
     tooltip.style.display = 'none';
-    fakeCursor.setAttribute("r", 0);
   }); // <-- closes mouseleave listener
 
   drawerChartArea.appendChild(svg);
