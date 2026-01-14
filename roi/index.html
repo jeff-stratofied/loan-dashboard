@@ -4391,6 +4391,15 @@ function renderRatesDrawer() {
   // =====================================================
   const timeline = buildProjectedRoiTimeline(allLoans);
 
+  // 🔑 FORCE COLORS FOR KPI2 (engine does not assign them)
+const colorMap = buildKpiColorMap(allLoans);
+
+timeline.perLoanSeries.forEach(s => {
+  const id = s.id ?? s.loanId;
+  s.color = colorMap[id];
+});
+
+
   // 🔒 Guard: never partially render KPI drawer
   if (
     !timeline ||
