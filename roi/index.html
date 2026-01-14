@@ -1784,7 +1784,6 @@ drawerAmortContainer.innerHTML = `
 `;
   const roiBody = document.getElementById('roiBody');
   roiBody.innerHTML = '';
-const { perLoanSeries } = buildProjectedRoiTimeline([loan]);
 
 perLoanSeries[0].data.forEach(s => {
   if (s.y == null) return;
