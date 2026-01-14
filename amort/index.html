@@ -2984,9 +2984,12 @@ svg.appendChild(fakeCursor);
   // Drawer hover interactions
   svg.addEventListener('mousemove', (ev) => {
     fakeCursor.setAttribute("r", 4);
-    const rect = svg.getBoundingClientRect();
-    const x = ev.clientX - rect.left;
-    let idx = Math.round((x - pad) / stepX);
+    // 🔑 ROI-style mouse alignment — use SVG-local coordinates
+const x = ev.offsetX;
+
+// snap to data index
+let idx = Math.round((x - pad) / stepX);
+
     idx = Math.max(0, Math.min(schedule.length - 1, idx));
     const px = pad + idx * stepX;
     // Move fake cursor to EXACT hover line position
