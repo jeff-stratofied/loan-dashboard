@@ -264,7 +264,7 @@
 
 /* MATCH EARNINGS TOOLTIP POSITIONING */
 .tooltip {
-  transform: translate(-50%, -120%);
+  transform: translate(-50%, -100%); /* was -120% */
 }
 
 
@@ -371,12 +371,17 @@
   border-radius: 8px;
   border: 1px solid rgba(15,23,42,0.06);
   box-shadow: 0 6px 18px rgba(15,23,42,0.06);
-
+pointer-events: auto;
   display: block;             /* 🔑 critical */
   position: relative;
       transition:background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
     }
 
+.grid svg.sparkline {
+  pointer-events: auto;
+}
+
+    
 /* =========================================
    KPI table hover — ONLY interactive KPIs
    (KPI 2 + KPI 4)
@@ -1042,6 +1047,9 @@ let currentLoan = null;
 let currentMode = null;
 
 let tpvSeriesData = [];
+
+let TOOLTIP_LOCK = null; // "drawer" | "tile" | null
+
     
     const USER_LABELS = {
       jeff: "Jeff Customer",
@@ -1694,7 +1702,10 @@ if (p.displayDate instanceof Date) {
 
 
       svg.addEventListener("mouseleave", () => {
-        tooltip.style.display = "none";
+        if (TOOLTIP_LOCK !== "drawer") {
+  tooltip.style.display = "none";
+}
+
         const hoverG = svg.querySelector("g.mini-hover");
         if (hoverG) hoverG.innerHTML = "";
       });
@@ -2068,7 +2079,10 @@ function positionMiniTooltip(x, y, offset = 12) {
 }
 
 function hideMiniTooltip() {
+  if (TOOLTIP_LOCK !== "drawer") {
   tooltip.style.display = "none";
+}
+
 }
 
 function applyLoanFilters() {
@@ -2788,6 +2802,9 @@ svg.addEventListener("mousemove", ev => {
   const pt = schedule[idx];
   if (!pt) return;
 
+TOOLTIP_LOCK = "drawer";
+
+  
   const [x] = toXY(0, idx);
 
   // Vertical hover line
@@ -2818,8 +2835,12 @@ svg.addEventListener("mousemove", ev => {
   const d = displayDateForMonthIndex(pt.monthIndex, monthAnchor);
 
   tooltip.style.display = "block";
-  tooltip.style.left = mouseX + "px";
-  tooltip.style.top  = mouseY - 12 + "px";
+ const svgX = r.left + x;     // align with hover line
+const svgY = r.top + pad;   // stable vertical anchor
+
+tooltip.style.left = svgX + "px";
+tooltip.style.top  = svgY + "px";
+
   tooltip.innerHTML =
     `${formatMonthYearSafe(d)}<br>` +
     `Balance ${formatCurrency(pt.balance)}<br>` +
@@ -2831,6 +2852,8 @@ svg.addEventListener("mouseleave", () => {
   vLine.style.display = "none";
   hoverG.innerHTML = "";
   tooltip.style.display = "none";
+  TOOLTIP_LOCK = null;
+
 });
 
 
@@ -3263,7 +3286,10 @@ svg.setAttribute("preserveAspectRatio", "none");
     });
 
     hit.addEventListener("mouseleave", () => {
-      tooltip.style.display = "none";
+      if (TOOLTIP_LOCK !== "drawer") {
+  tooltip.style.display = "none";
+}
+
     });
 
     svg.appendChild(hit);
