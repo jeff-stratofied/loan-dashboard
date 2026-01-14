@@ -2987,29 +2987,21 @@ for (let i = 0; i <= xTickCount; i++) {
       circles.appendChild(dot);
     });
     // Calendar date label
-    const dateLabel = formatDate(displayDateForMonthIndex(row.monthIndex));
+    const hoverDate = displayDateForMonthIndex(
+  row.monthIndex,
+  monthAnchor
+);
+const dateLabel = formatMonthYear(hoverDate);
 
-const d =
-  row?.displayDate instanceof Date ? row.displayDate :
-  row?.loanDate instanceof Date ? row.loanDate :
-  null;
-
-if (!d || isNaN(d)) {
-  tooltip.style.display = "none";
-  return;
-}
-
-
-    
-    // Tooltip
-    tooltip.style.display = 'block';
-    tooltip.style.left = ev.clientX + 'px';
-    tooltip.style.top = (ev.clientY - 10) + 'px';
-    tooltip.innerHTML =
-      `${dateLabel}<br>
-       Balance $${row.balance.toLocaleString()}<br>
-       Principal $${row.cumPrincipal.toLocaleString()}<br>
-       Interest $${row.cumInterest.toLocaleString()}`;
+// Tooltip
+tooltip.style.display = 'block';
+tooltip.style.left = ev.clientX + 'px';
+tooltip.style.top = (ev.clientY - 10) + 'px';
+tooltip.innerHTML =
+  `${dateLabel}<br>
+   Balance $${row.balance.toLocaleString()}<br>
+   Principal $${row.cumPrincipal.toLocaleString()}<br>
+   Interest $${row.cumInterest.toLocaleString()}`;
   }); // <-- closes mousemove listener
 
   // Hide hover state on leave
