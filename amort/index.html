@@ -2552,6 +2552,15 @@ function formatMonthYearSafe(d) {
   });
 }
 
+    function formatMonthYear(d) {
+  // prefer the safe helper if it exists
+  if (typeof formatMonthYearSafe === "function") return formatMonthYearSafe(d);
+  const dd = d instanceof Date ? d : new Date(d);
+  return Number.isFinite(dd.getTime())
+    ? dd.toLocaleString(undefined, { month: "short", year: "numeric" })
+    : "";
+}
+
 
     /* =========================
    TABLE EXPORT
@@ -2791,13 +2800,7 @@ function svgXToClientX(svg, x) {
   return pt.matrixTransform(svg.getScreenCTM()).x;
 }
 
-  const tooltipX = svgXToClientX(svg, x);
-const tooltipY = ev.clientY - 12;
 
-tooltip.style.left = tooltipX + "px";
-tooltip.style.top  = tooltipY + "px";
-
-  
   // HOVER
   const vLine = document.createElementNS(svgNS, "line");
   vLine.setAttribute("stroke", "#0f172a");
@@ -2842,22 +2845,35 @@ svg.addEventListener("mousemove", ev => {
     hoverG.appendChild(c);
   };
 
-  dot(toY(pt.balance),       "#2563eb");
-  dot(toY(pt.cumPrincipal), "#16a34a");
-  dot(toY(pt.cumInterest),  "#dc2626");
+  dot(toY(pt.balance),        "#0f172a"); // Balance
+dot(toY(pt.cumPrincipal),   "#06b6d4"); // Principal
+dot(toY(pt.cumInterest),    "#a78bfa"); // Interest
+
+// Only if your schedule point has cumTotal (it probably does if you're drawing series.ct)
+if (Number.isFinite(pt.cumTotal)) {
+  dot(toY(pt.cumTotal),     "#fb7185"); // Total
+}
+
 
   const screenX = svgXToClientX(svg, x);
 
   const d = displayDateForMonthIndex(pt.monthIndex, monthAnchor);
   
   tooltip.style.display = "block";
-  tooltip.style.left = screenX + "px";
-  tooltip.style.top  = ev.clientY - 12 + "px";
+  const tipPos = getComputedStyle(tooltip).position; // "absolute" or "fixed"
+const scrollX = tipPos === "fixed" ? 0 : window.scrollX;
+const scrollY = tipPos === "fixed" ? 0 : window.scrollY;
+
+tooltip.style.left = (screenX + scrollX) + "px";
+tooltip.style.top  = (ev.clientY - 12 + scrollY) + "px";
+
   tooltip.innerHTML =
-    `${formatMonthYearSafe(d)}<br>` +
-    `Balance ${formatCurrency(pt.balance)}<br>` +
-    `Principal ${formatCurrency(pt.cumPrincipal)}<br>` +
-    `Interest ${formatCurrency(pt.cumInterest)}`;
+  `${formatMonthYearSafe(d)}<br>` +
+  `Balance ${formatCurrency(pt.balance)}<br>` +
+  `Principal ${formatCurrency(pt.cumPrincipal)}<br>` +
+  `Interest ${formatCurrency(pt.cumInterest)}` +
+  (Number.isFinite(pt.cumTotal) ? `<br>Total ${formatCurrency(pt.cumTotal)}` : "");
+
 });
 
 svg.addEventListener("mouseleave", () => {
