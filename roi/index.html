@@ -1893,10 +1893,6 @@ function getCurrentOwnedRoiEntry(loan) {
 // TEMP UI COMPATIBILITY LAYER — REMOVE AFTER FULL MIGRATION
 // ============================================================
 
-// Used by ROI Spread + KPI hover logic
-function getCurrentOwnedRoiEntry(loan) {
-  return getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
-}
 
 // Used by Rates / Projected ROI tables
 function getLastOwnedRoiEntry(loan) {
