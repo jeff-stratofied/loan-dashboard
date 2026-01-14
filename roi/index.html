@@ -1867,7 +1867,7 @@ const KPI_CURRENT_MONTH = new Date(
    - Math utilities
    ============================================================ */
 
-/* delete
+
 function getCurrentOwnedRoiEntry(loan) {
   // ✅ anchor to the app’s “current month”, not wall-clock
   const asOf = new Date(KPI_CURRENT_MONTH);
@@ -1879,7 +1879,7 @@ function getCurrentOwnedRoiEntry(loan) {
   if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
   return ownedEntries[ownedEntries.length - 1];
 }
-delete */
+
     function getOwnedRoiSeries(loan) {
   if (!Array.isArray(loan.roiSeries)) return [];
 
@@ -1974,7 +1974,7 @@ delete */
    - Capital recovery
    ============================================================ */
 
- /* delete
+
 function computeWeightedRoiAsOfMonth(loans, monthDate) {
   const total = loans.reduce((s, l) => s + l.purchasePrice, 0);
 
@@ -1985,7 +1985,7 @@ function computeWeightedRoiAsOfMonth(loans, monthDate) {
     return sum + loan.purchasePrice * (entry.roi || 0);
   }, 0) / total;
 }
-delete */
+
     
 /* delete      
 function computeKPIs(list) {
