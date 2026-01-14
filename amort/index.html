@@ -3020,8 +3020,12 @@ tooltip.style.display = 'block';
 tooltip.style.left = ${ev.clientX}px;
 tooltip.style.top = ${ev.clientY - 12}px;  // Slight offset above cursor
 tooltip.innerHTML =
-${dateLabel}<br>    Balance $$    {row.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}<br>    Principal     $${row.cumPrincipal.toLocaleString(undefined, {minimumFractionDigits: 2})}<br>    Interest $$    {row.cumInterest.toLocaleString(undefined, {minimumFractionDigits: 2})}<br>    Total     $${row.cumTotal.toLocaleString(undefined, {minimumFractionDigits: 2})};  // Added Total assuming cumT is cumTotal
-});
+${dateLabel}<br>    
+  Balance $$    {row.balance.toLocaleString(undefined, {minimumFractionDigits: 2})}<br>    
+  Principal     $${row.cumPrincipal.toLocaleString(undefined, {minimumFractionDigits: 2})}<br>    
+  Interest $$    {row.cumInterest.toLocaleString(undefined, {minimumFractionDigits: 2})}<br>    
+  Total     $${row.cumTotal.toLocaleString(undefined, {minimumFractionDigits: 2})};  // Added Total assuming cumT is cumTotal
+};
 // Add mouseleave to clean up (hides elements when mouse exits chart)
 svg.addEventListener('mouseleave', () => {
 vLine.setAttribute('x1', 0);  // Hide line by moving off-screen
