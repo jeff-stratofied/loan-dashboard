@@ -294,6 +294,17 @@ export function buildProjectedRoiTimeline(loans, opts = {}) {
   return { dates, perLoanSeries, weightedSeries };
 }
 
+export function normalizeLoansForRoi(loans) {
+  return loans.map(l => ({
+    ...l,
+    purchasePrice: Number(l.purchasePrice) || 0,
+    roiSeries: Array.isArray(l.roiSeries) ? l.roiSeries : [],
+    cumSchedule: Array.isArray(l.cumSchedule) ? l.cumSchedule : [],
+    amort: l.amort || { schedule: [] }
+  }));
+}
+
+
 
 
 
