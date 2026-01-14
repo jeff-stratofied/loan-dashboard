@@ -1659,23 +1659,32 @@ function renderLoanTiles(loans) {
               stroke-opacity="0.6" />
       `;
 
+const hoverG = svg.querySelector("g.mini-hover");
+
+      
 svg.addEventListener("mousemove", ev => {
-  // 🔑 MUST be first — resets tooltip state
+  // 🔑 isolate tooltip
   claimTooltip("mini");
 
   const rect = svg.getBoundingClientRect();
   const frac = (ev.clientX - rect.left) / rect.width;
-  const idxNearest = Math.round(frac * (fullSched.length - 1));
-  const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
+  const idx = Math.max(
+    0,
+    Math.min(fullSched.length - 1, Math.round(frac * (fullSched.length - 1)))
+  );
+
+  const p = fullSched[idx];
   if (!p) return;
 
+  // ---------------------------
+  // Date label (already fixed)
+  // ---------------------------
   const hoverDate = displayDateForMonthIndex(
-  p.monthIndex,
-  loan.loanStartDate + "T00:00:00"
-);
+    p.monthIndex,
+    loan.loanStartDate + "T00:00:00"
+  );
 
-const dateLabel = formatMonthYear(hoverDate);
-
+  const dateLabel = formatMonthYear(hoverDate);
 
   tooltip.innerHTML =
     `${dateLabel} • ` +
@@ -1685,7 +1694,45 @@ const dateLabel = formatMonthYear(hoverDate);
   tooltip.style.left = `${ev.clientX}px`;
   tooltip.style.top = `${ev.clientY - 10}px`;
   tooltip.style.display = "block";
+
+  // ---------------------------
+  // Hover visuals
+  // ---------------------------
+  hoverG.innerHTML = "";
+
+  const x = xForMonth(p.monthIndex);
+
+  // vertical dotted line
+  hoverG.innerHTML += `
+    <line
+      x1="${x}" y1="2"
+      x2="${x}" y2="${h - 2}"
+      stroke="#111827"
+      stroke-dasharray="3 3"
+      stroke-opacity="0.6"
+    />
+  `;
+
+  // principal dot (cyan)
+  const yP =
+    h - pad -
+    (p.cumPrincipal / Math.max(p.cumPrincipal + p.cumInterest, 1)) *
+      (h - pad * 2);
+
+  // interest dot (purple)
+  const yI =
+    h - pad -
+    (p.cumInterest / Math.max(p.cumPrincipal + p.cumInterest, 1)) *
+      (h - pad * 2);
+
+  hoverG.innerHTML += `
+    <circle cx="${x}" cy="${yP}" r="3"
+            fill="#06b6d4" />
+    <circle cx="${x}" cy="${yI}" r="3"
+            fill="#a78bfa" />
+  `;
 });
+
 
 
 
