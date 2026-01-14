@@ -1659,14 +1659,17 @@ function renderLoanTiles(loans) {
               stroke-opacity="0.6" />
       `;
 
-      svg.addEventListener("mousemove", ev => {
+svg.addEventListener("mousemove", ev => {
+  // 🔑 MUST be first — resets tooltip state
+  claimTooltip("mini");
+
   const rect = svg.getBoundingClientRect();
   const frac = (ev.clientX - rect.left) / rect.width;
   const idxNearest = Math.round(frac * (fullSched.length - 1));
   const p = fullSched[Math.max(0, Math.min(fullSched.length - 1, idxNearest))];
   if (!p) return;
 
-  // ✅ Prefer real schedule date
+  // Prefer real schedule date
   let hoverDate = null;
 
   if (p.displayDate instanceof Date) {
@@ -1677,22 +1680,21 @@ function renderLoanTiles(loans) {
     hoverDate = new Date(p.monthDate + "T00:00:00");
   }
 
+  const dateLabel =
+    hoverDate instanceof Date && !isNaN(hoverDate)
+      ? formatMonthYearSafe(hoverDate)
+      : `Month ${p.monthIndex}`;
+
+  tooltip.innerHTML =
+    `${dateLabel} • ` +
+    `Principal $${p.cumPrincipal.toLocaleString()} • ` +
+    `Interest $${p.cumInterest.toLocaleString()}`;
+
   tooltip.style.left = `${ev.clientX}px`;
   tooltip.style.top = `${ev.clientY - 10}px`;
   tooltip.style.display = "block";
-  claimTooltip("mini");
-
-const dateLabel =
-  hoverDate instanceof Date && !isNaN(hoverDate)
-    ? formatMonthYearSafe(hoverDate)
-    : `Month ${p.monthIndex}`;
-
-tooltip.innerHTML =
-  `${dateLabel} • ` +
-  `Principal $${p.cumPrincipal.toLocaleString()} • ` +
-  `Interest $${p.cumInterest.toLocaleString()}`;
-
 });
+
 
 
       svg.addEventListener("mouseleave", () => {
@@ -2942,15 +2944,16 @@ for (let i = 0; i <= xTickCount; i++) {
     // Calendar date label
     const dateLabel = formatDate(displayDateForMonthIndex(row.monthIndex));
 
-const hoverDate =
-  d instanceof Date && !isNaN(d)
-    ? d
-    : null;
+const d =
+  row?.displayDate instanceof Date ? row.displayDate :
+  row?.loanDate instanceof Date ? row.loanDate :
+  null;
 
-if (!hoverDate) {
+if (!d || isNaN(d)) {
   tooltip.style.display = "none";
   return;
 }
+
 
     
     // Tooltip
