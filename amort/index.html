@@ -2994,15 +2994,19 @@ for (let i = 0; i <= xTickCount; i++) {
 );
 const dateLabel = formatMonthYear(hoverDate);
 
-// Tooltip
+// Tooltip — align to hover line X (SVG → viewport)
+const svgRect = svg.getBoundingClientRect();
+
 tooltip.style.display = 'block';
-tooltip.style.left = ev.clientX + 'px';
-tooltip.style.top = (ev.clientY - 10) + 'px';
+tooltip.style.left = (svgRect.left + px) + 'px';
+tooltip.style.top  = (svgRect.top + pad) + 'px';
+
 tooltip.innerHTML =
   `${dateLabel}<br>
    Balance $${row.balance.toLocaleString()}<br>
    Principal $${row.cumPrincipal.toLocaleString()}<br>
    Interest $${row.cumInterest.toLocaleString()}`;
+
   }); // <-- closes mousemove listener
 
   // Hide hover state on leave
