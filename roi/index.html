@@ -1267,6 +1267,17 @@ if (PAGE_CONTEXT.isEmbed) {
   if (toggle) toggle.checked = false;
 }
 
+// =========================================
+// VIEW MODE — DEFERRED RESTORE (NO RENDER)
+// =========================================
+let PENDING_VIEW_MODE = null;
+
+if (!PAGE_CONTEXT.isEmbed) {
+  PENDING_VIEW_MODE =
+    localStorage.getItem("roiViewMode") || "full";
+}
+
+    
     const viewButtons = document.querySelectorAll(".view-btn");
 
 function setViewMode(mode) {
@@ -5170,26 +5181,21 @@ filteredLoans = derivedLoans;
 
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
-      populateRateBuckets();       
+populateRateBuckets();       
 populateSortDropdown();  
 
 // =========================================
-// INITIAL VIEW — CANONICAL + EMBED SAFE
+// APPLY DEFERRED VIEW MODE (CANONICAL)
 // =========================================
 if (PAGE_CONTEXT.isEmbed) {
-  // 🔒 EMBED MODE
-  // iframe shows ONLY KPIs + drawer
+  // 🔒 EMBED MODE: KPIs + drawer only
   document.getElementById("loanGrid")?.remove();
   document.getElementById("loanTableWrap")?.remove();
-
-} else {
-  // 🖥 FULL PAGE MODE
-  // restore last explicit view mode
-  const savedView =
-    localStorage.getItem("roiViewMode") || "full";
-
-  setViewMode(savedView);
+} else if (PENDING_VIEW_MODE) {
+  setViewMode(PENDING_VIEW_MODE);
+  PENDING_VIEW_MODE = null;
 }
+
 
       
 
