@@ -1246,6 +1246,23 @@ const PAGE_CONTEXT = (() => {
 })();
 
 // =========================================
+// DEBUG — VIEW STATE TRACE (TEMPORARY)
+// =========================================
+window.__logView = (tag) => {
+  console.log(
+    `%c[VIEW DEBUG] ${tag}`,
+    "color:#22c55e;font-weight:bold",
+    {
+      stored: localStorage.getItem("roiViewMode"),
+      pending: window.PENDING_VIEW_MODE,
+      gridDisplay: document.getElementById("loanGrid")?.style.display,
+      tableHidden: document.getElementById("loanTableWrap")?.hidden
+    }
+  );
+};
+
+    
+// =========================================
 // MIGRATE LEGACY TABLE VIEW (ONE-TIME)
 // =========================================
 if (!PAGE_CONTEXT.isEmbed) {
@@ -1310,6 +1327,9 @@ function setViewMode(mode) {
   else {
     renderLoanGrid(currentLoans); // full
   }
+
+  __logView(`after setViewMode(${mode})`);
+
 }
 
 
@@ -2886,11 +2906,16 @@ if (PAGE_CONTEXT.isEmbed) {
   return; // iframe only renders KPI drawer
 }
 
-if (document.getElementById("toggleTableView")?.checked) {
-  renderLoanTableROI();
+const viewMode = localStorage.getItem("roiViewMode") || "full";
+__logView("applyLoanFilters before render");
+
+if (viewMode === "table") {
+  renderLoanTableROI(getLoansForTableView());
 } else {
   renderLoanGrid(currentLoans);
 }
+
+
 
 } // ✅ ADD THIS LINE — closes applyLoanFilters()
 
@@ -5187,14 +5212,24 @@ populateSortDropdown();
 // =========================================
 // APPLY DEFERRED VIEW MODE (CANONICAL)
 // =========================================
+// =========================================
+// APPLY DEFERRED VIEW MODE (WITH DEBUG)
+// =========================================
 if (PAGE_CONTEXT.isEmbed) {
   // 🔒 EMBED MODE: KPIs + drawer only
   document.getElementById("loanGrid")?.remove();
   document.getElementById("loanTableWrap")?.remove();
+
+  window.__logView?.("embed cleanup");
+
 } else if (PENDING_VIEW_MODE) {
   setViewMode(PENDING_VIEW_MODE);
+
+  window.__logView?.(`after deferred restore (${PENDING_VIEW_MODE})`);
+
   PENDING_VIEW_MODE = null;
 }
+
 
 
       
