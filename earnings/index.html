@@ -317,6 +317,14 @@
   font-size: 13px;
 }
 
+/* ROI-style compact filter widths (non-destructive) */
+.loan-filters select {
+  inline-size: 18ch;
+  min-inline-size: 18ch;
+  max-inline-size: 18ch;
+}
+
+    
 /* Match Amort: smaller toggle text */
 .compact-toggle span {
   font-size: 12px;
@@ -1110,18 +1118,21 @@ tr.row-hover {
     <option value="rate_desc">Interest rate ↓</option>
   </select>
 
-  <label class="compact-toggle">
-  <input type="checkbox" id="toggleCompact" />
-  <span>Compact</span>
-</label>
-
-
   <button class="btn reset-btn" id="resetFilters">Reset filters</button>
 
-  <label class="compact-toggle">
-  <input type="checkbox" id="toggleTableView" />
-  <span>Table View</span>
-</label>
+ <div class="filter-actions">
+  <div class="view-toggle" role="group" aria-label="View mode">
+    <button type="button" class="view-btn" data-view="full" title="Full tiles"><span></span></button>
+    <button type="button" class="view-btn" data-view="compact" title="Compact tiles"><span></span><span></span></button>
+    <button type="button" class="view-btn" data-view="table" title="Table view"><span></span><span></span><span></span></button>
+  </div>
+
+  <div class="table-actions">
+    <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
+    <button class="btn" id="copyAllCsvBtn">Copy CSV</button>
+    <button class="btn" id="printAllBtn">Print</button>
+  </div>
+</div>
 
 <div class="table-actions">
   <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
@@ -1137,6 +1148,7 @@ tr.row-hover {
     <thead>
       <tr>
         <th data-key="loanId">ID</th>
+        <th data-key="eventType">Event</th>
         <th data-key="loanName">Loan Name</th>
         <th data-key="school">School</th>
         <th data-key="loanStartDate">Loan Start</th>
@@ -1284,9 +1296,90 @@ const backBtn = document.getElementById("backToHoldingsBtn");
 // ============================
 const gridEl      = document.getElementById("loanGrid");
 const tableWrapEl = document.getElementById("loanTableWrap");
-const tableToggle = document.getElementById("toggleTableView");
 
+  /* delete
+  const tableToggle = document.getElementById("toggleTableView");
+  */
 
+// =====================================================
+// VIEW MODE STATE — ROI-CANONICAL (Full / Compact / Table)
+// =====================================================
+
+const VIEW_KEYS = {
+  compact: "roiCompactView",
+  table: "roiTableView"
+};
+
+const viewButtons = document.querySelectorAll(".view-btn");
+
+// -----------------------------
+// Apply view mode (single source of truth)
+// -----------------------------
+function applyViewMode(mode) {
+  // Clear active buttons
+  viewButtons.forEach(b => b.classList.remove("active"));
+
+  // Activate correct button
+  const btn = document.querySelector(`.view-btn[data-view="${mode}"]`);
+  if (btn) btn.classList.add("active");
+
+  // Reset all views
+  gridEl.classList.remove("compact");
+  gridEl.style.display = "";
+  tableWrapEl.hidden = true;
+
+  // Apply selected view
+  if (mode === "compact") {
+    gridEl.classList.add("compact");
+  }
+
+  if (mode === "table") {
+    gridEl.style.display = "none";
+    tableWrapEl.hidden = false;
+  }
+
+  // Persist (only non-embed)
+  if (!isEmbed) {
+    localStorage.setItem(VIEW_KEYS.compact, mode === "compact" ? "1" : "0");
+    localStorage.setItem(VIEW_KEYS.table, mode === "table" ? "1" : "0");
+  }
+}
+
+// -----------------------------
+// Restore persisted view
+// -----------------------------
+function restoreViewFromStorage() {
+  const isTable   = localStorage.getItem(VIEW_KEYS.table) === "1";
+  const isCompact = localStorage.getItem(VIEW_KEYS.compact) === "1";
+
+  if (isTable) {
+    applyViewMode("table");
+  } else if (isCompact) {
+    applyViewMode("compact");
+  } else {
+    applyViewMode("full");
+  }
+}
+
+// -----------------------------
+// Wire view buttons
+// -----------------------------
+viewButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const mode = btn.dataset.view;
+    applyViewMode(mode);
+  });
+});
+
+// -----------------------------
+// 🔑 Restore persisted view
+// IMPORTANT: iframe-safe
+// -----------------------------
+if (!isEmbed) {
+  restoreViewFromStorage();
+}
+
+  
 if (cameFromReporting && backRow && backBtn) {
   backRow.style.display = "block";
 
@@ -1472,6 +1565,16 @@ function compareForKey(a, b, key) {
   return (Number(va) || 0) - (Number(vb) || 0);
 }
 
+  // Special-case Event column (MATCH ROI)
+  if (key === "eventType") {
+    return (a.eventType || "").localeCompare(
+      b.eventType || "",
+      undefined,
+      { sensitivity: "base" }
+    );
+  }
+
+  
 function getLoansForTableView() {
   // Base list should respect hiddenLoans (if you want table to match charts)
   // If you *do* want hidden loans to still appear in the table, remove this filter.
@@ -1531,6 +1634,15 @@ if (sortLoansEl) {
       renderLoanGrid();
     }
   });
+}
+
+  function renderTableEventBadge(loan) {
+  if (!loan.eventType) return "";
+  return `
+    <span class="table-event-badge ${loan.eventType}">
+      ${EVENT_ICON[loan.eventType]}
+    </span>
+  `;
 }
 
   
@@ -1671,8 +1783,22 @@ return {
   principal: Number(normalizedLoan.balanceForAmort ?? normalizedLoan.purchasePrice ?? 0),
 
   // ✅ Canonical "Net Earnings to date" for table + sorting
-  netEarnings: Number(getCanonicalCurrentEarningsRow(tmpLoan)?.netEarnings ?? 0)
+  netEarnings: Number(getCanonicalCurrentEarningsRow(tmpLoan)?.netEarnings ?? 0),
+
+  // =====================================================
+  // 🔑 EVENT TYPE (REQUIRED FOR BADGES + SORTING)
+  // =====================================================
+  eventType: (() => {
+    const events = raw.events || [];
+
+    if (events.some(e => e.type === "default")) return "default";
+    if (events.some(e => e.type === "deferral")) return "deferral";
+    if (events.some(e => e.type === "prepayment")) return "prepayment";
+
+    return ""; // no event
+  })()
 };
+
 
 });
 
@@ -1862,6 +1988,50 @@ function hideMiniTooltip() {
 if (miniHtmlTooltip) miniHtmlTooltip.style.display = "none";
 }
 
+// =====================================================
+// EVENT BADGE HOVER — ROI-CANONICAL (EARNINGS)
+// =====================================================
+
+let badgeTooltip = document.querySelector(".badge-tooltip");
+
+// Safety: tooltip already styled in CSS, just ensure it exists
+if (!badgeTooltip) {
+  badgeTooltip = document.createElement("div");
+  badgeTooltip.className = "badge-tooltip";
+  document.body.appendChild(badgeTooltip);
+}
+
+// Use delegation so it works for grid + table + rerenders
+document.addEventListener("mouseenter", onBadgeEnter, true);
+document.addEventListener("mousemove", onBadgeMove, true);
+document.addEventListener("mouseleave", onBadgeLeave, true);
+
+function onBadgeEnter(e) {
+  const badge = e.target.closest(".loan-badge, .table-event-badge");
+  if (!badge) return;
+
+  const text = badge.dataset.tooltip;
+  if (!text) return;
+
+  badgeTooltip.innerHTML = text;
+  badgeTooltip.classList.add("visible");
+}
+
+function onBadgeMove(e) {
+  if (!badgeTooltip.classList.contains("visible")) return;
+
+  badgeTooltip.style.left = (e.clientX + 12) + "px";
+  badgeTooltip.style.top  = (e.clientY + 12) + "px";
+}
+
+function onBadgeLeave(e) {
+  const badge = e.target.closest(".loan-badge, .table-event-badge");
+  if (!badge) return;
+
+  badgeTooltip.classList.remove("visible");
+}
+
+  
 function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan){
 containerEl.innerHTML = "";
 const svgNS = "http://www.w3.org/2000/svg";
@@ -3698,6 +3868,7 @@ function renderLoanTable(loans) {
 
     tr.innerHTML = `
       <td>${loan.loanId ?? ""}</td>
+      <td>${renderTableEventBadge(loan)}</td>
       <td>${loan.loanName ?? ""}</td>
       <td>${loan.school ?? ""}</td>
       <td>${loan.loanStartDate ? formatDate(new Date(loan.loanStartDate)) : ""}</td>
@@ -3790,7 +3961,11 @@ async function initPage() {
   const filterRate     = document.getElementById("filterRate");
   const sortLoans      = document.getElementById("sortLoans");
   const resetBtn       = document.getElementById("resetFilters");
+ 
+  /* delete
   const compactToggle  = document.getElementById("toggleCompact");
+  */
+  
   const loanGrid       = document.getElementById("loanGrid");
 
   // 4️⃣ Populate filter dropdowns
@@ -3856,8 +4031,10 @@ compactToggle.addEventListener("change", () => {
 /* =========================
    TABLE VIEW TOGGLE (EARNINGS)
    ========================= */
-
+/* delete
 const tableToggle = document.getElementById("toggleTableView");
+*/
+  
 const tableWrap   = document.getElementById("loanTableWrap");
 
 // 🚫 Table View is FULL-PAGE ONLY
