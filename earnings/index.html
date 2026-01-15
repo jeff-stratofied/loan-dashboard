@@ -1405,14 +1405,6 @@ viewButtons.forEach(btn => {
   });
 });
 
-// -----------------------------
-// 🔑 Restore persisted view
-// IMPORTANT: iframe-safe
-// -----------------------------
-if (!isEmbed) {
-  restoreViewFromStorage();
-}
-
   
 if (cameFromReporting && backRow && backBtn) {
   backRow.style.display = "block";
@@ -4040,6 +4032,13 @@ async function initPage() {
   buildLoanColorMap(loansWithEarnings);
   renderLoanTiles(loansWithEarnings);
 
+  // ===============================
+  // 🔑 RESTORE VIEW MODE (ONLY HERE)
+  // ===============================
+  if (!isEmbed) {
+    restoreViewFromStorage();
+  }
+  
   // 8️⃣ Update KPI tiles
   kpis = computePortfolioEarningsKPIs(
     loansWithEarnings,
