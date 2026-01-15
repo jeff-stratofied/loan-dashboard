@@ -3988,7 +3988,7 @@ async function initPage() {
    ========================= */
 /* delete
 const tableToggle = document.getElementById("toggleTableView");
-*/
+
   
 const tableWrap   = document.getElementById("loanTableWrap");
 
@@ -4001,6 +4001,7 @@ if (isEmbed) {
   // --- restore ---
   const savedTableView =
     localStorage.getItem("earningsTableView");
+
 
   if (savedTableView !== null) {
     tableToggle.checked = savedTableView === "true";
@@ -4024,7 +4025,8 @@ if (isEmbed) {
     localStorage.setItem("earningsTableView", on);
     applyTableView(on);
   });
-
+*/
+  
 wireLoanTableColumnSort();
 
   
