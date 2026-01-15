@@ -1393,13 +1393,16 @@ function applyViewMode(mode) {
     gridEl.classList.add("compact");
   }
 
-  if (mode === "table") {
+if (mode === "table") {
   gridEl.style.display = "none";
   tableWrapEl.hidden = false;
 
-  // 🔑 REQUIRED: render rows
-  renderLoanTable(getLoansForTableView());
+  // 🔑 WAIT for earnings data before rendering table
+  earningsDataReady.then(() => {
+    renderLoanTable(getLoansForTableView());
+  });
 }
+
 
 
   // Persist (only non-embed)
