@@ -142,6 +142,21 @@ html,body{
   white-space: nowrap;
 }
 
+    /* =========================================
+   Filter row: right-aligned actions
+   ========================================= */
+.loan-filters {
+  justify-content: space-between;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto; /* 🔑 pushes to right edge */
+}
+
+
 /* =========================================
    View mode icon toggle (Full / Compact / Table)
    ========================================= */
@@ -1054,54 +1069,31 @@ tr.event-default td {
   
   <!-- Loan Filters -->
 <section class="loan-filters" id="loanFilters">
-  <select id="filterName">
-    <option value="">Loan name</option>
-  </select>
 
-  <select id="filterSchool">
-    <option value="">School</option>
-  </select>
-
-  <select id="filterRate">
-    <option value="">Interest rate</option>
-    <option value="low">Below 5%</option>
-    <option value="mid">5% – 8%</option>
-    <option value="high">Above 8%</option>
-  </select>
-
-  <!-- 🔽 ADD SORT HERE -->
-  <select id="sortLoans">
-    <option value="purchase_asc">Purchase date ↑</option>
-    <option value="purchase_desc">Purchase date ↓</option>
-    <option value="start_asc">Loan start date ↑</option>
-    <option value="start_desc">Loan start date ↓</option>
-    <option value="amount_asc">Orig amount ↑</option>
-    <option value="amount_desc">Orig amount ↓</option>
-    <option value="rate_asc">Interest rate ↑</option>
-    <option value="rate_desc">Interest rate ↓</option>
-  </select>
- 
+  <!-- LEFT: filters -->
+  <select id="filterName">…</select>
+  <select id="filterSchool">…</select>
+  <select id="filterRate">…</select>
+  <select id="sortLoans">…</select>
   <button class="btn secondary" id="resetFilters">Reset</button>
 
-<div class="view-toggle" role="group" aria-label="View mode">
-  <button type="button" class="view-btn" data-view="full" title="Full tiles">
-    <span></span>
-  </button>
-  <button type="button" class="view-btn" data-view="compact" title="Compact tiles">
-    <span></span><span></span>
-  </button>
-  <button type="button" class="view-btn" data-view="table" title="Table view">
-    <span></span><span></span><span></span>
-  </button>
-</div>
+  <!-- RIGHT: view + actions -->
+  <div class="filter-actions">
+    <div class="view-toggle" role="group" aria-label="View mode">
+      <button type="button" class="view-btn" data-view="full" title="Full tiles"><span></span></button>
+      <button type="button" class="view-btn" data-view="compact" title="Compact tiles"><span></span><span></span></button>
+      <button type="button" class="view-btn" data-view="table" title="Table view"><span></span><span></span><span></span></button>
+    </div>
 
-<div class="table-actions">
-  <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
-  <button class="btn" id="copyAllCsvBtn">Copy CSV</button>
-  <button class="btn" id="printAllBtn">Print</button>
-</div>
-  
+    <div class="table-actions">
+      <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
+      <button class="btn" id="copyAllCsvBtn">Copy CSV</button>
+      <button class="btn" id="printAllBtn">Print</button>
+    </div>
+  </div>
+
 </section>
+
 
   
   <!-- Loan grid -->
@@ -1257,30 +1249,37 @@ if (PAGE_CONTEXT.isEmbed) {
     const viewButtons = document.querySelectorAll(".view-btn");
 
 function setViewMode(mode) {
-  // Reset
+  // Persist (unless embed)
+  if (!PAGE_CONTEXT.isEmbed) {
+    localStorage.setItem("roiViewMode", mode);
+  }
+
+  // Button state
   document.querySelectorAll(".view-btn").forEach(b =>
     b.classList.toggle("active", b.dataset.view === mode)
   );
 
-  // Clear legacy toggles
-  localStorage.removeItem("roiTableView");
+  // Reset UI
   loanGrid.classList.remove("compact");
-  loanTableWrap.hidden = true;
   loanGrid.style.display = "";
+  loanTableWrap.hidden = true;
 
   if (mode === "compact") {
     loanGrid.classList.add("compact");
-  }
-
-  if (mode === "table") {
-    loanGrid.style.display = "none";
-    loanTableWrap.hidden = false;
-    localStorage.setItem("roiTableView", "1");
-    renderLoanTableROI(getLoansForTableView());
-  } else {
     renderLoanGrid(currentLoans);
   }
+
+  else if (mode === "table") {
+    loanGrid.style.display = "none";
+    loanTableWrap.hidden = false;
+    renderLoanTableROI(getLoansForTableView());
+  }
+
+  else {
+    renderLoanGrid(currentLoans); // full
+  }
 }
+
 
 viewButtons.forEach(btn => {
   btn.addEventListener("click", () => {
@@ -5121,27 +5120,23 @@ filteredLoans = derivedLoans;
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
 
-
-
 // =========================================
-// INITIAL RENDER — EMBED SAFE (CANONICAL)
+// INITIAL VIEW — CANONICAL + EMBED SAFE
 // =========================================
 if (PAGE_CONTEXT.isEmbed) {
-  // 🔒 EMBED MODE:
-  // iframe shows ONLY KPIs + drawer (no grid, no table, no view state)
+  // 🔒 EMBED MODE
+  // iframe shows ONLY KPIs + drawer
   document.getElementById("loanGrid")?.remove();
   document.getElementById("loanTableWrap")?.remove();
 
 } else {
-  // 🖥 FULL PAGE MODE:
-  // restore last explicit user view
-  if (localStorage.getItem("roiTableView") === "1") {
-    setViewMode("table");
-  } else {
-    setViewMode("full");   // default (non-compact tiles)
-  }
-}
+  // 🖥 FULL PAGE MODE
+  // restore last explicit view mode
+  const savedView =
+    localStorage.getItem("roiViewMode") || "full";
 
+  setViewMode(savedView);
+}
 
 
 // =====================================================
