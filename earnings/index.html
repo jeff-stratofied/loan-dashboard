@@ -768,7 +768,6 @@ tr.event-deferral td {
 
 tr.event-default td {
   background: rgba(239, 68, 68, 0.20);
-  font-weight: 600;
 }
 
 
@@ -1661,11 +1660,12 @@ let TABLE_SORT = { key: null, dir: 1 }; // dir: 1=asc, -1=desc
 
 function compareForKey(a, b, key) {
   // Special-case derived Net Earnings (table column)
-  if (key === "netEarnings") {
-    const ea = Number(a?.netEarnings) || 0;
-    const eb = Number(b?.netEarnings) || 0;
-    return ea - eb;
-  }
+if (key === "netEarnings") {
+  const ea = Number(a?.earningsToDate) || 0;
+  const eb = Number(b?.earningsToDate) || 0;
+  return ea - eb;
+}
+
 
   const va = a?.[key];
   const vb = b?.[key];
@@ -4035,7 +4035,7 @@ if (loan.eventType === "default")    tr.classList.add("event-default");
       <td>${(Number(loan.nominalRate ?? 0) * 100).toFixed(2)}%</td>
       <td>${loan.termYears ?? ""}</td>
       <td>${loan.graceYears ?? 0}</td>
-      <td>${formatCurrency(Number(loan.netEarnings ?? 0))}</td>
+      <td>${formatCurrency(loan.earningsToDate ?? 0)}</td>
     `;
 
     tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
