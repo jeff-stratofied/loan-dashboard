@@ -1534,7 +1534,7 @@ function getPrimaryEventType(loan) {
   return "";
 }
 
-    function renderEventBadgeCell(loan) {
+function renderEventBadgeCell(loan) {
   const type = getPrimaryEventType(loan);
   if (!type) return "";
 
@@ -1545,11 +1545,12 @@ function getPrimaryEventType(loan) {
 
   return `
     <span class="table-event-badge ${type}"
-          title="${type.charAt(0).toUpperCase() + type.slice(1)}">
+          data-event-type="${type}">
       ${icon}
     </span>
   `;
 }
+
 
     
 // ----------------------------------
@@ -3340,7 +3341,19 @@ function renderLoanTableROI(list = currentLoans) {
 ).toFixed(2)}%</td>
 
     `;
+// ----------------------------------
+// Event badge hover (table view)
+// ----------------------------------
+const badge = tr.querySelector(".table-event-badge");
+if (badge) {
+  const type = badge.dataset.eventType;
+  const text = getBadgeTooltipText(loan, type);
+  if (text) {
+    createBadgeTooltip(badge, text);
+  }
+}
 
+    
     // =====================================================
     // HOVER (MATCH AMORT)
     // =====================================================
