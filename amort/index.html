@@ -2138,6 +2138,8 @@ function renderLoanTable(loans) {
     tr.innerHTML = `
       const eventType = getLoanPrimaryEventType(loan);
 
+const eventType = getLoanPrimaryEventType(loan);
+
 tr.innerHTML = `
   <td>${loan.loanId}</td>
 
@@ -2156,17 +2158,17 @@ tr.innerHTML = `
   </td>
 
   <td>${loan.loanName}</td>
+  <td>${loan.school}</td>
+  <td>${formatDate(new Date(loan.loanStartDate))}</td>
+  <td>${formatDate(new Date(loan.purchaseDate))}</td>
+  <td>${formatCurrency(loan.principal)}</td>
+  <td>${formatCurrency(loan.purchasePrice)}</td>
+  <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
+  <td>${loan.termYears}</td>
+  <td>${loan.graceYears ?? 0}</td>
+  <td>${formatCurrency(getCurrentLoanBalance(loan))}</td>
+`;
 
-      <td>${loan.school}</td>
-      <td>${formatDate(new Date(loan.loanStartDate))}</td>
-      <td>${formatDate(new Date(loan.purchaseDate))}</td>
-      <td>${formatCurrency(loan.principal)}</td>
-      <td>${formatCurrency(loan.purchasePrice)}</td>
-      <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
-      <td>${loan.termYears}</td>
-      <td>${loan.graceYears ?? 0}</td>
-      <td>${formatCurrency(getCurrentLoanBalance(loan))}</td>
-    `;
 
 if (eventType) {
   tr.classList.add(`event-${eventType}`);
