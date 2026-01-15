@@ -1804,29 +1804,34 @@ try {
 const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
 const data = await res.json();
 const arr = data.loans || [];
-loans = arr.map(l => ({
-...l,
-loanStartDate: l.loanStartDate || "",
-}));
+loans = arr.map(l => {
+  const loan = {
+    ...l,
+    loanStartDate: l.loanStartDate || "",
+  };
 
   // =========================================
   // NORMALIZE OWNERSHIP (REQUIRED)
   // =========================================
   normalizeOwnership(loan);
 
-// =========================================
-// DEV SEED — assign Market loans to user
-// REMOVE once real ownership UI exists
-// =========================================
-if (
-  loan.ownership.allocations.length === 1 &&
-  loan.ownership.allocations[0].user === "Market"
-) {
-  loan.ownership.allocations = [
-    { user: PAGE_USER, percent: 100 },
-    { user: "Market", percent: 0 }
-  ];
-}
+  // =========================================
+  // DEV SEED — assign Market loans to user
+  // REMOVE once real ownership UI exists
+  // =========================================
+  if (
+    loan.ownership.allocations.length === 1 &&
+    loan.ownership.allocations[0].user === "Market"
+  ) {
+    loan.ownership.allocations = [
+      { user: PAGE_USER, percent: 100 },
+      { user: "Market", percent: 0 }
+    ];
+  }
+
+  return loan;
+});
+
 
 
   
