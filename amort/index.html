@@ -1244,12 +1244,6 @@ function clearOpenParamFromUrl() {
 async function loadAndNormalizeLoans() {
   const apiResult = await loadLoans();
 
-// =========================================
-// NORMALIZE OWNERSHIP (REQUIRED)
-// =========================================
-rawLoans.forEach(l => normalizeOwnership(l));
-
-  
   // Support BOTH return shapes:
   // 1) array (amort page)
   // 2) { loans, sha } (admin / other pages)
@@ -1257,7 +1251,10 @@ rawLoans.forEach(l => normalizeOwnership(l));
     ? apiResult
     : apiResult.loans;
 
-  
+  // =========================================
+  // NORMALIZE OWNERSHIP (REQUIRED)
+  // =========================================
+  rawLoans.forEach(l => normalizeOwnership(l));
 
   // --------------------------------------------------
   // DEV-ONLY SCHEMA DRIFT GUARD
@@ -1266,69 +1263,58 @@ rawLoans.forEach(l => normalizeOwnership(l));
     location.hostname === "localhost" ||
     location.hostname.includes("github.io");
 
-if (DEV_MODE) {
-  rawLoans.forEach(l => {
-    const problems = [];
+  if (DEV_MODE) {
+    rawLoans.forEach(l => {
+      const problems = [];
 
-    if (!Number.isFinite(l.principal)) problems.push("principal");
-    if (!Number.isFinite(l.purchasePrice)) problems.push("purchasePrice");
-    if (!Number.isFinite(l.termYears)) problems.push("termYears");
-    if (!l.loanStartDate) problems.push("loanStartDate");
-    // user no longer required — ownership-based
+      if (!Number.isFinite(l.principal)) problems.push("principal");
+      if (!Number.isFinite(l.purchasePrice)) problems.push("purchasePrice");
+      if (!Number.isFinite(l.termYears)) problems.push("termYears");
+      if (!l.loanStartDate) problems.push("loanStartDate");
 
+      if (problems.length) {
+        console.warn("⚠️ Loan schema issue", {
+          loanId: l.loanId,
+          loanName: l.loanName,
+          problems,
+          loan: l
+        });
+      }
+    });
+  }
 
-    if (problems.length) {
-      console.warn("⚠️ Loan schema issue", {
-        loanId: l.loanId,
-        loanName: l.loanName,
-        problems,
-        loan: l
-      });
-    }
-  });
-}
+  const enrichedLoans = attachSchedules(
+    rawLoans.map(normalizeLoan)
+  );
 
-
-const enrichedLoans = attachSchedules(
-   rawLoans.map(normalizeLoan)
- );
-
- allLoans = enrichedLoans.map(l => {
-
-   const schedule = l.amort.schedule;
-
-    const miniPts = schedule
-      .slice(0, Math.min(24, schedule.length))
-      .map(s => ({
-        x: s.monthIndex,
-        y: s.balance
-      }));
-
+  allLoans = enrichedLoans.map(l => {
+    const schedule = l.amort.schedule;
     const today = new Date();
 
-return {
-  ...l,
-  amort: { ...l.amort, schedule },
-  cumSchedule: schedule,
-  miniPts,
+    return {
+      ...l,
+      amort: { ...l.amort, schedule },
+      cumSchedule: schedule,
 
-  // ✅ Canonical “Balance” used by table + CSV + sorting
-  balance: getCurrentLoanBalance({ ...l, amort: { schedule } }, today)
-};
-
+      // ✅ canonical balance
+      balance: getCurrentLoanBalance(
+        { ...l, amort: { schedule } },
+        today
+      )
+    };
   });
 
-// =========================================
-// DERIVE USER-SCOPED LOANS (OWNERSHIP-BASED)
-// =========================================
-allLoans = allLoans
-  .map(l => deriveLoanForUser(l, PAGE_CONTEXT.user))
-  .filter(Boolean);
+  // =========================================
+  // DERIVE USER-SCOPED LOANS (OWNERSHIP-BASED)
+  // =========================================
+  allLoans = allLoans
+    .map(l => deriveLoanForUser(l, PAGE_CONTEXT.user))
+    .filter(Boolean);
 
-// FINALIZE — single source of truth
-currentLoans = [...allLoans];
-
+  // FINALIZE — single source of truth
+  currentLoans = [...allLoans];
 }
+
 
 async function init() {
   /* =====================================================
