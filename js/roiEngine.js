@@ -341,5 +341,99 @@ export function getLoanMaturityDate(loan) {
 }
 
 
+export function deriveLoansWithAmortAndRoi(formattedLoans) {
+  return formattedLoans.map(l => {
+    
+const rawAmort = buildAmortSchedule(l);
+
+// ----------------------------------
+// Respect terminal rows from engine
+// ----------------------------------
+const amortSchedule = (() => {
+  const out = [];
+  for (const r of rawAmort) {
+    out.push(r);
+    if (r.isTerminal === true) break; // 🔒 STOP at default
+  }
+  return out;
+})();
+
+
+      // Attach ownership flags
+      const purchase = new Date(l.purchaseDate);
+      const scheduleWithOwnership = amortSchedule.map(r => ({
+        ...r,
+        isOwned: r.loanDate >= purchase,
+        ownershipMonthIndex: r.loanDate >= purchase
+          ? monthDiff(purchase, r.loanDate) + 1
+        : 0,
+      ownershipDate: r.loanDate >= purchase ? r.loanDate : null
+    }));
+        
+let cumP = 0;
+let cumI = 0;
+let cumFees = 0;
+        
+const cumSchedule = scheduleWithOwnership
+  .filter(r => r.isOwned)
+  .reduce((rows, r) => {
+    cumP += r.principalPaid;
+    cumI += r.interest;
+    const feeThisMonth = Number(r.feeThisMonth ?? 0);
+    cumFees += feeThisMonth;
+
+    rows.push({
+      ...r,
+      cumPrincipal: +cumP.toFixed(2),
+      cumInterest: +cumI.toFixed(2),
+      cumFees: +cumFees.toFixed(2)
+    });
+
+    // 🔒 HARD STOP at terminal row
+    if (r.isTerminal === true) {
+      return rows;
+    }
+
+    return rows;
+  }, []);
+
+
+    // Compute proper ROI timeline using correct amort + fees
+    const purchasePrice = Number(l.purchasePrice ?? 0);
+    const roiSeries = cumSchedule
+      .filter(r => r.isOwned)
+.map(r => {
+  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
+  const unrealized = r.balance * 0.95;
+  const loanValue = realized + unrealized;
+  const roi = (loanValue - purchasePrice) / purchasePrice;
+return {
+  month: r.ownershipMonthIndex,
+  // ✅ ALWAYS real schedule date (exists for full lifetime)
+  date: r.loanDate,
+  // optional: keep displayDate around if you need it for labels
+  displayDate: r.displayDate,
+  roi,
+  loanValue,
+  cumFees: r.cumFees,
+  realized,
+  remainingBalance: r.balance,
+  unrealized,
+  isTerminal: r.isTerminal === true
+};
+
+});
+
+    // Return updated loan object
+    return {
+    ...l,
+    amort: { schedule: amortSchedule },
+    scheduleWithOwnership,
+    cumSchedule,
+    balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
+    roiSeries
+  };
+});  
+  }
 
 
