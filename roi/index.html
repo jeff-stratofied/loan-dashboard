@@ -1187,7 +1187,8 @@ tr.event-default td {
   buildProjectedRoiTimeline,
   getRoiEntryAsOfMonth,
       computeKPIs,
-  computeWeightedRoiAsOfMonth
+  computeWeightedRoiAsOfMonth,
+      deriveLoansWithRoi
 } from "../js/roiEngine.js?v=dev";
 
 
@@ -1958,6 +1959,7 @@ const KPI_CURRENT_MONTH = new Date(
    - Populate allLoans / currentLoans / filteredLoans
    ============================================================ */
 
+    /* delete
 function deriveLoansWithAmortAndRoi(formattedLoans) {
   return formattedLoans.map(l => {
     
@@ -2053,7 +2055,7 @@ return {
 });  
   }
 
-
+*/
 
     
 
@@ -5000,7 +5002,7 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 // =========================================
 // DERIVE + INITIALIZE FILTER STATE (REQUIRED)
 // =========================================
-const derivedLoans = deriveLoansWithAmortAndRoi(loans);
+const derivedLoans = deriveLoansWithRoi(formattedLoans);
 
 // 🔑 SOURCE OF TRUTH
 allLoans = derivedLoans;
