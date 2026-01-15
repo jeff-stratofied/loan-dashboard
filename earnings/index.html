@@ -1597,6 +1597,62 @@ const EVENT_ICON = {
   default: "⚠️"
 };
 
+  // =====================================================
+// EVENT BADGE TOOLTIP TEXT — MATCH ROI EXACTLY
+// =====================================================
+function buildEventBadgeTooltip(loan) {
+  const events = loan?.events || [];
+
+  // DEFAULT
+  if (loan.eventType === "default") {
+    const evt = events.find(e => e.type === "default");
+    const month = evt?.date
+      ? formatMonthYear(new Date(evt.date))
+      : "Unknown";
+
+    const recovered = Number(evt?.recoveredAmount ?? 0);
+
+    return `
+      <strong>Default</strong><br>
+      ${month} • Recovered ${formatCurrency(recovered)}
+    `;
+  }
+
+  // DEFERRAL
+  if (loan.eventType === "deferral") {
+    const evt = events.find(e => e.type === "deferral");
+
+    const start = evt?.startDate
+      ? formatMonthYear(new Date(evt.startDate))
+      : "Unknown";
+
+    const months = Number(evt?.months ?? evt?.duration ?? 0);
+
+    return `
+      <strong>Deferral</strong><br>
+      ${start} • ${months} months
+    `;
+  }
+
+  // PREPAYMENT
+  if (loan.eventType === "prepayment") {
+    const evt = events.find(e => e.type === "prepayment");
+
+    const date = evt?.date
+      ? formatMonthYear(new Date(evt.date))
+      : "Unknown";
+
+    const amount = Number(evt?.amount ?? evt?.principal ?? 0);
+
+    return `
+      <strong>Prepayment</strong><br>
+      ${formatCurrency(amount)} • ${date}
+    `;
+  }
+
+  return "";
+}
+
   
 // ============================
 // TABLE-ONLY SORT (does NOT affect tile ordering)
