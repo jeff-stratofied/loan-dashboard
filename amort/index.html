@@ -2028,67 +2028,64 @@ console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
 
   applyLoanFilters();
 
-/* =========================
-   COMPACT VIEW TOGGLE  ✅ FIX
-   ========================= */
+/* =========================================
+   VIEW STATE — SINGLE SOURCE OF TRUTH (ROI)
+   ========================================= */
 
-const compactToggle = document.getElementById("toggleCompact");
+const VIEW_STORAGE_KEY = "amortView"; // full | compact | table
+let VIEW_STATE = "full";
 
-// restore saved state
-const savedCompact = localStorage.getItem("amortCompact");
-if (savedCompact !== null) {
-  compactToggle.checked = savedCompact === "true";
-  gridEl.classList.toggle("compact", compactToggle.checked);
-}
-
-// react to user toggle
-compactToggle.addEventListener("change", () => {
-  const on = compactToggle.checked;
-  gridEl.classList.toggle("compact", on);
-  localStorage.setItem("amortCompact", on);
-});
-
-
-  
-  /* =========================
-     TABLE VIEW TOGGLE
-     ========================= */
-
-const tableToggle = document.getElementById("toggleTableView");
 const tableWrap = document.getElementById("loanTableWrap");
-  
+const viewBtns = document.querySelectorAll(".view-btn");
 
-// 🚫 Table View is FULL-PAGE ONLY
-if (PAGE_CONTEXT.isEmbed) {
-  tableToggle.checked = false;
-  tableWrap.hidden = true;
-  gridEl.style.display = "none";
-} else {
-  // --- restore ---
-  const savedTableView = localStorage.getItem("amortTableView");
-  if (savedTableView !== null) {
-    tableToggle.checked = savedTableView === "true";
+/* Apply view */
+function applyViewMode(view) {
+  VIEW_STATE = view;
+
+  // persist
+  localStorage.setItem(VIEW_STORAGE_KEY, view);
+
+  // button UI
+  viewBtns.forEach(btn =>
+    btn.classList.toggle("active", btn.dataset.view === view)
+  );
+
+  // embed mode → force grid
+  if (PAGE_CONTEXT.isEmbed) {
+    gridEl.style.display = "";
+    tableWrap.hidden = true;
+    gridEl.classList.remove("compact");
+    return;
   }
 
-  const applyTableView = (on) => {
-    gridEl.style.display = on ? "none" : "";
-    tableWrap.hidden = !on;
+  // reset
+  gridEl.style.display = "";
+  tableWrap.hidden = true;
+  gridEl.classList.remove("compact");
 
-    if (on) {
-      renderLoanTable(currentLoans);
-    }
-  };
+  if (view === "compact") {
+    gridEl.classList.add("compact");
+  }
 
-  // initial apply
-  applyTableView(tableToggle.checked);
-
-  // --- 🔑 USER TOGGLE (THIS WAS MISSING) ---
-  tableToggle.addEventListener("change", () => {
-    const on = tableToggle.checked;
-    localStorage.setItem("amortTableView", on);
-    applyTableView(on);
-  });
+  if (view === "table") {
+    gridEl.style.display = "none";
+    tableWrap.hidden = false;
+    renderLoanTable(getLoansForTableView());
+  }
 }
+
+/* Restore saved view */
+const savedView = localStorage.getItem(VIEW_STORAGE_KEY);
+applyViewMode(savedView || "full");
+
+/* Wire buttons */
+viewBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    applyViewMode(btn.dataset.view);
+  });
+});
+
+  
 // ✅ Wire table column sorting (table-only)
 wireLoanTableColumnSort();
 
