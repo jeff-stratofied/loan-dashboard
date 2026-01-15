@@ -1245,6 +1245,19 @@ const PAGE_CONTEXT = (() => {
   };
 })();
 
+// =========================================
+// MIGRATE LEGACY TABLE VIEW (ONE-TIME)
+// =========================================
+if (!PAGE_CONTEXT.isEmbed) {
+  if (
+    localStorage.getItem("roiViewMode") == null &&
+    localStorage.getItem("roiTableView") === "1"
+  ) {
+    localStorage.setItem("roiViewMode", "table");
+  }
+}
+
+    
     // 🔒 EMBED MODE OVERRIDES — MATCH AMORT
 if (PAGE_CONTEXT.isEmbed) {
   // Table view is a full-page feature ONLY
@@ -5178,6 +5191,7 @@ if (PAGE_CONTEXT.isEmbed) {
   setViewMode(savedView);
 }
 
+      
 
 // =====================================================
 // EMBED MODE — FORCE KPI DRAWER (MATCH AMORT)
