@@ -949,6 +949,7 @@ html[data-theme="dark"] .close-btn {
         <th data-key="nominalRate">Rate</th>
         <th data-key="termYears">Term</th>
         <th data-key="graceYears">Grace</th>
+        <th data-key="ownershipPct">% Owned</th>
         <th data-key="balance">Balance</th>
       </tr>
     </thead>
@@ -1157,7 +1158,7 @@ function deriveLoanForUser(loan, user) {
     ...loan,
     ownershipPct: pct,
     userPurchasePrice: loan.purchasePrice * pct,
-    userLoanValue: loan.currentLoanValue * pct,
+    userLoanValue: loan.balance * pct,
     userNetEarnings: loan.netEarnings * pct,
     userRoiSeries: loan.roiSeries.map(p => ({
       ...p,
@@ -1273,7 +1274,8 @@ if (DEV_MODE) {
     if (!Number.isFinite(l.purchasePrice)) problems.push("purchasePrice");
     if (!Number.isFinite(l.termYears)) problems.push("termYears");
     if (!l.loanStartDate) problems.push("loanStartDate");
-    if (!l.user) problems.push("user");
+    // user no longer required — ownership-based
+
 
     if (problems.length) {
       console.warn("⚠️ Loan schema issue", {
@@ -1316,20 +1318,16 @@ return {
 
   });
 
-  // Normalize user + visible (match Admin defaults)
-  allLoans = allLoans.map(l => ({
-    ...l,
-    user: l.user ?? "jeff",
-    visible: l.visible !== false
-  }));
+// =========================================
+// DERIVE USER-SCOPED LOANS (OWNERSHIP-BASED)
+// =========================================
+allLoans = allLoans
+  .map(l => deriveLoanForUser(l, PAGE_CONTEXT.user))
+  .filter(Boolean);
 
-  // Apply page-level user filter
-  allLoans = allLoans.filter(
-    l => l.user === PAGE_CONTEXT.user && l.visible === true
-  );
+// FINALIZE — single source of truth
+currentLoans = [...allLoans];
 
-  // FINALIZE — single source of truth
-  currentLoans = [...allLoans];
 }
 
 async function init() {
@@ -2214,6 +2212,7 @@ tr.innerHTML = `
   <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
   <td>${loan.termYears}</td>
   <td>${loan.graceYears ?? 0}</td>
+  <td>${Math.round(loan.ownershipPct * 100)}%</td>
   <td>${formatCurrency(getCurrentLoanBalance(loan))}</td>
 `;
 
