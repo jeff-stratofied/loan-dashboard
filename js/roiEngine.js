@@ -14,6 +14,9 @@
  * - never depend on UI state (currentLoan, embed mode, etc.)
  */
 
+
+import { buildAmortSchedule } from "./loanEngine.js";
+
 // =====================================================
 // INTERNAL HELPERS (PURE)
 // =====================================================
