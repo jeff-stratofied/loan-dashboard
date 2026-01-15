@@ -1247,7 +1247,7 @@ async function loadAndNormalizeLoans() {
 // =========================================
 // NORMALIZE OWNERSHIP (REQUIRED)
 // =========================================
-loans.forEach(l => normalizeOwnership(l));
+rawLoans.forEach(l => normalizeOwnership(l));
 
   
   // Support BOTH return shapes:
