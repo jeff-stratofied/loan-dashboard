@@ -1661,11 +1661,10 @@ let TABLE_SORT = { key: null, dir: 1 }; // dir: 1=asc, -1=desc
 function compareForKey(a, b, key) {
   // Special-case derived Net Earnings (table column)
 if (key === "netEarnings") {
-  const ea = Number(a?.earningsToDate) || 0;
-  const eb = Number(b?.earningsToDate) || 0;
+  const ea = Number(getCanonicalCurrentEarningsRow(a)?.netEarnings) || 0;
+  const eb = Number(getCanonicalCurrentEarningsRow(b)?.netEarnings) || 0;
   return ea - eb;
 }
-
 
   const va = a?.[key];
   const vb = b?.[key];
