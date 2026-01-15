@@ -1914,7 +1914,7 @@ function getCurrentOwnedRoiEntry(loan) {
     .sort((a, b) => a.date - b.date);
 }
 
-
+/* delete
       function getRoiEntryAsOfMonth(loan, monthDate) {
   if (!Array.isArray(loan.roiSeries)) {
     return { roi: 0, loanValue: loan.purchasePrice };
@@ -1930,7 +1930,7 @@ function getCurrentOwnedRoiEntry(loan) {
 
   return eligible[eligible.length - 1];
 }
-
+*/
 
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
@@ -4497,7 +4497,10 @@ function renderROISpreadDrawer() {
   // Compute spread stats
   // -------------------------------
   const rows = allLoans.map(l => {
-    const e = getCurrentOwnedRoiEntry(l);
+    const e =
+  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+  { roi: 0, loanValue: l.purchasePrice };
+
     return {
       id: l.id,
       name: l.name,
