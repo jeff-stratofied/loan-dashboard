@@ -1684,6 +1684,13 @@ function getLoansForTableView() {
   const eb = getPrimaryEventType(b);
   return ea.localeCompare(eb);
 }
+if (key === "roiToDate") {
+  const ra =
+    a.roiSeries?.[a.roiSeries.length - 1]?.roi ?? 0;
+  const rb =
+    b.roiSeries?.[b.roiSeries.length - 1]?.roi ?? 0;
+  return ra - rb;
+}
 
   const va = a?.[key];
   const vb = b?.[key];
