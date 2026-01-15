@@ -324,13 +324,6 @@
   max-inline-size: 18ch;
 }
 
-    
-/* Match Amort: smaller toggle text */
-.compact-toggle span {
-  font-size: 12px;
-  color: var(--muted);
-}
-
 
 
 /* =========================================
@@ -1134,12 +1127,6 @@ tr.row-hover {
   </div>
 </div>
 
-<div class="table-actions">
-  <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
-  <button class="btn" id="copyAllCsvBtn">Copy CSV</button>
-  <button class="btn" id="printAllBtn">Print</button>
-</div>
-
 
 </section>
 
@@ -1256,15 +1243,6 @@ if (!isEmbed) {
     history.replaceState({}, "", cleanUrl);
   }
 }
-  
-console.log("[EARNINGS NAV]", {
-  isEmbed,
-  cameFromReporting,
-  navType: performance.getEntriesByType("navigation")[0]?.type,
-  search: location.search
-});
-
-
   
 let currentLoan = null;
 let currentMode = 'portfolio';
@@ -1564,15 +1542,6 @@ function compareForKey(a, b, key) {
   // numbers
   return (Number(va) || 0) - (Number(vb) || 0);
 }
-
-  // Special-case Event column (MATCH ROI)
-  if (key === "eventType") {
-    return (a.eventType || "").localeCompare(
-      b.eventType || "",
-      undefined,
-      { sensitivity: "base" }
-    );
-  }
 
   
 function getLoansForTableView() {
