@@ -1883,7 +1883,6 @@ const KPI_CURRENT_MONTH = new Date(
 );
 
 
-    
 
 /* ============================================================
    2. PURE UTILITY FUNCTIONS (NO STATE, NO DOM)
@@ -1901,7 +1900,7 @@ const KPI_CURRENT_MONTH = new Date(
     .filter(p => p?.date instanceof Date && !isNaN(+p.date))
     .sort((a, b) => a.date - b.date);
 }
-
+*/
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
       return loan.roiSeries[loan.roiSeries.length - 1];
@@ -1925,7 +1924,7 @@ function getOwnedRoiSeriesFromAmort(loan) {
     });
 }
 
-*/
+
 
     
     
