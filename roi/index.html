@@ -142,6 +142,47 @@ html,body{
   white-space: nowrap;
 }
 
+/* =========================================
+   View mode icon toggle (Full / Compact / Table)
+   ========================================= */
+.view-toggle {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.view-btn {
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.view-btn span {
+  height: 2px;
+  background: var(--muted);
+  border-radius: 2px;
+}
+
+.view-btn.active {
+  border-color: var(--brand);
+  background: rgba(14,165,233,0.08);
+}
+
+.view-btn.active span {
+  background: var(--brand);
+}
+
+.view-btn:hover {
+  border-color: var(--brand);
+}
 
 
   /* Compact view toggle */
@@ -1039,18 +1080,20 @@ tr.event-default td {
     <option value="rate_asc">Interest rate ↑</option>
     <option value="rate_desc">Interest rate ↓</option>
   </select>
-
-<label class="compact-toggle">
-  <input type="checkbox" id="toggleCompact" />
-  <span>Compact</span>
-</label>
-  
+ 
   <button class="btn secondary" id="resetFilters">Reset</button>
 
-<label class="compact-toggle">
-  <input type="checkbox" id="toggleTableView" />
-  <span>Table View</span>
-</label>
+<div class="view-toggle" role="group" aria-label="View mode">
+  <button type="button" class="view-btn" data-view="full" title="Full tiles">
+    <span></span>
+  </button>
+  <button type="button" class="view-btn" data-view="compact" title="Compact tiles">
+    <span></span><span></span>
+  </button>
+  <button type="button" class="view-btn" data-view="table" title="Table view">
+    <span></span><span></span><span></span>
+  </button>
+</div>
 
 <div class="table-actions">
   <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
@@ -1210,6 +1253,40 @@ if (PAGE_CONTEXT.isEmbed) {
   const toggle = document.getElementById("toggleTableView");
   if (toggle) toggle.checked = false;
 }
+
+    const viewButtons = document.querySelectorAll(".view-btn");
+
+function setViewMode(mode) {
+  // Reset
+  document.querySelectorAll(".view-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.view === mode)
+  );
+
+  // Clear legacy toggles
+  localStorage.removeItem("roiTableView");
+  loanGrid.classList.remove("compact");
+  loanTableWrap.hidden = true;
+  loanGrid.style.display = "";
+
+  if (mode === "compact") {
+    loanGrid.classList.add("compact");
+  }
+
+  if (mode === "table") {
+    loanGrid.style.display = "none";
+    loanTableWrap.hidden = false;
+    localStorage.setItem("roiTableView", "1");
+    renderLoanTableROI(getLoansForTableView());
+  } else {
+    renderLoanGrid(currentLoans);
+  }
+}
+
+viewButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    setViewMode(btn.dataset.view);
+  });
+});
 
     
   const PAGE_USER =
@@ -5047,18 +5124,24 @@ populateLoanFilters(allLoans);
 
 
 // =========================================
-// INITIAL RENDER — EMBED SAFE
+// INITIAL RENDER — EMBED SAFE (CANONICAL)
 // =========================================
 if (PAGE_CONTEXT.isEmbed) {
-  // iframe shows ONLY KPIs + drawer
+  // 🔒 EMBED MODE:
+  // iframe shows ONLY KPIs + drawer (no grid, no table, no view state)
   document.getElementById("loanGrid")?.remove();
   document.getElementById("loanTableWrap")?.remove();
-} else if (localStorage.getItem("roiTableView") === "1") {
-  document.getElementById("toggleTableView").checked = true;
-  renderLoanTableROI();
+
 } else {
-  renderLoanGrid(currentLoans);
+  // 🖥 FULL PAGE MODE:
+  // restore last explicit user view
+  if (localStorage.getItem("roiTableView") === "1") {
+    setViewMode("table");
+  } else {
+    setViewMode("full");   // default (non-compact tiles)
+  }
 }
+
 
 
 // =====================================================
