@@ -1941,12 +1941,6 @@ function renderAndWirePage() {
     const key = tile.dataset.kpi;
     if (!key) return;
 
-console.group("🟦 KPI TILE CLICK");
-console.log("key:", key);
-console.log("isEmbed:", PAGE_CONTEXT.isEmbed);
-console.log("before open — drawer.open:", drawer.classList.contains("open"));
-console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
-
     
     // IFRAME / REPORTING → redirect to full page
     if (PAGE_CONTEXT.isEmbed) {
@@ -2035,6 +2029,34 @@ console.log("before open — aria-hidden:", drawer.getAttribute("aria-hidden"));
   [...new Set(allLoans.map(l => l.school).filter(Boolean))]
     .forEach(s => filterSchool.add(new Option(s, s.toLowerCase())));
 
+// ------------------------------------
+// Rate filter options (canonical)
+// ------------------------------------
+filterRate.options.length = 1; // keep placeholder
+
+filterRate.add(new Option("Below 5%", "low"));
+filterRate.add(new Option("5% – 8%", "mid"));
+filterRate.add(new Option("Above 8%", "high"));
+
+
+// ------------------------------------
+// Sort options (canonical ROI order)
+// ------------------------------------
+sortLoans.options.length = 1; // keep placeholder
+
+sortLoans.add(new Option("Purchase date ↑", "purchase_asc"));
+sortLoans.add(new Option("Purchase date ↓", "purchase_desc"));
+
+sortLoans.add(new Option("Loan start ↑", "start_asc"));
+sortLoans.add(new Option("Loan start ↓", "start_desc"));
+
+sortLoans.add(new Option("Orig amount ↑", "amount_asc"));
+sortLoans.add(new Option("Orig amount ↓", "amount_desc"));
+
+sortLoans.add(new Option("Rate ↑", "rate_asc"));
+sortLoans.add(new Option("Rate ↓", "rate_desc"));
+
+  
   filterName.addEventListener("change", applyLoanFilters);
   filterSchool.addEventListener("change", applyLoanFilters);
   filterRate.addEventListener("change", applyLoanFilters);
