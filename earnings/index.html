@@ -1296,6 +1296,12 @@ import {
   isDeferredMonth
 } from "../js/loanEngine.js?v=dev";
 
+  import {
+  normalizeOwnership,
+  getUserOwnershipPct
+} from "../js/ownershipEngine.js?v=dev";
+
+
 let earningsDataReadyResolve;
 const earningsDataReady = new Promise(resolve => {
   earningsDataReadyResolve = resolve;
