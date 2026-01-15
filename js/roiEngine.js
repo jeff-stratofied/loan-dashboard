@@ -39,6 +39,15 @@ function safeNum(x) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function monthDiff(d1, d2) {
+  if (!(d1 instanceof Date) || !(d2 instanceof Date)) return 0;
+  return (
+    (d2.getFullYear() - d1.getFullYear()) * 12 +
+    (d2.getMonth() - d1.getMonth())
+  );
+}
+
+
 // =====================================================
 // PUBLIC API
 // =====================================================
