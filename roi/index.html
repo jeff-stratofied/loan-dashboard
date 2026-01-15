@@ -120,40 +120,28 @@ html,body{
   align-items: center;
   gap: 10px;
   flex-wrap: nowrap;
-  justify-content: space-between;
-
-  margin: 0 0 14px;   /* 🔑 MATCH AMORT SPACING */
+  justify-content: flex-start;
+  margin: 0 0 14px;
 }
 
 .loan-filters > * {
   flex-shrink: 0;
 }
 
-    .loan-filters {
-  font-weight: 500;
-}
-
-
-    /* Match Amort filter select styling */
 .loan-filters select {
-  padding: 6px 10px;
+  inline-size: 18ch;
+  min-inline-size: 18ch;
+  max-inline-size: 18ch;
+  padding: 6px 8px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--card);
   color: var(--text);
   font-size: 13px;
-  font-weight: 500; /* 🔑 remove bold look */
-}
-
-    /* =========================================
-   ROI filter select sizing (compact & equal)
-   ========================================= */
-.loan-filters select {
-  inline-size: 22ch;      /* ⬅️ key line */
-  max-inline-size: 22ch;
-  min-inline-size: 22ch;
+  font-weight: 500;
   white-space: nowrap;
 }
+
 
 
   /* Compact view toggle */
