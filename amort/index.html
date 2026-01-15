@@ -1160,10 +1160,13 @@ function deriveLoanForUser(loan, user) {
     userPurchasePrice: loan.purchasePrice * pct,
     userLoanValue: loan.balance * pct,
     userNetEarnings: loan.netEarnings * pct,
-    userRoiSeries: loan.roiSeries.map(p => ({
+    userRoiSeries: Array.isArray(loan.roiSeries)
+  ? loan.roiSeries.map(p => ({
       ...p,
       roi: p.roi * pct
     }))
+  : null
+
   };
 }
 
