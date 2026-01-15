@@ -4039,8 +4039,10 @@ if (loan.eventType === "default")    tr.classList.add("event-default");
       <td>${loan.graceYears ?? 0}</td>
       <td>
   ${formatCurrency(
-    getCanonicalCurrentEarningsRow(loan)?.netEarnings ?? 0
+    Number(getCanonicalCurrentEarningsRow(loan)?.netEarnings ?? 0)
   )}
+</td>
+
 </td>
 
     `;
