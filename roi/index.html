@@ -3750,15 +3750,7 @@ document.getElementById("toggleTableView")?.addEventListener("change", (e) => {
     document.getElementById('closeBtn').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDrawer(); });
 
-    /* delete
-    function closeDrawer(){ 
-  drawer.classList.remove('open'); 
-  drawer.setAttribute('aria-hidden','true'); 
-  tooltip.style.display = 'none'; 
-  currentLoan = null; 
-  currentMode = "kpi";   // reset to default, not null
-}
-delet */
+
 
 function forceDrawerVisible() {
   drawer.style.transform = "translateX(0)";
@@ -5051,15 +5043,6 @@ if (_IS_EMBED) {
   const feedbackBtn = document.getElementById('feedback-btn');
   if (feedbackBtn) feedbackBtn.style.display = 'none';
 
-/* delete
-  // Restore auto-open KPI2 drawer (runs after initROI/loans)
-  if (_OPEN_TARGET === "kpi2" || _OPEN_TARGET === "projectedROI") {
-    // Slight delay ensures initROI() has run and drawer is ready
-    setTimeout(() => {
-      renderRatesDrawer();
-    }, 100);
-  }
-delete */
 
   // Enable full iframe scrolling (override root hidden overflow, matches Earnings/Amort)
   document.documentElement.style.overflow = 'auto';
@@ -5073,14 +5056,6 @@ delete */
     drawerBody.style.overflow = 'visible'; // No internal scroll; full height
   }
 }
-
-/*    delete 
-// 🔑 Open KPI drawer from ?open=
-// ❗ DO NOT override loan drawer
-if (currentMode !== "loan") {
-  openRoiKpiFromUrl();
-}
-delete */
 
 
 // =====================================================
