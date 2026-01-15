@@ -402,6 +402,58 @@
   display: none;
 }
 
+/* =========================================
+   View Toggle Buttons — MATCH ROI EXACTLY
+   ========================================= */
+
+.view-toggle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.view-btn {
+  width: 36px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0;
+}
+
+.view-btn span {
+  display: block;
+  width: 4px;
+  height: 12px;
+  background: var(--muted);
+  border-radius: 2px;
+}
+
+.view-btn[data-view="full"] span {
+  height: 14px;
+}
+
+.view-btn[data-view="compact"] span {
+  height: 10px;
+}
+
+.view-btn[data-view="table"] span {
+  height: 8px;
+}
+
+.view-btn.active {
+  background: var(--brand);
+  border-color: var(--brand-strong);
+}
+
+.view-btn.active span {
+  background: #ffffff;
+}
 
     
 /* --- Unified Loan Tile Style (matches Amort exactly) --- */
@@ -1312,9 +1364,13 @@ function applyViewMode(mode) {
   }
 
   if (mode === "table") {
-    gridEl.style.display = "none";
-    tableWrapEl.hidden = false;
-  }
+  gridEl.style.display = "none";
+  tableWrapEl.hidden = false;
+
+  // 🔑 REQUIRED: render rows
+  renderLoanTable(getLoansForTableView());
+}
+
 
   // Persist (only non-embed)
   if (!isEmbed) {
