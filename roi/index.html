@@ -1183,7 +1183,14 @@ tr.event-default td {
        ==================================== -->
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
-    import { buildProjectedRoiTimeline } from "../js/roiEngine.js?v=dev";
+    import {
+  buildProjectedRoiTimeline,
+  computeKPIs,
+  computeWeightedRoiAsOfMonth,
+  getRoiEntryAsOfMonth
+} from "../js/roiEngine.js?v=dev";
+
+
 
 
 window.__closeDrawerTimer = null;
@@ -1884,7 +1891,7 @@ const KPI_CURRENT_MONTH = new Date(
    - Comparators
    - Math utilities
    ============================================================ */
-
+/* delete
 function getCurrentOwnedRoiEntry(loan) {
   // ✅ anchor to the app’s “current month”, not wall-clock
   const asOf = new Date(KPI_CURRENT_MONTH);
@@ -1896,7 +1903,7 @@ function getCurrentOwnedRoiEntry(loan) {
   if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
   return ownedEntries[ownedEntries.length - 1];
 }
-
+*/
     function getOwnedRoiSeries(loan) {
   if (!Array.isArray(loan.roiSeries)) return [];
 
@@ -3604,7 +3611,10 @@ async function initROI() {
   // KPI4 — ROI Spread (SAFE)
   // --------------------------------------------------
   const roiValues = currentLoans.map(l => {
-    const e = getCurrentOwnedRoiEntry(l);
+    const e =
+  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+  { roi: 0, loanValue: l.purchasePrice };
+
     return e?.roi ?? 0;
   });
 
