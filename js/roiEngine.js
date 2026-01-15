@@ -341,7 +341,7 @@ export function getLoanMaturityDate(loan) {
 }
 
 
-export function deriveLoansWithAmortAndRoi(formattedLoans) {
+export function deriveLoansWithRoi(formattedLoans) {
   return formattedLoans.map(l => {
     
 const rawAmort = buildAmortSchedule(l);
@@ -357,7 +357,6 @@ const amortSchedule = (() => {
   }
   return out;
 })();
-
 
       // Attach ownership flags
       const purchase = new Date(l.purchaseDate);
@@ -396,7 +395,6 @@ const cumSchedule = scheduleWithOwnership
 
     return rows;
   }, []);
-
 
     // Compute proper ROI timeline using correct amort + fees
     const purchasePrice = Number(l.purchasePrice ?? 0);
