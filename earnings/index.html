@@ -3931,17 +3931,12 @@ async function initPage() {
   );
 
   // 3️⃣ DOM refs
-  const nameSelect     = document.getElementById("filterName");
-  const schoolSelect   = document.getElementById("filterSchool");
-  const filterRate     = document.getElementById("filterRate");
-  const sortLoans      = document.getElementById("sortLoans");
-  const resetBtn       = document.getElementById("resetFilters");
- 
-  /* delete
-  const compactToggle  = document.getElementById("toggleCompact");
-  */
-  
-  const loanGrid       = document.getElementById("loanGrid");
+  const nameSelect   = document.getElementById("filterName");
+  const schoolSelect = document.getElementById("filterSchool");
+  const filterRate   = document.getElementById("filterRate");
+  const sortLoans    = document.getElementById("sortLoans");
+  const resetBtn     = document.getElementById("resetFilters");
+  const loanGrid     = document.getElementById("loanGrid");
 
   // 4️⃣ Populate filter dropdowns
   nameSelect.querySelectorAll("option:not(:first-child)").forEach(o => o.remove());
@@ -3982,59 +3977,9 @@ async function initPage() {
     applyLoanFilters();
   });
 
+  // 6️⃣ Table header sorting
+  wireLoanTableColumnSort();
 
-/* =========================
-   TABLE VIEW TOGGLE (EARNINGS)
-   ========================= */
-/* delete
-const tableToggle = document.getElementById("toggleTableView");
-
-  
-const tableWrap   = document.getElementById("loanTableWrap");
-
-// 🚫 Table View is FULL-PAGE ONLY
-if (isEmbed) {
-  tableToggle.checked = false;
-  tableWrap.hidden = true;
-  gridEl.style.display = "none";
-} else {
-  // --- restore ---
-  const savedTableView =
-    localStorage.getItem("earningsTableView");
-
-
-  if (savedTableView !== null) {
-    tableToggle.checked = savedTableView === "true";
-  }
-
-  const applyTableView = (on) => {
-    gridEl.style.display = on ? "none" : "";
-    tableWrap.hidden = !on;
-
-    if (on) {
-      renderLoanTable(getLoansForTableView());
-    }
-  };
-
-  // initial apply
-  applyTableView(tableToggle.checked);
-
-  // user toggle
-  tableToggle.addEventListener("change", () => {
-    const on = tableToggle.checked;
-    localStorage.setItem("earningsTableView", on);
-    applyTableView(on);
-  });
-*/
-  
-wireLoanTableColumnSort();
-
-  
-}
-
-
-
-  
   // 7️⃣ Render UI
   buildLoanColorMap(loansWithEarnings);
   renderLoanTiles(loansWithEarnings);
@@ -4058,18 +4003,6 @@ wireLoanTableColumnSort();
   document.getElementById("kpiFees").textContent =
     formatCurrency(kpis.projectedAvgMonthlyNet);
 
-/* delete?
-  // 9️⃣ Deep-link support (?open=kpi2)
-  const openParam = urlParams.get("open");
-  if (openParam === "kpi2") {
-    currentLoan = null;
-    currentMode = "kpi";
-    requestAnimationFrame(() =>
-      requestAnimationFrame(openKpi2)
-    );
-  }
-  delete? */
-
   // 🔟 Embed behavior
   if (isEmbed) {
     const header = document.querySelector("header");
@@ -4087,6 +4020,7 @@ wireLoanTableColumnSort();
     );
   }
 }
+
 
 /* =========================
    TABLE SORTING (table-only)
