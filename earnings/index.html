@@ -4035,7 +4035,12 @@ if (loan.eventType === "default")    tr.classList.add("event-default");
       <td>${(Number(loan.nominalRate ?? 0) * 100).toFixed(2)}%</td>
       <td>${loan.termYears ?? ""}</td>
       <td>${loan.graceYears ?? 0}</td>
-      <td>${formatCurrency(loan.earningsToDate ?? 0)}</td>
+      <td>
+  ${formatCurrency(
+    getCanonicalCurrentEarningsRow(loan)?.netEarnings ?? 0
+  )}
+</td>
+
     `;
 
     tr.addEventListener("mouseenter", () => tr.classList.add("row-hover"));
