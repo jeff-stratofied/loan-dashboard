@@ -156,27 +156,92 @@
       padding-right:6px;
     }
 
-/* Loan filter row */
+/* =========================================
+   Loan filter row — MATCH ROI
+   ========================================= */
+
 .loan-filters {
-  display:flex;
-  gap:10px;
-  align-items:center;
-  margin:0 0 14px;
-  flex-wrap:wrap;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;          /* 🔑 no wrapping */
   justify-content: space-between;
+  margin: 0 0 14px;
 }
 
-.loan-filters select {
-  padding:6px 10px;
-  border-radius:8px;
-  border:1px solid var(--border);
-  background:var(--card);
-  color:var(--text);
-  font-size:13px;
-}
-    .loan-filters > * {
+.loan-filters > * {
   flex-shrink: 0;
 }
+
+/* Fixed-width selects (ROI standard) */
+.loan-filters select {
+  inline-size: 18ch;
+  min-inline-size: 18ch;
+  max-inline-size: 18ch;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Right-aligned actions container */
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;         /* 🔑 pushes right */
+}
+
+/* =========================================
+   View toggle buttons (Full / Compact / Table)
+   ========================================= */
+
+.view-toggle {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.view-btn {
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  cursor: pointer;
+}
+
+.view-btn span {
+  height: 2px;
+  background: var(--muted);
+  border-radius: 2px;
+}
+
+/* Active view */
+.view-btn.active {
+  border-color: var(--brand);
+  background: rgba(14,165,233,0.08);
+}
+
+.view-btn.active span {
+  background: var(--brand);
+}
+
+/* Hover */
+.view-btn:hover {
+  border-color: var(--brand);
+}
+
+
 
 /* Reset button — match ROI */
 .reset-btn {
@@ -186,14 +251,8 @@
   font-weight:600;
 }
 
-/* Compact toggle */
-.compact-toggle {
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-size:13px;
-  color:var(--muted);
-}
+
+
 
 /* Compact tiles */
 .grid.compact .tile {
@@ -816,52 +875,63 @@ html[data-theme="dark"] .close-btn {
     <section class="kpis" id="kpis"></section>
 
 <!-- Loan Filters / Sort -->
+<!-- Loan Filters -->
 <section class="loan-filters" id="loanFilters">
+
+  <!-- LEFT: filters -->
   <select id="filterName">
-    <option value="">All loans</option>
+    <option value="" disabled selected>Name</option>
   </select>
 
   <select id="filterSchool">
-    <option value="">All schools</option>
+    <option value="" disabled selected>School</option>
   </select>
 
   <select id="filterRate">
-    <option value="">All interest rates</option>
-    <option value="low">Below 5%</option>
-    <option value="mid">5% – 8%</option>
-    <option value="high">Above 8%</option>
+    <option value="" disabled selected>Rate</option>
   </select>
 
   <select id="sortLoans">
-    <option value="purchase_asc">Purchase date ↑</option>
-    <option value="purchase_desc">Purchase date ↓</option>
-    <option value="start_asc">Loan start date ↑</option>
-    <option value="start_desc">Loan start date ↓</option>
-    <option value="amount_asc">Orig amount ↑</option>
-    <option value="amount_desc">Orig amount ↓</option>
-    <option value="rate_asc">Interest rate ↑</option>
-    <option value="rate_desc">Interest rate ↓</option>
+    <option value="" disabled selected>Sort</option>
   </select>
 
-  <label class="compact-toggle">
-    <input type="checkbox" id="toggleCompact" />
-    <span>Compact</span>
-  </label>
+  <button class="btn secondary" id="resetFilters">Reset</button>
 
-  <button class="btn reset-btn" id="resetFilters">Reset filters</button>
+  <!-- RIGHT: view + actions -->
+  <div class="filter-actions">
 
-<label class="compact-toggle">
-  <input type="checkbox" id="toggleTableView" />
-  <span>Table View</span>
-</label>
+    <div class="view-toggle" role="group" aria-label="View mode">
+      <button type="button"
+              class="view-btn"
+              data-view="full"
+              title="Full tiles">
+        <span></span>
+      </button>
 
-<div class="table-actions">
-  <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
-  <button class="btn" id="copyAllCsvBtn">Copy CSV</button>
-  <button class="btn" id="printAllBtn">Print</button>
-</div>
-  
+      <button type="button"
+              class="view-btn"
+              data-view="compact"
+              title="Compact tiles">
+        <span></span><span></span>
+      </button>
+
+      <button type="button"
+              class="view-btn"
+              data-view="table"
+              title="Table view">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+
+    <div class="table-actions">
+      <button class="btn" id="downloadAllCsvBtn">Download CSV</button>
+      <button class="btn" id="copyAllCsvBtn">Copy CSV</button>
+      <button class="btn" id="printAllBtn">Print</button>
+    </div>
+
+  </div>
 </section>
+
 
     
     <section class="grid" id="loanGrid" aria-live="polite"></section>
