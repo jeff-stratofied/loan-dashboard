@@ -1747,6 +1747,7 @@ async function loadLoans() {
   });
 }
 
+    
 
 function openDrawerForLoan(loan){
   
@@ -4998,6 +4999,18 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
+
+        // =========================================
+  // NORMALIZE LOANS (NUMERIC FIELDS ONLY)
+  // =========================================
+  const formattedLoans = loans.map(l => ({
+    ...l,
+    purchasePrice: Number(l.purchasePrice ?? 0),
+    nominalRate: Number(l.nominalRate ?? 0),
+    upfrontFee: Number(l.upfrontFee ?? 0),
+    monthlyFeeStart: Number(l.monthlyFeeStart ?? 0),
+  }));
+
 
 // =========================================
 // DERIVE + INITIALIZE FILTER STATE (REQUIRED)
