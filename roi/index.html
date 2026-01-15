@@ -2906,6 +2906,36 @@ function populateLoanFilters(loans) {
   });
 }
 
+    function populateRateBuckets() {
+  const sel = document.getElementById("filterRate");
+  if (!sel) return;
+
+  sel.innerHTML = `
+    <option value="" disabled selected>Rate</option>
+    <option value="low">Below 5%</option>
+    <option value="mid">5% – 8%</option>
+    <option value="high">Above 8%</option>
+  `;
+}
+
+
+    function populateSortDropdown() {
+  const sel = document.getElementById("sortLoans");
+  if (!sel) return;
+
+  sel.innerHTML = `
+    <option value="" disabled selected>Sort</option>
+    <option value="purchase_desc">Purchase Date ↓</option>
+    <option value="purchase_asc">Purchase Date ↑</option>
+    <option value="start_desc">Loan Start ↓</option>
+    <option value="start_asc">Loan Start ↑</option>
+    <option value="amount_desc">Orig Amount ↓</option>
+    <option value="amount_asc">Orig Amount ↑</option>
+    <option value="rate_desc">Rate ↓</option>
+    <option value="rate_asc">Rate ↑</option>
+  `;
+}
+
     
 // =====================================================
 // FILTER UI EVENT WIRING (ROI PAGE)
@@ -5127,6 +5157,8 @@ filteredLoans = derivedLoans;
 
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
+      populateRateBuckets();       
+populateSortDropdown();  
 
 // =========================================
 // INITIAL VIEW — CANONICAL + EMBED SAFE
