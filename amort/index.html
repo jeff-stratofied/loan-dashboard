@@ -940,6 +940,7 @@ html[data-theme="dark"] .close-btn {
     <thead>
       <tr>
         <th data-key="loanId">ID</th>
+        <th data-key="event">Event</th>
         <th data-key="loanName">Loan Name</th>
         <th data-key="school">School</th>
         <th data-key="loanStartDate">Loan Start</th>
@@ -1125,7 +1126,33 @@ let tpvSeriesData = [];
     // Table-only sort override (does NOT affect tile ordering)
 let TABLE_SORT = { key: null, dir: 1 }; // dir: 1=asc, -1=desc
 
+const EVENT_SORT_ORDER = {
+  default: 1,
+  deferral: 2,
+  prepayment: 3
+};
+
+function getLoanPrimaryEventType(loan) {
+  if (!Array.isArray(loan.events)) return null;
+
+  if (loan.events.some(e => e.type === "default")) return "default";
+  if (loan.events.some(e => e.type === "deferral")) return "deferral";
+  if (loan.events.some(e => e.type === "prepayment")) return "prepayment";
+
+  return null;
+}
+
+
+    
 function compareForKey(a, b, key) {
+ // event column (custom order)
+if (key === "event") {
+  const ea = EVENT_SORT_ORDER[getLoanPrimaryEventType(a)] || 99;
+  const eb = EVENT_SORT_ORDER[getLoanPrimaryEventType(b)] || 99;
+  return ea - eb;
+}
+
+  
   const va = a?.[key];
   const vb = b?.[key];
 
@@ -2109,8 +2136,27 @@ function renderLoanTable(loans) {
     tr.style.cursor = "pointer";
 
     tr.innerHTML = `
-      <td>${loan.loanId}</td>
-      <td>${loan.loanName}</td>
+      const eventType = getLoanPrimaryEventType(loan);
+
+tr.innerHTML = `
+  <td>${loan.loanId}</td>
+
+  <td>
+    ${
+      eventType
+        ? `<span class="loan-badge ${eventType}">
+            ${
+              eventType === "default"    ? "⚠️" :
+              eventType === "deferral"   ? "⏸" :
+              eventType === "prepayment" ? "💰" : ""
+            }
+          </span>`
+        : ""
+    }
+  </td>
+
+  <td>${loan.loanName}</td>
+
       <td>${loan.school}</td>
       <td>${formatDate(new Date(loan.loanStartDate))}</td>
       <td>${formatDate(new Date(loan.purchaseDate))}</td>
@@ -2121,6 +2167,51 @@ function renderLoanTable(loans) {
       <td>${loan.graceYears ?? 0}</td>
       <td>${formatCurrency(getCurrentLoanBalance(loan))}</td>
     `;
+
+if (eventType) {
+  tr.classList.add(`event-${eventType}`);
+}
+
+const badge = tr.querySelector(".loan-badge");
+
+if (badge && eventType) {
+  badge.addEventListener("mouseenter", e => {
+    const event = loan.events.find(ev => ev.type === eventType);
+    if (!event) return;
+
+    const lines = [];
+
+    if (eventType === "prepayment") {
+      lines.push(
+        "Prepayment",
+        `Date: ${formatDate(new Date(event.date + "T00:00:00"))}`,
+        `Amount: ${formatCurrency(event.amount)}`
+      );
+    }
+
+    if (eventType === "default") {
+      lines.push(
+        "Default",
+        `Date: ${formatMonthYear(new Date(event.date + "T00:00:00"))}`,
+        `Recovered: ${formatCurrency(event.recovered ?? 0)}`
+      );
+    }
+
+    if (eventType === "deferral") {
+      lines.push(
+        "Deferral",
+        `Start: ${formatMonthYear(new Date(event.startDate + "T00:00:00"))}`,
+        `Months: ${event.months}`
+      );
+    }
+
+    setMiniTooltipContent(lines);
+    positionMiniTooltip(e.clientX, e.clientY - 8, 16);
+  });
+
+  badge.addEventListener("mouseleave", hideMiniTooltip);
+}
+
 
     // -----------------------------
     // Hover highlight
