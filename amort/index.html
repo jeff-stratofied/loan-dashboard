@@ -1256,6 +1256,23 @@ async function loadAndNormalizeLoans() {
   // =========================================
   rawLoans.forEach(l => normalizeOwnership(l));
 
+  // =========================================
+// DEV SEED — assign Market loans to user
+// REMOVE once real ownership UI exists
+// =========================================
+rawLoans.forEach(l => {
+  if (
+    l.ownership.allocations.length === 1 &&
+    l.ownership.allocations[0].user === "Market"
+  ) {
+    l.ownership.allocations = [
+      { user: PAGE_CONTEXT.user, percent: 100 },
+      { user: "Market", percent: 0 }
+    ];
+  }
+});
+
+
   // --------------------------------------------------
   // DEV-ONLY SCHEMA DRIFT GUARD
   // --------------------------------------------------
