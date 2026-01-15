@@ -1891,7 +1891,7 @@ const KPI_CURRENT_MONTH = new Date(
    - Comparators
    - Math utilities
    ============================================================ */
-
+/* delete
     function getOwnedRoiSeries(loan) {
   if (!Array.isArray(loan.roiSeries)) return [];
 
@@ -1924,7 +1924,7 @@ function getOwnedRoiSeriesFromAmort(loan) {
     });
 }
 
-
+*/
 
     
     
@@ -3237,10 +3237,11 @@ tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
     tile.addEventListener("click", () => openLoanDrawerSafe(loan));
 
     const svg = tile.querySelector("svg.sparkline");
-    const series = getOwnedRoiSeries(loan).map(p => ({
-      date: p.date,
-      y: p.roi
-    }));
+    const series = (loan.roiSeries || []).map(p => ({
+  date: p.date,
+  y: p.roi
+}));
+
 
     createMiniSparkline(svg, series, {
       color: window.KPI_COLOR_MAP?.[loan.id],
@@ -3783,7 +3784,10 @@ function populateProjectedROILoanTable(){
   if(!tbody) return;
 
   tbody.innerHTML = allLoans.map(l => {
-    const roiEntry = getLastOwnedRoiEntry(l);
+    const roiEntry =
+  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+  { roi: 0, loanValue: l.purchasePrice };
+
 
     let matStr = '';
     try {
@@ -4278,10 +4282,13 @@ function renderRatesDrawer() {
   let projWeightedROI = 0;
 
   allLoans.forEach(l => {
-    const last = getLastOwnedRoiEntry(l);
-    if (!last) return;
-    projWeightedROI += l.purchasePrice * (last.roi || 0);
-  });
+  const last =
+    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+    { roi: 0, loanValue: l.purchasePrice };
+
+  projWeightedROI += l.purchasePrice * (last.roi || 0);
+});
+
 
   projWeightedROI =
     projWeightedROI / Math.max(1, totalInv);
@@ -4296,10 +4303,13 @@ function renderRatesDrawer() {
   let projPortfolioValue = 0;
 
   allLoans.forEach(l => {
-    const last = getLastOwnedRoiEntry(l);
-    if (!last) return;
-    projPortfolioValue += last.loanValue || 0;
-  });
+  const last =
+    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+    { roi: 0, loanValue: l.purchasePrice };
+
+  projPortfolioValue += last.loanValue || 0;
+});
+
 
   drawerSecondaryTitle.textContent =
     "Projected Portfolio Value";
