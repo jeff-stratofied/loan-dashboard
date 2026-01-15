@@ -3208,7 +3208,10 @@ function renderLoanTableROI(list = currentLoans) {
       <td>${((loan.nominalRate || 0) * 100).toFixed(2)}%</td>
       <td>${loan.termYears ?? ""}</td>
       <td>${loan.graceYears ?? ""}</td>
-      <td>${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%</td>
+      <td>${(
+  (getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.roi || 0) * 100
+).toFixed(2)}%</td>
+
     `;
 
     // =====================================================
@@ -3307,7 +3310,10 @@ grid.style.display = "grid";
 
   <div class="chart-wrap">
     <div class="mini-label">
-  ROI ${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%
+  ROI ${(
+  (getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.roi || 0) * 100
+).toFixed(2)}%
+
 </div>
 
     <svg class="sparkline"></svg>
@@ -3375,7 +3381,10 @@ tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
       <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
       <td>${loan.termYears ?? ""}</td>
       <td>${loan.graceYears ?? ""}</td>
-      <td>${((getCurrentOwnedRoiEntry(loan)?.roi || 0) * 100).toFixed(2)}%</td>
+      <td>${(
+  (getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.roi || 0) * 100
+).toFixed(2)}%</td>
+
     `;
 
     tr.addEventListener("click", () => {
@@ -3798,7 +3807,10 @@ function populateROILoanTable(){
   if(!tbody) return;
 
   tbody.innerHTML = allLoans.map(l => {
-    const roiEntry = getCurrentOwnedRoiEntry(l);
+    const roiEntry =
+  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+  { roi: 0, loanValue: l.purchasePrice };
+
 
     let matStr = '';
     try {
@@ -4138,9 +4150,13 @@ console.log("%c[RENDER TPV DRAWER]", "color:#ec4899;font-weight:bold");
 
   let weightedROI = 0;
   allLoans.forEach(l => {
-    const last = getCurrentOwnedRoiEntry(l); // TODAY'S ROI ENTRY
-    weightedROI += l.purchasePrice * (last.roi || 0);
-  });
+  const last =
+    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+    { roi: 0, loanValue: l.purchasePrice };
+
+  weightedROI += l.purchasePrice * (last.roi || 0);
+});
+
   weightedROI = weightedROI / Math.max(1, totalInv);
 
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
@@ -4151,9 +4167,13 @@ console.log("%c[RENDER TPV DRAWER]", "color:#ec4899;font-weight:bold");
   // ===============================
   let portfolioValue = 0;
   allLoans.forEach(l => {
-    const last = getCurrentOwnedRoiEntry(l);
-    portfolioValue += last.loanValue || 0;
-  });
+  const last =
+    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+    { roi: 0, loanValue: l.purchasePrice };
+
+  portfolioValue += last.loanValue || 0;
+});
+
 
   drawerSecondaryTitle.textContent = "Portfolio Value";
   drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
