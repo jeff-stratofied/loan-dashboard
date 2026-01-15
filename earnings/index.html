@@ -1976,6 +1976,8 @@ document.addEventListener("mousemove", onBadgeMove, true);
 document.addEventListener("mouseleave", onBadgeLeave, true);
 
 function onBadgeEnter(e) {
+  if (!(e.target instanceof Element)) return;
+
   const badge = e.target.closest(".loan-badge, .table-event-badge");
   if (!badge) return;
 
@@ -1986,6 +1988,7 @@ function onBadgeEnter(e) {
   badgeTooltip.classList.add("visible");
 }
 
+
 function onBadgeMove(e) {
   if (!badgeTooltip.classList.contains("visible")) return;
 
@@ -1994,11 +1997,14 @@ function onBadgeMove(e) {
 }
 
 function onBadgeLeave(e) {
+  if (!(e.target instanceof Element)) return;
+
   const badge = e.target.closest(".loan-badge, .table-event-badge");
   if (!badge) return;
 
   badgeTooltip.classList.remove("visible");
 }
+
 
   
 function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan){
@@ -3975,26 +3981,6 @@ async function initPage() {
     filterRate.value = "";
     applyLoanFilters();
   });
-
- /* =========================
-   COMPACT VIEW TOGGLE (EARNINGS)
-   ========================= */
-
-// restore
-const savedCompact =
-  localStorage.getItem("earningsCompact");
-
-if (savedCompact !== null) {
-  compactToggle.checked = savedCompact === "true";
-  gridEl.classList.toggle("compact", compactToggle.checked);
-}
-
-// user toggle
-compactToggle.addEventListener("change", () => {
-  const on = compactToggle.checked;
-  gridEl.classList.toggle("compact", on);
-  localStorage.setItem("earningsCompact", on);
-});
 
 
 /* =========================
