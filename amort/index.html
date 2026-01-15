@@ -1043,6 +1043,14 @@ import {
 
     import { normalizeLoan } from "../js/normalizeLoan.js?v=dev";
 
+    import {
+  normalizeOwnership,
+  getUserOwnershipPct,
+  isOwnedByUser,
+  MARKET_USER
+} from "./js/ownershipEngine.js";
+
+
 /* =========================================================
    A. PAGE CONTEXT & ROUTING
    ========================================================= */
@@ -1141,6 +1149,22 @@ function getLoanPrimaryEventType(loan) {
   return null;
 }
 
+function deriveLoanForUser(loan, user) {
+  const pct = getUserOwnershipPct(loan, user);
+  if (pct === 0) return null;
+
+  return {
+    ...loan,
+    ownershipPct: pct,
+    userPurchasePrice: loan.purchasePrice * pct,
+    userLoanValue: loan.currentLoanValue * pct,
+    userNetEarnings: loan.netEarnings * pct,
+    userRoiSeries: loan.roiSeries.map(p => ({
+      ...p,
+      roi: p.roi * pct
+    }))
+  };
+}
 
     
 function compareForKey(a, b, key) {
@@ -1219,6 +1243,12 @@ function clearOpenParamFromUrl() {
 async function loadAndNormalizeLoans() {
   const apiResult = await loadLoans();
 
+// =========================================
+// NORMALIZE OWNERSHIP (REQUIRED)
+// =========================================
+loans.forEach(l => normalizeOwnership(l));
+
+  
   // Support BOTH return shapes:
   // 1) array (amort page)
   // 2) { loans, sha } (admin / other pages)
