@@ -1892,19 +1892,7 @@ const KPI_CURRENT_MONTH = new Date(
    - Comparators
    - Math utilities
    ============================================================ */
-/* delete
-function getCurrentOwnedRoiEntry(loan) {
-  // ✅ anchor to the app’s “current month”, not wall-clock
-  const asOf = new Date(KPI_CURRENT_MONTH);
-  asOf.setMonth(asOf.getMonth() + 1);
-  asOf.setDate(0); // last day of KPI month
-  asOf.setHours(23, 59, 59, 999);
 
-  const ownedEntries = (loan.roiSeries || []).filter(r => r?.date && r.date <= asOf);
-  if (!ownedEntries.length) return { roi: 0, loanValue: loan.purchasePrice };
-  return ownedEntries[ownedEntries.length - 1];
-}
-*/
     function getOwnedRoiSeries(loan) {
   if (!Array.isArray(loan.roiSeries)) return [];
 
@@ -1913,24 +1901,6 @@ function getCurrentOwnedRoiEntry(loan) {
     .filter(p => p?.date instanceof Date && !isNaN(+p.date))
     .sort((a, b) => a.date - b.date);
 }
-
-/* delete
-      function getRoiEntryAsOfMonth(loan, monthDate) {
-  if (!Array.isArray(loan.roiSeries)) {
-    return { roi: 0, loanValue: loan.purchasePrice };
-  }
-
-  const eligible = loan.roiSeries.filter(
-    r => r.date && r.date <= monthDate
-  );
-
-  if (!eligible.length) {
-    return { roi: 0, loanValue: loan.purchasePrice };
-  }
-
-  return eligible[eligible.length - 1];
-}
-*/
 
     function getLastOwnedRoiEntry(loan){
       if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
@@ -1995,79 +1965,6 @@ function getOwnedRoiSeriesFromAmort(loan) {
    - Projected ROI
    - Capital recovery
    ============================================================ */
-/* delete
-function computeWeightedRoiAsOfMonth(loans, monthDate) {
-  const total = loans.reduce((s, l) => s + l.purchasePrice, 0);
-
-  if (!total) return 0;
-
-  return loans.reduce((sum, loan) => {
-    const entry = getRoiEntryAsOfMonth(loan, monthDate);
-    return sum + loan.purchasePrice * (entry.roi || 0);
-  }, 0) / total;
-}
-*/
- /* delete     
-function computeKPIs(list) {
-  const total = list.reduce((s, l) => s + l.purchasePrice, 0);
-
-  // -------------------------------------
-  // Weighted ROI to Date (unchanged)
-  // -------------------------------------
-  const weightedROI =
-  computeWeightedRoiAsOfMonth(list, KPI_CURRENT_MONTH);
-
-
-
-  // -------------------------------------
-  // Projected Weighted ROI (unchanged)
-  // -------------------------------------
-  const projectedWeightedROI =
-    list.reduce(
-      (s, l) =>
-        s +
-        l.purchasePrice *
-          ((l.roiSeries[l.roiSeries.length - 1] || {}).roi || 0),
-      0
-    ) / Math.max(1, total);
-
-    // -------------------------------------
-    // Capital Recovery (TO TODAY, FIXED)
-    // -------------------------------------
-    const TODAY = new Date();
-    TODAY.setHours(23, 59, 59, 999);
-    
-    let recoveredPrincipalTotal = 0;
-    let investedPrincipalTotal = 0;
-    
-    list.forEach(l => {
-      if (!l.amort || !l.amort.schedule) return;
-    
-      // ✅ only owned rows through TODAY
-      const recovered = l.amort.schedule
-        .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
-        .reduce((s, r) => s + (r.principalPaid || 0), 0);
-    
-      recoveredPrincipalTotal += recovered;
-      investedPrincipalTotal += (l.purchasePrice || 0);
-    });
-    
-    const capitalRecoveryPct =
-      investedPrincipalTotal > 0
-        ? recoveredPrincipalTotal / investedPrincipalTotal
-        : 0;
-
-    
-        return {
-      total,
-      weightedROI,
-      projectedWeightedROI,
-      capitalRecoveredAmount: recoveredPrincipalTotal,
-      capitalRecoveryPct
-    };
-
-}
-*/
 
     
 
