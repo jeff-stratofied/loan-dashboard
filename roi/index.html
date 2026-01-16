@@ -2019,18 +2019,7 @@ console.groupEnd();
     }
   }
 );
-
-  
 }
-
-    console.log(
-  "%c[OWNERSHIP CHECK]",
-  "color:#f97316;font-weight:bold",
-  loans.map(l => ({
-    id: l.id,
-    pct: getUserOwnershipPct(l, PAGE_USER)
-  }))
-);
 
 
 function openDrawerForLoan(loan){
@@ -2310,7 +2299,14 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
       // ======================================
       // OWNERSHIP DATES
       // ======================================
-      const purchase = new Date(l.purchaseDate);
+      const purchase = parseISODateLocal(l.purchaseDate);
+
+if (!purchase || !Number.isFinite(purchase.getTime())) {
+  throw new Error(
+    `Invalid purchaseDate for loan "${l.name || l.id}": ${l.purchaseDate}`
+  );
+}
+
 
       const scheduleWithOwnership = amortSchedule.map(r => ({
         ...r,
@@ -5322,6 +5318,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   allLoans = derivedLoans;
   currentLoans = [...derivedLoans];
   filteredLoans = [...derivedLoans];
+
+  console.log(
+  "%c[OWNERSHIP CHECK — DERIVED]",
+  "color:#22c55e;font-weight:bold",
+  allLoans.map(l => ({
+    id: l.id,
+    pct: getUserOwnershipPct(l, PAGE_USER),
+    roiPoints: l.roiSeries?.length
+  }))
+);
+
 
   console.log(
     "%c[ROI INIT] derivation complete",
