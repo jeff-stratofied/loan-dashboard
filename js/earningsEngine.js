@@ -204,13 +204,13 @@ export function buildEarningsSchedule({
 // KEEP ALL ROWS, SORT BY CALENDAR
 // 🔑 Hard guarantee loanDate is a real Date object (prevents 1969/epoch regressions)
 return earnings
-  .map(r => ({
-    ...r,
-    loanDate:
-      r.loanDate instanceof Date
-        ? r.loanDate
-        : new Date(loanStart.getFullYear(), loanStart.getMonth(), 1)
-  }))
+.map(r => {
+  if (!(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())) {
+    throw new Error("Invalid loanDate generated in earnings engine");
+  }
+  return r;
+})
+
   .sort((a, b) => a.loanDate - b.loanDate);
 
 }
