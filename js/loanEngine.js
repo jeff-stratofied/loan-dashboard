@@ -12,10 +12,26 @@ import { loadLoans as fetchLoans } from "./loadLoans.js";
 // Canonical LOCAL date helpers (NO TZ BUG)
 // =======================================
 function parseISODateLocal(iso) {
+  // ✅ Pass through real Date objects
+  if (iso instanceof Date) {
+    return iso;
+  }
+
+  // ✅ Null / undefined guard
   if (!iso) return null;
-  const [y, m, d] = iso.split("-").map(Number);
-  return new Date(y, m - 1, d);
+
+  // ✅ Parse ISO YYYY-MM-DD strings
+  if (typeof iso === "string") {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  // ❌ Anything else is a bug
+  throw new Error(
+    `[parseISODateLocal] Unsupported date input: ${String(iso)}`
+  );
 }
+
 
 export function monthKeyFromDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
