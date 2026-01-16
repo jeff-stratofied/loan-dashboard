@@ -68,24 +68,19 @@ export function buildEarningsSchedule({
   events = [],
   today
 }) {
-  
   if (!Array.isArray(amortSchedule) || amortSchedule.length === 0) {
     return [];
   }
 
   // 🔒 HARD GUARDS (match amort engine behavior)
-  const loanStart = parseISODateLocal(loanStartDate);  // CHANGED: Use local parsing
+  const loanStart = parseISODateLocal(loanStartDate);
   if (!Number.isFinite(loanStart.getTime())) {
-    throw new Error(
-      `Invalid loanStartDate in earnings engine: ${loanStartDate}`
-    );
+    throw new Error(`Invalid loanStartDate in earnings engine: ${loanStartDate}`);
   }
 
-  const purchaseDt = parseISODateLocal(purchaseDate);  // CHANGED: Use local parsing
+  const purchaseDt = parseISODateLocal(purchaseDate);
   if (!Number.isFinite(purchaseDt.getTime())) {
-    throw new Error(
-      `Invalid purchaseDate in earnings engine: ${purchaseDate}`
-    );
+    throw new Error(`Invalid purchaseDate in earnings engine: ${purchaseDate}`);
   }
 
   const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
@@ -128,21 +123,19 @@ export function buildEarningsSchedule({
   // Earnings accumulation (authoritative logic)
   // ----------------------------------------------------------
   let cumPrincipal = 0;
-  let cumInterest  = 0;
-  let cumFees      = 0;
+  let cumInterest = 0;
+  let cumFees = 0;
 
   let prevCumPrincipal = 0;
-  let prevCumInterest  = 0;
-  let prevCumFees      = 0;
+  let prevCumInterest = 0;
+  let prevCumFees = 0;
 
   const earnings = normalized.map(row => {
     const deferred = isDeferredMonth(row);
 
     // ---- fees ----
     const upfrontFeeThisMonth =
-      row.isOwned && row.ownershipMonthIndex === 1
-        ? 150
-        : 0;
+      row.isOwned && row.ownershipMonthIndex === 1 ? 150 : 0;
 
     const balance = Number(row.balance ?? 0);
 
@@ -155,8 +148,8 @@ export function buildEarningsSchedule({
 
     // ---- principal / interest ----
     let principalThisMonth = 0;
-    let interestThisMonth  = 0;
-    let feesThisMonth      = 0;
+    let interestThisMonth = 0;
+    let feesThisMonth = 0;
 
     if (row.isOwned && !deferred) {
       principalThisMonth = Math.max(
@@ -169,41 +162,33 @@ export function buildEarningsSchedule({
 
     // ---- accumulate ONCE ----
     cumPrincipal = +(cumPrincipal + principalThisMonth).toFixed(2);
-    cumInterest  = +(cumInterest  + interestThisMonth).toFixed(2);
-    cumFees      = +(cumFees      + feesThisMonth).toFixed(2);
+    cumInterest = +(cumInterest + interestThisMonth).toFixed(2);
+    cumFees = +(cumFees + feesThisMonth).toFixed(2);
 
-    const netEarnings =
-      +(cumPrincipal + cumInterest - cumFees).toFixed(2);
+    const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
 
     // ---- monthly deltas ----
-    const monthlyPrincipal =
-      +(cumPrincipal - prevCumPrincipal).toFixed(2);
-    const monthlyInterest =
-      +(cumInterest - prevCumInterest).toFixed(2);
-    const monthlyFees =
-      +(cumFees - prevCumFees).toFixed(2);
-    const monthlyNet =
-      +(monthlyPrincipal + monthlyInterest - monthlyFees).toFixed(2);
+    const monthlyPrincipal = +(cumPrincipal - prevCumPrincipal).toFixed(2);
+    const monthlyInterest = +(cumInterest - prevCumInterest).toFixed(2);
+    const monthlyFees = +(cumFees - prevCumFees).toFixed(2);
+    const monthlyNet = +(monthlyPrincipal + monthlyInterest - monthlyFees).toFixed(2);
 
     prevCumPrincipal = cumPrincipal;
-    prevCumInterest  = cumInterest;
-    prevCumFees      = cumFees;
+    prevCumInterest = cumInterest;
+    prevCumFees = cumFees;
 
     return {
       ...row,
-
       // cumulative
       cumPrincipal,
       cumInterest,
       cumFees,
       netEarnings,
-
       // monthly
       monthlyPrincipal,
       monthlyInterest,
       monthlyFees,
       monthlyNet,
-
       // overrides
       feeThisMonth: deferred ? 0 : feeThisMonth,
       interestPaid: deferred ? 0 : row.interest,
@@ -212,18 +197,26 @@ export function buildEarningsSchedule({
     };
   });
 
-// KEEP ALL ROWS, SORT BY CALENDAR
-// 🔑 Hard guarantee loanDate is a real Date object (prevents 1969/epoch regressions)
-return earnings
-.map(r => {
-  if (!(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())) {
-    throw new Error("Invalid loanDate generated in earnings engine");
+  // 🔑 IMPORTANT FIX: Only return owned rows (prevents null ownershipDate → 1969 dates)
+  const ownedEarnings = earnings.filter(r => r.isOwned === true);
+
+  // If no owned months at all, return empty array (UI can handle "N/A" maturity etc.)
+  if (ownedEarnings.length === 0) {
+    return [];
   }
-  return r;
-})
 
-  .sort((a, b) => a.loanDate - b.loanDate);
-
+  // Final validation + sort
+  return ownedEarnings
+    .map(r => {
+      if (!(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())) {
+        throw new Error("Invalid loanDate generated in earnings engine");
+      }
+      if (r.ownershipDate === null || !(r.ownershipDate instanceof Date) || !Number.isFinite(r.ownershipDate.getTime())) {
+        throw new Error(`Ownership date became invalid for owned row: ${r.monthIndex}`);
+      }
+      return r;
+    })
+    .sort((a, b) => a.loanDate - b.loanDate);
 }
 
 /* ============================================================
