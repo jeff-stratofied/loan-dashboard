@@ -1263,7 +1263,6 @@ tr.event-default td {
 
 import {
   normalizeOwnership,
-  deriveLoanForUser,
   getUserOwnershipPct
 } from "../js/ownershipEngine.js?v=dev";
 
@@ -5349,11 +5348,9 @@ document.querySelectorAll("#loanTable th").forEach(th => {
       await loadLoans();
 
 // =========================================
-// DERIVE USER-SCOPED LOANS (OWNERSHIP)
+// 🔑 SINGLE SOURCE OF TRUTH (ROI)
 // =========================================
-allLoans = loans
-  .map(l => deriveLoanForUser(l, PAGE_USER))
-  .filter(Boolean);
+allLoans = deriveLoansWithAmortAndRoi(loans);
 
 // 🔑 SINGLE SOURCE OF TRUTH
 currentLoans = [...allLoans];
