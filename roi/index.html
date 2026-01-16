@@ -2195,17 +2195,24 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
 
       const roiSeries = cumSchedule.map(r => {
         const ownershipPct =
-          Number.isFinite(l.userOwnershipPct) ? l.userOwnershipPct : 1;
+  Number.isFinite(l.userOwnershipPct) ? l.userOwnershipPct : 1;
 
-        const realized =
-          (r.cumPrincipal + r.cumInterest) - r.cumFees;
+// 🔑 STEP 5 — APPLY OWNERSHIP TO VALUE + BASIS
+const realized =
+  ((r.cumPrincipal + r.cumInterest) - r.cumFees) * ownershipPct;
 
-        const unrealized = r.balance * 0.95;
-        const loanValue = realized + unrealized;
-        const roi =
-          purchasePrice > 0
-            ? (loanValue - purchasePrice) / purchasePrice
-            : 0;
+const unrealized =
+  (r.balance * 0.95) * ownershipPct;
+
+const loanValue = realized + unrealized;
+
+const invested = purchasePrice * ownershipPct;
+
+const roi =
+  invested > 0
+    ? (loanValue - invested) / invested
+    : 0;
+
 
         return {
           month: r.ownershipMonthIndex,
