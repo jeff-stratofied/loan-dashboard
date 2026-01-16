@@ -2985,10 +2985,15 @@ svg.addEventListener("mouseleave", () => {
 
     
 function applyLoanFilters() {
-  if (!Array.isArray(allLoans) || !allLoans.length) {
+  if (
+    !DATA_READY ||
+    !Array.isArray(currentLoans) ||
+    currentLoans.length === 0
+  ) {
     console.warn("applyLoanFilters called before loans initialized");
     return;
   }
+
 
   const nameVal   = document.getElementById("filterName")?.value || "";
   const schoolVal = document.getElementById("filterSchool")?.value || "";
@@ -5345,38 +5350,29 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 
 
     document.addEventListener("DOMContentLoaded", async () => {
-      await loadLoans();
+await loadLoans();
 
 // =========================================
-// 🔑 SINGLE SOURCE OF TRUTH (ROI)
+// 🔑 DERIVE ROI DATA (SINGLE SOURCE OF TRUTH)
 // =========================================
 allLoans = deriveLoansWithAmortAndRoi(loans);
 
-// 🔑 SINGLE SOURCE OF TRUTH
+// 🔑 ACTIVE STATE
 currentLoans = [...allLoans];
 filteredLoans = [...allLoans];
 
-
-// =========================================
-// DERIVE + INITIALIZE FILTER STATE (REQUIRED)
-// =========================================
-const derivedLoans = deriveLoansWithAmortAndRoi(loans);
-
-// 🔑 SOURCE OF TRUTH
-allLoans = derivedLoans;
-currentLoans = derivedLoans;
-filteredLoans = derivedLoans;
-
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
-populateRateBuckets();       
-populateSortDropdown();  
+populateRateBuckets();
+populateSortDropdown();
+
+// =========================================
+// 🔑 DATA IS NOW READY
+// =========================================
+DATA_READY = true;
 
 // =========================================
 // APPLY DEFERRED VIEW MODE (CANONICAL)
-// =========================================
-// =========================================
-// APPLY DEFERRED VIEW MODE (WITH DEBUG)
 // =========================================
 if (PAGE_CONTEXT.isEmbed) {
   // 🔒 EMBED MODE: KPIs + drawer only
@@ -5387,11 +5383,14 @@ if (PAGE_CONTEXT.isEmbed) {
 
 } else if (PENDING_VIEW_MODE) {
   setViewMode(PENDING_VIEW_MODE);
-
   window.__logView?.(`after deferred restore (${PENDING_VIEW_MODE})`);
-
   PENDING_VIEW_MODE = null;
+
+} else {
+  // 🔑 INITIAL RENDER (FULL VIEW DEFAULT)
+  setViewMode("full");
 }
+
 
 
 
