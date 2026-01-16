@@ -95,20 +95,27 @@ export function getRoiEntryAsOfMonth(loan, monthDate) {
 export function computeWeightedRoiAsOfMonth(loans, monthDate) {
   if (!Array.isArray(loans) || !(monthDate instanceof Date)) return 0;
 
-  const totalInvested = loans.reduce((s, l) => s + safeNum(l?.purchasePrice), 0);
-  if (!totalInvested) return 0;
-
+  let totalInvested = 0;
   let weightedSum = 0;
 
   loans.forEach(loan => {
     const entry = getRoiEntryAsOfMonth(loan, monthDate);
-    if (entry && typeof entry.roi === "number") {
-      weightedSum += entry.roi * safeNum(loan.purchasePrice);
+    if (!entry) return;
+
+    const invested = safeNum(entry.invested);
+    const roi = safeNum(entry.roi);
+
+    if (invested > 0) {
+      weightedSum += roi * invested;
+      totalInvested += invested;
     }
   });
 
-  return weightedSum / totalInvested;
+  return totalInvested > 0
+    ? weightedSum / totalInvested
+    : 0;
 }
+
 
 /**
  * Compute portfolio KPIs (single source of truth).
@@ -134,7 +141,13 @@ export function computeKPIs(loans, asOfMonth) {
     };
   }
 
-  const totalInvested = loans.reduce((s, l) => s + safeNum(l?.purchasePrice), 0);
+  const totalInvested = loans.reduce((s, l) => {
+  const last = Array.isArray(l.roiSeries) && l.roiSeries.length
+    ? l.roiSeries[l.roiSeries.length - 1]
+    : null;
+  return s + safeNum(last?.invested);
+}, 0);
+
 
   if (!totalInvested) {
     return {
@@ -151,11 +164,15 @@ export function computeKPIs(loans, asOfMonth) {
 
   // Projected weighted ROI (use last ROI point per loan)
   const projectedWeightedROI =
-    loans.reduce((sum, l) => {
-      const s = Array.isArray(l?.roiSeries) ? l.roiSeries : [];
-      const last = s.length ? s[s.length - 1] : null;
-      return sum + safeNum(last?.roi) * safeNum(l?.purchasePrice);
-    }, 0) / totalInvested;
+  loans.reduce((sum, l) => {
+    const last = Array.isArray(l.roiSeries) && l.roiSeries.length
+      ? l.roiSeries[l.roiSeries.length - 1]
+      : null;
+
+    if (!last) return sum;
+    return sum + safeNum(last.roi) * safeNum(last.invested);
+  }, 0) / (totalInvested || 1);
+
 
   // Capital recovered (principal paid through asOfMonth, owned rows only)
   const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
@@ -244,20 +261,20 @@ export function buildProjectedRoiTimeline(loans, opts = {}) {
     // Expect loan.cumSchedule rows (owned-only typically) with:
     // loanDate, cumPrincipal, cumInterest, cumFees, balance, purchasePrice
     const cs = Array.isArray(loan.cumSchedule) ? loan.cumSchedule : [];
-    cs.forEach(row => {
-      if (!row?.isOwned) return;
-      if (!(row.loanDate instanceof Date) || isNaN(+row.loanDate)) return;
+cs.forEach(row => {
+  if (!row?.isOwned) return;
+  if (!(row.loanDate instanceof Date) || isNaN(+row.loanDate)) return;
 
-      const realized = (safeNum(row.cumPrincipal) + safeNum(row.cumInterest)) - safeNum(row.cumFees);
-      const unrealized = safeNum(row.balance) * 0.95;
-      const loanValue = realized + unrealized;
+  // 🔑 USE DERIVED ROI — DO NOT RECOMPUTE
+  const entry = getRoiEntryAsOfMonth(loan, row.loanDate);
+  if (!entry) return;
 
-      const purchasePrice = safeNum(loan.purchasePrice);
-      const roi = purchasePrice ? (loanValue - purchasePrice) / purchasePrice : 0;
+  const roi = safeNum(entry.roi);
 
-      const key = monthKeyFromDate(row.loanDate);
-      if (key) roiMap[key] = roi;
-    });
+  const key = monthKeyFromDate(row.loanDate);
+  if (key) roiMap[key] = roi;
+});
+
 
     // Determine the very first ROI value for this loan
     const roiKeys = Object.keys(roiMap).sort();
