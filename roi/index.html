@@ -3872,6 +3872,10 @@ async function initROI() {
   }
 }
 
+window.__roi = {
+  get allLoans() { return allLoans; },
+  get currentLoans() { return currentLoans; }
+};
 
 
 // =====================================================
