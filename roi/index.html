@@ -1989,7 +1989,7 @@ async function loadLoans() {
     };
   });
 // 🔑 REQUIRED: normalize ownership schema
-loans.forEach(normalizeOwnership);
+loans.forEach(l => normalizeOwnership(l, PAGE_USER));
 
   console.log(
   "%c[ROI DEBUG 1] loadLoans complete",
