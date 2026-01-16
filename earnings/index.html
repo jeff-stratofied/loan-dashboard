@@ -1805,9 +1805,6 @@ async function loadLoansFromBackend() {
     const data = await res.json();
     const arr = data.loans || [];
 
-// BACKEND DATE AUDIT (trust engine strings)
-console.log({loanId: loan.loanId, loanName: loan.loanName, loanStartDate: loan.loanStartDate, originationDate: loan.originationDate, purchaseDate: loan.purchaseDate});
-
     // =========================================
     // 🔑 LOAD LOANS (DO NOT MUTATE DATES HERE)
     // =========================================
@@ -1944,8 +1941,6 @@ const normalizedLoan = {
 };
 
 if (String(normalizedLoan.loanName).includes("WCC")) {
-// 🔍 NORMALIZED LOAN (WCC) — from engine
-console.log({loanId, loanStartDate, purchaseDate});  // Strings only — engines handle parsing
 }
 
   
@@ -2006,18 +2001,6 @@ if (String(normalizedLoan.loanName).includes("WCC")) {
   const bad = amortSchedule.find(
     r => !(r.date instanceof Date) || !Number.isFinite(r.date?.getTime?.())
   );
-
-  if (bad) {
-    console.error("❌ BAD AMORT ROW (WCC)", {
-      loanId: normalizedLoan.loanId,
-      row: bad
-    });
-  } else {
-    console.log("✅ Amort dates OK (WCC)", {
-      first: amortSchedule[0]?.date,
-      last: amortSchedule.at(-1)?.date
-    });
-  }
 }
 
   
@@ -2034,9 +2017,6 @@ if (String(normalizedLoan.loanName).includes("WCC")) {
     r => !(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())
   );
 
-// 🔍 EARNINGS OUTPUT (WCC)
-console.log('✅ Earnings dates OK', {first: earningsSchedule[0]?.loanDate, last: earningsSchedule[earningsSchedule.length - 1]?.loanDate});
-}
 
   
 const tmpLoan = { ...normalizedLoan, amort: { schedule: amortSchedule }, earningsSchedule };
