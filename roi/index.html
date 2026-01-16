@@ -2007,6 +2007,15 @@ loans.forEach(normalizeOwnership);
   
 }
 
+    console.log(
+  "%c[OWNERSHIP CHECK]",
+  "color:#f97316;font-weight:bold",
+  loans.map(l => ({
+    id: l.id,
+    pct: getUserOwnershipPct(l, PAGE_USER)
+  }))
+);
+
 
 function openDrawerForLoan(loan){
   
