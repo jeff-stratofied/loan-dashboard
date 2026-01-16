@@ -1805,24 +1805,8 @@ async function loadLoansFromBackend() {
     const data = await res.json();
     const arr = data.loans || [];
 
-    // =========================================
-    // 🔍 BACKEND DATE AUDIT (TEMP DEBUG)
-    // =========================================
-    console.group("🔍 BACKEND DATE AUDIT");
-
-    arr.forEach(l => {
-      if (String(l.loanName || "").includes("WCC")) {
-        console.log({
-          loanId: l.loanId || l.id,
-          loanName: l.loanName,
-          loanStartDate: l.loanStartDate,
-          originationDate: l.originationDate,
-          purchaseDate: l.purchaseDate
-        });
-      }
-    });
-
-    console.groupEnd();
+// BACKEND DATE AUDIT (trust engine strings)
+console.log({loanId: l.loanId, loanName: l.loanName, loanStartDate: l.loanStartDate, originationDate: l.originationDate, purchaseDate: l.purchaseDate});
 
     // =========================================
     // 🔑 LOAD LOANS (DO NOT MUTATE DATES HERE)
@@ -1960,15 +1944,8 @@ const normalizedLoan = {
 };
 
 if (String(normalizedLoan.loanName).includes("WCC")) {
-  console.group("🔍 NORMALIZED LOAN (WCC)");
-  console.log({
-    loanId: normalizedLoan.loanId,
-    loanStartDate: normalizedLoan.loanStartDate,
-    purchaseDate: normalizedLoan.purchaseDate,
-    parsedLoanStart: new Date(normalizedLoan.loanStartDate),
-    parsedPurchase: new Date(normalizedLoan.purchaseDate)
-  });
-  console.groupEnd();
+// 🔍 NORMALIZED LOAN (WCC) — from engine
+console.log({loanId, loanStartDate, purchaseDate});  // Strings only — engines handle parsing
 }
 
   
@@ -2057,20 +2034,8 @@ if (String(normalizedLoan.loanName).includes("WCC")) {
     r => !(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())
   );
 
-  console.group("🔍 EARNINGS OUTPUT (WCC)");
-  if (bad) {
-    console.error("❌ BAD EARNINGS DATE", {
-      loanId: normalizedLoan.loanId,
-      loanDate: bad.loanDate,
-      row: bad
-    });
-  } else {
-    console.log("✅ Earnings dates OK", {
-      first: earningsSchedule[0]?.loanDate,
-      last: earningsSchedule.at(-1)?.loanDate
-    });
-  }
-  console.groupEnd();
+// 🔍 EARNINGS OUTPUT (WCC)
+console.log('✅ Earnings dates OK', {first: earningsSchedule[0]?.loanDate, last: earningsSchedule[earningsSchedule.length - 1]?.loanDate});
 }
 
   
