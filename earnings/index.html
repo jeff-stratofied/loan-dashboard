@@ -1825,7 +1825,16 @@ console.groupEnd();
 loans = arr.map(l => {
   const loan = {
     ...l,
-    loanStartDate: l.loanStartDate || "",
+    loans = arr.map(l => {
+  const loan = {
+    ...l
+  };
+
+  normalizeOwnership(loan);
+  ...
+  return loan;
+});
+
   };
 
   // =========================================
@@ -1985,6 +1994,27 @@ if (!normalizedLoan.loanStartDate || !normalizedLoan.purchaseDate) {
   );
 }
 
+// =====================================================
+// 🔒 AMORT DATE SAFETY NET (FAIL FAST)
+// =====================================================
+const __loanStartCheck = new Date(normalizedLoan.loanStartDate + "T00:00:00");
+const __purchaseCheck = new Date(normalizedLoan.purchaseDate + "T00:00:00");
+
+if (!Number.isFinite(__loanStartCheck.getTime())) {
+  throw new Error(
+    `[AMORT] Invalid loanStartDate for loan ${normalizedLoan.loanId}: ` +
+    `${normalizedLoan.loanStartDate}`
+  );
+}
+
+if (!Number.isFinite(__purchaseCheck.getTime())) {
+  throw new Error(
+    `[AMORT] Invalid purchaseDate for loan ${normalizedLoan.loanId}: ` +
+    `${normalizedLoan.purchaseDate}`
+  );
+}
+
+  
 
 const amortSchedule = buildAmortSchedule({
   principal: normalizedLoan.balanceForAmort,
