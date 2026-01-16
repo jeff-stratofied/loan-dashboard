@@ -2202,43 +2202,59 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
         }, []);
 
       // ROI timeline
-      const purchasePrice = Number(l.purchasePrice ?? 0);
+const roiSeries = cumSchedule.map(r => {
+  // ----------------------------------
+  // STEP 6 — Tranche-aware ownership
+  // ----------------------------------
+  const tranches = Array.isArray(l.ownershipLots)
+    ? l.ownershipLots
+    : [];
 
-      const roiSeries = cumSchedule.map(r => {
-        const ownershipPct =
-  Number.isFinite(l.userOwnershipPct) ? l.userOwnershipPct : 1;
+  // Total % owned (derived, not authoritative)
+  const ownershipPct = tranches.reduce(
+    (s, t) => s + (Number(t.pct) || 0),
+    0
+  );
 
-// 🔑 STEP 5 — APPLY OWNERSHIP TO VALUE + BASIS
-const realized =
-  ((r.cumPrincipal + r.cumInterest) - r.cumFees) * ownershipPct;
+  // Total invested capital (absolute dollars)
+  const invested = tranches.reduce(
+    (s, t) => s + (Number(t.pricePaid) || 0),
+    0
+  );
 
-const unrealized =
-  (r.balance * 0.95) * ownershipPct;
+  // Scale loan economics by owned %
+  const realized =
+    ((r.cumPrincipal + r.cumInterest) - r.cumFees) * ownershipPct;
 
-const loanValue = realized + unrealized;
+  const unrealized =
+    (r.balance * 0.95) * ownershipPct;
 
-const invested = purchasePrice * ownershipPct;
+  const loanValue = realized + unrealized;
 
-const roi =
-  invested > 0
-    ? (loanValue - invested) / invested
-    : 0;
+  const roi =
+    invested > 0
+      ? (loanValue - invested) / invested
+      : 0;
 
+  return {
+    month: r.ownershipMonthIndex,
+    date: r.loanDate,
+    displayDate: r.displayDate,
 
-        return {
-          month: r.ownershipMonthIndex,
-          date: r.loanDate,
-          displayDate: r.displayDate,
-          roi,
-          loanValue,
-          ownershipPct,
-          cumFees: r.cumFees,
-          realized,
-          remainingBalance: r.balance,
-          unrealized,
-          isTerminal: r.isTerminal === true
-        };
-      });
+    roi,
+    loanValue,
+    invested,          // 🔑 canonical basis
+    ownershipPct,      // derived convenience
+    tranches,          // 🔑 future-proof
+
+    cumFees: r.cumFees,
+    realized,
+    remainingBalance: r.balance,
+    unrealized,
+    isTerminal: r.isTerminal === true
+  };
+});
+
 
       // 🔑 RETURN MUST BE HERE
       return {
