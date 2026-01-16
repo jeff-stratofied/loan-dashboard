@@ -1990,6 +1990,20 @@ async function loadLoans() {
   });
 // 🔑 REQUIRED: normalize ownership schema
 loans.forEach(normalizeOwnership);
+
+  console.log(
+  "%c[ROI DEBUG 1] loadLoans complete",
+  "color:#22c55e;font-weight:bold",
+  {
+    rawCount: loans.length,
+    sample: loans[0] && {
+      id: loans[0].id,
+      purchaseDate: loans[0].purchaseDate,
+      ownershipPct: getUserOwnershipPct(loans[0], PAGE_USER)
+    }
+  }
+);
+
   
 }
 
@@ -5370,80 +5384,80 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 });
 
 
-    document.addEventListener("DOMContentLoaded", async () => {
-await loadLoans();
+document.addEventListener("DOMContentLoaded", async () => {
 
-// 🔑 REQUIRED: normalize ownership before ROI derivation
-loans.forEach(normalizeOwnership);
+  await loadLoans();
 
-      
-// =========================================
-// 🔑 DERIVE ROI DATA (SINGLE SOURCE OF TRUTH)
-// =========================================
-allLoans = deriveLoansWithAmortAndRoi(loans);
+  // =========================================
+  // 🔑 DERIVE ROI DATA (SINGLE SOURCE OF TRUTH)
+  // =========================================
+  const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 
-// 🔑 ACTIVE STATE
-currentLoans = [...allLoans];
-filteredLoans = [...allLoans];
+  allLoans = derivedLoans;
+  currentLoans = [...derivedLoans];
+  filteredLoans = [...derivedLoans];
 
-// 🔑 Populate filter dropdowns from real data
-populateLoanFilters(allLoans);
-populateRateBuckets();
-populateSortDropdown();
+  console.log(
+    "%c[ROI INIT] derivation complete",
+    "color:#22c55e;font-weight:bold",
+    { derivedCount: allLoans.length }
+  );
 
-// =========================================
-// 🔑 DATA IS NOW READY
-// =========================================
-DATA_READY = true;
+  // =========================================
+  // 🔑 Populate filters AFTER data exists
+  // =========================================
+  populateLoanFilters(allLoans);
+  populateRateBuckets();
+  populateSortDropdown();
 
-// =========================================
-// APPLY DEFERRED VIEW MODE (CANONICAL)
-// =========================================
-if (PAGE_CONTEXT.isEmbed) {
-  // 🔒 EMBED MODE: KPIs + drawer only
-  document.getElementById("loanGrid")?.remove();
-  document.getElementById("loanTableWrap")?.remove();
+  // =========================================
+  // 🔑 DATA IS NOW READY
+  // =========================================
+  DATA_READY = true;
 
-  window.__logView?.("embed cleanup");
+  // =========================================
+  // APPLY VIEW MODE
+  // =========================================
+  if (PAGE_CONTEXT.isEmbed) {
+    // 🔒 EMBED MODE: KPIs + drawer only
+    document.getElementById("loanGrid")?.remove();
+    document.getElementById("loanTableWrap")?.remove();
 
-} else if (PENDING_VIEW_MODE) {
-  setViewMode(PENDING_VIEW_MODE);
-  window.__logView?.(`after deferred restore (${PENDING_VIEW_MODE})`);
-  PENDING_VIEW_MODE = null;
+    window.__logView?.("embed cleanup");
 
-} else {
-  // 🔑 INITIAL RENDER (FULL VIEW DEFAULT)
-  setViewMode("full");
-}
+  } else if (PENDING_VIEW_MODE) {
+    setViewMode(PENDING_VIEW_MODE);
+    window.__logView?.(`after deferred restore (${PENDING_VIEW_MODE})`);
+    PENDING_VIEW_MODE = null;
 
+  } else {
+    // 🔑 INITIAL RENDER (FULL VIEW DEFAULT)
+    setViewMode("full");
+  }
 
+  // =====================================================
+  // EMBED MODE — FORCE KPI DRAWER (MATCH AMORT)
+  // =====================================================
+  const params = new URLSearchParams(window.location.search);
 
+  if (params.get("embed") === "true" && params.get("open")) {
+    localStorage.removeItem("roiTableView");
 
-      
+    const tableToggle =
+      document.getElementById("toggleTableView");
+    if (tableToggle) tableToggle.checked = false;
 
-// =====================================================
-// EMBED MODE — FORCE KPI DRAWER (MATCH AMORT)
-// Must run ONCE, after initial render
-// =====================================================
-const params = new URLSearchParams(window.location.search);
+    openRoiKpiDrawer(params.get("open"));
+  }
 
-if (params.get("embed") === "true" && params.get("open")) {
-  // Table view is FULL-PAGE ONLY — never iframe
-  localStorage.removeItem("roiTableView");
+  // =========================================
+  // UI: current date label
+  // =========================================
+  document.getElementById("currentDate").textContent =
+    formatMonthYear(new Date());
 
-  const tableToggle = document.getElementById("toggleTableView");
-  if (tableToggle) tableToggle.checked = false;
+});
 
-  // Open exactly one KPI drawer
-  openRoiKpiDrawer(params.get("open"));
-}
-
-      
-      document.getElementById("currentDate").textContent =
-  formatMonthYear(new Date());
-
-      initROI();
-    });
 
     
     // theme toggle
