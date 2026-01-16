@@ -1279,22 +1279,6 @@ const PAGE_CONTEXT = (() => {
   };
 })();
 
-// =========================================
-// DEBUG — VIEW STATE TRACE (TEMPORARY)
-// =========================================
-window.__logView = (tag) => {
-  console.log(
-    `%c[VIEW DEBUG] ${tag}`,
-    "color:#22c55e;font-weight:bold",
-    {
-      stored: localStorage.getItem("roiViewMode"),
-      pending: window.PENDING_VIEW_MODE,
-      gridDisplay: document.getElementById("loanGrid")?.style.display,
-      tableHidden: document.getElementById("loanTableWrap")?.hidden
-    }
-  );
-};
-
     
 // =========================================
 // MIGRATE LEGACY TABLE VIEW (ONE-TIME)
@@ -1361,8 +1345,6 @@ function setViewMode(mode) {
   else {
     renderLoanGrid(currentLoans); // full
   }
-
-  __logView(`after setViewMode(${mode})`);
 
 }
 
@@ -1793,23 +1775,6 @@ const timeline = buildProjectedRoiTimeline(allLoans, {
   colors: buildKpiColorMap(allLoans)   // 🔑 correct option name
 });
 
-
-console.group("%c[KPI2 DEBUG] timeline.perLoanSeries", "color:#22c55e;font-weight:bold");
-
-timeline.perLoanSeries.forEach((s, i) => {
-  console.log(
-    `series[${i}]`,
-    {
-      id: s.id,
-      color: s.color,
-      firstY: s.data.find(p => p.y != null)?.y
-    }
-  );
-});
-
-console.groupEnd();
-
-  
 createMultiSeriesChart(
   drawerChartArea,
   timeline.perLoanSeries,   // 🔑 includes colors
@@ -1818,9 +1783,6 @@ createMultiSeriesChart(
 );
 
 }
-
-
-
     
   else if (kpiId === "kpi3") {
     drawerTitle.textContent = "Capital Recovered";
@@ -1865,15 +1827,7 @@ function openRoiKpiDrawer(kpiId) {
    ============================ */
 function openRoiKpiFromUrl(kpiOverride = null) {
 
-  console.log(
-    "%c[ROUTER ENTER]",
-    "color:#3b82f6;font-weight:bold",
-    {
-      kpiOverride,
-      urlOpen: new URLSearchParams(window.location.search).get("open"),
-      currentMode
-    }
-  );
+
 
   let kpi =
     kpiOverride ??
@@ -1909,19 +1863,15 @@ function openRoiKpiFromUrl(kpiOverride = null) {
 
   switch (kpi) {
     case "tpv":
-      console.log("%c[ROUTER → TPV]", "color:#eab308;font-weight:bold");
       renderTPVDrawer();
       break;
     case "rates":
-      console.log("%c[ROUTER → Rates]", "color:#eab308;font-weight:bold");
       renderRatesDrawer();
       break;
     case "capitalRecovery":
-      console.log("%c[ROUTER → CapRecov]", "color:#eab308;font-weight:bold");
       renderCapitalRecoveryDrawer();
       break;
     case "spread":
-      console.log("%c[ROUTER → spread]", "color:#eab308;font-weight:bold");
       renderROISpreadDrawer();
       break;
     default:
@@ -1940,10 +1890,6 @@ function openRoiKpiFromUrl(kpiOverride = null) {
   drawer.scrollTop = 0;
 
   requestAnimationFrame(() => {
-    console.log(
-      "[POST-FORCE]",
-      getComputedStyle(drawer).transform
-    );
   });
 }
 
