@@ -1261,6 +1261,10 @@ tr.event-default td {
   computeWeightedRoiAsOfMonth
 } from "../js/roiEngine.js?v=dev";
 
+import {
+  normalizeOwnership,
+  getUserOwnershipPct
+} from "./ownershipEngine.js?v=dev";
 
 
 
@@ -1967,6 +1971,21 @@ async function loadLoans() {
       upfrontFee: Number(l.upfrontFee ?? 150),
       monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
     };
+  });
+
+    // ============================================
+  // 🔑 STEP 2: NORMALIZE OWNERSHIP (NO UI CHANGE)
+  // ============================================
+  loans.forEach(loan => {
+    normalizeOwnership(loan);
+  });
+    loans.forEach(loan => {
+    loan.userOwnershipPct = getUserOwnershipPct(loan, PAGE_USER);
+
+    // TEMP SAFETY (can remove later)
+    if (!Number.isFinite(loan.userOwnershipPct)) {
+      console.warn("[OWNERSHIP ERROR]", loan);
+    }
   });
 }
 
