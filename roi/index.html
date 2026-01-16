@@ -2231,17 +2231,17 @@ const cumSchedule = scheduleWithOwnership
 
 });
 
-    // Return updated loan object
     return {
-    ...l,
-    amort: { schedule: amortSchedule },
-    scheduleWithOwnership,
-    cumSchedule,
-    balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
-    roiSeries
-  };
-});  
-  }
+      ...l,
+      amort: { schedule: amortSchedule },
+      scheduleWithOwnership,
+      cumSchedule,
+      balanceAtPurchase:
+        amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
+      roiSeries
+    };
+}
+
 
 
 
