@@ -1996,6 +1996,13 @@ async function loadLoans() {
     loans.forEach(loan => {
     loan.userOwnershipPct = getUserOwnershipPct(loan, PAGE_USER);
 
+      console.log(
+    "[OWNERSHIP VERIFY]",
+    loan.id,
+    loan.userOwnershipPct,
+    loan.ownership.allocations
+  );
+
     // TEMP SAFETY (can remove later)
     if (!Number.isFinite(loan.userOwnershipPct)) {
       console.warn("[OWNERSHIP ERROR]", loan);
