@@ -1982,14 +1982,6 @@ async function loadLoans() {
     loans.forEach(loan => {
     loan.userOwnershipPct = getUserOwnershipPct(loan, PAGE_USER);
 
-console.log(
-  "[STEP 3 OWNERSHIP CHECK]",
-  loans.map(l => ({
-    id: l.id,
-    pct: l.userOwnershipPct
-  }))
-);
-
       
     // TEMP SAFETY (can remove later)
     if (!Number.isFinite(loan.userOwnershipPct)) {
