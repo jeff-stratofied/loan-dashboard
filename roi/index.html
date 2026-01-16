@@ -4196,15 +4196,15 @@ function buildHistoricalRoiTimeline(loans) {
     return d && d < earliest ? d : earliest;
   }, parseISODateLocal(loans[0].purchaseDate));
 
-  // Build monthly date list from earliest → today
+  // Build monthly date list from earliest → today (month anchors)
   const dates = [];
   const cursor = new Date(
     earliestPurchase.getFullYear(),
     earliestPurchase.getMonth(),
     1
   );
-
   const end = new Date(today.getFullYear(), today.getMonth(), 1);
+
   while (cursor <= end) {
     dates.push(new Date(cursor));
     cursor.setMonth(cursor.getMonth() + 1);
@@ -4219,18 +4219,19 @@ function buildHistoricalRoiTimeline(loans) {
     const ownershipPct =
       Number.isFinite(loan.userOwnershipPct) ? loan.userOwnershipPct : 1;
 
-    const invested = Number(loan.purchasePrice ?? 0) * ownershipPct;
+    const invested =
+      Number(loan.purchasePrice ?? 0) * ownershipPct;
 
-    // Map monthKey -> ROI
+    // Map YYYY-MM -> ROI
     const roiMap = {};
 
-    (loan.cumSchedule || []).forEach(row => {
+    loan.cumSchedule.forEach(row => {
       if (!row.isOwned) return;
 
       const rowDate = row.displayDate || row.loanDate;
       if (!(rowDate instanceof Date) || isNaN(+rowDate)) return;
 
-      // Ownership-adjusted value (MATCH EARNINGS)
+      // Ownership-adjusted loan value (MATCH EARNINGS / AMORT)
       const realized =
         ((row.cumPrincipal + row.cumInterest) - row.cumFees) * ownershipPct;
 
@@ -4242,7 +4243,6 @@ function buildHistoricalRoiTimeline(loans) {
       const roi =
         invested > 0 ? (loanValue - invested) / invested : 0;
 
-      // LOCAL month key (NO toISOString)
       const key =
         rowDate.getFullYear() + "-" +
         String(rowDate.getMonth() + 1).padStart(2, "0");
@@ -4267,6 +4267,7 @@ function buildHistoricalRoiTimeline(loans) {
         lastKnownROI = roiMap[key];
       }
 
+      // forward-fill ROI after purchase (required for TPV)
       return { date, y: lastKnownROI };
     });
 
@@ -4281,7 +4282,7 @@ function buildHistoricalRoiTimeline(loans) {
     };
   });
 
-  // ---- 3. Build weighted ROI series (ownership-aware) ----
+  // ---- 3. Build weighted ROI series (TPV / spread depend on this) ----
   const totalInvested = loans.reduce((s, l) => {
     const pct =
       Number.isFinite(l.userOwnershipPct) ? l.userOwnershipPct : 1;
@@ -4314,6 +4315,7 @@ function buildHistoricalRoiTimeline(loans) {
     earliestDate: earliestPurchase
   };
 }
+
 
 
 
