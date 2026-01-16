@@ -263,13 +263,6 @@ function normalizeDate(d) {
 
 export function buildAmortSchedule(loan) {
 
-console.assert(
-  loanStartDate instanceof Date,
-  "[AMORT] loanStartDate must be Date",
-  loanStartDate
-);
-
-  
   const {
     principal,
     nominalRate,
@@ -280,6 +273,12 @@ console.assert(
     events = []
   } = loan;
 
+console.assert(
+  loanStartDate instanceof Date,
+  "[AMORT] loanStartDate must be Date",
+  loanStartDate
+);
+  
   const monthlyRate = nominalRate / 12;
 
 // ✅ Grace is ADDITIVE to repayment term
