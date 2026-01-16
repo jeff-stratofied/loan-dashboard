@@ -1374,8 +1374,12 @@ viewButtons.forEach(btn => {
 });
 
     
-  const PAGE_USER =
+  const RAW_PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
+
+// 🔑 CANONICAL ownership user key
+const PAGE_USER = RAW_PAGE_USER.trim().toLowerCase();
+
 
     // =========================================
 // Back to My Holdings (Reporting context)
