@@ -1989,6 +1989,16 @@ async function loadLoans() {
   });
 }
 
+    // ============================================
+// 🔴 DEV OVERRIDE — FORCE 100% OWNERSHIP
+// (REMOVE WHEN REAL FRACTIONAL DATA IS LIVE)
+// ============================================
+if (PAGE_USER === "jeff") {
+  loans.forEach(loan => {
+    loan.userOwnershipPct = 1;
+  });
+}
+
 
 function openDrawerForLoan(loan){
   
