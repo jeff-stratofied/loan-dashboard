@@ -8,33 +8,16 @@ export const MARKET_USER = "Market";
 // -------------------------------------
 // Normalize ownership to always hit 100%
 // -------------------------------------
-export function normalizeOwnership(loan, user) {
+export function normalizeOwnership(loan) {
   if (!loan.ownership) {
     loan.ownership = {
       unit: "percent",
       step: OWNERSHIP_STEP,
-      allocations: []
+      allocations: [{ user: MARKET_USER, percent: 100 }]
     };
+    return;
   }
 
-  if (!Array.isArray(loan.ownership.allocations)) {
-    loan.ownership.allocations = [];
-  }
-
-  if (user) {
-    const hasUser = loan.ownership.allocations.some(
-      a => a.user === user
-    );
-
-    if (!hasUser) {
-      loan.ownership.allocations.push({
-        user,
-        percent: 100
-      });
-    }
-  }
-
-  // Rebalance market remainder
   const assigned = loan.ownership.allocations
     .filter(a => a.user !== MARKET_USER)
     .reduce((s, a) => s + a.percent, 0);
@@ -46,8 +29,6 @@ export function normalizeOwnership(loan, user) {
     { user: MARKET_USER, percent: marketPct }
   ];
 }
-
-
 
 // -------------------------------------
 // Ownership helpers
