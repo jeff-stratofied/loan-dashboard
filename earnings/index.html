@@ -1921,8 +1921,11 @@ const normalizedLoan = {
   id,
   loanName: raw.loanName ?? `Loan ${loanId}`,
   school: raw.school ?? "No school listed",
-  loanStartDate: raw.loanStartDate || raw.purchaseDate || "",
-  purchaseDate: raw.purchaseDate || "",
+
+  // 🔑 CANONICAL DATES (FIXED)
+  loanStartDate: raw.loanStartDate || raw.originationDate || raw.purchaseDate,
+  purchaseDate: raw.purchaseDate,
+
   purchasePrice,
   balanceForAmort,
   nominalRate,
@@ -1935,6 +1938,22 @@ const normalizedLoan = {
   // 🔑 REQUIRED — preserve ownership
   user: (raw.user ?? PAGE_USER).toLowerCase()
 };
+
+// =====================================================
+// 🔒 HARD DATE GUARD (PREVENTS 1969 / EPOCH BUGS)
+// =====================================================
+if (!normalizedLoan.loanStartDate || !normalizedLoan.purchaseDate) {
+  console.error(
+    "❌ Loan missing required dates — earnings disabled for loan",
+    {
+      loanId: normalizedLoan.loanId,
+      loanStartDate: normalizedLoan.loanStartDate,
+      purchaseDate: normalizedLoan.purchaseDate,
+      raw
+    }
+  );
+}
+
 
 const amortSchedule = buildAmortSchedule({
   principal: normalizedLoan.balanceForAmort,
@@ -1963,7 +1982,10 @@ return {
   principal: Number(normalizedLoan.balanceForAmort ?? normalizedLoan.purchasePrice ?? 0),
 
   // ✅ Canonical "Net Earnings to date" for table + sorting
-  netEarnings: Number(getCanonicalCurrentEarningsRow(tmpLoan)?.netEarnings ?? 0),
+  netEarnings: Number(
+  getCanonicalCurrentEarningsRow(tmpLoan.earningsSchedule, TODAY)?.netEarnings ?? 0
+),
+
 
   // =====================================================
   // 🔑 EVENT TYPE (REQUIRED FOR BADGES + SORTING)
