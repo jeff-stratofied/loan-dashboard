@@ -2867,19 +2867,12 @@ if (PAGE_CONTEXT.isEmbed) {
 }
 
 const viewMode = localStorage.getItem("roiViewMode") || "full";
-__logView("applyLoanFilters before render");
 
 if (viewMode === "table") {
   renderLoanTableROI(getLoansForTableView());
 } else {
   renderLoanGrid(currentLoans);
 }
-
-
-
-} // ✅ ADD THIS LINE — closes applyLoanFilters()
-
-
 
 function populateLoanFilters(loans) {
 
