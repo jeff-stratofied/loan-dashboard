@@ -1861,15 +1861,6 @@ async function loadLoansFromBackend() {
 }
 
 
-
-
-  
-} catch (err) {
-console.error("Failed to load loans from backend", err);
-loans = [];
-}
-}
-
 document.getElementById("currentDate").textContent =
   formatDate(TODAY);
 
