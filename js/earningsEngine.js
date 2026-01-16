@@ -1,4 +1,4 @@
-/**
+ /**
  * ============================================================
  * Earnings Engine
  * ------------------------------------------------------------
@@ -33,6 +33,17 @@ function monthDiff(d1, d2) {
   );
 }
 
+// Duplicate parseISODateLocal from loanEngine.js for consistency (local date parsing)
+function parseISODateLocal(iso) {
+  if (iso instanceof Date) return iso;
+  if (!iso) return null;
+  if (typeof iso === "string") {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  throw new Error(`[parseISODateLocal] Unsupported date input: ${String(iso)}`);
+}
+
 /* ============================================================
    Core: Build Earnings Schedule
    ============================================================ */
@@ -63,14 +74,14 @@ export function buildEarningsSchedule({
   }
 
   // 🔒 HARD GUARDS (match amort engine behavior)
-  const loanStart = new Date(loanStartDate + "T00:00:00");
+  const loanStart = parseISODateLocal(loanStartDate);  // CHANGED: Use local parsing
   if (!Number.isFinite(loanStart.getTime())) {
     throw new Error(
       `Invalid loanStartDate in earnings engine: ${loanStartDate}`
     );
   }
 
-  const purchaseDt = new Date(purchaseDate + "T00:00:00");
+  const purchaseDt = parseISODateLocal(purchaseDate);  // CHANGED: Use local parsing
   if (!Number.isFinite(purchaseDt.getTime())) {
     throw new Error(
       `Invalid purchaseDate in earnings engine: ${purchaseDate}`
