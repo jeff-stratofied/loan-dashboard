@@ -262,6 +262,13 @@ function normalizeDate(d) {
 //
 
 export function buildAmortSchedule(loan) {
+
+console.assert(
+  loanStartDate instanceof Date,
+  "[AMORT] loanStartDate must be Date",
+  loanStartDate
+);
+
   
   const {
     principal,
