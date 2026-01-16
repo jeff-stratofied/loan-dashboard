@@ -2191,42 +2191,51 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
       }, []);
 
     // ==================================
-    // ROI SERIES (OWNERSHIP-AWARE)
+    // ROI SERIES (OWNERSHIP-AWARE, SAFE)
     // ==================================
     const purchasePrice = Number(l.purchasePrice ?? 0);
     const ownershipPct =
       Number.isFinite(l.userOwnershipPct) ? l.userOwnershipPct : 1;
 
-    const roiSeries = cumSchedule.map(r => {
-      const realized =
-        ((r.cumPrincipal + r.cumInterest) - r.cumFees) * ownershipPct;
+    let roiSeries = [];
 
-      const unrealized =
-        (r.balance * 0.95) * ownershipPct;
+    // 🔑 CRITICAL: only compute ROI if user owns > 0%
+    if (ownershipPct > 0) {
+      roiSeries = cumSchedule.map(r => {
 
-      const loanValue = realized + unrealized;
+        const realized =
+          ((r.cumPrincipal + r.cumInterest) - r.cumFees) * ownershipPct;
 
-      const roi =
-        purchasePrice > 0
-          ? (loanValue - (purchasePrice * ownershipPct)) /
-            (purchasePrice * ownershipPct)
-          : 0;
+        const unrealized =
+          (r.balance * 0.95) * ownershipPct;
 
-      return {
-        month: r.ownershipMonthIndex,
-        date: r.loanDate,
-        displayDate: r.displayDate,
-        roi,
-        loanValue,
-        cumFees: r.cumFees * ownershipPct,
-        realized,
-        remainingBalance: r.balance * ownershipPct,
-        unrealized,
-        isTerminal: r.isTerminal === true
-      };
-    });
+        const loanValue = realized + unrealized;
 
-    // ✅ RETURN MUST BE INSIDE map()
+        const invested = purchasePrice * ownershipPct;
+
+        const roi =
+          invested > 0
+            ? (loanValue - invested) / invested
+            : 0;
+
+        return {
+          month: r.ownershipMonthIndex,
+          date: r.loanDate,
+          displayDate: r.displayDate,
+          roi,
+          loanValue,
+          cumFees: r.cumFees * ownershipPct,
+          realized,
+          remainingBalance: r.balance * ownershipPct,
+          unrealized,
+          isTerminal: r.isTerminal === true
+        };
+      });
+    }
+
+    // ----------------------------------
+    // Final derived loan object
+    // ----------------------------------
     return {
       ...l,
       amort: { schedule: amortSchedule },
@@ -2238,6 +2247,7 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
     };
   });
 }
+
     
 
 /* ============================================================
