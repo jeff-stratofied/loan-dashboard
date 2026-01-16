@@ -9,13 +9,15 @@ export const MARKET_USER = "Market";
 // Normalize ownership to always hit 100%
 // -------------------------------------
 export function normalizeOwnership(loan) {
+  // -----------------------------
+  // 1. Ensure allocation model
+  // -----------------------------
   if (!loan.ownership) {
     loan.ownership = {
       unit: "percent",
       step: OWNERSHIP_STEP,
       allocations: [{ user: MARKET_USER, percent: 100 }]
     };
-    return;
   }
 
   const assigned = loan.ownership.allocations
@@ -28,7 +30,22 @@ export function normalizeOwnership(loan) {
     ...loan.ownership.allocations.filter(a => a.user !== MARKET_USER),
     { user: MARKET_USER, percent: marketPct }
   ];
+
+  // ------------------------------------------------
+  // 2. NEW — Normalize ownership into tranches (lots)
+  // ------------------------------------------------
+  if (!Array.isArray(loan.ownershipLots)) {
+    loan.ownershipLots = loan.ownership.allocations
+      .filter(a => a.user !== MARKET_USER)
+      .map(a => ({
+        user: a.user,
+        pct: (Number(a.percent) || 0) / 100,
+        pricePaid: Number(loan.purchasePrice ?? 0),
+        purchaseDate: loan.purchaseDate
+      }));
+  }
 }
+
 
 // -------------------------------------
 // Ownership helpers
