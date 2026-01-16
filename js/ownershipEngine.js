@@ -28,6 +28,20 @@ export function normalizeOwnership(loan) {
     ...loan.ownership.allocations.filter(a => a.user !== MARKET_USER),
     { user: MARKET_USER, percent: marketPct }
   ];
+
+// 🔑 ROI FIX: ensure user ownership exists
+if (!Array.isArray(loan.ownerships)) {
+  loan.ownerships = [];
+}
+
+if (!loan.ownerships.some(o => o.user === PAGE_USER)) {
+  loan.ownerships.push({
+    user: PAGE_USER,
+    pct: loan.ownershipPct ?? 1   // fallback: full ownership
+  });
+}
+
+  
 }
 
 // -------------------------------------
