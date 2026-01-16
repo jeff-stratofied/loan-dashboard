@@ -1261,6 +1261,11 @@ tr.event-default td {
   computeWeightedRoiAsOfMonth
 } from "../js/roiEngine.js?v=dev";
 
+import {
+  normalizeOwnership,
+  deriveLoanForUser,
+  getUserOwnershipPct
+} from "../js/ownershipEngine.js?v=dev";
 
 
 
@@ -1968,6 +1973,9 @@ async function loadLoans() {
       monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
     };
   });
+// 🔑 REQUIRED: normalize ownership schema
+loans.forEach(normalizeOwnership);
+  
 }
 
 
@@ -2219,99 +2227,130 @@ function getOwnedRoiSeriesFromAmort(loan) {
    ============================================================ */
 
 function deriveLoansWithAmortAndRoi(formattedLoans) {
-  return formattedLoans.map(l => {
-    
-const rawAmort = buildAmortSchedule(l);
+  return formattedLoans
+    .map(l => {
 
-// ----------------------------------
-// Respect terminal rows from engine
-// ----------------------------------
-const amortSchedule = (() => {
-  const out = [];
-  for (const r of rawAmort) {
-    out.push(r);
-    if (r.isTerminal === true) break; // 🔒 STOP at default
-  }
-  return out;
-})();
+      // ======================================
+      // 🔑 OWNERSHIP (SINGLE SOURCE OF TRUTH)
+      // ======================================
+      const ownershipPct = getUserOwnershipPct(l, PAGE_USER);
+      if (!ownershipPct || ownershipPct <= 0) return null;
 
+      // ======================================
+      // BUILD AMORT SCHEDULE
+      // ======================================
+      const rawAmort = buildAmortSchedule(l);
 
-      // Attach ownership flags
+      // ----------------------------------
+      // Respect terminal rows from engine
+      // ----------------------------------
+      const amortSchedule = (() => {
+        const out = [];
+        for (const r of rawAmort) {
+          out.push(r);
+          if (r.isTerminal === true) break; // 🔒 STOP at default
+        }
+        return out;
+      })();
+
+      // ======================================
+      // OWNERSHIP DATES
+      // ======================================
       const purchase = new Date(l.purchaseDate);
+
       const scheduleWithOwnership = amortSchedule.map(r => ({
         ...r,
         isOwned: r.loanDate >= purchase,
-        ownershipMonthIndex: r.loanDate >= purchase
-          ? monthDiff(purchase, r.loanDate) + 1
-        : 0,
-      ownershipDate: r.loanDate >= purchase ? r.loanDate : null
-    }));
-        
-let cumP = 0;
-let cumI = 0;
-let cumFees = 0;
-        
-const cumSchedule = scheduleWithOwnership
-  .filter(r => r.isOwned)
-  .reduce((rows, r) => {
-    cumP += r.principalPaid;
-    cumI += r.interest;
-    const feeThisMonth = Number(r.feeThisMonth ?? 0);
-    cumFees += feeThisMonth;
+        ownershipMonthIndex:
+          r.loanDate >= purchase
+            ? monthDiff(purchase, r.loanDate) + 1
+            : 0,
+        ownershipDate: r.loanDate >= purchase ? r.loanDate : null
+      }));
 
-    rows.push({
-      ...r,
-      cumPrincipal: +cumP.toFixed(2),
-      cumInterest: +cumI.toFixed(2),
-      cumFees: +cumFees.toFixed(2)
-    });
+      // ======================================
+      // CUMULATIVE CASH FLOWS (OWNERSHIP-SCALED)
+      // ======================================
+      let cumP = 0;
+      let cumI = 0;
+      let cumFees = 0;
 
-    // 🔒 HARD STOP at terminal row
-    if (r.isTerminal === true) {
-      return rows;
-    }
+      const cumSchedule = scheduleWithOwnership
+        .filter(r => r.isOwned)
+        .reduce((rows, r) => {
 
-    return rows;
-  }, []);
+          cumP += r.principalPaid * ownershipPct;
+          cumI += r.interest * ownershipPct;
 
+          const feeThisMonth = Number(r.feeThisMonth ?? 0);
+          cumFees += feeThisMonth * ownershipPct;
 
-    // Compute proper ROI timeline using correct amort + fees
-    const purchasePrice = Number(l.purchasePrice ?? 0);
-    const roiSeries = cumSchedule
-      .filter(r => r.isOwned)
-.map(r => {
-  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-  const unrealized = r.balance * 0.95;
-  const loanValue = realized + unrealized;
-  const roi = (loanValue - purchasePrice) / purchasePrice;
-return {
-  month: r.ownershipMonthIndex,
-  // ✅ ALWAYS real schedule date (exists for full lifetime)
-  date: r.loanDate,
-  // optional: keep displayDate around if you need it for labels
-  displayDate: r.displayDate,
-  roi,
-  loanValue,
-  cumFees: r.cumFees,
-  realized,
-  remainingBalance: r.balance,
-  unrealized,
-  isTerminal: r.isTerminal === true
-};
+          rows.push({
+            ...r,
+            cumPrincipal: +cumP.toFixed(2),
+            cumInterest: +cumI.toFixed(2),
+            cumFees: +cumFees.toFixed(2)
+          });
 
-});
+          // 🔒 HARD STOP at terminal row
+          if (r.isTerminal === true) {
+            return rows;
+          }
 
-    // Return updated loan object
-    return {
-    ...l,
-    amort: { schedule: amortSchedule },
-    scheduleWithOwnership,
-    cumSchedule,
-    balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
-    roiSeries
-  };
-});  
-  }
+          return rows;
+        }, []);
+
+      // ======================================
+      // ROI SERIES
+      // ======================================
+      const purchasePrice =
+        Number(l.purchasePrice ?? 0) * ownershipPct;
+
+      const roiSeries = cumSchedule.map(r => {
+        const realized =
+          (r.cumPrincipal + r.cumInterest) - r.cumFees;
+
+        const unrealized =
+          r.balance * ownershipPct * 0.95;
+
+        const loanValue = realized + unrealized;
+
+        const roi =
+          purchasePrice > 0
+            ? (loanValue - purchasePrice) / purchasePrice
+            : 0;
+
+        return {
+          month: r.ownershipMonthIndex,
+          date: r.loanDate,          // canonical
+          displayDate: r.displayDate,
+          roi,
+          loanValue,
+          cumFees: r.cumFees,
+          realized,
+          remainingBalance: r.balance,
+          unrealized,
+          isTerminal: r.isTerminal === true
+        };
+      });
+
+      // ======================================
+      // RETURN USER-SCOPED LOAN
+      // ======================================
+      return {
+        ...l,
+        amort: { schedule: amortSchedule },
+        scheduleWithOwnership,
+        cumSchedule,
+        balanceAtPurchase:
+          amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
+        roiSeries
+      };
+    })
+    // 🔑 REMOVE NON-OWNED LOANS
+    .filter(Boolean);
+}
+
 
 
 
@@ -5308,6 +5347,18 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 
     document.addEventListener("DOMContentLoaded", async () => {
       await loadLoans();
+
+// =========================================
+// DERIVE USER-SCOPED LOANS (OWNERSHIP)
+// =========================================
+allLoans = loans
+  .map(l => deriveLoanForUser(l, PAGE_USER))
+  .filter(Boolean);
+
+// 🔑 SINGLE SOURCE OF TRUTH
+currentLoans = [...allLoans];
+filteredLoans = [...allLoans];
+
 
 // =========================================
 // DERIVE + INITIALIZE FILTER STATE (REQUIRED)
