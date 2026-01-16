@@ -2007,6 +2007,11 @@ if (!Number.isFinite(__purchaseCheck.getTime())) {
   );
 }
 
+// =====================================================
+// 🔑 AMORT INPUT NORMALIZATION (REQUIRED)
+// =====================================================
+const amortLoanStart = new Date(normalizedLoan.loanStartDate + "T00:00:00");
+const amortPurchase  = new Date(normalizedLoan.purchaseDate + "T00:00:00");
   
 
 const amortSchedule = buildAmortSchedule({
@@ -2014,10 +2019,11 @@ const amortSchedule = buildAmortSchedule({
   nominalRate: normalizedLoan.nominalRate,
   termYears: normalizedLoan.termYears,
   graceYears: normalizedLoan.graceYears,
-  loanStartDate: normalizedLoan.loanStartDate,
-  purchaseDate: normalizedLoan.purchaseDate,
+  loanStartDate: amortLoanStart,   // ✅ Date object
+  purchaseDate: amortPurchase,     // ✅ Date object
   events: raw.events || []
 });
+
 
 if (String(normalizedLoan.loanName).includes("WCC")) {
   const bad = amortSchedule.find(
