@@ -1987,7 +1987,6 @@ async function loadLoans() {
       console.warn("[OWNERSHIP ERROR]", loan);
     }
   });
-}
 
     // ============================================
 // 🔴 DEV OVERRIDE — FORCE 100% OWNERSHIP
@@ -1997,6 +1996,8 @@ if (PAGE_USER === "jeff") {
   loans.forEach(loan => {
     loan.userOwnershipPct = 1;
   });
+}
+  
 }
 
 
