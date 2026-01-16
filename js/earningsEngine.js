@@ -119,6 +119,20 @@ export function buildEarningsSchedule({
     };
   });
 
+// After const normalized = amortSchedule.map(...)
+
+// Defensive validation: Ensure all dates are valid before processing
+normalized.forEach((row, idx) => {
+  if (!(row.loanDate instanceof Date) || isNaN(row.loanDate.getTime())) {
+    console.error(`Invalid loanDate in normalized row ${idx}`, row);
+    throw new Error(`Earnings engine received invalid loanDate from amort schedule`);
+  }
+  if (row.isOwned && (!row.ownershipDate || isNaN(row.ownershipDate.getTime()))) {
+    console.error(`Missing/invalid ownershipDate on owned row ${idx}`, row);
+    throw new Error(`Earnings engine: owned row missing valid ownershipDate`);
+  }
+});
+ 
   // ----------------------------------------------------------
   // Earnings accumulation (authoritative logic)
   // ----------------------------------------------------------
