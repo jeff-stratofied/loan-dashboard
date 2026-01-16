@@ -201,10 +201,18 @@ export function buildEarningsSchedule({
     };
   });
 
-  // KEEP ALL ROWS, SORT BY CALENDAR
-  return earnings
-    .slice()
-    .sort((a, b) => a.loanDate - b.loanDate);
+// KEEP ALL ROWS, SORT BY CALENDAR
+// 🔑 Hard guarantee loanDate is a real Date object (prevents 1969/epoch regressions)
+return earnings
+  .map(r => ({
+    ...r,
+    loanDate:
+      r.loanDate instanceof Date
+        ? r.loanDate
+        : new Date(loanStart.getFullYear(), loanStart.getMonth(), 1)
+  }))
+  .sort((a, b) => a.loanDate - b.loanDate);
+
 }
 
 /* ============================================================
