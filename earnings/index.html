@@ -1804,6 +1804,24 @@ try {
 const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
 const data = await res.json();
 const arr = data.loans || [];
+
+console.group("🔍 BACKEND DATE AUDIT");
+
+arr.forEach(l => {
+  if (String(l.loanName || "").includes("WCC")) {
+    console.log({
+      loanId: l.loanId || l.id,
+      loanName: l.loanName,
+      loanStartDate: l.loanStartDate,
+      originationDate: l.originationDate,
+      purchaseDate: l.purchaseDate
+    });
+  }
+});
+
+console.groupEnd();
+
+  
 loans = arr.map(l => {
   const loan = {
     ...l,
@@ -1939,6 +1957,19 @@ const normalizedLoan = {
   user: (raw.user ?? PAGE_USER).toLowerCase()
 };
 
+if (String(normalizedLoan.loanName).includes("WCC")) {
+  console.group("🔍 NORMALIZED LOAN (WCC)");
+  console.log({
+    loanId: normalizedLoan.loanId,
+    loanStartDate: normalizedLoan.loanStartDate,
+    purchaseDate: normalizedLoan.purchaseDate,
+    parsedLoanStart: new Date(normalizedLoan.loanStartDate),
+    parsedPurchase: new Date(normalizedLoan.purchaseDate)
+  });
+  console.groupEnd();
+}
+
+  
 // =====================================================
 // 🔒 HARD DATE GUARD (PREVENTS 1969 / EPOCH BUGS)
 // =====================================================
@@ -1965,6 +1996,25 @@ const amortSchedule = buildAmortSchedule({
   events: raw.events || []
 });
 
+if (String(normalizedLoan.loanName).includes("WCC")) {
+  const bad = amortSchedule.find(
+    r => !(r.date instanceof Date) || !Number.isFinite(r.date?.getTime?.())
+  );
+
+  if (bad) {
+    console.error("❌ BAD AMORT ROW (WCC)", {
+      loanId: normalizedLoan.loanId,
+      row: bad
+    });
+  } else {
+    console.log("✅ Amort dates OK (WCC)", {
+      first: amortSchedule[0]?.date,
+      last: amortSchedule.at(-1)?.date
+    });
+  }
+}
+
+  
 const earningsSchedule = buildEarningsSchedule({
   amortSchedule,
   loanStartDate: normalizedLoan.loanStartDate,
@@ -1973,6 +2023,28 @@ const earningsSchedule = buildEarningsSchedule({
   today: TODAY
 });
 
+if (String(normalizedLoan.loanName).includes("WCC")) {
+  const bad = earningsSchedule.find(
+    r => !(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())
+  );
+
+  console.group("🔍 EARNINGS OUTPUT (WCC)");
+  if (bad) {
+    console.error("❌ BAD EARNINGS DATE", {
+      loanId: normalizedLoan.loanId,
+      loanDate: bad.loanDate,
+      row: bad
+    });
+  } else {
+    console.log("✅ Earnings dates OK", {
+      first: earningsSchedule[0]?.loanDate,
+      last: earningsSchedule.at(-1)?.loanDate
+    });
+  }
+  console.groupEnd();
+}
+
+  
 const tmpLoan = { ...normalizedLoan, amort: { schedule: amortSchedule }, earningsSchedule };
 
 return {
