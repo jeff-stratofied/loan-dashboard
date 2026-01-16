@@ -5252,8 +5252,9 @@ allLoans = derivedLoans;
 
 // Only control VISIBILITY — not interaction
 currentLoans = allLoans.filter(
-  loan => loan.userOwnershipPct > 0
+  loan => loan && loan.userOwnershipPct > 0
 );
+
 
 // Filters & views operate on visible loans only
 filteredLoans = currentLoans.slice();
