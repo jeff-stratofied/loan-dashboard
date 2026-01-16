@@ -3870,6 +3870,12 @@ async function initROI() {
       openRoiKpiFromUrl();
     });
   }
+ // 🔎 DEBUG HANDLE — MUST BE AFTER allLoans EXISTS
+  window.__roi = {
+    get allLoans() { return allLoans; },
+    get currentLoans() { return currentLoans; }
+  };
+  
 }
 
 window.__roi = {
