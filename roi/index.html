@@ -5334,9 +5334,19 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 
 // 🔑 SOURCE OF TRUTH
+// ============================================
+// 🔑 STEP 3 (SAFE): OWNERSHIP-BASED VISIBILITY
+// ============================================
 allLoans = derivedLoans;
-currentLoans = derivedLoans;
-filteredLoans = derivedLoans;
+
+// Only control VISIBILITY — not interaction
+currentLoans = allLoans.filter(
+  loan => loan.userOwnershipPct > 0
+);
+
+// Filters & views operate on visible loans only
+filteredLoans = currentLoans.slice();
+
 
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
