@@ -9,40 +9,29 @@ export const MARKET_USER = "Market";
 // Normalize ownership to always hit 100%
 // -------------------------------------
 export function normalizeOwnership(loan) {
-  if (!loan.ownership) {
-    loan.ownership = {
-      unit: "percent",
-      step: OWNERSHIP_STEP,
-      allocations: [{ user: MARKET_USER, percent: 100 }]
-    };
-    return;
-  }
+  // -------------------------------------
+  // Case 1: Backend already sent ownership
+  // -------------------------------------
+  if (loan.ownership?.allocations?.length) return;
 
-  const assigned = loan.ownership.allocations
-    .filter(a => a.user !== MARKET_USER)
-    .reduce((s, a) => s + a.percent, 0);
+  const pct =
+    Number.isFinite(loan.ownershipPct)
+      ? loan.ownershipPct
+      : 1; // fallback = full ownership
 
-  const marketPct = Math.max(0, 100 - assigned);
-
-  loan.ownership.allocations = [
-    ...loan.ownership.allocations.filter(a => a.user !== MARKET_USER),
-    { user: MARKET_USER, percent: marketPct }
-  ];
-
-// 🔑 ROI FIX: ensure user ownership exists
-if (!Array.isArray(loan.ownerships)) {
-  loan.ownerships = [];
+  // -------------------------------------
+  // Normalize to allocation model
+  // -------------------------------------
+  loan.ownership = {
+    unit: "percent",
+    step: OWNERSHIP_STEP,
+    allocations: [
+      { user: PAGE_USER, percent: pct * 100 },
+      { user: MARKET_USER, percent: Math.max(0, 100 - pct * 100) }
+    ]
+  };
 }
 
-if (!loan.ownerships.some(o => o.user === PAGE_USER)) {
-  loan.ownerships.push({
-    user: PAGE_USER,
-    pct: loan.ownershipPct ?? 1   // fallback: full ownership
-  });
-}
-
-  
-}
 
 // -------------------------------------
 // Ownership helpers
