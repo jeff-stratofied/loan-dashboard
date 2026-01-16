@@ -1806,7 +1806,7 @@ async function loadLoansFromBackend() {
     const arr = data.loans || [];
 
 // BACKEND DATE AUDIT (trust engine strings)
-console.log({loanId: l.loanId, loanName: l.loanName, loanStartDate: l.loanStartDate, originationDate: l.originationDate, purchaseDate: l.purchaseDate});
+console.log({loanId: loan.loanId, loanName: loan.loanName, loanStartDate: loan.loanStartDate, originationDate: loan.originationDate, purchaseDate: loan.purchaseDate});
 
     // =========================================
     // 🔑 LOAD LOANS (DO NOT MUTATE DATES HERE)
