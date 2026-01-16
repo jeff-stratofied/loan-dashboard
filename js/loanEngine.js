@@ -150,10 +150,18 @@ const purchaseDate = normalizeDate(
 
 
 export function addMonths(date, n) {
-  const d = new Date(date);
-  d.setMonth(d.getMonth() + n);
-  return d;
+  if (!(date instanceof Date) || !Number.isFinite(date.getTime())) {
+    throw new Error("addMonths called with invalid Date");
+  }
+
+  return new Date(
+    date.getFullYear(),
+    date.getMonth() + n,
+    1
+  );
 }
+
+
 
 
 // ===============================
@@ -273,11 +281,6 @@ export function buildAmortSchedule(loan) {
     events = []
   } = loan;
 
-console.assert(
-  loanStartDate instanceof Date,
-  "[AMORT] loanStartDate must be Date",
-  loanStartDate
-);
   
   const monthlyRate = nominalRate / 12;
 
@@ -313,6 +316,13 @@ function normalizeDeferralFlags(row) {
 }
 
     const purchase = parseISODateLocal(purchaseDate);
+
+  if (!purchase || !Number.isFinite(purchase.getTime())) {
+  throw new Error(
+    `Invalid purchaseDate for loan "${loan.loanName}": ${purchaseDate}`
+  );
+}
+
 
   // Ownership always begins at the first of purchase month
   const purchaseMonth = new Date(
