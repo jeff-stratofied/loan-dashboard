@@ -1746,6 +1746,43 @@ function openLoanDrawerSafe(loan) {
   openDrawerForLoan(loan);
 }
 
+
+// =====================================================
+// TPV DRAWER — Weighted ROI to Date (REQUIRED)
+// =====================================================
+function renderTPVDrawer() {
+  const kpis = computeKPIs(allLoans, KPI_CURRENT_MONTH);
+
+  drawerTitle.textContent = "Weighted ROI to Date";
+  drawerSub.textContent = "Current Portfolio Snapshot";
+
+  drawerPrimaryTitle.textContent = "ROI to Date";
+  drawerPrimary.textContent =
+    (kpis.weightedROI * 100).toFixed(2) + "%";
+
+  drawerSecondaryTitle.textContent = "As of";
+  drawerSecondary.textContent =
+    formatMonthYear(KPI_CURRENT_MONTH);
+
+  drawerLegend.style.display = "none";
+  drawerAmortContainer.style.display = "none";
+  drawerExtra.innerHTML = "";
+
+  // ---- Build historical ROI timeline ----
+  const timeline = buildProjectedRoiTimeline(allLoans, {
+    colors: buildKpiColorMap(allLoans)
+  });
+
+  createMultiSeriesChart(
+    drawerChartArea,
+    timeline.perLoanSeries,
+    timeline.weightedSeries,
+    { dates: timeline.dates }
+  );
+}
+
+
+    
 // =====================================================
 // KPI DRAWER RENDERER — ROI (MISSING, REQUIRED)
 // =====================================================
@@ -4488,6 +4525,7 @@ function renderROISpreadDrawer() {
   currentLoan = null;
   drawer.classList.remove('loan-mode');
 
+  // Reset drawer
   drawerAmortContainer.style.display = 'none';
   drawerLegend.style.display = 'none';
   drawerChartArea.innerHTML = '';
@@ -4501,14 +4539,14 @@ function renderROISpreadDrawer() {
   // -------------------------------
   const rows = allLoans.map(l => {
     const e =
-  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-  { roi: 0, loanValue: l.purchasePrice };
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      { roi: 0, loanValue: l.purchasePrice };
 
     return {
       id: l.id,
       name: l.name,
       school: l.school,
-      roi: e?.roi ?? 0,
+      roi: e.roi ?? 0,
       color: window.KPI_COLOR_MAP?.[l.id] || '#64748b'
     };
   });
@@ -4526,114 +4564,112 @@ function renderROISpreadDrawer() {
   drawerSecondary.textContent = rows.length;
 
   // -------------------------------
-  // Chart for Spread Drawer (multi-series)
+  // Chart for Spread Drawer
   // -------------------------------
- const timeline = buildHistoricalRoiTimeline(allLoans);
+  const timeline = buildHistoricalRoiTimeline(allLoans);
 
-const globalDates = buildGlobalDatesFromLoans(currentLoans);
-  
-createMultiSeriesChart(
-  drawerChartArea,
-  timeline.perLoanSeries,
-  null, // ⛔ NO weighted line
-  {
-    dates: timeline.dates,
-    tickSpacingX: 3,     // SAME as Weighted ROI to Date
-    hideWeighted: true
-  }
-);
-
+  createMultiSeriesChart(
+    drawerChartArea,
+    timeline.perLoanSeries,
+    null, // ⛔ no weighted line
+    {
+      dates: timeline.dates,
+      tickSpacingX: 3,
+      hideWeighted: true
+    }
+  );
 
   // -------------------------------
   // Table
   // -------------------------------
-drawerExtra.innerHTML = `
-  <div style="margin-top:12px">
-    <h3 style="margin:0 0 8px 0">ROI by Loan</h3>
-    <div style="
-      max-height:320px;
-      overflow:auto;
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:6px;
-      background:var(--card);
-    ">
-      <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
-        <thead>
-          <tr>
-            <th style="text-align:left">Loan</th>
-            <th style="text-align:left">Purchase Date</th>
-            <th style="text-align:left">Maturity Date</th>
-            <th style="text-align:right">ROI to Date</th>
-            <th style="text-align:right">Δ vs Best</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(r => {
-            const loan = allLoans.find(l => l.id === r.id);
-            if (!loan) return '';
+  drawerExtra.innerHTML = `
+    <div style="margin-top:12px">
+      <h3 style="margin:0 0 8px 0">ROI by Loan</h3>
+      <div style="
+        max-height:320px;
+        overflow:auto;
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:6px;
+        background:var(--card);
+      ">
+        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="text-align:left">Loan</th>
+              <th style="text-align:left">Purchase Date</th>
+              <th style="text-align:left">Maturity Date</th>
+              <th style="text-align:right">ROI to Date</th>
+              <th style="text-align:right">Δ vs Best</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => {
+              const loan = allLoans.find(l => l.id === r.id);
+              if (!loan) return '';
 
-            let maturity = '';
-            try {
-              const d = new Date(loan.purchaseDate);
-              const months = Math.round((loan.termYears + loan.graceYears) * 12);
-              d.setMonth(d.getMonth() + months);
-              maturity = d.toISOString().slice(0,10);
-            } catch {}
+              let maturity = '';
+              try {
+                const d = new Date(loan.purchaseDate);
+                const months =
+                  Math.round((loan.termYears + loan.graceYears) * 12);
+                d.setMonth(d.getMonth() + months);
+                maturity = d.toISOString().slice(0, 10);
+              } catch {}
 
-            return `
-              <tr data-loan-id="${r.id}">
-                <td style="text-align:left;">
-                  <span style="
-                    display:inline-block;
-                    width:10px;
-                    height:10px;
-                    background:${r.color};
-                    border-radius:2px;
-                    margin-right:8px;
-                    vertical-align:middle;
-                  "></span>
-                  <strong>${r.name}</strong>
-                  <div style="font-size:12px;color:var(--muted)">
-                    ${r.school || ""}
-                  </div>
-                </td>
-                <td style="text-align:left;">
-                  ${loan.purchaseDate || ""}
-                </td>
-                <td style="text-align:left;">
-                  ${maturity}
-                </td>
-                <td style="text-align:right;color:${r.color};font-weight:700">
-                  ${(r.roi * 100).toFixed(2)}%
-                </td>
-                <td style="text-align:right;color:var(--muted)">
-                  ${((r.roi - best.roi) * 100).toFixed(2)}%
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
+              return `
+                <tr data-loan-id="${r.id}">
+                  <td style="text-align:left;">
+                    <span style="
+                      display:inline-block;
+                      width:10px;
+                      height:10px;
+                      background:${r.color};
+                      border-radius:2px;
+                      margin-right:8px;
+                      vertical-align:middle;
+                    "></span>
+                    <strong>${r.name}</strong>
+                    <div style="font-size:12px;color:var(--muted)">
+                      ${r.school || ""}
+                    </div>
+                  </td>
+                  <td style="text-align:left;">
+                    ${loan.purchaseDate || ""}
+                  </td>
+                  <td style="text-align:left;">
+                    ${maturity}
+                  </td>
+                  <td style="text-align:right;color:${r.color};font-weight:700">
+                    ${(r.roi * 100).toFixed(2)}%
+                  </td>
+                  <td style="text-align:right;color:var(--muted)">
+                    ${((r.roi - best.roi) * 100).toFixed(2)}%
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-`;
+  `;
 
   // -----------------------------------------
-  // ROI Spread table row → chart hover binding
+  // Table row → chart hover binding
   // -----------------------------------------
   const chartSvg = drawerChartArea.querySelector("svg");
   if (chartSvg) {
     const loanPaths = Array.from(
       chartSvg.querySelectorAll('path[data-type="loan"]')
     );
-  
+
     const table = document.getElementById("roiLoansTable");
     if (table) {
       table.querySelectorAll("tbody tr").forEach(row => {
         const rowLoanId = row.dataset.loanId;
         if (!rowLoanId) return;
-  
+
         row.addEventListener("mouseenter", () => {
           loanPaths.forEach(p => {
             const isTarget = p.dataset.loanId === rowLoanId;
@@ -4641,7 +4677,7 @@ drawerExtra.innerHTML = `
             p.setAttribute("stroke-width", isTarget ? "2.6" : "1.2");
           });
         });
-  
+
         row.addEventListener("mouseleave", () => {
           loanPaths.forEach(p => {
             p.setAttribute("stroke-opacity", "0.9");
@@ -4652,12 +4688,14 @@ drawerExtra.innerHTML = `
     }
   }
 
-
+  // -------------------------------
+  // Open drawer
+  // -------------------------------
   drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden','false');
+  drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
-
 }
+
 
 function renderCapitalRecoveryDrawer() {
 
