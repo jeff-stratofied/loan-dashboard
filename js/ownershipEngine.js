@@ -18,6 +18,12 @@ export function normalizeOwnership(loan) {
     return;
   }
 
+  // 🔑 Normalize allocation user keys FIRST
+  loan.ownership.allocations = loan.ownership.allocations.map(a => ({
+    ...a,
+    user: String(a.user).trim().toLowerCase()
+  }));
+
   const assigned = loan.ownership.allocations
     .filter(a => a.user !== MARKET_USER)
     .reduce((s, a) => s + a.percent, 0);
@@ -29,6 +35,7 @@ export function normalizeOwnership(loan) {
     { user: MARKET_USER, percent: marketPct }
   ];
 }
+
 
 // -------------------------------------
 // Ownership helpers
