@@ -2964,9 +2964,11 @@ function populateLoanFilters(loans) {
   const names   = new Set();
 
   loans.forEach(l => {
-    if (l.school) schools.add(l.school);
-    if (l.name)   names.add(l.name);
-  });
+  if (!l) return;               // 🔑 REQUIRED GUARD
+  if (l.school) schools.add(l.school);
+  if (l.name)   names.add(l.name);
+});
+
 
   [...schools].sort().forEach(s => {
     const opt = document.createElement("option");
