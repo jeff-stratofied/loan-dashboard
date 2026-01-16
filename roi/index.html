@@ -1991,6 +1991,22 @@ async function loadLoans() {
 // 🔑 REQUIRED: normalize ownership schema
 loans.forEach(l => normalizeOwnership(l, PAGE_USER));
 
+  console.group(
+  "%c[OWNERSHIP POST-NORMALIZE]",
+  "color:#22c55e;font-weight:bold"
+);
+
+loans.slice(0, 5).forEach(l => {
+  console.log({
+    id: l.id,
+    ownership: l.ownership,
+    pct: getUserOwnershipPct(l, PAGE_USER)
+  });
+});
+
+console.groupEnd();
+
+
   console.log(
   "%c[ROI DEBUG 1] loadLoans complete",
   "color:#22c55e;font-weight:bold",
