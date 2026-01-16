@@ -2196,35 +2196,38 @@ const cumSchedule = scheduleWithOwnership
     // Compute proper ROI timeline using correct amort + fees
     const purchasePrice = Number(l.purchasePrice ?? 0);
     const roiSeries = cumSchedule
-      .filter(r => r.isOwned)
-.map(r => {
-  // 🔑 STEP 4 — ownership placeholder (NO behavior change yet)
-  const ownershipPct =
-    Number.isFinite(l.userOwnershipPct) ? l.userOwnershipPct : 1;
+  .filter(r => r.isOwned)
+  .map(r => {
 
-  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-  const unrealized = r.balance * 0.95;
+    // 🔑 STEP 4 — OWNERSHIP METADATA (NO BEHAVIOR CHANGE)
+    const ownershipPct =
+      Number.isFinite(l.userOwnershipPct) ? l.userOwnershipPct : 1;
 
-  // 🔒 IMPORTANT: do NOT apply ownership yet
-  const loanValue = realized + unrealized;
+    const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
+    const unrealized = r.balance * 0.95;
+    const loanValue = realized + unrealized;
+    const roi = (loanValue - purchasePrice) / purchasePrice;
 
-  const roi = (loanValue - purchasePrice) / purchasePrice;
+    return {
+      month: r.ownershipMonthIndex,
+      date: r.loanDate,
+      displayDate: r.displayDate,
 
-return {
-  month: r.ownershipMonthIndex,
-  // ✅ ALWAYS real schedule date (exists for full lifetime)
-  date: r.loanDate,
-  // optional: keep displayDate around if you need it for labels
-  displayDate: r.displayDate,
-  roi,
-  loanValue,
-  ownershipPct,
-  cumFees: r.cumFees,
-  realized,
-  remainingBalance: r.balance,
-  unrealized,
-  isTerminal: r.isTerminal === true
-};
+      // ⬇️ unchanged behavior
+      roi,
+      loanValue,
+
+      // ⬇️ new metadata only
+      ownershipPct,
+
+      cumFees: r.cumFees,
+      realized,
+      remainingBalance: r.balance,
+      unrealized,
+      isTerminal: r.isTerminal === true
+    };
+  });
+
 
 });
 
