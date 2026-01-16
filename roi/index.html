@@ -5373,6 +5373,10 @@ document.querySelectorAll("#loanTable th").forEach(th => {
     document.addEventListener("DOMContentLoaded", async () => {
 await loadLoans();
 
+// 🔑 REQUIRED: normalize ownership before ROI derivation
+loans.forEach(normalizeOwnership);
+
+      
 // =========================================
 // 🔑 DERIVE ROI DATA (SINGLE SOURCE OF TRUTH)
 // =========================================
