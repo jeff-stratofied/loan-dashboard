@@ -2128,109 +2128,6 @@ const KPI_CURRENT_MONTH = new Date(
 
 
 /* ============================================================
-   2. PURE UTILITY FUNCTIONS (NO STATE, NO DOM)
-   - Formatting helpers
-   - Date helpers
-   - Comparators
-   - Math utilities
-   ============================================================ */
-/* delete
-    function getOwnedRoiSeries(loan) {
-  if (!Array.isArray(loan.roiSeries)) return [];
-
-  // Full lifetime series (DO NOT truncate)
-  return loan.roiSeries
-    .filter(p => p?.date instanceof Date && !isNaN(+p.date))
-    .sort((a, b) => a.date - b.date);
-}
-
-    function getLastOwnedRoiEntry(loan){
-      if (!loan.roiSeries || !loan.roiSeries.length) return { roi: 0, loanValue: loan.purchasePrice };
-      return loan.roiSeries[loan.roiSeries.length - 1];
-    }
-
-function getOwnedRoiSeriesFromAmort(loan) {
-  if (!Array.isArray(loan.cumSchedule)) return [];
-
-  return loan.cumSchedule
-    .filter(r => r.isOwned && r.loanDate instanceof Date)
-    .map(r => {
-      const realized = (r.cumPrincipal + r.cumInterest) - (r.cumFees || 0);
-      const unrealized = (r.balance || 0) * 0.95;
-      const loanValue = realized + unrealized;
-
-      return {
-        date: r.loanDate,
-        roi: (loanValue - loan.purchasePrice) / loan.purchasePrice,
-        loanValue
-      };
-    });
-}
-
-*/
-
-    
-    
-
-/* ============================================================
-   3. LOAN DOMAIN LOGIC (PURE, DATA → DATA)
-   ============================================================ */
-
-/* ------------------------------------------------------------
-   3.1 Loan Event & Badge Logic
-   - Event interpretation
-   - Badge derivation
-   - Row classification
-   ------------------------------------------------------------ */
-
-
-/* ------------------------------------------------------------
-   3.2 Loan Amortization & Ownership Logic
-   - Amort schedule slicing
-   - Ownership month calculation
-   - Terminal row handling
-   ------------------------------------------------------------ */
-
-
-/* ------------------------------------------------------------
-   3.3 Loan ROI Computation
-   - Amort → ownership → cumulative → ROI series
-   - Per-loan derived fields
-   - NO DOM, NO GLOBAL MUTATION
-   ------------------------------------------------------------ */
-
-
-
-/* ============================================================
-   4. KPI COMPUTATION (PORTFOLIO LEVEL, PURE)
-   - Weighted ROI
-   - Projected ROI
-   - Capital recovery
-   ============================================================ */
-
-    
-
-/* ============================================================
-   5. GLOBAL APP STATE (DECLARATIONS ONLY)
-   - loans
-   - allLoans
-   - currentLoans
-   - filteredLoans
-   - view + sort state
-   ============================================================ */
-
-
-
-/* ============================================================
-   6. DATA LOADING & NORMALIZATION
-   - Backend fetch
-   - Base loan normalization
-   - No amort / ROI here
-   ============================================================ */
-
-
-
-/* ============================================================
    7. DATA DERIVATION PIPELINE
    - Build amort schedules
    - Compute ROI series
@@ -2294,29 +2191,57 @@ const cumSchedule = scheduleWithOwnership
   }, []);
 
 
-    // Compute proper ROI timeline using correct amort + fees
-    const purchasePrice = Number(l.purchasePrice ?? 0);
-    const roiSeries = cumSchedule
-      .filter(r => r.isOwned)
-.map(r => {
-  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-  const unrealized = r.balance * 0.95;
-  const loanValue = realized + unrealized;
-  const roi = (loanValue - purchasePrice) / purchasePrice;
-return {
-  month: r.ownershipMonthIndex,
-  // ✅ ALWAYS real schedule date (exists for full lifetime)
-  date: r.loanDate,
-  // optional: keep displayDate around if you need it for labels
-  displayDate: r.displayDate,
-  roi,
-  loanValue,
-  cumFees: r.cumFees,
-  realized,
-  remainingBalance: r.balance,
-  unrealized,
-  isTerminal: r.isTerminal === true
-};
+// Compute proper ROI timeline using correct amort + fees
+const purchasePrice = Number(l.purchasePrice ?? 0);
+
+// 🔑 Ownership scalar (defaults to 1 for legacy loans)
+const ownershipPct =
+  Number.isFinite(l.userOwnershipPct) ? l.userOwnershipPct : 1;
+
+const roiSeries = cumSchedule
+  .filter(r => r.isOwned)
+  .map(r => {
+
+    // ----------------------------------
+    // Ownership-scaled dollar values
+    // ----------------------------------
+    const realized =
+      ((r.cumPrincipal + r.cumInterest) - r.cumFees) * ownershipPct;
+
+    const unrealized =
+      (r.balance * 0.95) * ownershipPct;
+
+    const loanValue = realized + unrealized;
+
+    // 🔑 ROI definition unchanged (scale numerator + denominator)
+    const roi =
+      purchasePrice > 0
+        ? (loanValue - (purchasePrice * ownershipPct)) /
+          (purchasePrice * ownershipPct)
+        : 0;
+
+    return {
+      month: r.ownershipMonthIndex,
+
+      // ✅ ALWAYS real schedule date
+      date: r.loanDate,
+
+      // Optional display label
+      displayDate: r.displayDate,
+
+      roi,
+      loanValue,
+
+      // Ownership-scaled components (useful for tables / KPIs later)
+      cumFees: r.cumFees * ownershipPct,
+      realized,
+      remainingBalance: r.balance * ownershipPct,
+      unrealized,
+
+      isTerminal: r.isTerminal === true
+    };
+  });
+
 
 });
 
