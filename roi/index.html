@@ -1739,12 +1739,22 @@ function compareForKey(a, b, key) {
 
 
 function openLoanDrawerSafe(loan) {
+  // 🔒 SAFETY: never open loans user does not own
+  if (!loan || loan.userOwnershipPct <= 0) {
+    console.warn(
+      "[DRAWER BLOCKED — NOT OWNED]",
+      loan?.id,
+      loan?.name
+    );
+    return;
+  }
 
   currentMode = "loan";
   currentLoan = loan;
 
   openDrawerForLoan(loan);
 }
+
 
 // =====================================================
 // KPI DRAWER RENDERER — ROI (MISSING, REQUIRED)
@@ -5333,10 +5343,17 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 // =========================================
 const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 
-// 🔑 SOURCE OF TRUTH
+// ============================================
+// 🔑 PHASE 3: OWNERSHIP-BASED VISIBILITY
+// ============================================
 allLoans = derivedLoans;
-currentLoans = derivedLoans;
-filteredLoans = derivedLoans;
+
+currentLoans = allLoans.filter(
+  loan => loan.userOwnershipPct > 0
+);
+
+filteredLoans = currentLoans.slice();
+
 
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
