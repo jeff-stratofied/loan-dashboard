@@ -1227,7 +1227,7 @@ tr.row-hover {
         <th data-key="nominalRate">Rate</th>
         <th data-key="termYears">Term</th>
         <th data-key="graceYears">Grace</th>
-        <th data-key="netEarnings">Net Earnings</th>
+        <th data-key="netEarnings">Net Earnings (Owned)</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -1670,10 +1670,13 @@ let TABLE_SORT = { key: null, dir: 1 }; // dir: 1=asc, -1=desc
 function compareForKey(a, b, key) {
   // Special-case derived Net Earnings (table column)
 if (key === "netEarnings") {
-  const aVal = getCurrentNetEarnings(a);
-  const bVal = getCurrentNetEarnings(b);
-  return aVal - bVal;  // or reverse for descending
+  const aVal =
+    getCanonicalCurrentEarningsRow(a.earningsSchedule, TODAY)?.netEarnings ?? 0;
+  const bVal =
+    getCanonicalCurrentEarningsRow(b.earningsSchedule, TODAY)?.netEarnings ?? 0;
+  return aVal - bVal;
 }
+
 
   const va = a?.[key];
   const vb = b?.[key];
