@@ -67,6 +67,25 @@ if (!Array.isArray(loan.ownershipLots)) {
   }
 }
 
+// =====================================================
+// 🔧 DEV FALLBACK — assume full ownership by PAGE_USER
+// (REMOVE when backend ownership is authoritative)
+// =====================================================
+const hasUserAllocation =
+  loan.ownership?.allocations?.some(
+    a => a.user === PAGE_USER
+  );
+
+if (!hasUserAllocation) {
+  loan.ownership.allocations = [
+    {
+      user: PAGE_USER,
+      percent: 100
+    }
+  ];
+}
+
+  
 }
 
 
