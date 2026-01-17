@@ -2305,7 +2305,10 @@ const rawData = earningsSchedule;
 // 🔑 MINI CHARTS MUST SHOW OWNED MONTHS ONLY
 const data = rawData.filter(d => d.isOwned === true);
 
-
+// 🔒 SAFETY: no owned earnings → render empty mini chart
+if (!data.length) {
+  return;
+}
 
 let maxAbs = 0;
 data.forEach(d => {
