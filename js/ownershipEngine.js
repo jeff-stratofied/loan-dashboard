@@ -73,10 +73,18 @@ if (!Array.isArray(loan.ownershipLots)) {
 // Ownership helpers
 // -------------------------------------
 export function getUserOwnershipPct(loan, user) {
+  if (Array.isArray(loan.ownershipLots)) {
+    return loan.ownershipLots
+      .filter(l => l.user === user)
+      .reduce((sum, l) => sum + (Number(l.pct) || 0), 0);
+  }
+
+  // fallback for legacy data only
   return (
     loan.ownership?.allocations.find(a => a.user === user)?.percent ?? 0
   ) / 100;
 }
+
 
 export function isOwnedByUser(loan, user) {
   return getUserOwnershipPct(loan, user) > 0;
