@@ -14,7 +14,6 @@
  * - never depend on UI state (currentLoan, embed mode, etc.)
  */
 
-
 import { buildAmortSchedule } from "./loanEngine.js";
 
 // =====================================================
@@ -23,11 +22,15 @@ import { buildAmortSchedule } from "./loanEngine.js";
 
 function monthKeyFromDate(d) {
   if (!(d instanceof Date) || isNaN(+d)) return null;
-  return d.toISOString().slice(0, 7); // YYYY-MM
+  // LOCAL YYYY-MM (avoid UTC rollover from toISOString)
+  return (
+    d.getFullYear() +
+    "-" +
+    String(d.getMonth() + 1).padStart(2, "0")
+  );
 }
 
 function clampToMonthEnd(monthDate) {
-  // Normalize to "end of that month" so comparisons are inclusive.
   if (!(monthDate instanceof Date) || isNaN(+monthDate)) return null;
   const end = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
   end.setHours(23, 59, 59, 999);
@@ -47,21 +50,26 @@ function monthDiff(d1, d2) {
   );
 }
 
+function getOwnershipBasis(loan) {
+  const lots = Array.isArray(loan?.ownershipLots) ? loan.ownershipLots : [];
+
+  const ownershipPct = lots.reduce(
+    (s, lot) => s + safeNum(lot?.pct),
+    0
+  );
+
+  const invested = lots.reduce(
+    (s, lot) => s + safeNum(lot?.pricePaid),
+    0
+  );
+
+  return { ownershipPct, invested, lots };
+}
 
 // =====================================================
 // PUBLIC API
 // =====================================================
 
-/**
- * Get ROI entry for a single loan as of a given month.
- *
- * Expects loan.roiSeries entries like:
- *   { date: Date, roi: number, loanValue?: number, ... }
- *
- * @param {Object} loan
- * @param {Date} monthDate   (any date in the target month)
- * @returns {{roi:number, loanValue?:number}|null}
- */
 export function getRoiEntryAsOfMonth(loan, monthDate) {
   if (!loan || !Array.isArray(loan.roiSeries) || !(monthDate instanceof Date)) {
     return null;
@@ -70,28 +78,18 @@ export function getRoiEntryAsOfMonth(loan, monthDate) {
   const asOf = clampToMonthEnd(monthDate);
   if (!asOf) return null;
 
-  // Ensure sorted ascending by date (defensive; ROI page usually already is)
   const series = loan.roiSeries
     .filter(r => r?.date instanceof Date && !isNaN(+r.date))
     .slice()
     .sort((a, b) => a.date - b.date);
 
-  // Walk backwards for last <= asOf
   for (let i = series.length - 1; i >= 0; i--) {
     if (series[i].date <= asOf) return series[i];
   }
 
-  // If nothing is <= asOf (e.g., month before purchase), return null
   return null;
 }
 
-/**
- * Compute weighted ROI for a portfolio as of a given month.
- *
- * @param {Array<Object>} loans
- * @param {Date} monthDate
- * @returns {number}
- */
 export function computeWeightedRoiAsOfMonth(loans, monthDate) {
   if (!Array.isArray(loans) || !(monthDate instanceof Date)) return 0;
 
@@ -111,25 +109,9 @@ export function computeWeightedRoiAsOfMonth(loans, monthDate) {
     }
   });
 
-  return totalInvested > 0
-    ? weightedSum / totalInvested
-    : 0;
+  return totalInvested > 0 ? weightedSum / totalInvested : 0;
 }
 
-
-/**
- * Compute portfolio KPIs (single source of truth).
- *
- * @param {Array<Object>} loans
- * @param {Date} asOfMonth  (typically KPI_CURRENT_MONTH in the UI)
- * @returns {{
- *   totalInvested:number,
- *   weightedROI:number,
- *   projectedWeightedROI:number,
- *   capitalRecoveredAmount:number,
- *   capitalRecoveryPct:number
- * }}
- */
 export function computeKPIs(loans, asOfMonth) {
   if (!Array.isArray(loans) || !(asOfMonth instanceof Date)) {
     return {
@@ -142,12 +124,11 @@ export function computeKPIs(loans, asOfMonth) {
   }
 
   const totalInvested = loans.reduce((s, l) => {
-  const last = Array.isArray(l.roiSeries) && l.roiSeries.length
-    ? l.roiSeries[l.roiSeries.length - 1]
-    : null;
-  return s + safeNum(last?.invested);
-}, 0);
-
+    const last = Array.isArray(l.roiSeries) && l.roiSeries.length
+      ? l.roiSeries[l.roiSeries.length - 1]
+      : null;
+    return s + safeNum(last?.invested);
+  }, 0);
 
   if (!totalInvested) {
     return {
@@ -159,22 +140,18 @@ export function computeKPIs(loans, asOfMonth) {
     };
   }
 
-  // Weighted ROI to date
   const weightedROI = computeWeightedRoiAsOfMonth(loans, asOfMonth);
 
-  // Projected weighted ROI (use last ROI point per loan)
   const projectedWeightedROI =
-  loans.reduce((sum, l) => {
-    const last = Array.isArray(l.roiSeries) && l.roiSeries.length
-      ? l.roiSeries[l.roiSeries.length - 1]
-      : null;
+    loans.reduce((sum, l) => {
+      const last = Array.isArray(l.roiSeries) && l.roiSeries.length
+        ? l.roiSeries[l.roiSeries.length - 1]
+        : null;
 
-    if (!last) return sum;
-    return sum + safeNum(last.roi) * safeNum(last.invested);
-  }, 0) / (totalInvested || 1);
+      if (!last) return sum;
+      return sum + safeNum(last.roi) * safeNum(last.invested);
+    }, 0) / (totalInvested || 1);
 
-
-  // Capital recovered (principal paid through asOfMonth, owned rows only)
   const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
 
   let recoveredPrincipalTotal = 0;
@@ -183,9 +160,12 @@ export function computeKPIs(loans, asOfMonth) {
     const sched = l?.amort?.schedule;
     if (!Array.isArray(sched)) return;
 
+    const { ownershipPct } = getOwnershipBasis(l);
+
     sched.forEach(r => {
       if (r?.isOwned && r?.loanDate instanceof Date && r.loanDate <= asOf) {
-        recoveredPrincipalTotal += safeNum(r.principalPaid);
+        // principalPaid is whole-loan; scale to owned pct
+        recoveredPrincipalTotal += safeNum(r.principalPaid) * ownershipPct;
       }
     });
   });
@@ -202,22 +182,6 @@ export function computeKPIs(loans, asOfMonth) {
   };
 }
 
-/**
- * Build projected ROI timeline for a portfolio of loans.
- * Extends to each loan's maturity (NOT to today's date).
- *
- * Notes:
- * - Does NOT touch window or UI globals.
- * - Optional colorMap may be provided by UI.
- *
- * @param {Array<Object>} loans
- * @param {{ colorMap?: Record<string|number,string> }} [opts]
- * @returns {{
- *   dates: Date[],
- *   perLoanSeries: Array<{id,name,color,data}>,
- *   weightedSeries: Array<{date:Date,y:number}>,
- * }}
- */
 export function buildProjectedRoiTimeline(loans, opts = {}) {
   if (!Array.isArray(loans) || loans.length === 0) {
     return { dates: [], perLoanSeries: [], weightedSeries: [] };
@@ -225,13 +189,11 @@ export function buildProjectedRoiTimeline(loans, opts = {}) {
 
   const colorMap = opts.colorMap || {};
 
-  // ---- 1. Determine global start (earliest purchase) ----
   const earliestPurchase = loans.reduce((earliest, l) => {
     const d = new Date(l.purchaseDate);
     return d < earliest ? d : earliest;
   }, new Date(loans[0].purchaseDate));
 
-  // ---- 2. Determine global end (latest maturity date) ----
   const latestMaturity = loans.reduce((latest, l) => {
     const mat = new Date(l.purchaseDate);
     mat.setMonth(
@@ -240,7 +202,6 @@ export function buildProjectedRoiTimeline(loans, opts = {}) {
     return mat > latest ? mat : latest;
   }, new Date(earliestPurchase));
 
-  // ---- 3. Build monthly date list earliest → latest maturity ----
   const dates = [];
   const cursor = new Date(earliestPurchase);
   cursor.setDate(1);
@@ -251,32 +212,26 @@ export function buildProjectedRoiTimeline(loans, opts = {}) {
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
-  // ---- 4. Align per-loan ROI series ----
   const perLoanSeries = loans.map((loan, idx) => {
     const purchase = new Date(loan.purchaseDate);
     purchase.setHours(0, 0, 0, 0);
 
     const roiMap = {};
 
-    // Expect loan.cumSchedule rows (owned-only typically) with:
-    // loanDate, cumPrincipal, cumInterest, cumFees, balance, purchasePrice
     const cs = Array.isArray(loan.cumSchedule) ? loan.cumSchedule : [];
-cs.forEach(row => {
-  if (!row?.isOwned) return;
-  if (!(row.loanDate instanceof Date) || isNaN(+row.loanDate)) return;
+    cs.forEach(row => {
+      if (!row?.isOwned) return;
+      if (!(row.loanDate instanceof Date) || isNaN(+row.loanDate)) return;
 
-  // 🔑 USE DERIVED ROI — DO NOT RECOMPUTE
-  const entry = getRoiEntryAsOfMonth(loan, row.loanDate);
-  if (!entry) return;
+      const entry = getRoiEntryAsOfMonth(loan, row.loanDate);
+      if (!entry) return;
 
-  const roi = safeNum(entry.roi);
+      const roi = safeNum(entry.roi);
 
-  const key = monthKeyFromDate(row.loanDate);
-  if (key) roiMap[key] = roi;
-});
+      const key = monthKeyFromDate(row.loanDate);
+      if (key) roiMap[key] = roi;
+    });
 
-
-    // Determine the very first ROI value for this loan
     const roiKeys = Object.keys(roiMap).sort();
     const firstRoiValue = roiKeys.length ? roiMap[roiKeys[0]] : 0;
 
@@ -303,17 +258,28 @@ cs.forEach(row => {
     };
   });
 
-  // ---- 5. Weighted ROI series ----
-  const totalInvested = loans.reduce((s, l) => s + safeNum(l?.purchasePrice), 0);
+  // Weighted series must weight by invested (not purchasePrice)
+  const totalInvested = loans.reduce((s, l) => {
+    const last = Array.isArray(l.roiSeries) && l.roiSeries.length
+      ? l.roiSeries[l.roiSeries.length - 1]
+      : null;
+    return s + safeNum(last?.invested);
+  }, 0);
 
   const weightedSeries = dates.map((date, i) => {
     if (!totalInvested) return { date, y: 0 };
 
     let weightedSum = 0;
+
     loans.forEach((loan, idx) => {
       const roi = perLoanSeries[idx]?.data?.[i]?.y;
-      if (roi != null) {
-        weightedSum += roi * safeNum(loan.purchasePrice);
+      if (roi == null) return;
+
+      const entry = getRoiEntryAsOfMonth(loan, date);
+      const invested = safeNum(entry?.invested);
+
+      if (invested > 0) {
+        weightedSum += roi * invested;
       }
     });
 
@@ -355,7 +321,6 @@ export function getRoiSeriesAsOfMonth(loans, monthDate) {
   });
 }
 
-
 export function getLoanMaturityDate(loan) {
   if (!loan?.purchaseDate) return null;
 
@@ -369,98 +334,99 @@ export function getLoanMaturityDate(loan) {
   return d;
 }
 
-
 export function deriveLoansWithRoi(formattedLoans) {
   return formattedLoans.map(l => {
-    
-const rawAmort = buildAmortSchedule(l);
+    const rawAmort = buildAmortSchedule(l);
 
-// ----------------------------------
-// Respect terminal rows from engine
-// ----------------------------------
-const amortSchedule = (() => {
-  const out = [];
-  for (const r of rawAmort) {
-    out.push(r);
-    if (r.isTerminal === true) break; // 🔒 STOP at default
-  }
-  return out;
-})();
+    const amortSchedule = (() => {
+      const out = [];
+      for (const r of rawAmort) {
+        out.push(r);
+        if (r.isTerminal === true) break;
+      }
+      return out;
+    })();
 
-      // Attach ownership flags
-      const purchase = new Date(l.purchaseDate);
-      const scheduleWithOwnership = amortSchedule.map(r => ({
-        ...r,
-        isOwned: r.loanDate >= purchase,
-        ownershipMonthIndex: r.loanDate >= purchase
-          ? monthDiff(purchase, r.loanDate) + 1
+    const purchase = new Date(l.purchaseDate);
+
+    const scheduleWithOwnership = amortSchedule.map(r => ({
+      ...r,
+      isOwned: r.loanDate >= purchase,
+      ownershipMonthIndex: r.loanDate >= purchase
+        ? monthDiff(purchase, r.loanDate) + 1
         : 0,
       ownershipDate: r.loanDate >= purchase ? r.loanDate : null
     }));
-        
-let cumP = 0;
-let cumI = 0;
-let cumFees = 0;
-        
-const cumSchedule = scheduleWithOwnership
-  .filter(r => r.isOwned)
-  .reduce((rows, r) => {
-    cumP += r.principalPaid;
-    cumI += r.interest;
-    const feeThisMonth = Number(r.feeThisMonth ?? 0);
-    cumFees += feeThisMonth;
 
-    rows.push({
-      ...r,
-      cumPrincipal: +cumP.toFixed(2),
-      cumInterest: +cumI.toFixed(2),
-      cumFees: +cumFees.toFixed(2)
-    });
+    let cumP = 0;
+    let cumI = 0;
+    let cumFees = 0;
 
-    // 🔒 HARD STOP at terminal row
-    if (r.isTerminal === true) {
-      return rows;
-    }
+    const cumSchedule = scheduleWithOwnership
+      .filter(r => r.isOwned)
+      .reduce((rows, r) => {
+        cumP += r.principalPaid;
+        cumI += r.interest;
+        const feeThisMonth = Number(r.feeThisMonth ?? 0);
+        cumFees += feeThisMonth;
 
-    return rows;
-  }, []);
+        rows.push({
+          ...r,
+          cumPrincipal: +cumP.toFixed(2),
+          cumInterest: +cumI.toFixed(2),
+          cumFees: +cumFees.toFixed(2)
+        });
 
-    // Compute proper ROI timeline using correct amort + fees
-    const purchasePrice = Number(l.purchasePrice ?? 0);
+        if (r.isTerminal === true) return rows;
+        return rows;
+      }, []);
+
     const roiSeries = cumSchedule
       .filter(r => r.isOwned)
-.map(r => {
-  const realized = (r.cumPrincipal + r.cumInterest) - r.cumFees;
-  const unrealized = r.balance * 0.95;
-  const loanValue = realized + unrealized;
-  const roi = (loanValue - purchasePrice) / purchasePrice;
-return {
-  month: r.ownershipMonthIndex,
-  // ✅ ALWAYS real schedule date (exists for full lifetime)
-  date: r.loanDate,
-  // optional: keep displayDate around if you need it for labels
-  displayDate: r.displayDate,
-  roi,
-  loanValue,
-  cumFees: r.cumFees,
-  realized,
-  remainingBalance: r.balance,
-  unrealized,
-  isTerminal: r.isTerminal === true
-};
+      .map(r => {
+        const { ownershipPct, invested, lots } = getOwnershipBasis(l);
 
-});
+        const realized =
+          ((safeNum(r.cumPrincipal) + safeNum(r.cumInterest)) - safeNum(r.cumFees)) *
+          ownershipPct;
 
-    // Return updated loan object
+        const unrealized =
+          (safeNum(r.balance) * 0.95) * ownershipPct;
+
+        const loanValue = realized + unrealized;
+
+        const roi =
+          invested > 0
+            ? (loanValue - invested) / invested
+            : 0;
+
+        return {
+          month: r.ownershipMonthIndex,
+          date: r.loanDate,
+          displayDate: r.displayDate,
+
+          roi,
+          loanValue,
+          invested,
+          ownershipPct,
+          ownershipLots: lots,
+
+          cumFees: safeNum(r.cumFees),
+          realized,
+          remainingBalance: safeNum(r.balance),
+          unrealized,
+          isTerminal: r.isTerminal === true
+        };
+      });
+
     return {
-    ...l,
-    amort: { schedule: amortSchedule },
-    scheduleWithOwnership,
-    cumSchedule,
-    balanceAtPurchase: amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
-    roiSeries
-  };
-});  
-  }
-
-
+      ...l,
+      amort: { schedule: amortSchedule },
+      scheduleWithOwnership,
+      cumSchedule,
+      balanceAtPurchase:
+        amortSchedule.find(r => r.loanDate >= purchase)?.balance ?? 0,
+      roiSeries
+    };
+  });
+}
