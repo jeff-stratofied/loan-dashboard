@@ -2337,6 +2337,13 @@ document.body.appendChild(miniHtmlTooltip);
 return miniHtmlTooltip;
 }
 
+window.__DEBUG_HOVER = {
+  badgeEnter: 0,
+  pieEnter: 0,
+  legacyEnter: 0
+};
+
+  
 function setMiniTooltipContent(lines) {
 const el = getMiniHtmlTooltip();
 el.innerHTML = lines.join("<br>");
@@ -4100,8 +4107,32 @@ const hoverTargets = tile.querySelectorAll(
   ".loan-badge, .ownership-pie"
 );
 
+// =============================
+// DEBUG: hover target wiring
+// =============================
+console.group("[DEBUG] wiring hoverTargets for tile", loan.loanName || loan.id);
+console.log("targets found:", hoverTargets.length);
+hoverTargets.forEach(el => {
+  console.log(" -", el.tagName, el.className);
+});
+console.groupEnd();
+
+    
 hoverTargets.forEach(el => {
   el.addEventListener("mouseenter", e => {
+
+ // =============================
+    // DEBUG: which hover fired
+    // =============================
+    console.group("[DEBUG] HOVER ENTER");
+    console.log("target:", e.target);
+    console.log("currentTarget:", e.currentTarget);
+    console.log("classes:", e.currentTarget.className);
+    console.log("is badge:", e.currentTarget.classList.contains("loan-badge"));
+    console.log("is pie:", e.currentTarget.classList.contains("ownership-pie"));
+    console.groupEnd();
+
+    
     let explainLines = [];
 
     // --------------------------------
