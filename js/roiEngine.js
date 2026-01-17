@@ -14,6 +14,10 @@
  * - never depend on UI state (currentLoan, embed mode, etc.)
  */
 
+// 🔒 ROI ENGINE IS CANONICAL
+// UI must never recompute ROI, invested, or ownership
+
+
 import { buildAmortSchedule } from "./loanEngine.js";
 
 // =====================================================
