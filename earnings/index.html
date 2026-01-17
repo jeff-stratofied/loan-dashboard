@@ -1424,7 +1424,8 @@ const viewButtons = document.querySelectorAll(".view-btn");
 // -----------------------------
 // Apply view mode (single source of truth)
 // -----------------------------
-function applyViewMode(mode) {
+
+  function applyViewMode(mode) {
   // Clear active buttons
   viewButtons.forEach(b => b.classList.remove("active"));
 
@@ -1449,10 +1450,9 @@ if (mode === "table") {
   // 🔑 WAIT for earnings data before rendering table
   earningsDataReady.then(() => {
     renderLoanTable(getLoansForTableView());
+    wireLoanTableColumnSort();
   });
 }
-
-
 
   // Persist (only non-embed)
   if (!isEmbed) {
@@ -1460,6 +1460,7 @@ if (mode === "table") {
     localStorage.setItem(VIEW_KEYS.table, mode === "table" ? "1" : "0");
   }
 }
+
 
 // -----------------------------
 // Restore persisted view
@@ -1778,6 +1779,9 @@ if (key === "netEarnings") {
     getCanonicalCurrentEarningsRow(b.earningsSchedule, TODAY)?.netEarnings ?? 0;
   return aVal - bVal;
 }
+if (key === "ownershipPct") {
+  return (a.ownershipPct || 0) - (b.ownershipPct || 0);
+}
 
 
   const va = a?.[key];
@@ -2014,6 +2018,8 @@ const normalizedLoan = {
   id,
   loanName: raw.loanName ?? `Loan ${loanId}`,
   school: raw.school ?? "No school listed",
+
+  ownershipPct: getUserOwnershipPct(raw, PAGE_USER),
 
   // 🔑 CANONICAL DATES (FIXED)
   loanStartDate: raw.loanStartDate || raw.originationDate || raw.purchaseDate,
@@ -4263,28 +4269,6 @@ function renderLoanTable(loans) {
   if (!tbody) return;
 
   // -------------------------
-  // Wire table header sorting (STEP C)
-  // -------------------------
-  const ths = table.querySelectorAll("thead th[data-key]");
-  ths.forEach(th => {
-    th.onclick = () => {
-      const key = th.dataset.key;
-
-      if (TABLE_SORT.key === key) {
-        TABLE_SORT.dir *= -1;
-      } else {
-        TABLE_SORT.key = key;
-        TABLE_SORT.dir = 1;
-      }
-
-      // 🔑 KEEP SORT DROPDOWN IN SYNC (Amort parity)
-      updateSortSelectFromTable(TABLE_SORT.key, TABLE_SORT.dir);
-
-      renderLoanTable(getLoansForTableView());
-    };
-  });
-
-  // -------------------------
   // Render rows
   // -------------------------
   tbody.innerHTML = "";
@@ -4300,7 +4284,8 @@ if (loan.eventType === "default")    tr.classList.add("event-default");
     tr.tabIndex = 0;
     tr.style.cursor = "pointer";
 
-const pct = getUserOwnershipPct(loan, PAGE_USER) * 100;
+const pct = Math.max(0, Math.min(1, loan.ownershipPct ?? 0));
+
     
     tr.innerHTML = `
       <td>${loan.loanId ?? ""}</td>
