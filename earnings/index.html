@@ -381,26 +381,29 @@
   border-color: rgba(239, 68, 68, 0.35);
 }
 
-/* Event badge tooltip — MATCH ROI EXACTLY */
+/* Event badge tooltip — MATCH AMORT EXACTLY */
 .badge-tooltip {
-  position: fixed !important;
+  position: fixed;
+  pointer-events: none;
   background: var(--tooltip-bg);
   color: var(--tooltip-text);
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: 6px;
   font-size: 12px;
-  line-height: 1.3;
+  line-height: 1.12;
   white-space: nowrap;
-  pointer-events: none;
+  z-index: 9999;
   opacity: 0;
-  transition: opacity 0.2s ease;
-  z-index: 10000 !important;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transform: translate(-50%, -120%);
+  box-shadow: 0 6px 18px rgba(2,6,23,0.2);
+  border: 1px solid rgba(148,163,184,0.3);
+  transition: opacity 0.15s ease;
 }
 
 .badge-tooltip.visible {
   opacity: 1;
 }
+
 
 /* =========================================
    Ownership Pie (20-slice)
@@ -2410,33 +2413,37 @@ document.addEventListener("mouseleave", onBadgeLeave, true);
 function onBadgeEnter(e) {
   if (!(e.target instanceof Element)) return;
 
-  const badge = e.target.closest(".loan-badge, .table-event-badge");
-  if (!badge) return;
+  const el = e.target.closest(
+    ".loan-badge, .table-event-badge, .ownership-pie"
+  );
+  if (!el) return;
 
-  const text = badge.dataset.tooltip;
+  const text = el.dataset.tooltip;
   if (!text) return;
 
   badgeTooltip.innerHTML = text;
   badgeTooltip.classList.add("visible");
+
+  // 🔑 Position tooltip centered ABOVE element (MATCH AMORT)
+  const rect = el.getBoundingClientRect();
+  badgeTooltip.style.left = (rect.left + rect.width / 2) + "px";
+  badgeTooltip.style.top  = (rect.top - 12) + "px";
 }
 
-
 function onBadgeMove(e) {
-  if (!badgeTooltip.classList.contains("visible")) return;
-
-  badgeTooltip.style.left = (e.clientX + 12) + "px";
-  badgeTooltip.style.top  = (e.clientY + 12) + "px";
+  // Intentionally empty — tooltip is anchored to element, not cursor
 }
 
 function onBadgeLeave(e) {
   if (!(e.target instanceof Element)) return;
 
-  const badge = e.target.closest(".loan-badge, .table-event-badge");
-  if (!badge) return;
+  const el = e.target.closest(
+    ".loan-badge, .table-event-badge, .ownership-pie"
+  );
+  if (!el) return;
 
   badgeTooltip.classList.remove("visible");
 }
-
 
   
 function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan){
