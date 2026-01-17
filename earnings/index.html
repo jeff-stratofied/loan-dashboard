@@ -2392,60 +2392,6 @@ function hideMiniTooltip() {
 if (miniHtmlTooltip) miniHtmlTooltip.style.display = "none";
 }
 
-  /* delete
-// =====================================================
-// EVENT BADGE HOVER — ROI-CANONICAL (EARNINGS)
-// =====================================================
-
-let badgeTooltip = document.querySelector(".badge-tooltip");
-
-// Safety: tooltip already styled in CSS, just ensure it exists
-if (!badgeTooltip) {
-  badgeTooltip = document.createElement("div");
-  badgeTooltip.className = "badge-tooltip";
-  document.body.appendChild(badgeTooltip);
-}
-
-// Use delegation so it works for grid + table + rerenders
-document.addEventListener("mouseenter", onBadgeEnter, true);
-document.addEventListener("mousemove", onBadgeMove, true);
-document.addEventListener("mouseleave", onBadgeLeave, true);
-
-function onBadgeEnter(e) {
-  if (!(e.target instanceof Element)) return;
-
-  const el = e.target.closest(
-    ".loan-badge, .table-event-badge, .ownership-pie"
-  );
-  if (!el) return;
-
-  const text = el.dataset.tooltip;
-  if (!text) return;
-
-  badgeTooltip.innerHTML = text;
-  badgeTooltip.classList.add("visible");
-
-  // 🔑 Position tooltip centered ABOVE element (MATCH AMORT)
-  const rect = el.getBoundingClientRect();
-  badgeTooltip.style.left = (rect.left + rect.width / 2) + "px";
-  badgeTooltip.style.top  = (rect.top - 12) + "px";
-}
-
-function onBadgeMove(e) {
-  // Intentionally empty — tooltip is anchored to element, not cursor
-}
-
-function onBadgeLeave(e) {
-  if (!(e.target instanceof Element)) return;
-
-  const el = e.target.closest(
-    ".loan-badge, .table-event-badge, .ownership-pie"
-  );
-  if (!el) return;
-
-  badgeTooltip.classList.remove("visible");
-}
-*/
   
 function createMiniStackedEarningsSVG(containerEl, earningsSchedule, loan){
 containerEl.innerHTML = "";
@@ -4248,8 +4194,6 @@ hoverTargets.forEach(el => {
     // SHOW TOOLTIP (ELEMENT-ANCHORED)
     // --------------------------------
     setMiniTooltipContent(explainLines);
-
-const rect = el.getBoundingClientRect();
 
 const tooltip = getMiniHtmlTooltip();
 const rect = el.getBoundingClientRect();
