@@ -1929,7 +1929,7 @@ async function loadLoans() {
   loans.forEach(loan => {
     normalizeOwnership(loan); // 🔑 creates ownershipLots
   });
-
+/* delete
   // --------------------------------------------
   // 3. Resolve user ownership %
   // --------------------------------------------
@@ -1940,10 +1940,12 @@ async function loadLoans() {
       console.warn("[OWNERSHIP ERROR]", loan);
     }
   });
+*/
 
   // --------------------------------------------
   // 4. DEV OVERRIDE — FORCE 100% OWNERSHIP (JEFF)
   // --------------------------------------------
+/* delete
   if (PAGE_USER === "jeff") {
     loans.forEach(loan => {
       loan.userOwnershipPct = 1;
@@ -1959,6 +1961,8 @@ async function loadLoans() {
       }
     });
   }
+*/
+  
 }
 
 
@@ -5214,9 +5218,17 @@ const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 allLoans = derivedLoans;
 
 // Only control VISIBILITY — not interaction
-currentLoans = allLoans.filter(
-  loan => loan && loan.userOwnershipPct > 0
-);
+currentLoans = allLoans.filter(loan => {
+  if (!loan) return false;
+
+  const lots = Array.isArray(loan.ownershipLots)
+    ? loan.ownershipLots
+    : [];
+
+  // Visible if user owns ANY tranche
+  return lots.some(lot => lot.user === PAGE_USER && lot.pct > 0);
+});
+
 
 
 // Filters & views operate on visible loans only
