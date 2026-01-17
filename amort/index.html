@@ -1150,26 +1150,6 @@ function getLoanPrimaryEventType(loan) {
   return null;
 }
 
-function deriveLoanForUser(loan, user) {
-  const pct = getUserOwnershipPct(loan, user);
-  if (pct === 0) return null;
-
-  return {
-    ...loan,
-    ownershipPct: pct,
-    userPurchasePrice: loan.purchasePrice * pct,
-    userLoanValue: loan.balance * pct,
-    userNetEarnings: loan.netEarnings * pct,
-    userRoiSeries: Array.isArray(loan.roiSeries)
-  ? loan.roiSeries.map(p => ({
-      ...p,
-      roi: p.roi * pct
-    }))
-  : null
-
-  };
-}
-
     
 function compareForKey(a, b, key) {
  // event column (custom order)
@@ -1307,6 +1287,81 @@ rawLoans.forEach(l => {
     rawLoans.map(normalizeLoan)
   );
 
+// =========================================
+// BUILD USER-SCOPED AMORT FROM OWNERSHIP LOTS
+// =========================================
+
+const USER = PAGE_CONTEXT.user;
+
+allLoans = enrichedLoans.map(loan => {
+  // Only keep lots owned by current user
+  const userLots = (loan.ownershipLots || []).filter(
+    l => l.user === USER
+  );
+
+  if (!userLots.length) return null;
+
+  // Build amort PER LOT using lot purchase date + capital
+  const lotSchedules = userLots.map(lot => {
+    const purchase = new Date(lot.purchaseDate + "T00:00:00");
+    if (!Number.isFinite(purchase.getTime())) {
+      throw new Error(
+        `Invalid purchaseDate for loan "${loan.loanName}": ${lot.purchaseDate}`
+      );
+    }
+
+    const lotLoan = {
+      ...loan,
+      purchaseDate: lot.purchaseDate,
+      purchasePrice: lot.pricePaid,
+      principal: lot.pricePaid
+    };
+
+    const withSchedule = attachSchedules([lotLoan])[0];
+    return withSchedule.amort.schedule;
+  });
+
+  // Merge lot schedules month-by-month
+  const mergedSchedule = [];
+
+  lotSchedules.forEach(schedule => {
+    schedule.forEach((row, i) => {
+      if (!mergedSchedule[i]) {
+        mergedSchedule[i] = {
+          ...row,
+          payment: 0,
+          principal: 0,
+          interest: 0,
+          balance: 0,
+          cumPrincipal: 0,
+          cumInterest: 0
+        };
+      }
+
+      mergedSchedule[i].payment      += row.payment || 0;
+      mergedSchedule[i].principal    += row.principal || 0;
+      mergedSchedule[i].interest     += row.interest || 0;
+      mergedSchedule[i].balance      += row.balance || 0;
+      mergedSchedule[i].cumPrincipal += row.cumPrincipal || 0;
+      mergedSchedule[i].cumInterest  += row.cumInterest || 0;
+    });
+  });
+
+  return {
+    ...loan,
+    amort: {
+      ...loan.amort,
+      schedule: mergedSchedule
+    },
+    cumSchedule: mergedSchedule,
+    ownershipPct: userLots.reduce((s, l) => s + l.pct, 0)
+  };
+}).filter(Boolean);
+
+// FINALIZE — canonical sources
+currentLoans = [...allLoans];
+
+  
   allLoans = enrichedLoans.map(l => {
     const schedule = l.amort.schedule;
     const today = new Date();
@@ -1318,21 +1373,15 @@ rawLoans.forEach(l => {
 
       // ✅ canonical balance
       balance: getCurrentLoanBalance(
-        { ...l, amort: { schedule } },
-        today
-      )
+  {
+    ...loan,
+    amort: { schedule: mergedSchedule }
+  },
+  new Date()
+)
+
     };
   });
-
-  // =========================================
-  // DERIVE USER-SCOPED LOANS (OWNERSHIP-BASED)
-  // =========================================
-  allLoans = allLoans
-    .map(l => deriveLoanForUser(l, PAGE_CONTEXT.user))
-    .filter(Boolean);
-
-  // FINALIZE — single source of truth
-  currentLoans = [...allLoans];
 }
 
 
