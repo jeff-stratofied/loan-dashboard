@@ -2792,6 +2792,43 @@ svg.addEventListener("mouseleave", () => {
    - NO rendering
    ============================================================ */
 
+function sortLoansForUI(loans, sortVal) {
+  if (!sortVal) return loans;
+
+  const [field, dir] = String(sortVal).split("_");
+  const sign = dir === "desc" ? -1 : 1;
+
+  const safeNum = (v) => Number(v) || 0;
+  const safeTime = (d) => {
+    // prefer your local ISO parser if present; fall back safely
+    const dt =
+      (typeof parseISODateLocal === "function" ? parseISODateLocal(d) : new Date(d));
+    const t = dt instanceof Date ? dt.getTime() : NaN;
+    return Number.isFinite(t) ? t : 0;
+  };
+
+  return loans.slice().sort((a, b) => {
+    switch (field) {
+      case "purchase":
+        return sign * (safeTime(a.purchaseDate) - safeTime(b.purchaseDate));
+
+      case "start":
+        return sign * (safeTime(a.loanStartDate) - safeTime(b.loanStartDate));
+
+      case "amount":
+        return sign * (
+          safeNum(a.originalLoanAmount ?? a.origLoanAmount ?? a.loanAmount) -
+          safeNum(b.originalLoanAmount ?? b.origLoanAmount ?? b.loanAmount)
+        );
+
+      case "rate":
+        return sign * (safeNum(a.nominalRate) - safeNum(b.nominalRate));
+
+      default:
+        return 0;
+    }
+  });
+}
 
     
 function applyLoanFilters() {
@@ -2806,16 +2843,18 @@ function applyLoanFilters() {
   const sortVal   = document.getElementById("sortLoans")?.value || "";
 
   // -------------------------
-  // FILTER
+  // FILTER (ownership + UI)
   // -------------------------
-  filteredLoans = allLoans.filter(loan => {
-    if (nameVal && !loan.name.toLowerCase().includes(nameVal.toLowerCase())) {
-      return false;
-    }
+  const baseLoans = allLoans.filter(loan => {
+    const lots = Array.isArray(loan?.ownershipLots) ? loan.ownershipLots : [];
+    return lots.some(lot => lot.user === PAGE_USER && (Number(lot.pct) || 0) > 0);
+  });
 
-    if (schoolVal && loan.school !== schoolVal) {
-      return false;
-    }
+  filteredLoans = baseLoans.filter(loan => {
+    const loanName = (loan.name || "").toLowerCase();
+
+    if (nameVal && !loanName.includes(nameVal.toLowerCase())) return false;
+    if (schoolVal && loan.school !== schoolVal) return false;
 
     if (rateVal === "low"  && loan.nominalRate >= 0.05) return false;
     if (rateVal === "mid"  && (loan.nominalRate < 0.05 || loan.nominalRate > 0.08)) return false;
@@ -2824,26 +2863,25 @@ function applyLoanFilters() {
     return true;
   });
 
+  // -------------------------
+  // SORT (dropdown only)
+  // -------------------------
+  currentLoans = sortLoansForUI(filteredLoans, sortVal);
 
   // -------------------------
   // RENDER
   // -------------------------
-// 🔑 EMBED MODE NEVER SHOWS TABLE OR GRID
-if (PAGE_CONTEXT.isEmbed) {
-  return; // iframe only renders KPI drawer
+  if (PAGE_CONTEXT.isEmbed) return;
+
+  const viewMode = localStorage.getItem("roiViewMode") || "full";
+
+  if (viewMode === "table") {
+    renderLoanTableROI(getLoansForTableView());
+  } else {
+    renderLoanGrid(currentLoans);
+  }
 }
 
-const viewMode = localStorage.getItem("roiViewMode") || "full";
-
-if (viewMode === "table") {
-  renderLoanTableROI(getLoansForTableView());
-} else {
-  renderLoanGrid(currentLoans);
-}
-
-
-
-} // ✅ ADD THIS LINE — closes applyLoanFilters()
 
 
 
