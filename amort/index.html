@@ -1908,10 +1908,12 @@ const pathI = iPoints
   .join(" ");
 
       const maxMonth = Math.max(1, fullSched.length);
-      const xForMonth = month => {
-        const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
-        return pad + (Math.min(Math.max(month, 1), maxMonth) - 1) * stepX;
-      };
+      const xForMonth = idx => {
+  const stepX = (w - pad * 2) / Math.max(1, maxMonth - 1);
+  const clamped = Math.min(Math.max(idx, 0), maxMonth - 1);
+  return pad + clamped * stepX;
+};
+
 
       svg.innerHTML = `
         <path d="${pathI}" fill="none" stroke="#a78bfa" stroke-width="1.6" />
