@@ -8,6 +8,17 @@ export const MARKET_USER = "Market";
 // -------------------------------------
 // Normalize ownership to always hit 100%
 // -------------------------------------
+
+/**
+ * OWNERSHIP CONTRACT (AUTHORITATIVE)
+ *
+ * - loan.ownershipLots is the ONLY source of ownership truth
+ * - Each lot represents a single priced tranche
+ * - ROI, invested capital, and ownership % derive ONLY from ownershipLots
+ *
+ * UI must never compute ownership or invested values.
+ */
+
 export function normalizeOwnership(loan) {
   // -----------------------------
   // 1. Ensure allocation model
