@@ -2366,6 +2366,17 @@ el.style.top  = `${y}px`;
 el.style.display = "block";
 }
 
+function positionMiniTooltipFromElement(el, yOffset = 14) {
+  const rectEl = el.getBoundingClientRect();
+
+  const centerX = rectEl.left + rectEl.width / 2;
+  const topY    = rectEl.top;
+
+  // fake a "cursor" just above the badge
+  positionMiniTooltip(centerX, topY, yOffset);
+}
+
+  
 function hideMiniTooltip() {
 if (miniHtmlTooltip) miniHtmlTooltip.style.display = "none";
 }
@@ -5788,6 +5799,7 @@ tooltipY = Math.min(tooltipY, cy - height - 2);
 tooltip.group.setAttribute("transform", `translate(${tooltipX}, ${tooltipY})`);
 }
 
+  /* delete
 function createBadgeTooltip(badge, text) {
   const tooltip = document.createElement("div");
   tooltip.className = "badge-tooltip";
@@ -5815,7 +5827,7 @@ function createBadgeTooltip(badge, text) {
     tooltip.classList.remove("visible");
   });
 }
-
+*/
 
   
 document.body.addEventListener("click", (e) => {
