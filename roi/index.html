@@ -1354,7 +1354,6 @@ viewButtons.forEach(btn => {
     setViewMode(btn.dataset.view);
   });
 });
-
     
   const PAGE_USER =
   new URLSearchParams(window.location.search).get("user") || "jeff";
@@ -1362,8 +1361,7 @@ viewButtons.forEach(btn => {
     // =========================================
 // Back to My Holdings (Reporting context)
 // =========================================
-const params = new URLSearchParams(window.location.search);
-const cameFromReporting = params.get("from") === "reporting";
+const cameFromReporting = PAGE_CONTEXT.fromReporting;
 
 const backRow = document.getElementById("backToHoldingsRow");
 const backBtn = document.getElementById("backToHoldingsBtn");
@@ -1376,7 +1374,6 @@ if (cameFromReporting && backRow && backBtn) {
       `/loan-dashboard/reporting?user=${PAGE_USER}`;
   });
 }
-
 
     const USER_LABELS = {
   jeff: "Jeff Customer",
