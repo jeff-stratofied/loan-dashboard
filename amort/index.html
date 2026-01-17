@@ -1360,28 +1360,6 @@ allLoans = enrichedLoans.map(loan => {
 
 // FINALIZE — canonical sources
 currentLoans = [...allLoans];
-
-  
-  allLoans = enrichedLoans.map(l => {
-    const schedule = l.amort.schedule;
-    const today = new Date();
-
-    return {
-      ...l,
-      amort: { ...l.amort, schedule },
-      cumSchedule: schedule,
-
-      // ✅ canonical balance
-      balance: getCurrentLoanBalance(
-  {
-    ...loan,
-    amort: { schedule: mergedSchedule }
-  },
-  new Date()
-)
-
-    };
-  });
 }
 
 
