@@ -2792,45 +2792,7 @@ svg.addEventListener("mouseleave", () => {
    - NO rendering
    ============================================================ */
 
-  /* delete
-    function sortLoansForUI(loans, sortVal) {
-  if (!sortVal) return loans;
 
-  const [field, dir] = sortVal.split("_");
-  const sign = dir === "desc" ? -1 : 1;
-
-  return loans.slice().sort((a, b) => {
-    switch (field) {
-      case "purchase":
-        return sign * (
-          new Date(a.purchaseDate).getTime() -
-          new Date(b.purchaseDate).getTime()
-        );
-
-      case "start":
-        return sign * (
-          new Date(a.loanStartDate).getTime() -
-          new Date(b.loanStartDate).getTime()
-        );
-
-      case "amount":
-        return sign * (
-          (a.originalLoanAmount || a.loanAmount || 0) -
-          (b.originalLoanAmount || b.loanAmount || 0)
-        );
-
-      case "rate":
-        return sign * (
-          (a.nominalRate || 0) -
-          (b.nominalRate || 0)
-        );
-
-      default:
-        return 0;
-    }
-  });
-}
-*/
     
 function applyLoanFilters() {
   if (!Array.isArray(allLoans) || !allLoans.length) {
@@ -2862,25 +2824,6 @@ function applyLoanFilters() {
     return true;
   });
 
-  // -------------------------
-  // SORT (tiles + table)
-  // -------------------------
-  currentLoans = sortLoansForUI(filteredLoans, sortVal);
-
-  // 🔑 Sync dropdown sort → table sort state
-  if (sortVal) {
-    const [field, dir] = sortVal.split("_");
-
-    const keyMap = {
-      purchase: "purchaseDate",
-      start: "loanStartDate",
-      amount: "originalLoanAmount",
-      rate: "nominalRate"
-    };
-
-    TABLE_SORT.key = keyMap[field] || null;
-    TABLE_SORT.dir = dir === "desc" ? -1 : 1;
-  }
 
   // -------------------------
   // RENDER
