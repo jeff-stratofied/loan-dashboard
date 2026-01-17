@@ -5125,9 +5125,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     return lots.some(lot => lot.user === PAGE_USER && lot.pct > 0);
   });
-});
-
-
 
 
 // Filters & views operate on visible loans only
@@ -5159,8 +5156,7 @@ allLoans.forEach(l => {
     }
   });
 });
-
-      
+   
 
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
@@ -5189,9 +5185,6 @@ if (PAGE_CONTEXT.isEmbed) {
 }
 
 
-
-      
-
 // =====================================================
 // EMBED MODE — FORCE KPI DRAWER (MATCH AMORT)
 // Must run ONCE, after initial render
@@ -5214,7 +5207,7 @@ if (params.get("embed") === "true" && params.get("open")) {
   formatMonthYear(new Date());
 
       initROI();
-    });
+});
 
     
     // theme toggle
