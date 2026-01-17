@@ -5135,6 +5135,34 @@ currentLoans = allLoans.filter(loan => {
 // Filters & views operate on visible loans only
 filteredLoans = currentLoans.slice();
 
+// =====================================================
+// 🔒 DEV INVARIANT CHECK — ROI SANITY (STEP 14.1)
+// =====================================================
+allLoans.forEach(l => {
+  if (!Array.isArray(l.ownershipLots) || l.ownershipLots.length === 0) {
+    console.error("[INVARIANT] missing ownershipLots", l);
+    throw new Error("ROI invariant failed: ownershipLots missing");
+  }
+
+  if (!Array.isArray(l.roiSeries) || l.roiSeries.length === 0) {
+    console.error("[INVARIANT] missing roiSeries", l);
+    throw new Error("ROI invariant failed: roiSeries missing");
+  }
+
+  l.roiSeries.forEach(r => {
+    if (!Number.isFinite(r.invested) || r.invested <= 0) {
+      console.error("[INVARIANT] invalid invested", l, r);
+      throw new Error("ROI invariant failed: invalid invested");
+    }
+
+    if (!Number.isFinite(r.roi)) {
+      console.error("[INVARIANT] invalid roi", l, r);
+      throw new Error("ROI invariant failed: invalid roi");
+    }
+  });
+});
+
+      
 
 // 🔑 Populate filter dropdowns from real data
 populateLoanFilters(allLoans);
