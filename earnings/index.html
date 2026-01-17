@@ -4249,12 +4249,15 @@ hoverTargets.forEach(el => {
     // --------------------------------
     setMiniTooltipContent(explainLines);
 
+    /*delete
     const rect = el.getBoundingClientRect();
 positionMiniTooltip(
   rect.left + rect.width / 2,
   rect.top,
   0
 );
+*/
+    
   });
 
   el.addEventListener("mouseleave", hideMiniTooltip);
