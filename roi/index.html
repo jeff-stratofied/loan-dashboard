@@ -1664,30 +1664,13 @@ function getLoansForTableView() {
 }
 
 function compareForKey(a, b, key) {
-  // Helper: ROI to-date (same value you display in the ROI column)
+
+  // Helper: ROI to-date (single source of truth)
   const roiToDate = (loan) => {
-    // Prefer "as-of current month" if your helper exists
-    if (typeof getRoiEntryAsOfMonth === "function" && typeof KPI_CURRENT_MONTH !== "undefined") {
-      const e = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
-      if (e && Number.isFinite(+e.roi)) return +e.roi;
-    }
+    const e = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
+    return e && Number.isFinite(+e.roi) ? +e.roi : -Infinity;
+  };
 
-    /* delete
-    // Fall back to last owned entry helper if present
-    if (typeof getLastOwnedRoiEntry === "function") {
-      const e = getLastOwnedRoiEntry(loan);
-      if (e && Number.isFinite(+e.roi)) return +e.roi;
-    }
-*/
-      
-    // Final fallback: last roiSeries point
-    const roiToDate = (loan) => {
-  const e = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
-  return e && Number.isFinite(+e.roi) ? +e.roi : -Infinity;
-};
-
-
-  // Normalize common table keys that aren't literal loan properties
   const valueFor = (loan) => {
     switch (key) {
       case "loanId":
@@ -1696,12 +1679,8 @@ function compareForKey(a, b, key) {
         return loan?.name ?? "";
       case "principal":
         return Number(loan?.originalLoanAmount ?? loan?.loanAmount ?? 0);
-      case "roiToDate": {
-  const e = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
-  return e && Number.isFinite(e.roi) ? e.roi : -Infinity;
-}
-
-
+      case "roiToDate":
+        return roiToDate(loan);
       default:
         return loan?.[key];
     }
@@ -1710,21 +1689,17 @@ function compareForKey(a, b, key) {
   const va = valueFor(a);
   const vb = valueFor(b);
 
-  // Numeric compare when both are numbers
   const na = Number(va);
   const nb = Number(vb);
-  const bothNumeric = Number.isFinite(na) && Number.isFinite(nb);
+  if (Number.isFinite(na) && Number.isFinite(nb)) return na - nb;
 
-  if (bothNumeric) return na - nb;
-
-  // Date-ish compare if it parses cleanly
   const da = va ? new Date(va).getTime() : NaN;
   const db = vb ? new Date(vb).getTime() : NaN;
   if (Number.isFinite(da) && Number.isFinite(db)) return da - db;
 
-  // String compare
   return String(va ?? "").localeCompare(String(vb ?? ""), undefined, { numeric: true });
 }
+
 
 
 function openLoanDrawerSafe(loan) {
