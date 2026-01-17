@@ -1822,20 +1822,6 @@ async function loadLoansFromBackend() {
       // =========================================
       normalizeOwnership(loan);
 
-      // =========================================
-      // DEV SEED — assign Market loans to user
-      // REMOVE once real ownership UI exists
-      // =========================================
-      if (
-        loan.ownership.allocations.length === 1 &&
-        loan.ownership.allocations[0].user === "Market"
-      ) {
-        loan.ownership.allocations = [
-          { user: PAGE_USER, percent: 100 },
-          { user: "Market", percent: 0 }
-        ];
-      }
-
       return loan;
     });
 
