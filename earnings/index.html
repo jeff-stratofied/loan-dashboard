@@ -402,6 +402,48 @@
   opacity: 1;
 }
 
+/* =========================================
+   Ownership Pie (20-slice)
+   ========================================= */
+
+.ownership-pie {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+
+  cursor: pointer;              /* match event badge */
+  display: block;               /* avoid inline SVG baseline issues */
+
+  /* 🔑 vertical rhythm alignment */
+  position: relative;
+  top: 0.5px;
+
+  /* 🔑 smooth hover zoom */
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+.ownership-pie:hover {
+  transform: scale(1.5);
+  filter: brightness(1.05);
+}
+
+/* (legacy ring styles — safe to keep, no effect on slice version) */
+.ownership-pie circle.bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 4;
+}
+
+.ownership-pie circle.fg {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+    
     
 /* Compact earnings tiles */
 .grid.compact .tile {
@@ -1218,15 +1260,16 @@ tr.row-hover {
       <tr>
         <th data-key="loanId">ID</th>
         <th data-key="eventType">Event</th>
-        <th data-key="loanName">Loan Name</th>
+        <th data-key="loanName">Loan</th>
         <th data-key="school">School</th>
         <th data-key="loanStartDate">Loan Start</th>
-        <th data-key="purchaseDate">Purchase Date</th>
+        <th data-key="purchaseDate">Purchased</th>
         <th data-key="principal">Orig Amt</th>
-        <th data-key="purchasePrice">Purchase Price</th>
+        <th data-key="purchasePrice">Purchase $</th>
         <th data-key="nominalRate">Rate</th>
         <th data-key="termYears">Term</th>
         <th data-key="graceYears">Grace</th>
+        <th data-key="ownershipPct">% Owned</th>
         <th data-key="netEarnings">Net Earnings</th>
       </tr>
     </thead>
@@ -1608,6 +1651,62 @@ const EVENT_ICON = {
   default: "⚠️"
 };
 
+function buildOwnershipPie(loan) {
+  const pct = Math.max(0, Math.min(1, loan.ownershipPct || 0));
+  const slices = Math.round(pct * 20); // 5% per slice
+
+  if (slices === 0) return "";
+
+  const radius = 9;
+  const cx = 12;
+  const cy = 12;
+  const sliceAngle = 360 / 20;
+
+  const color =
+    window.KPI_COLOR_MAP?.[loan.loanId ?? loan.id] ||
+    "var(--brand)";
+
+  const paths = [];
+
+  for (let i = 0; i < 20; i++) {
+    const start = i * sliceAngle;
+    const end = start + sliceAngle;
+
+    const largeArc = sliceAngle > 180 ? 1 : 0;
+    const rads = d => (Math.PI / 180) * d;
+
+    const x1 = cx + radius * Math.cos(rads(start - 90));
+    const y1 = cy + radius * Math.sin(rads(start - 90));
+    const x2 = cx + radius * Math.cos(rads(end - 90));
+    const y2 = cy + radius * Math.sin(rads(end - 90));
+
+    const filled = i < slices;
+
+    paths.push(`
+      <path
+        d="M ${cx} ${cy}
+           L ${x1} ${y1}
+           A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}
+           Z"
+        fill="${filled ? color : "transparent"}"
+        stroke="var(--border)"
+        stroke-width="0.8"
+      />
+    `);
+  }
+
+  return `
+    <svg
+      class="ownership-pie"
+      viewBox="0 0 24 24"
+      data-tooltip="${Math.round(pct * 100)}% of Loan Owned"
+      aria-label="${Math.round(pct * 100)}% of Loan Owned"
+    >
+      ${paths.join("")}
+    </svg>
+  `;
+}
+  
   // =====================================================
 // EVENT BADGE TOOLTIP TEXT — MATCH ROI EXACTLY
 // =====================================================
@@ -3964,29 +4063,37 @@ function renderLoanTiles(loansList) {
 
     const currentMonthLabel = formatMonthYear(new Date());
 
-    // -----------------------------
-    // Build event badges HTML
-    // -----------------------------
-    let badgesHTML = "";
-    if (Array.isArray(loan.events) && loan.events.length > 0) {
-      badgesHTML = `
-        <div class="loan-badges">
-          ${loan.events.map(e => {
-            const date = formatMonthYear(new Date(e.date));
-            if (e.type === "prepayment") {
-              return `<span class="loan-badge prepayment">💰 Prepay</span>`;
-            }
-            if (e.type === "deferral") {
-              return `<span class="loan-badge deferral">⏸ Deferral</span>`;
-            }
-            if (e.type === "default") {
-              return `<span class="loan-badge default">⚠️ Default</span>`;
-            }
-            return "";
-          }).join("")}
-        </div>
-      `;
-    }
+// -----------------------------
+// Build event badges + ownership pie HTML
+// -----------------------------
+let badgesHTML = "";
+if (Array.isArray(loan.events) && loan.events.length > 0) {
+  badgesHTML = `
+    <div class="loan-badges">
+      ${loan.events.map(e => {
+        if (e.type === "prepayment") {
+          return `<span class="loan-badge prepayment">💰 Prepay</span>`;
+        }
+        if (e.type === "deferral") {
+          return `<span class="loan-badge deferral">⏸ Deferral</span>`;
+        }
+        if (e.type === "default") {
+          return `<span class="loan-badge default">⚠️ Default</span>`;
+        }
+        return "";
+      }).join("")}
+      ${buildOwnershipPie(loan)}
+    </div>
+  `;
+} else {
+  // No events — still show ownership pie
+  badgesHTML = `
+    <div class="loan-badges">
+      ${buildOwnershipPie(loan)}
+    </div>
+  `;
+}
+
 
     // -----------------------------
     // Create tile
@@ -4205,6 +4312,10 @@ if (loan.eventType === "default")    tr.classList.add("event-default");
       <td>${(Number(loan.nominalRate ?? 0) * 100).toFixed(2)}%</td>
       <td>${loan.termYears ?? ""}</td>
       <td>${loan.graceYears ?? 0}</td>
+      const pct = getUserOwnershipPct(loan);
+
+<td>${(pct * 100).toFixed(1)}%</td>
+
       <td>${formatCurrency(getCurrentNetEarnings(loan))}</td>
 </td>
 
@@ -4463,6 +4574,9 @@ case "amount_asc": return get(a,"amount") - get(b,"amount");
 case "amount_desc": return get(b,"amount") - get(a,"amount");
 case "rate_asc": return get(a,"rate") - get(b,"rate");
 case "rate_desc": return get(b,"rate") - get(a,"rate");
+    case "ownershipPct":
+  return (getUserOwnershipPct(a) - getUserOwnershipPct(b)) * dir;
+
 default: return 0;
 }
 });
