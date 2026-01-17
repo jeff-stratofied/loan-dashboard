@@ -2077,16 +2077,26 @@ window.LoanMap = Object.fromEntries(
 PORTFOLIO_START = getPortfolioStartDate(loansWithEarnings);
 window.__PORTFOLIO_START__ = PORTFOLIO_START;
 
+// =====================================================
+// OPTION A — USER-SCOPED EARNINGS VIEW
+// Hide loans not owned by the current user
+// =====================================================
+const userLoansWithEarnings =
+  loansWithEarnings.filter(
+    loan => getUserOwnershipPct(loan, PAGE_USER) > 0
+  );
+
+// 🔑 Use USER loans for KPIs + rendering
 PORTFOLIO_KPIS =
   computePortfolioEarningsKPIs(
-    loansWithEarnings,
+    userLoansWithEarnings,
     TODAY,
     PORTFOLIO_START
   );
-// ✅ SIGNAL DATA READY (THIS WAS MISSING)
-earningsDataReadyResolve?.();
 
-}
+// Replace global list used by UI
+loansWithEarnings = userLoansWithEarnings;
+
 
   
 const KPI_PALETTE = [
