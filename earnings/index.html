@@ -1995,7 +1995,7 @@ const amortSchedule = buildAmortSchedule({
 });
 
   
-const earningsSchedule = buildEarningsSchedule({
+const earningsScheduleRaw = buildEarningsSchedule({
   amortSchedule,
   loanStartDate: normalizedLoan.loanStartDate,
   purchaseDate: normalizedLoan.purchaseDate,
@@ -2003,8 +2003,31 @@ const earningsSchedule = buildEarningsSchedule({
   today: TODAY
 });
 
-  
-const tmpLoan = { ...normalizedLoan, amort: { schedule: amortSchedule }, earningsSchedule };
+// =====================================================
+// 🔑 APPLY USER OWNERSHIP (EARNINGS)
+// =====================================================
+const userPct = getUserOwnershipPct(normalizedLoan, PAGE_USER);
+
+const ownedEarningsSchedule = earningsScheduleRaw.map(r => ({
+  ...r,
+  isOwned: userPct > 0,
+
+  // scale cumulative values
+  cumPrincipal: r.cumPrincipal * userPct,
+  cumInterest:  r.cumInterest  * userPct,
+  cumFees:      r.cumFees      * userPct,
+  netEarnings:  r.netEarnings  * userPct
+}));
+
+
+const tmpLoan = {
+  ...normalizedLoan,
+  amort: { schedule: amortSchedule },
+
+  // 🔑 STORE OWNED SCHEDULE (NOT RAW)
+  earningsSchedule: ownedEarningsSchedule
+};
+
 
 return {
   ...tmpLoan,
