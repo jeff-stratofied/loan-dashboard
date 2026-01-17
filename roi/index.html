@@ -2129,7 +2129,14 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
       })();
 
       // Attach ownership flags
-      const purchase = new Date(l.purchaseDate);
+      const purchase = parseISODateLocal(l.purchaseDate);
+
+if (!purchase || !Number.isFinite(purchase.getTime())) {
+  throw new Error(
+    `Invalid purchaseDate for loan "${l.name}": ${l.purchaseDate}`
+  );
+}
+
 
       const scheduleWithOwnership = amortSchedule.map(r => ({
         ...r,
