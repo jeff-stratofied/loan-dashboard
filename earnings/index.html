@@ -4107,9 +4107,7 @@ const hoverTargets = tile.querySelectorAll(
   ".loan-badge, .ownership-pie"
 );
 
-// =============================
 // DEBUG: hover target wiring
-// =============================
 console.group("[DEBUG] wiring hoverTargets for tile", loan.loanName || loan.id);
 console.log("targets found:", hoverTargets.length);
 hoverTargets.forEach(el => {
@@ -4117,13 +4115,10 @@ hoverTargets.forEach(el => {
 });
 console.groupEnd();
 
-    
 hoverTargets.forEach(el => {
   el.addEventListener("mouseenter", e => {
 
- // =============================
     // DEBUG: which hover fired
-    // =============================
     console.group("[DEBUG] HOVER ENTER");
     console.log("target:", e.target);
     console.log("currentTarget:", e.currentTarget);
@@ -4132,12 +4127,9 @@ hoverTargets.forEach(el => {
     console.log("is pie:", e.currentTarget.classList.contains("ownership-pie"));
     console.groupEnd();
 
-    
     let explainLines = [];
 
-    // --------------------------------
     // EVENT BADGES
-    // --------------------------------
     if (el.classList.contains("loan-badge")) {
       let eventType = null;
       if (el.classList.contains("prepayment")) eventType = "prepayment";
@@ -4200,9 +4192,7 @@ hoverTargets.forEach(el => {
       }
     }
 
-    // --------------------------------
     // OWNERSHIP PIE
-    // --------------------------------
     if (el.classList.contains("ownership-pie")) {
       const pct = Math.round((loan.ownershipPct ?? 0) * 100);
       explainLines = [`${pct}% of Loan Owned`];
@@ -4210,28 +4200,14 @@ hoverTargets.forEach(el => {
 
     if (!explainLines.length) return;
 
-    // --------------------------------
-    // SHOW TOOLTIP (ELEMENT-ANCHORED)
-    // --------------------------------
+    // SHOW TOOLTIP — EXACTLY LIKE MINI-CHART
     setMiniTooltipContent(explainLines);
-
-const tooltip = getMiniHtmlTooltip();
-const rect = el.getBoundingClientRect();
-
-tooltip.style.left =
-  `${rect.left + rect.width / 2}px`;
-
-tooltip.style.top =
-  `${rect.top}px`;
-
-tooltip.style.display = "block";
-
-
-  
+    positionMiniTooltipFromElement(el, 16);
   });
 
   el.addEventListener("mouseleave", hideMiniTooltip);
 });
+
 
 
 // -----------------------------
