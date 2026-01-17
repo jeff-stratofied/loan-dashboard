@@ -1636,7 +1636,7 @@ const tpvValue =
       loan,
       miniSeries,
       maturityDate,
-      currentMonthIndex: getCurrentScheduleIndex(loan)
+      currentMonthIndex: getCalendarMonthIndexForLoan(loan)
     };
   });
 
@@ -2720,6 +2720,19 @@ function displayDateForMonthIndex(monthIndex, monthAnchor) {
   const d = new Date(monthAnchor);
   d.setMonth(d.getMonth() + (monthIndex - 1));
   return d;
+}
+
+    function getCalendarMonthIndexForLoan(loan, now = new Date()) {
+  const start = new Date(loan.loanStartDate + "T00:00:00");
+
+  const months =
+    (now.getFullYear() - start.getFullYear()) * 12 +
+    (now.getMonth() - start.getMonth());
+
+  const maxIndex =
+    Math.max(0, (loan.cumSchedule?.length ?? 1) - 1);
+
+  return Math.min(Math.max(months, 0), maxIndex);
 }
 
 
