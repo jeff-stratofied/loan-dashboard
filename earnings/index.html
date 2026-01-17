@@ -2026,6 +2026,32 @@ const ownedEarningsSchedule = earningsScheduleRaw.map(r => {
   };
 });
 
+// =====================================================
+// 🔒 DEV INVARIANT — OWNED EARNINGS MUST NEVER EXCEED FULL
+// =====================================================
+if (userPct > 0) {
+  const fullTotal = earningsScheduleRaw.reduce(
+    (s, r) => s + (Number(r.netEarnings) || 0),
+    0
+  );
+
+  const ownedTotal = ownedEarningsSchedule.reduce(
+    (s, r) => s + (Number(r.netEarnings) || 0),
+    0
+  );
+
+  if (ownedTotal > fullTotal + 0.01) {
+    console.error(
+      "❌ OWNERSHIP VIOLATION: owned earnings exceed full earnings",
+      {
+        loanId: normalizedLoan.loanId,
+        userPct,
+        fullTotal,
+        ownedTotal
+      }
+    );
+  }
+}
 
 
 const tmpLoan = {
@@ -2318,7 +2344,8 @@ const padL = 4, padR = 4, padT = 4, padB = 4;
 const rawData = earningsSchedule;
 
 // 🔑 MINI CHARTS MUST SHOW OWNED MONTHS ONLY
-const data = rawData.filter(d => d.isOwned === true);
+const data = rawData.filter(d => d.loanDate);
+
 
 // 🔒 SAFETY: no owned earnings → render empty mini chart
 if (!data.length) {
@@ -4595,7 +4622,13 @@ function openLoanDrawer(loan){
     ? loan.earningsSchedule[currentIdx] || loan.earningsSchedule[lastIdx]
     : fallbackRow;
 
-  drawerTitle.textContent = loan.loanName;
+  const userPct = getUserOwnershipPct(loan, PAGE_USER);
+
+drawerTitle.textContent =
+  userPct < 1
+    ? `${loan.loanName} (${Math.round(userPct * 100)}% owned)`
+    : loan.loanName;
+
 
   let maturityDate = "-";
   if (loan.amort?.schedule?.length) {
