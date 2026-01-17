@@ -1865,29 +1865,6 @@ function renderTableEventBadge(loan) {
   `;
 }
 
-/* delete
-  function attachBadgeTooltip(el, html) {
-  const tooltip = document.createElement("div");
-  tooltip.className = "badge-tooltip";
-  tooltip.innerHTML = html;
-  document.body.appendChild(tooltip);
-
-  el.addEventListener("mouseenter", e => {
-    tooltip.classList.add("visible");
-    tooltip.style.left = e.clientX + 12 + "px";
-    tooltip.style.top  = e.clientY + 12 + "px";
-  });
-
-  el.addEventListener("mousemove", e => {
-    tooltip.style.left = e.clientX + 12 + "px";
-    tooltip.style.top  = e.clientY + 12 + "px";
-  });
-
-  el.addEventListener("mouseleave", () => {
-    tooltip.classList.remove("visible");
-  });
-}
-*/
   
 async function loadLoansFromBackend() {
   try {
@@ -4116,7 +4093,9 @@ hoverTargets.forEach(el => {
 console.groupEnd();
 
 hoverTargets.forEach(el => {
-  el.addEventListener("mouseenter", e => {
+  el.addEventListener("pointerenter", e => {
+
+    console.log("[DEBUG] POINTER ENTER FIRED", el.className);
 
     // DEBUG: which hover fired
     console.group("[DEBUG] HOVER ENTER");
