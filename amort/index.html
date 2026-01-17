@@ -321,6 +321,37 @@
   cursor: pointer;
 }
 
+/* =========================================
+   Ownership Pie (20-slice)
+   ========================================= */
+
+.ownership-pie {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: help;
+}
+
+.grid.compact .ownership-pie {
+  width: 18px;
+  height: 18px;
+}
+
+.ownership-pie circle.bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 4;
+}
+
+.ownership-pie circle.fg {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+    
 /* MATCH EARNINGS TOOLTIP POSITIONING */
 .tooltip {
   transform: translate(-50%, -120%);
@@ -1661,7 +1692,11 @@ function renderLoanTiles(loans) {
             ${loan.loanName}
           </div>
 
-          ${buildEventBadges(loan.events || [])}
+          <div class="loan-badges">
+  ${buildEventBadges(loan.events || [])}
+  ${buildOwnershipPie(loan)}
+</div>
+
 
           <div class="loan-name" style="font-weight:700;font-size:13px;">
             ${loan.school || "School"}
@@ -1778,6 +1813,25 @@ function renderLoanTiles(loans) {
         });
       }
 
+// Ownership pie tooltip
+const pie = tile.querySelector(".ownership-pie");
+
+if (pie) {
+  pie.addEventListener("mouseenter", e => {
+    const text = pie.getAttribute("data-tooltip");
+    if (!text) return;
+
+    tooltip.innerHTML = text;
+    tooltip.style.display = "block";
+    tooltip.style.left = `${e.clientX}px`;
+    tooltip.style.top = `${e.clientY - 10}px`;
+  });
+
+  pie.addEventListener("mouseleave", hideMiniTooltip);
+}
+
+
+      
       tile.addEventListener("click", e => {
         e.stopPropagation();
         openDrawerForLoan(loan);
@@ -2368,6 +2422,48 @@ function buildEventBadges(events = []) {
   `;
 }
 
+function buildOwnershipPie(loan) {
+  const pct = Math.max(0, Math.min(1, loan.ownershipPct || 0));
+  const slices = Math.round(pct * 20); // 20 slices = 5% each
+
+  if (slices === 0) return "";
+
+  const radius = 10;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (slices / 20) * circumference;
+
+  const color =
+    window.KPI_COLOR_MAP?.[loan.loanId ?? loan.id] ||
+    "var(--brand)";
+
+  return `
+    <svg
+      class="ownership-pie"
+      viewBox="0 0 24 24"
+      data-tooltip="${Math.round(pct * 100)}% of Loan Owned"
+      aria-label="${Math.round(pct * 100)}% of Loan Owned"
+    >
+      <circle
+        class="bg"
+        cx="12"
+        cy="12"
+        r="${radius}"
+      ></circle>
+
+      <circle
+        class="fg"
+        cx="12"
+        cy="12"
+        r="${radius}"
+        stroke="${color}"
+        stroke-dasharray="${dash} ${circumference}"
+      ></circle>
+    </svg>
+  `;
+}
+
+
+    
    // =========================================
 // TOOLTIP OWNERSHIP — HARD SEPARATION
 // =========================================
