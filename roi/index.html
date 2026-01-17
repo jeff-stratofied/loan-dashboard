@@ -1951,9 +1951,14 @@ function openRoiKpiFromUrl(kpiOverride = null) {
 
     
 async function loadLoans() {
-  const res = await fetch("https://loan-dashboard-api.jeff-263.workers.dev/loans");
+  const res = await fetch(
+    "https://loan-dashboard-api.jeff-263.workers.dev/loans"
+  );
   const data = await res.json();
 
+  // --------------------------------------------
+  // 1. Normalize raw loan fields
+  // --------------------------------------------
   loans = (data.loans || []).map(l => {
     const purchasePrice = Number(l.purchasePrice ?? 0);
 
@@ -1965,40 +1970,54 @@ async function loadLoans() {
       loanStartDate: l.loanStartDate || "",
       termYears: Number(l.termYears ?? 0),
       graceYears: Number(l.graceYears ?? 0),
+
       purchasePrice,
-      originalLoanAmount: purchasePrice,   // 🔑 FIX
+      originalLoanAmount: purchasePrice, // 🔑 canonical basis for legacy code
+
       nominalRate: Number(l.nominalRate ?? 0),
       upfrontFee: Number(l.upfrontFee ?? 150),
-      monthlyFeeStart: Number(l.monthlyFeeStart ?? 9),
+      monthlyFeeStart: Number(l.monthlyFeeStart ?? 9)
     };
   });
 
-    // ============================================
-  // 🔑 STEP 2: NORMALIZE OWNERSHIP (NO UI CHANGE)
-  // ============================================
+  // --------------------------------------------
+  // 2. NORMALIZE OWNERSHIP (REQUIRED)
+  // --------------------------------------------
   loans.forEach(loan => {
-    normalizeOwnership(loan);
+    normalizeOwnership(loan); // 🔑 creates ownershipLots
   });
-    loans.forEach(loan => {
+
+  // --------------------------------------------
+  // 3. Resolve user ownership %
+  // --------------------------------------------
+  loans.forEach(loan => {
     loan.userOwnershipPct = getUserOwnershipPct(loan, PAGE_USER);
 
-    // TEMP SAFETY (can remove later)
     if (!Number.isFinite(loan.userOwnershipPct)) {
       console.warn("[OWNERSHIP ERROR]", loan);
     }
   });
 
-    // ============================================
-// 🔴 DEV OVERRIDE — FORCE 100% OWNERSHIP
-// (REMOVE WHEN REAL FRACTIONAL DATA IS LIVE)
-// ============================================
-if (PAGE_USER === "jeff") {
-  loans.forEach(loan => {
-    loan.userOwnershipPct = 1;
-  });
+  // --------------------------------------------
+  // 4. DEV OVERRIDE — FORCE 100% OWNERSHIP (JEFF)
+  // --------------------------------------------
+  if (PAGE_USER === "jeff") {
+    loans.forEach(loan => {
+      loan.userOwnershipPct = 1;
+
+      // 🔑 keep lots consistent with override
+      if (Array.isArray(loan.ownershipLots)) {
+        loan.ownershipLots = [{
+          user: "jeff",
+          pct: 1,
+          pricePaid: loan.purchasePrice,
+          purchaseDate: loan.purchaseDate
+        }];
+      }
+    });
+  }
 }
-  
-}
+
 
 
 function openDrawerForLoan(loan){
