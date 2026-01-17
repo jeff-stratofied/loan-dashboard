@@ -1681,9 +1681,11 @@ function compareForKey(a, b, key) {
 */
       
     // Final fallback: last roiSeries point
-    const last = loan?.roiSeries?.[loan.roiSeries.length - 1];
-    return last && Number.isFinite(+last.roi) ? +last.roi : 0;
-  };
+    const roiToDate = (loan) => {
+  const e = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
+  return e && Number.isFinite(+e.roi) ? +e.roi : -Infinity;
+};
+
 
   // Normalize common table keys that aren't literal loan properties
   const valueFor = (loan) => {
@@ -1694,8 +1696,11 @@ function compareForKey(a, b, key) {
         return loan?.name ?? "";
       case "principal":
         return Number(loan?.originalLoanAmount ?? loan?.loanAmount ?? 0);
-      case "roiToDate":
-        return roiToDate(loan);
+      case "roiToDate": {
+  const e = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
+  return e && Number.isFinite(e.roi) ? e.roi : -Infinity;
+}
+
 
       default:
         return loan?.[key];
@@ -2815,6 +2820,7 @@ svg.addEventListener("mouseleave", () => {
    - NO rendering
    ============================================================ */
 
+  /* delete
     function sortLoansForUI(loans, sortVal) {
   if (!sortVal) return loans;
 
@@ -2852,7 +2858,7 @@ svg.addEventListener("mouseleave", () => {
     }
   });
 }
-
+*/
     
 function applyLoanFilters() {
   if (!Array.isArray(allLoans) || !allLoans.length) {
@@ -5111,31 +5117,44 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 });
 
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      await loadLoans();
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadLoans();
 
-// =========================================
-// DERIVE + INITIALIZE FILTER STATE (REQUIRED)
-// =========================================
-const derivedLoans = deriveLoansWithAmortAndRoi(loans);
+  // =========================================
+  // DERIVE + INITIALIZE FILTER STATE (REQUIRED)
+  // =========================================
+  const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 
-// 🔑 SOURCE OF TRUTH
-// ============================================
-// 🔑 STEP 3 (SAFE): OWNERSHIP-BASED VISIBILITY
-// ============================================
-allLoans = derivedLoans;
+  // =====================================================
+  // 🔒 INVARIANT: ROI must exist for current KPI month
+  // =====================================================
+  derivedLoans.forEach(loan => {
+    const e = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
+    if (!e || !Number.isFinite(e.roi)) {
+      throw new Error(
+        `Missing ROI entry for loan ${loan.id} @ ${formatMonthYear(KPI_CURRENT_MONTH)}`
+      );
+    }
+  });
 
-// Only control VISIBILITY — not interaction
-currentLoans = allLoans.filter(loan => {
-  if (!loan) return false;
+  // 🔑 SOURCE OF TRUTH
+  // ============================================
+  // 🔑 STEP 3 (SAFE): OWNERSHIP-BASED VISIBILITY
+  // ============================================
+  allLoans = derivedLoans;
 
-  const lots = Array.isArray(loan.ownershipLots)
-    ? loan.ownershipLots
-    : [];
+  // Only control VISIBILITY — not interaction
+  currentLoans = allLoans.filter(loan => {
+    if (!loan) return false;
 
-  // Visible if user owns ANY tranche
-  return lots.some(lot => lot.user === PAGE_USER && lot.pct > 0);
+    const lots = Array.isArray(loan.ownershipLots)
+      ? loan.ownershipLots
+      : [];
+
+    return lots.some(lot => lot.user === PAGE_USER && lot.pct > 0);
+  });
 });
+
 
 
 
