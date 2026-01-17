@@ -4250,11 +4250,14 @@ hoverTargets.forEach(el => {
     setMiniTooltipContent(explainLines);
 
 const rect = el.getBoundingClientRect();
+
+// 🔑 MATCH MINI-CHART HOVER POSITIONING
 positionMiniTooltip(
   rect.left + rect.width / 2,
-  rect.top + rect.height / 2,
+  rect.top - rect.height,
   0
 );
+
   
   });
 
