@@ -4251,12 +4251,17 @@ hoverTargets.forEach(el => {
 
 const rect = el.getBoundingClientRect();
 
-// 🔑 MATCH MINI-CHART HOVER POSITIONING
-positionMiniTooltip(
-  rect.left + rect.width / 2,
-  rect.top - rect.height,
-  0
-);
+const tooltip = getMiniHtmlTooltip();
+const rect = el.getBoundingClientRect();
+
+tooltip.style.left =
+  `${rect.left + rect.width / 2}px`;
+
+tooltip.style.top =
+  `${rect.top}px`;
+
+tooltip.style.display = "block";
+
 
   
   });
