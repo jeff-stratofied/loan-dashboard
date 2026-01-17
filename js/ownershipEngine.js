@@ -43,18 +43,30 @@ export function normalizeOwnership(loan) {
   ];
 
   // ------------------------------------------------
-  // 2. NEW — Normalize ownership into tranches (lots)
-  // ------------------------------------------------
-  if (!Array.isArray(loan.ownershipLots)) {
-    loan.ownershipLots = loan.ownership.allocations
-      .filter(a => a.user !== MARKET_USER)
-      .map(a => ({
-        user: a.user,
-        pct: (Number(a.percent) || 0) / 100,
-        pricePaid: Number(loan.purchasePrice ?? 0),
-        purchaseDate: loan.purchaseDate
-      }));
+// 2. Normalize ownership into tranches (LOTS)
+// ------------------------------------------------
+if (!Array.isArray(loan.ownershipLots)) {
+  const userAllocs = loan.ownership.allocations
+    .filter(a => a.user !== MARKET_USER);
+
+  // 🔑 DEV FALLBACK: assume full ownership by current user
+  if (userAllocs.length === 0) {
+    loan.ownershipLots = [{
+      user: loan.user ?? "jeff",
+      pct: 1,
+      pricePaid: Number(loan.purchasePrice ?? 0),
+      purchaseDate: loan.purchaseDate
+    }];
+  } else {
+    loan.ownershipLots = userAllocs.map(a => ({
+      user: a.user,
+      pct: (Number(a.percent) || 0) / 100,
+      pricePaid: Number(loan.purchasePrice ?? 0),
+      purchaseDate: loan.purchaseDate
+    }));
   }
+}
+
 }
 
 
