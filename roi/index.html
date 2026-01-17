@@ -1929,19 +1929,17 @@ async function loadLoans() {
   loans.forEach(loan => {
     normalizeOwnership(loan); // 🔑 creates ownershipLots
   });
-/* delete
-  // --------------------------------------------
-  // 3. Resolve user ownership %
-  // --------------------------------------------
-  loans.forEach(loan => {
-    loan.userOwnershipPct = getUserOwnershipPct(loan, PAGE_USER);
 
-    if (!Number.isFinite(loan.userOwnershipPct)) {
-      console.warn("[OWNERSHIP ERROR]", loan);
-    }
-  });
-*/
+// --------------------------------------------
+// 3. DERIVE userOwnershipPct FROM ownershipLots
+// --------------------------------------------
+loans.forEach(loan => {
+  loan.userOwnershipPct = Array.isArray(loan.ownershipLots)
+    ? loan.ownershipLots.reduce((s, t) => s + (Number(t.pct) || 0), 0)
+    : 0;
+});
 
+  
   // --------------------------------------------
   // 4. DEV OVERRIDE — FORCE 100% OWNERSHIP (JEFF)
   // --------------------------------------------
