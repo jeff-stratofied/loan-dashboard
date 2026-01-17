@@ -1887,10 +1887,6 @@ function openRoiKpiFromUrl(kpiOverride = null) {
   drawer.scrollTop = 0;
 
   requestAnimationFrame(() => {
-    console.log(
-      "[POST-FORCE]",
-      getComputedStyle(drawer).transform
-    );
   });
 }
 
@@ -2080,11 +2076,7 @@ const rowClass = getEventRowClass(loan, cs || s);
    - Back-navigation wiring
    ============================================================ */
 
-console.log(
-  "%c[DRAWER COUNT]",
-  "color:#0ea5e9;font-weight:bold",
-  document.querySelectorAll("#drawer").length
-);
+
 
 
 /* ============================================================
@@ -2557,11 +2549,7 @@ loanSeriesList.forEach(ls => {
   path.setAttribute("d", pathD);
   path.setAttribute("fill", "none");
   path.setAttribute("stroke", ls.color || "#888");
-  console.log(
-  "[PATH CREATE]",
-  "loanId:", ls.id,
-  "stroke:", path.getAttribute("stroke")
-);
+
 
   path.setAttribute("stroke-width", "1.2");
   path.setAttribute("stroke-opacity", "0.9");
@@ -2569,17 +2557,6 @@ loanSeriesList.forEach(ls => {
   path.dataset.loanId = String(ls.id);
   svg.appendChild(path);
   loanPaths.push(path);
-
-console.log(
-  "[SERIES OBJECT]",
-  {
-    loanId: ls.id,
-    keys: Object.keys(ls),
-    colorProp: ls.color,
-    seriesColorProp: ls.seriesColor,
-    strokeProp: ls.stroke
-  }
-);
 
   
 });
@@ -2812,11 +2789,7 @@ svg.addEventListener("mouseleave", () => {
   setTimeout(() => {
   console.group("%c[POST-RENDER STROKES]", "color:#ef4444;font-weight:bold");
   svg.querySelectorAll('path[data-type="loan"]').forEach(p => {
-    console.log(
-      "loanId:", p.dataset.loanId,
-      "stroke:", p.getAttribute("stroke"),
-      "opacity:", p.getAttribute("stroke-opacity")
-    );
+
   });
   console.groupEnd();
 }, 0);
@@ -3556,7 +3529,6 @@ document.querySelectorAll(".kpi").forEach(kpi => {
     e.stopPropagation(); // 🔑 prevent outside-close
 
     const key = kpi.dataset.kpi;
-    console.log("[KPI CLICK]", key);
 
     switch (key) {
       case "tpv":
@@ -3831,15 +3803,9 @@ async function initROI() {
 
   if (PAGE_CONTEXT.open) {
     requestAnimationFrame(() => {
-      console.log("[INIT ROI] opening KPI from URL");
       openRoiKpiFromUrl();
     });
   }
- // 🔎 DEBUG HANDLE — MUST BE AFTER allLoans EXISTS
-  window.__roi = {
-    get allLoans() { return allLoans; },
-    get currentLoans() { return currentLoans; }
-  };
   
 }
 
@@ -4238,8 +4204,6 @@ function smoothPath(points) {
    Using the same stable timeline engine as Projected ROI
    ============================================================ */
 function renderTPVDrawer() {
-
-console.log("%c[RENDER TPV DRAWER]", "color:#ec4899;font-weight:bold");
   
   currentMode = 'kpi';
   currentLoan = null;
@@ -4464,11 +4428,6 @@ function renderRatesDrawer() {
     console.warn("[Rates Drawer] aborted — loans not ready");
     return;
   }
-  
-  console.log(
-    "%c[RENDER RATES DRAWER]",
-    "color:#ec4899;font-weight:bold"
-  );
 
   currentMode = "kpi";
   currentLoan = null;
@@ -4796,8 +4755,6 @@ drawerExtra.innerHTML = `
 }
 
 function renderCapitalRecoveryDrawer() {
-
-console.log("%c[RENDER CAPITAL RECOVERY DRAWER]", "color:#ec4899;font-weight:bold");
   
   currentMode = 'kpi';
   currentLoan = null;
