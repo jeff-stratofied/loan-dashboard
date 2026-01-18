@@ -3934,6 +3934,15 @@ function openKpi4() {
 
     cumulativeNet += monthNet;
 
+if (window.EARNINGS_DEBUG && i > 0 && monthNet === 0) {
+  console.log("[KPI4] Zero-contribution month", {
+    index: i,
+    date: d,
+    cumulativeNet
+  });
+}
+
+    
     const d = new Date(START);
     d.setMonth(d.getMonth() + i);
 
