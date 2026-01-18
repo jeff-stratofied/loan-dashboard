@@ -319,14 +319,25 @@ export function computePortfolioEarningsKPIs(
       ? projectedNetTotal / projectedMonthsTotal
       : 0;
 
-  const ownedMonthsTotal = loansWithEarnings.reduce(
-  (sum, l) => sum + (l.earningsSchedule?.length || 0),
-  0
-);
+  let ownedMonthsToDateTotal = 0;
+
+loansWithEarnings.forEach(l => {
+  const sched = l.earningsSchedule || [];
+  if (!sched.length) return;
+
+  const currentRow = getCanonicalCurrentEarningsRow(sched, today);
+  if (!currentRow) return;
+
+  const idx = sched.indexOf(currentRow);
+  if (idx >= 0) {
+    ownedMonthsToDateTotal += (idx + 1);
+  }
+});
+
 
 const avgMonthlyNet =
-  ownedMonthsTotal > 0
-    ? totalNetToDate / ownedMonthsTotal
+  ownedMonthsToDateTotal > 0
+    ? totalNetToDate / ownedMonthsToDateTotal
     : 0;
 
 
@@ -344,7 +355,8 @@ return {
   projectedAvgMonthlyNet,
 
   // 🔑 TRUE denominator: sum of owned loan months
-  monthsCounted: ownedMonthsTotal,
+  monthsCounted: ownedMonthsToDateTotal,
+
 
   kpi2Rows
 };
