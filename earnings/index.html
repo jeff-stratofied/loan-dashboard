@@ -5623,19 +5623,27 @@ openKpi2();
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
 
-  const portfolioMonths =
-    PORTFOLIO_KPIS?.monthsCounted ?? 0;
-
   const rows = data
     .map(l => {
 
-      // ✅ CANONICAL: pick the "to date" row by TODAY + loanDate
-      const atCur =
-        getCanonicalCurrentEarningsRow(l.earningsSchedule, TODAY);
-
+      // 🔑 SAFE current owned earnings row
+      const atCur = getSafeCurrentEarningsRow(l);
       if (!atCur) return null;
 
-      if (!Number.isFinite(atCur.netEarnings)) {
+      const sched = Array.isArray(l.earningsSchedule) ? l.earningsSchedule : [];
+
+      // ✅ Loan months counted (NOT portfolio months)
+      // Prefer engine truth: ownershipMonthIndex = month N since purchase (includes $0 months)
+      let months = Number(atCur.ownershipMonthIndex || 0);
+
+      // Fallback: locate row in schedule by date and use index+1
+      if (!Number.isFinite(months) || months <= 0) {
+        const curTime = atCur.loanDate instanceof Date ? atCur.loanDate.getTime() : NaN;
+        const idx = sched.findIndex(r => (r.loanDate instanceof Date) && r.loanDate.getTime() === curTime);
+        months = idx >= 0 ? (idx + 1) : sched.length;
+      }
+
+      if (months > 0 && !Number.isFinite(atCur.netEarnings)) {
         console.warn("[KPI3] Invalid net earnings", l.loanId, atCur);
       }
 
@@ -5652,10 +5660,10 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
         }
       }
 
-      // ✅ FIXED: portfolio-time denominator + canonical net-to-date
+      // ✅ Correct loan-level avg monthly earnings to date
       const avgMonthly =
-        portfolioMonths > 0
-          ? Number(atCur.netEarnings || 0) / portfolioMonths
+        months > 0
+          ? Number(atCur.netEarnings || 0) / months
           : 0;
 
       return {
@@ -5695,6 +5703,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 
   table.classList.add("kpi3-table");
 }
+
 
 
 
