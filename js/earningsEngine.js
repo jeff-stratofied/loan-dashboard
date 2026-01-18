@@ -364,10 +364,25 @@ export function computePortfolioEarningsKPIs(
     });
   });
 
-  // 🔑 Months counted = number of calendar months with any owned earnings rows up to today
-  // This matches the "first earnings month → today" concept without loan-weighting time.
-  // Note: if you prefer to count even zero months after first month, we can switch.
-  const monthsCounted = monthlyNetByMonth.size;
+  // 🔑 Months counted = calendar months elapsed since portfolio start (time-based, not earnings-based)
+let monthsCounted = 0;
+
+if (portfolioStartDate instanceof Date && Number.isFinite(portfolioStartDate.getTime())) {
+  const start = new Date(
+    portfolioStartDate.getFullYear(),
+    portfolioStartDate.getMonth(),
+    1
+  );
+
+  const end = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1
+  );
+
+  monthsCounted = Math.max(0, monthDiff(start, end) + 1);
+}
+
 
   // True avg monthly earnings to date
   const avgMonthlyNet =
@@ -380,31 +395,44 @@ export function computePortfolioEarningsKPIs(
     (max, l) => Math.max(max, (l.earningsSchedule || []).length),
     0
   );
+const projectedAvgMonthlyNet =
+  maxMonthsThroughMaturity > 0
+    ? totalNetProjected / maxMonthsThroughMaturity
+    : 0;
 
-  const projectedAvgMonthlyNet =
-    maxMonthsThroughMaturity > 0
-      ? totalNetProjected / maxMonthsThroughMaturity
-      : 0;
-
-  return {
-    totalNetToDate,
-    totalNetProjected,
-    totalFeesToDate,
-    totalFeesProjected,
-    totalPrincipal,
-
-    // ✅ KPI3
-    avgMonthlyNet,
-    monthsCounted,
-
-    // ✅ KPI4
-    projectedAvgMonthlyNet,
-    monthsThroughMaturity: maxMonthsThroughMaturity,
-
-    // KPI2 table
-    kpi2Rows
-  };
+// 🔒 DEV INVARIANT — calendar time must dominate earnings rows
+if (monthsCounted > 0 && monthlyNetByMonth.size > monthsCounted) {
+  console.warn(
+    "[EARNINGS KPI] Monthly earnings rows exceed calendar month count",
+    {
+      monthsCounted,
+      monthlyMonths: monthlyNetByMonth.size,
+      portfolioStartDate,
+      today
+    }
+  );
 }
+
+return {
+  totalNetToDate,
+  totalNetProjected,
+  totalFeesToDate,
+  totalFeesProjected,
+  totalPrincipal,
+
+  // ✅ KPI3
+  avgMonthlyNet,
+  monthsCounted,
+
+  // ✅ KPI4
+  projectedAvgMonthlyNet,
+  monthsThroughMaturity: maxMonthsThroughMaturity,
+
+  // KPI2 table
+  kpi2Rows
+};
+}
+
 
 
 
