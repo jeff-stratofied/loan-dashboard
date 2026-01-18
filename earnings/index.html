@@ -3922,12 +3922,15 @@ function openKpi4() {
 
   for (let i = 0; i < maxMonths; i++) {
     const monthNet = activeLoans.reduce((sum, l) => {
-      const r =
-        l.earningsSchedule[
-          Math.min(i, l.earningsSchedule.length - 1)
-        ];
-      return sum + Number(r?.monthlyNet || 0);
-    }, 0);
+  const r =
+    i < l.earningsSchedule.length
+      ? l.earningsSchedule[i]
+      : null;
+
+  // After loan maturity, contribution must be ZERO
+  return sum + Number(r?.monthlyNet || 0);
+}, 0);
+
 
     cumulativeNet += monthNet;
 
