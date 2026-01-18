@@ -2221,6 +2221,18 @@ PORTFOLIO_KPIS =
     PORTFOLIO_START
   );
 
+window.EARNINGS_DEBUG = true;
+
+if (window.EARNINGS_DEBUG) {
+  console.log("[EARNINGS KPI CHECK]", {
+    today: TODAY,
+    monthsCounted: PORTFOLIO_KPIS?.monthsCounted,
+    avgMonthlyNet: PORTFOLIO_KPIS?.avgMonthlyNet,
+    totalNetToDate: PORTFOLIO_KPIS?.totalNetToDate
+  });
+}
+
+  
 // Replace global list used by UI
 loansWithEarnings = userLoansWithEarnings;
 earningsDataReadyResolve();
@@ -2547,16 +2559,6 @@ const lensRadius = 20;
 const lensScale = 2;
 
 function handleMove(e){
-
-  // =============================
-  // DEBUG: mini-chart hover source
-  // =============================
-  console.group("[DEBUG] MINI CHART HOVER");
-  console.log("event type:", e.type);
-  console.log("clientX / clientY:", e.clientX, e.clientY);
-  console.log("svg rect:", svg.getBoundingClientRect());
-  console.log("loan:", loan.loanName || loan.loanId);
-  console.groupEnd();
   
 const rect = svg.getBoundingClientRect();
 const mouseX = ((e.clientX - rect.left) / rect.width) * w;
@@ -4142,13 +4144,6 @@ const hoverTargets = tile.querySelectorAll(
   ".loan-badge, .ownership-pie"
 );
 
-// DEBUG: hover target wiring
-console.group("[DEBUG] wiring hoverTargets for tile", loan.loanName || loan.id);
-console.log("targets found:", hoverTargets.length);
-hoverTargets.forEach(el => {
-  console.log(" -", el.tagName, el.className);
-});
-console.groupEnd();
 
 // -----------------------------
 // Badge + Ownership Pie hover
@@ -4330,7 +4325,7 @@ const pct = Math.max(0, Math.min(1, loan.ownershipPct ?? 0));
     tr.addEventListener("mouseleave", () => tr.classList.remove("row-hover"));
 
     const openLoan = () => {
-  console.log("[EARNINGS TABLE] row clicked", loan.loanId);
+  
   openLoanDrawerSafe(loan);
 };
 
@@ -4624,8 +4619,6 @@ closeDrawer();
 function openDrawerForLoan(loan) {
   if (!loan) return;
 
-  console.log("[EARNINGS] openDrawerForLoan", loan.loanId);
-
   currentLoan = loan;
   currentMode = "loan";
 
@@ -4656,7 +4649,7 @@ function openLoanDrawerSafe(loan) {
   if (!loan) return;
 
   requestAnimationFrame(() => {
-    console.log("[EARNINGS] openLoanDrawerSafe → openLoanDrawer", loan?.loanId);
+    
     openLoanDrawer(loan); // ✅ THIS is the real loan drawer renderer
   });
 }
@@ -4665,8 +4658,6 @@ function openLoanDrawerSafe(loan) {
 
   
 function openLoanDrawer(loan){
-
-  console.log("[OPEN LOAN DRAWER]", loan.loanId);
 
   // --------------------------------------------------
   // EVENT LOOKUP (AUTHORITATIVE FROM AMORT)
@@ -5217,48 +5208,43 @@ return series;
 }
 
 function buildKpi4AvgMonthlyRows(loans) {
-  const rowsByMonth = new Map();
+  // KPI4: "Projected Avg Monthly Earnings"
+  // For month t (1..maxMonths):
+  //   netToDate(t) = sum over loans of sched[t-1].netEarnings (or last row if shorter)
+  //   avg(t)       = netToDate(t) / t
 
-  loans.forEach(l => {
-    const sched = l.earningsSchedule || [];
-    if (!sched.length) return;
+  const withSched = loans.filter(l => Array.isArray(l.earningsSchedule) && l.earningsSchedule.length);
+  if (!withSched.length) return [];
 
-    sched.forEach((r, i) => {
-      // 🔒 KPI4 MUST ONLY COUNT OWNED MONTHS
-      if (!(r.ownershipDate instanceof Date)) return;
+  const maxMonths = Math.max(...withSched.map(l => l.earningsSchedule.length));
 
-      const key = `${r.ownershipDate.getFullYear()}-${r.ownershipDate.getMonth()}`;
+  const start = new Date(withSched[0].earningsSchedule[0].loanDate);
+  const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
 
-      if (!rowsByMonth.has(key)) {
-        rowsByMonth.set(key, {
-          date: new Date(
-            r.ownershipDate.getFullYear(),
-            r.ownershipDate.getMonth(),
-            1
-          ),
-          totalNet: 0,
-          months: 0
-        });
-      }
+  const rows = [];
 
-      const row = rowsByMonth.get(key);
+  for (let t = 1; t <= maxMonths; t++) {
+    let netToDate = 0;
 
-      // cumulative net across loans
-      row.totalNet += Number(r.netEarnings || 0);
-
-      // months since ownership began (max across loans)
-      row.months = Math.max(row.months, i + 1);
+    withSched.forEach(l => {
+      const sched = l.earningsSchedule;
+      const idx = Math.min(t - 1, sched.length - 1);
+      netToDate += Number(sched[idx]?.netEarnings || 0);
     });
-  });
 
-  return [...rowsByMonth.values()]
-    .sort((a, b) => a.date - b.date)
-    .map(r => ({
-      date: r.date,
-      avg: r.months > 0 ? r.totalNet / r.months : 0,
-      netToDate: r.totalNet
-    }));
+    const d = new Date(startMonth);
+    d.setMonth(d.getMonth() + (t - 1));
+
+    rows.push({
+      date: d,
+      avg: netToDate / Math.max(1, t),
+      netToDate
+    });
+  }
+
+  return rows;
 }
+
 
 
 function renderKpiTable(containerId, headers, rows) {
