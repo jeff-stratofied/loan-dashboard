@@ -3810,16 +3810,6 @@ function openKpi3() {
         sum + (c.hasData ? Number(c.monthlyNet || 0) : 0),
       0
     );
-
-if (window.EARNINGS_DEBUG) {
-  const last = avgRows.at(-1);
-  console.log("[KPI3 CHART CHECK]", {
-    chartLastDate: last?.date,
-    chartAvg: last?.avg,
-    chartNetToDate: last?.netToDate
-  });
-}
-
     
     cumulativeNet += monthNet;
 
