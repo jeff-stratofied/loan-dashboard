@@ -3914,6 +3914,55 @@ function openKpi4() {
     return;
   }
 
+  // ============================
+  // KPI4 DEBUG — ALIGNMENT CHECK
+  // ============================
+  const todayMonth = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+  const todayKey = `${todayMonth.getFullYear()}-${todayMonth.getMonth()}`;
+
+  // This uses your existing calendar-month aggregator (the *correct* way)
+  const portfolioRows = buildProjectedDrawerRows(activeLoans);
+
+  const todayRow = portfolioRows.find(r => {
+    const d = new Date(r.date);
+    d.setDate(1);
+    return d.getFullYear() === todayMonth.getFullYear() &&
+           d.getMonth() === todayMonth.getMonth();
+  });
+
+  if (window.EARNINGS_DEBUG) {
+    console.log("[KPI4 DEBUG] TODAY", {
+      todayMonth,
+      todayKey,
+      loans: activeLoans.length,
+      portfolioRows: portfolioRows.length
+    });
+
+    if (todayRow) {
+      const monthNet = todayRow.contributions.reduce(
+        (s, c) => s + (Number(c.monthlyNet) || 0),
+        0
+      );
+
+      console.log("[KPI4 DEBUG] TODAY month contributions (calendar-aligned)", {
+        date: todayRow.date,
+        monthNet,
+        byLoan: todayRow.contributions.map(c => ({
+          loanId: c.loanId,
+          monthlyNet: Number(c.monthlyNet) || 0,
+          hasData: !!c.hasData
+        }))
+      });
+    } else {
+      console.warn("[KPI4 DEBUG] No calendar row found for TODAY month", {
+        todayMonth,
+        sampleFirst: portfolioRows[0]?.date,
+        sampleLast: portfolioRows.at(-1)?.date
+      });
+    }
+  }
+
+  
   // -----------------------------
   // Build projected monthly rows
   // -----------------------------
@@ -3936,6 +3985,20 @@ function openKpi4() {
   let cumulativeNet = 0;
 const projectedRows = [];
 
+  if (window.EARNINGS_DEBUG) {
+    console.log("[KPI4 DEBUG] INDEX ALIGNMENT SAMPLE (first 5 rows per loan)");
+    activeLoans.slice(0, 8).forEach(l => {
+      const s = l.earningsSchedule || [];
+      console.log("loan", l.loanId, l.loanName, s.slice(0, 5).map(r => ({
+        i: s.indexOf(r),
+        loanDate: r.loanDate,
+        ownershipDate: r.ownershipDate,
+        monthlyNet: r.monthlyNet
+      })));
+    });
+  }
+
+  
 for (let i = 0; i < maxMonths; i++) {
   const monthNet = activeLoans.reduce((sum, l) => {
     const r =
