@@ -151,24 +151,44 @@ export function buildEarningsSchedule({
     let interestThisMonth = 0;
     let feesThisMonth = 0;
 
-    if (row.isOwned && !deferred) {
-      principalThisMonth = Math.max(
-        0,
-        row.principalPaid - (row.prepayment || 0)
-      );
+if (row.isOwned && !deferred) {
+  principalThisMonth = Math.max(
+    0,
+    row.principalPaid - (row.prepayment || 0)
+  );
 
-      // 🔑 PAID interest only (accrued interest during grace ≠ earnings)
-      interestThisMonth = Number(row.interestPaid || 0);
+  // 🔑 PAID INTEREST = amort interest AFTER grace only
+  interestThisMonth = Number(row.interest || 0);
 
-      feesThisMonth = feeThisMonth;
+  feesThisMonth = feeThisMonth;
+}
+
+// 🔒 DEV INVARIANT: interest must exist in non-deferred repayment months
+if (
+  row.isOwned &&
+  !deferred &&
+  Number(row.interest || 0) > 0 &&
+  interestThisMonth === 0
+) {
+  console.warn(
+    "[EARNINGS] Interest unexpectedly zero in non-deferred month",
+    {
+      loanId: row.loanId,
+      monthIndex: row.monthIndex,
+      interest: row.interest,
+      interestThisMonth,
+      row
     }
+  );
+}
 
-    // 🔒 EXPLICIT GRACE RULE (defensive)
-    if (deferred) {
-      principalThisMonth = 0;
-      interestThisMonth = 0;
-      feesThisMonth = feeThisMonth; // fees may still apply
-    }
+// 🔒 EXPLICIT GRACE RULE (defensive)
+if (deferred) {
+  principalThisMonth = 0;
+  interestThisMonth = 0;
+  feesThisMonth = feeThisMonth; // fees may still apply
+}
+
 
     // ---- accumulate ONCE ----
     cumPrincipal = +(cumPrincipal + principalThisMonth).toFixed(2);
