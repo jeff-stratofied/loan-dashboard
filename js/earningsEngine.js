@@ -167,24 +167,28 @@ if (row.isOwned && !deferred) {
   feesThisMonth = feeThisMonth;
 }
 
-// 🔒 DEV INVARIANT: interest must exist in non-deferred repayment months
+// 🔒 DEV INVARIANT: only warn if it's a repayment month (payment > 0)
 if (
   row.isOwned &&
   !deferred &&
+  Number(row.payment || 0) > 0 &&
   Number(row.interest || 0) > 0 &&
   interestThisMonth === 0
 ) {
   console.warn(
-    "[EARNINGS] Interest unexpectedly zero in non-deferred month",
+    "[EARNINGS] Interest unexpectedly zero in repayment month",
     {
       loanId: row.loanId,
       monthIndex: row.monthIndex,
+      payment: row.payment,
       interest: row.interest,
       interestThisMonth,
       row
     }
   );
 }
+
+
 
 // 🔒 EXPLICIT GRACE RULE (defensive)
 if (deferred) {
