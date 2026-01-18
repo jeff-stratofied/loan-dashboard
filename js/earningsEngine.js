@@ -313,70 +313,18 @@ export function computePortfolioEarningsKPIs(
     totalFeesProjected += Number(atEnd.cumFees || 0);
   });
 
-  // ==========================================================
-  // ✅ KPI3 denominator: portfolio calendar months since FIRST
-  // owned earnings month (NOT loan origination, NOT passed-in date)
-  // ==========================================================
-  let inception = null;
 
-  loansWithEarnings.forEach(l => {
-    const sched = l.earningsSchedule || [];
-    if (!sched.length) return;
-
-    const first = sched[0];
-    const d = first?.loanDate;
-
-    if (d instanceof Date && Number.isFinite(d.getTime())) {
-      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
-      if (!inception || monthStart < inception) inception = monthStart;
-    }
-  });
-
-  const todayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-  // Inclusive months (Jan 2024 → Jan 2026 = 25)
-  // If you later want "completed months" (24), we can subtract 1 safely.
-  const portfolioMonths =
-    inception instanceof Date
-      ? Math.max(1, monthDiff(inception, todayMonth) + 1)
-      : 0;
-
-  const avgMonthlyNet =
-    portfolioMonths > 0
-      ? totalNetToDate / portfolioMonths
-      : 0;
-
-  // ==========================================================
-  // ✅ KPI4 projected avg monthly: use max months through maturity
-  // (NOT sum of loan months, which double-counts time)
-  // ==========================================================
-  const maxMonthsThroughMaturity = loansWithEarnings.reduce(
-    (max, l) => Math.max(max, l.earningsSchedule?.length || 0),
-    0
-  );
-
-  const projectedAvgMonthlyNet =
-    maxMonthsThroughMaturity > 0
-      ? projectedNetTotal / maxMonthsThroughMaturity
-      : 0;
 
   return {
-    totalNetToDate,
-    totalNetProjected,
-    totalFeesToDate,
-    totalFeesProjected,
-    totalPrincipal,
+  totalNetToDate,
+  totalNetProjected,
+  totalFeesToDate,
+  totalFeesProjected,
+  totalPrincipal,
 
-    // 🔑 Avg monthly earnings to date (portfolio)
-    avgMonthlyNet,
+  // Used by KPI2 table only (per-loan lifetime totals)
+  kpi2Rows
+};
 
-    // 🔑 Projected avg monthly earnings (lifetime)
-    projectedAvgMonthlyNet,
-
-    // 🔑 Denominator used for avgMonthlyNet
-    monthsCounted: portfolioMonths,
-
-    kpi2Rows
-  };
 }
 
