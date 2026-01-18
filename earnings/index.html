@@ -4110,23 +4110,19 @@ hoverTargets.forEach(el => {
 });
 console.groupEnd();
 
+// -----------------------------
+// Badge + Ownership Pie hover
+// MATCH MINI-CHART BEHAVIOR
+// -----------------------------
 hoverTargets.forEach(el => {
-  el.addEventListener("pointerenter", e => {
 
-    console.log("[DEBUG] POINTER ENTER FIRED", el.className);
-
-    // DEBUG: which hover fired
-    console.group("[DEBUG] HOVER ENTER");
-    console.log("target:", e.target);
-    console.log("currentTarget:", e.currentTarget);
-    console.log("classes:", e.currentTarget.className);
-    console.log("is badge:", e.currentTarget.classList.contains("loan-badge"));
-    console.log("is pie:", e.currentTarget.classList.contains("ownership-pie"));
-    console.groupEnd();
-
+  // 🔑 Use mousemove (not pointerenter)
+  el.addEventListener("mousemove", e => {
     let explainLines = [];
 
+    // --------------------------------
     // EVENT BADGES
+    // --------------------------------
     if (el.classList.contains("loan-badge")) {
       let eventType = null;
       if (el.classList.contains("prepayment")) eventType = "prepayment";
@@ -4189,7 +4185,9 @@ hoverTargets.forEach(el => {
       }
     }
 
+    // --------------------------------
     // OWNERSHIP PIE
+    // --------------------------------
     if (el.classList.contains("ownership-pie")) {
       const pct = Math.round((loan.ownershipPct ?? 0) * 100);
       explainLines = [`${pct}% of Loan Owned`];
@@ -4197,13 +4195,14 @@ hoverTargets.forEach(el => {
 
     if (!explainLines.length) return;
 
-    // SHOW TOOLTIP — EXACTLY LIKE MINI-CHART
+    // 🔑 EXACT SAME POSITIONING AS MINI-CHART
     setMiniTooltipContent(explainLines);
-    positionMiniTooltipFromElement(el, 16);
+    positionMiniTooltip(e.clientX, e.clientY, 16);
   });
 
   el.addEventListener("mouseleave", hideMiniTooltip);
 });
+
 
 
 
