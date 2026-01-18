@@ -5542,15 +5542,22 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
   const rows = data
     .map(l => {
 
-      // 🔴 CHANGED: safe current earnings row
+      // 🔑 SAFE current owned earnings row
       const atCur = getSafeCurrentEarningsRow(l);
       if (!atCur) return null;
+
+      const sched = l.earningsSchedule || [];
+      const months = sched.length;
+
+      if (months > 0 && !Number.isFinite(atCur.netEarnings)) {
+  console.warn("[KPI3] Invalid net earnings", l.loanId, atCur);
+}
 
       const purchaseDate = l.purchaseDate
         ? formatDate(new Date(l.purchaseDate))
         : "-";
 
-      // 🔴 CHANGED: maturity comes from schedule end
+      // 🔑 Maturity comes from amort schedule end
       let maturityDate = "-";
       if (l.amort?.schedule?.length) {
         const last = l.amort.schedule[l.amort.schedule.length - 1];
@@ -5559,9 +5566,10 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
         }
       }
 
+      // ✅ FIXED: loan-level average (NOT portfolio months)
       const avgMonthly =
-        kpis.monthsCounted > 0
-          ? atCur.netEarnings / kpis.monthsCounted
+        months > 0
+          ? Number(atCur.netEarnings || 0) / months
           : 0;
 
       return {
@@ -5601,6 +5609,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 
   table.classList.add("kpi3-table");
 }
+
 
 
 function renderKPI4Table(data, containerId = "kpi4Table") {
