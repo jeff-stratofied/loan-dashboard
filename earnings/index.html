@@ -5633,10 +5633,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
       const atCur = getSafeCurrentEarningsRow(l);
       if (!atCur) return null;
 
-      if (
-        portfolioMonths > 0 &&
-        !Number.isFinite(atCur.netEarnings)
-      ) {
+      if (!Number.isFinite(atCur.netEarnings)) {
         console.warn("[KPI3] Invalid net earnings", l.loanId, atCur);
       }
 
@@ -5653,7 +5650,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
         }
       }
 
-      // ✅ KPI3: PORTFOLIO-TIME average (canonical)
+      // ✅ FIXED: portfolio-time denominator (matches KPI3 tile)
       const avgMonthly =
         portfolioMonths > 0
           ? Number(atCur.netEarnings || 0) / portfolioMonths
@@ -5696,6 +5693,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 
   table.classList.add("kpi3-table");
 }
+
 
 
 
