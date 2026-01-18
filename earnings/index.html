@@ -2111,17 +2111,35 @@ const ownedEarningsSchedule = earningsScheduleRaw.map(r => {
       ? new Date(r.month + "-01T00:00:00")
       : null;
 
-  return {
-    ...r,
-    loanDate,                 // ✅ GUARANTEED or null
-    isOwned: userPct > 0,
+return {
+  ...r,
+  loanDate,
+  isOwned: userPct > 0,
 
-    // scale cumulative values
-    cumPrincipal: r.cumPrincipal * userPct,
-    cumInterest:  r.cumInterest  * userPct,
-    cumFees:      r.cumFees      * userPct,
-    netEarnings:  r.netEarnings  * userPct
-  };
+  // ============================
+  // 🔑 SCALE CUMULATIVE VALUES
+  // ============================
+  cumPrincipal: r.cumPrincipal * userPct,
+  cumInterest:  r.cumInterest  * userPct,
+  cumFees:      r.cumFees      * userPct,
+  netEarnings:  r.netEarnings  * userPct,
+
+  // ============================
+  // 🔑 SCALE MONTHLY VALUES (CRITICAL)
+  // ============================
+  monthlyPrincipal: (r.monthlyPrincipal ?? 0) * userPct,
+  monthlyInterest:  (r.monthlyInterest  ?? 0) * userPct,
+  monthlyFees:      (r.monthlyFees      ?? 0) * userPct,
+  monthlyNet:       (r.monthlyNet       ?? 0) * userPct,
+
+  // ============================
+  // 🔑 SCALE PAID COMPONENTS
+  // ============================
+  principalPaid: (r.principalPaid ?? 0) * userPct,
+  interestPaid:  (r.interestPaid  ?? 0) * userPct,
+  feeThisMonth:  (r.feeThisMonth  ?? 0) * userPct
+};
+
 });
 
 // =====================================================
