@@ -3717,51 +3717,52 @@ function openKpi2() {
 
 function openKpi3() {
   currentLoan = null;
-  currentMode = 'kpi';
+  currentMode = "kpi";
 
   // reset first
   resetDrawerContent();
 
   drawerTitle.textContent = "Avg Monthly Earnings To Date";
   drawerSub.textContent =
-    "Total net earnings divided by months since portfolio inception.";
+    "Total net earnings divided by months since the first month with earnings data.";
 
-  // ✅ USE ENGINE-COMPUTED KPIs
+  // =============================
+  // ENGINE KPIs (NET TO DATE)
+  // =============================
   const kpis = PORTFOLIO_KPIS;
 
- // -----------------------------
-// Stat boxes (ENGINE-DRIVEN)
-// -----------------------------
-drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
-drawerPrimary.textContent =
-  formatCurrency(kpis.avgMonthlyNet);
-
-// Secondary title WITH info icon
-drawerSecondaryTitle.innerHTML = `
-  Months Counted
-  <span class="info-icon"
-    title="Months counted is the total months the portfolio has been active.">ⓘ</span>
-`;
-
-// Secondary value
-drawerSecondary.textContent =
-  String(kpis.monthsCounted);
-
   // -----------------------------
-  // Existing chart logic (unchanged)
+  // Stat boxes
   // -----------------------------
+  drawerPrimaryTitle.textContent = "Avg Monthly Earnings To Date";
+  drawerPrimary.textContent = formatCurrency(kpis.avgMonthlyNet);
+
+  drawerSecondaryTitle.innerHTML = `
+    Months Counted
+    <span class="info-icon"
+      title="Months since the first month with earnings data in the portfolio.">ⓘ</span>
+  `;
+
+  drawerSecondary.textContent = String(kpis.monthsCounted);
+
+  // =============================
+  // CHART (AUTHORITATIVE)
+  // =============================
   const activeLoans = loansWithEarnings.filter(
     l => !hiddenLoans.has(l.loanId)
   );
 
   const rows = buildPortfolioDrawerRows(activeLoans);
 
-  const PORTFOLIO_START = window.__PORTFOLIO_START__
-    ? new Date(window.__PORTFOLIO_START__)
-    : (rows.length ? new Date(rows[0].date) : new Date());
+  // Portfolio start = first row date (not loan origination)
+  const PORTFOLIO_START = rows.length
+    ? new Date(rows[0].date)
+    : new Date(TODAY);
 
   PORTFOLIO_START.setHours(0, 0, 0, 0);
+  PORTFOLIO_START.setDate(1);
 
+  // Index rows by month
   const rowByMonth = new Map();
   rows.forEach(r => {
     const d = new Date(r.date);
@@ -3769,6 +3770,7 @@ drawerSecondary.textContent =
     rowByMonth.set(key, r);
   });
 
+  // Build continuous month list
   const fullMonths = [];
   const cursor = new Date(
     PORTFOLIO_START.getFullYear(),
@@ -3789,6 +3791,7 @@ drawerSecondary.textContent =
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
+  // 🔑 First month with real earnings data
   const firstNonZeroIdx = fullMonths.findIndex(
     m => (m.contributions || []).some(c => c.hasData)
   );
@@ -3798,12 +3801,20 @@ drawerSecondary.textContent =
       ? fullMonths.slice(firstNonZeroIdx)
       : fullMonths;
 
+  // 🔑 TRUE denominator start (single source of truth)
+  const CHART_START = chartMonths.length
+    ? new Date(chartMonths[0].date)
+    : new Date(PORTFOLIO_START);
+
+  CHART_START.setHours(0, 0, 0, 0);
+  CHART_START.setDate(1);
+
   let cumulativeNet = 0;
 
   const avgRows = chartMonths.map(m => {
     const monthNet = (m.contributions || []).reduce(
       (sum, c) =>
-        sum + (c.hasData ? (Number(c.monthlyNet) || 0) : 0),
+        sum + (c.hasData ? Number(c.monthlyNet || 0) : 0),
       0
     );
 
@@ -3811,7 +3822,7 @@ drawerSecondary.textContent =
 
     const monthsElapsed = Math.max(
       1,
-      monthDiff(PORTFOLIO_START, m.date) + 1
+      monthDiff(CHART_START, m.date) + 1
     );
 
     return {
@@ -3826,9 +3837,9 @@ drawerSecondary.textContent =
     avgRows
   );
 
-  // -----------------------------
-  // Table
-  // -----------------------------
+  // =============================
+  // TABLE
+  // =============================
   drawerExtra.innerHTML =
     `<div class="amort-wrap" id="drawerKpiTable"></div>`;
   renderKPI3Table(activeLoans, "drawerKpiTable");
@@ -3844,6 +3855,7 @@ drawerSecondary.textContent =
 
   openDrawer();
 }
+
 
 
 
