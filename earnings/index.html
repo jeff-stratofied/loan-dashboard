@@ -2519,6 +2519,17 @@ const lensRadius = 20;
 const lensScale = 2;
 
 function handleMove(e){
+
+  // =============================
+  // DEBUG: mini-chart hover source
+  // =============================
+  console.group("[DEBUG] MINI CHART HOVER");
+  console.log("event type:", e.type);
+  console.log("clientX / clientY:", e.clientX, e.clientY);
+  console.log("svg rect:", svg.getBoundingClientRect());
+  console.log("loan:", loan.loanName || loan.loanId);
+  console.groupEnd();
+  
 const rect = svg.getBoundingClientRect();
 const mouseX = ((e.clientX - rect.left) / rect.width) * w;
 const mouseY = ((e.clientY - rect.top) / rect.height) * h;
