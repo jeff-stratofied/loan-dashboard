@@ -278,20 +278,21 @@ export function computePortfolioEarningsKPIs(
   let totalFeesProjected = 0;
   let totalPrincipal = 0;
 
-  // 🔑 portfolio monthly aggregation
-  const monthlyNetByMonth = new Map();
-
+  // For KPI2 table only (lifetime totals per loan)
   const kpi2Rows = [];
+
+  // 🔑 Portfolio monthly aggregation keyed by YYYY-M (calendar months)
+  const monthlyNetByMonth = new Map();
 
   loansWithEarnings.forEach(l => {
     totalPrincipal += Number(l.purchasePrice || 0);
 
-    const sched = l.earningsSchedule || [];
+    const sched = Array.isArray(l.earningsSchedule) ? l.earningsSchedule : [];
     if (!sched.length) return;
 
-    const atEnd = sched.at(-1);
+    const atEnd = sched[sched.length - 1];
 
-    // KPI2 (unchanged)
+    // KPI2 table row (lifetime)
     kpi2Rows.push({
       loanId: l.loanId,
       loanName: l.loanName,
@@ -302,39 +303,49 @@ export function computePortfolioEarningsKPIs(
       fees: -Number(atEnd.cumFees || 0)
     });
 
+    // Portfolio projected totals (lifetime)
     totalNetProjected += Number(atEnd.netEarnings || 0);
     totalFeesProjected += Number(atEnd.cumFees || 0);
 
+    // Portfolio to-date totals should use the canonical current row (cumulative per loan)
+    // BUT avg monthly must be based on monthlyNet, so totals can stay cumulative.
     const currentRow = getCanonicalCurrentEarningsRow(sched, today);
     totalNetToDate += Number(currentRow?.netEarnings ?? 0);
     totalFeesToDate += Number(currentRow?.cumFees ?? 0);
 
-    // 🔑 ACCUMULATE MONTHLY NET (authoritative)
+    // 🔑 Accumulate MONTHLY net (this is what supports the true avg definition)
+    // Only include owned months up to "today"
     sched.forEach(r => {
-      if (!r.isOwned || !r.loanDate) return;
+      if (!r || r.isOwned !== true) return;
+      if (!(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())) return;
+      if (r.loanDate > today) return;
 
       const key = `${r.loanDate.getFullYear()}-${r.loanDate.getMonth()}`;
       const prev = monthlyNetByMonth.get(key) || 0;
-      monthlyNetByMonth.set(
-        key,
-        prev + Number(r.monthlyNet || 0)
-      );
+      monthlyNetByMonth.set(key, prev + Number(r.monthlyNet || 0));
     });
   });
 
-  // 🔑 TRUE months counted
+  // 🔑 Months counted = number of calendar months with any owned earnings rows up to today
+  // This matches the "first earnings month → today" concept without loan-weighting time.
+  // Note: if you prefer to count even zero months after first month, we can switch.
   const monthsCounted = monthlyNetByMonth.size;
 
-  // 🔑 TRUE avg monthly earnings to date
+  // True avg monthly earnings to date
   const avgMonthlyNet =
     monthsCounted > 0
       ? totalNetToDate / monthsCounted
       : 0;
 
-  // 🔑 Projected avg monthly (lifetime)
+  // Projected avg monthly (lifetime): divide total projected by max months through maturity (portfolio timeline)
+  const maxMonthsThroughMaturity = loansWithEarnings.reduce(
+    (max, l) => Math.max(max, (l.earningsSchedule || []).length),
+    0
+  );
+
   const projectedAvgMonthlyNet =
-    monthsCounted > 0
-      ? totalNetProjected / monthsCounted
+    maxMonthsThroughMaturity > 0
+      ? totalNetProjected / maxMonthsThroughMaturity
       : 0;
 
   return {
@@ -344,12 +355,18 @@ export function computePortfolioEarningsKPIs(
     totalFeesProjected,
     totalPrincipal,
 
+    // ✅ KPI3
     avgMonthlyNet,
-    projectedAvgMonthlyNet,
     monthsCounted,
 
+    // ✅ KPI4
+    projectedAvgMonthlyNet,
+    monthsThroughMaturity: maxMonthsThroughMaturity,
+
+    // KPI2 table
     kpi2Rows
   };
 }
+
 
 
