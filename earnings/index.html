@@ -405,10 +405,17 @@
     filter 0.15s ease;
 }
 
+/* Prevent layout shift during tooltip positioning */
 .ownership-pie:hover {
-  transform: scale(1.5);
   filter: brightness(1.05);
 }
+
+/* 🔑 Disable transforms when tooltip is active */
+.lens-tooltip-html ~ .ownership-pie,
+.lens-tooltip-html ~ .loan-badge {
+  transform: none !important;
+}
+
 
 /* (legacy ring styles — safe to keep, no effect on slice version) */
 .ownership-pie circle.bg {
@@ -527,9 +534,9 @@
 }
 
 .tile:hover {
-  transform: translateY(-3px);
   box-shadow: var(--shadow);
 }
+
 
 /* left side */
 .tile-left {
