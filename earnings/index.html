@@ -1801,8 +1801,9 @@ if (key === "ownershipPct") {
   
 function getLoansForTableView() {
   // Base list should respect hiddenLoans (if you want table to match charts)
-  // If you *do* want hidden loans to still appear in the table, remove this filter.
-  const base = loansWithEarnings.filter(l => !hiddenLoans.has(String(l.loanId)));
+  const base = loansWithEarnings.filter(
+    l => !hiddenLoans.has(String(l.loanId))
+  );
 
   // Apply the SAME filter controls as tile view
   const nameVal = (filterName?.value || "").toLowerCase();
@@ -1810,23 +1811,44 @@ function getLoansForTableView() {
   const rateVal = filterRate?.value || "";
 
   const filtered = base.filter(l => {
-    if (nameVal && !String(l.loanName || "").toLowerCase().includes(nameVal)) return false;
-    if (schoolVal && !String(l.school || "").toLowerCase().includes(schoolVal)) return false;
+    if (
+      nameVal &&
+      !String(l.loanName || "").toLowerCase().includes(nameVal)
+    ) return false;
+
+    if (
+      schoolVal &&
+      !String(l.school || "").toLowerCase().includes(schoolVal)
+    ) return false;
 
     if (rateVal) {
       const r = Number(l.nominalRate || 0) * 100;
-      if ((rateVal === "low" && r >= 5) ||
-          (rateVal === "mid" && (r < 5 || r > 8)) ||
-          (rateVal === "high" && r <= 8)) return false;
+      if (
+        (rateVal === "low"  && r >= 5) ||
+        (rateVal === "mid"  && (r < 5 || r > 8)) ||
+        (rateVal === "high" && r <= 8)
+      ) return false;
     }
+
     return true;
   });
 
+  // 🔑 NO SORT → return filtered as-is
   if (!TABLE_SORT.key) return filtered;
 
   const { key, dir } = TABLE_SORT;
-  return filtered.slice().sort((a, b) => dir * compareForKey(a, b, key));
+
+  // 🔒 IMPORTANT FIX:
+  // Always sort ascending FIRST, then reverse for desc.
+  // This guarantees bidirectional sorting even with
+  // mixed types, nulls, localeCompare, etc.
+  const asc = filtered
+    .slice()
+    .sort((a, b) => compareForKey(a, b, key));
+
+  return dir === 1 ? asc : asc.reverse();
 }
+
 
   // =====================================================
 // Sort <select> → table + grid (MATCH AMORT BEHAVIOR)
