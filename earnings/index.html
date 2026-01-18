@@ -3884,9 +3884,6 @@ function openKpi3() {
 }
 
 
-
-
-
 function openKpi4() {
   currentLoan = null;
   currentMode = "kpi";
@@ -3896,7 +3893,7 @@ function openKpi4() {
 
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
   drawerSub.textContent =
-    "Average projected net earnings per month across the full lifetime of the portfolio.";
+    "Average net earnings per month (historical → projected) across the full lifetime of the portfolio.";
 
   // -----------------------------
   // Active loans with schedules
@@ -3909,7 +3906,7 @@ function openKpi4() {
   );
 
   if (!activeLoans.length) {
-    drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
+    drawerPrimaryTitle.textContent = "Avg / Month";
     drawerPrimary.textContent = formatCurrency(0);
     drawerSecondaryTitle.textContent = "Months Through Maturity";
     drawerSecondary.textContent = "0";
@@ -3920,7 +3917,6 @@ function openKpi4() {
   // -----------------------------
   // Build projected monthly rows
   // -----------------------------
-  // We extend monthly earnings forward to the longest schedule
   const maxMonths = Math.max(
     ...activeLoans.map(l => l.earningsSchedule.length)
   );
@@ -3934,41 +3930,41 @@ function openKpi4() {
     ? new Date(firstDate.getFullYear(), firstDate.getMonth(), 1)
     : new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
 
-  let cumulativeNet = 0;
+  const portfolioMonthsToDate =
+    PORTFOLIO_KPIS?.monthsCounted ?? 0;
 
+  let cumulativeNet = 0;
   const projectedRows = [];
 
   for (let i = 0; i < maxMonths; i++) {
-    const monthNet = activeLoans.reduce((sum, l) => {
-  const r =
-    i < l.earningsSchedule.length
-      ? l.earningsSchedule[i]
-      : null;
-
-  // After loan maturity, contribution must be ZERO
-  return sum + Number(r?.monthlyNet || 0);
-}, 0);
-
-
-    cumulativeNet += monthNet;
-
-if (window.EARNINGS_DEBUG && i > 0 && monthNet === 0) {
-  console.log("[KPI4] Zero-contribution month", {
-    index: i,
-    date: d,
-    cumulativeNet
-  });
-}
-
-    
     const d = new Date(START);
     d.setMonth(d.getMonth() + i);
 
-    const monthsElapsed = i + 1;
+    const monthNet = activeLoans.reduce((sum, l) => {
+      const r =
+        i < l.earningsSchedule.length
+          ? l.earningsSchedule[i]
+          : null;
+
+      // After loan maturity, contribution must be ZERO
+      return sum + Number(r?.monthlyNet || 0);
+    }, 0);
+
+    cumulativeNet += monthNet;
+
+    // 🔑 CANONICAL TIME AXIS
+    // Historical months must match KPI3 exactly
+    const monthsElapsed =
+      d <= TODAY
+        ? portfolioMonthsToDate
+        : portfolioMonthsToDate + monthDiff(TODAY, d);
 
     projectedRows.push({
       date: d,
-      avg: cumulativeNet / monthsElapsed,
+      avg:
+        monthsElapsed > 0
+          ? cumulativeNet / monthsElapsed
+          : 0,
       netToDate: cumulativeNet
     });
   }
@@ -3978,7 +3974,7 @@ if (window.EARNINGS_DEBUG && i > 0 && monthNet === 0) {
   // -----------------------------
   const last = projectedRows.at(-1);
 
-  drawerPrimaryTitle.textContent = "Avg / Month (Projected)";
+  drawerPrimaryTitle.textContent = "Avg / Month";
   drawerPrimary.textContent =
     formatCurrency(last?.avg || 0);
 
@@ -4012,7 +4008,8 @@ if (window.EARNINGS_DEBUG && i > 0 && monthNet === 0) {
     console.log("[KPI4 FINAL]", {
       monthsThroughMaturity: projectedRows.length,
       avgProjectedMonthly: last?.avg,
-      netProjectedTotal: last?.netToDate
+      netProjectedTotal: last?.netToDate,
+      portfolioMonthsToDate
     });
   }
 
@@ -5626,6 +5623,9 @@ openKpi2();
 
 function renderKPI3Table(data, containerId = "kpi3Table") {
 
+  const portfolioMonths =
+    PORTFOLIO_KPIS?.monthsCounted ?? 0;
+
   const rows = data
     .map(l => {
 
@@ -5633,12 +5633,12 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
       const atCur = getSafeCurrentEarningsRow(l);
       if (!atCur) return null;
 
-      const sched = l.earningsSchedule || [];
-      const months = sched.length;
-
-      if (months > 0 && !Number.isFinite(atCur.netEarnings)) {
-  console.warn("[KPI3] Invalid net earnings", l.loanId, atCur);
-}
+      if (
+        portfolioMonths > 0 &&
+        !Number.isFinite(atCur.netEarnings)
+      ) {
+        console.warn("[KPI3] Invalid net earnings", l.loanId, atCur);
+      }
 
       const purchaseDate = l.purchaseDate
         ? formatDate(new Date(l.purchaseDate))
@@ -5653,10 +5653,10 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
         }
       }
 
-      // ✅ FIXED: loan-level average (NOT portfolio months)
+      // ✅ KPI3: PORTFOLIO-TIME average (canonical)
       const avgMonthly =
-        months > 0
-          ? Number(atCur.netEarnings || 0) / months
+        portfolioMonths > 0
+          ? Number(atCur.netEarnings || 0) / portfolioMonths
           : 0;
 
       return {
@@ -5696,6 +5696,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 
   table.classList.add("kpi3-table");
 }
+
 
 
 
