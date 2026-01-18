@@ -5629,8 +5629,10 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
   const rows = data
     .map(l => {
 
-      // 🔑 SAFE current owned earnings row
-      const atCur = getSafeCurrentEarningsRow(l);
+      // ✅ CANONICAL: pick the "to date" row by TODAY + loanDate
+      const atCur =
+        getCanonicalCurrentEarningsRow(l.earningsSchedule, TODAY);
+
       if (!atCur) return null;
 
       if (!Number.isFinite(atCur.netEarnings)) {
@@ -5650,7 +5652,7 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
         }
       }
 
-      // ✅ FIXED: portfolio-time denominator (matches KPI3 tile)
+      // ✅ FIXED: portfolio-time denominator + canonical net-to-date
       const avgMonthly =
         portfolioMonths > 0
           ? Number(atCur.netEarnings || 0) / portfolioMonths
@@ -5693,8 +5695,6 @@ function renderKPI3Table(data, containerId = "kpi3Table") {
 
   table.classList.add("kpi3-table");
 }
-
-
 
 
 
