@@ -330,15 +330,23 @@ const avgMonthlyNet =
     : 0;
 
 
-  return {
-    totalNetToDate,
-    totalNetProjected,
-    totalFeesToDate,
-    totalFeesProjected,
-    totalPrincipal,
-    avgMonthlyNet,
-    projectedAvgMonthlyNet,
-    monthsCounted: portfolioMonths,
-    kpi2Rows
-  };
+return {
+  totalNetToDate,
+  totalNetProjected,
+  totalFeesToDate,
+  totalFeesProjected,
+  totalPrincipal,
+
+  // 🔑 Avg monthly earnings to date (portfolio)
+  avgMonthlyNet,
+
+  // 🔑 Projected avg monthly earnings (lifetime)
+  projectedAvgMonthlyNet,
+
+  // 🔑 TRUE denominator: sum of owned loan months
+  monthsCounted: ownedMonthsTotal,
+
+  kpi2Rows
+};
+
 }
