@@ -158,7 +158,11 @@ if (row.isOwned && !deferred) {
   );
 
   // 🔑 PAID INTEREST = amort interest AFTER grace only
-  interestThisMonth = Number(row.interest || 0);
+  interestThisMonth =
+  Number(row.payment || 0) > 0
+    ? Number(row.interest || 0)
+    : 0;
+
 
   feesThisMonth = feeThisMonth;
 }
