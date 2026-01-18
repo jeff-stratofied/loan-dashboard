@@ -120,7 +120,7 @@ export function buildEarningsSchedule({
   });
 
   // ----------------------------------------------------------
-  // Earnings accumulation (authoritative logic)
+  // Earnings accumulation (AUTHORITATIVE)
   // ----------------------------------------------------------
   let cumPrincipal = 0;
   let cumInterest = 0;
@@ -140,13 +140,13 @@ export function buildEarningsSchedule({
     const balance = Number(row.balance ?? 0);
 
     const monthlyBalanceFee =
-      row.isOwned && !deferred && balance > 0
+      row.isOwned && balance > 0
         ? +(balance * 0.00125).toFixed(2)
         : 0;
 
     const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
 
-    // ---- principal / interest ----
+    // ---- principal / interest (PAID, NOT ACCRUED) ----
     let principalThisMonth = 0;
     let interestThisMonth = 0;
     let feesThisMonth = 0;
@@ -156,8 +156,18 @@ export function buildEarningsSchedule({
         0,
         row.principalPaid - (row.prepayment || 0)
       );
-      interestThisMonth = row.interest;
+
+      // 🔑 PAID interest only (accrued interest during grace ≠ earnings)
+      interestThisMonth = Number(row.interestPaid || 0);
+
       feesThisMonth = feeThisMonth;
+    }
+
+    // 🔒 EXPLICIT GRACE RULE (defensive)
+    if (deferred) {
+      principalThisMonth = 0;
+      interestThisMonth = 0;
+      feesThisMonth = feeThisMonth; // fees may still apply
     }
 
     // ---- accumulate ONCE ----
@@ -189,18 +199,17 @@ export function buildEarningsSchedule({
       monthlyInterest,
       monthlyFees,
       monthlyNet,
-      // overrides
-      feeThisMonth: deferred ? 0 : feeThisMonth,
-      interestPaid: deferred ? 0 : row.interest,
-      principalPaid: deferred ? 0 : row.principalPaid,
+      // overrides (truthful reporting)
+      feeThisMonth,
+      interestPaid: interestThisMonth,
+      principalPaid: principalThisMonth,
       isDeferralMonth: deferred
     };
   });
 
-  // 🔑 IMPORTANT FIX: Only return owned rows (prevents null ownershipDate → 1969 dates)
+  // 🔑 IMPORTANT FIX: Only return owned rows
   const ownedEarnings = earnings.filter(r => r.isOwned === true);
 
-  // If no owned months at all, return empty array (UI can handle "N/A" maturity etc.)
   if (ownedEarnings.length === 0) {
     return [];
   }
@@ -211,13 +220,18 @@ export function buildEarningsSchedule({
       if (!(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())) {
         throw new Error("Invalid loanDate generated in earnings engine");
       }
-      if (r.ownershipDate === null || !(r.ownershipDate instanceof Date) || !Number.isFinite(r.ownershipDate.getTime())) {
+      if (
+        r.ownershipDate === null ||
+        !(r.ownershipDate instanceof Date) ||
+        !Number.isFinite(r.ownershipDate.getTime())
+      ) {
         throw new Error(`Ownership date became invalid for owned row: ${r.monthIndex}`);
       }
       return r;
     })
     .sort((a, b) => a.loanDate - b.loanDate);
 }
+
 
 /* ============================================================
    Canonical "Current" Row
