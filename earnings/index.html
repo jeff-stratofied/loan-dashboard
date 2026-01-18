@@ -2223,15 +2223,6 @@ PORTFOLIO_KPIS =
 
 window.EARNINGS_DEBUG = true;
 
-if (window.EARNINGS_DEBUG) {
-  console.log("[EARNINGS KPI CHECK]", {
-    today: TODAY,
-    monthsCounted: PORTFOLIO_KPIS?.monthsCounted,
-    avgMonthlyNet: PORTFOLIO_KPIS?.avgMonthlyNet,
-    totalNetToDate: PORTFOLIO_KPIS?.totalNetToDate
-  });
-}
-
   
 // Replace global list used by UI
 loansWithEarnings = userLoansWithEarnings;
@@ -3844,6 +3835,16 @@ if (window.EARNINGS_DEBUG) {
     };
   });
 
+if (window.EARNINGS_DEBUG) {
+  const last = avgRows.at(-1);
+  console.log("[KPI3 CHART CHECK]", {
+    chartLastDate: last?.date,
+    chartAvg: last?.avg,
+    chartNetToDate: last?.netToDate
+  });
+}
+
+  
   renderKpi3AvgLineChart(
     document.getElementById("drawerChartArea"),
     avgRows
