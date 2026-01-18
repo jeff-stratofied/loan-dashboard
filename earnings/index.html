@@ -3888,7 +3888,6 @@ function openKpi4() {
   currentLoan = null;
   currentMode = "kpi";
 
-  // reset first
   resetDrawerContent();
 
   drawerTitle.textContent = "Projected Avg Monthly Earnings";
@@ -3914,140 +3913,69 @@ function openKpi4() {
     return;
   }
 
-  // ============================
-  // KPI4 DEBUG — ALIGNMENT CHECK
-  // ============================
-  const todayMonth = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
-  const todayKey = `${todayMonth.getFullYear()}-${todayMonth.getMonth()}`;
-
-  // This uses your existing calendar-month aggregator (the *correct* way)
+  // -------------------------------------------------
+  // 🔑 CANONICAL SOURCE: calendar-aligned portfolio rows
+  // -------------------------------------------------
   const portfolioRows = buildProjectedDrawerRows(activeLoans);
 
-  const todayRow = portfolioRows.find(r => {
-    const d = new Date(r.date);
-    d.setDate(1);
-    return d.getFullYear() === todayMonth.getFullYear() &&
-           d.getMonth() === todayMonth.getMonth();
-  });
-
-  if (window.EARNINGS_DEBUG) {
-    console.log("[KPI4 DEBUG] TODAY", {
-      todayMonth,
-      todayKey,
-      loans: activeLoans.length,
-      portfolioRows: portfolioRows.length
-    });
-
-    if (todayRow) {
-      const monthNet = todayRow.contributions.reduce(
-        (s, c) => s + (Number(c.monthlyNet) || 0),
-        0
-      );
-
-      console.log("[KPI4 DEBUG] TODAY month contributions (calendar-aligned)", {
-        date: todayRow.date,
-        monthNet,
-        byLoan: todayRow.contributions.map(c => ({
-          loanId: c.loanId,
-          monthlyNet: Number(c.monthlyNet) || 0,
-          hasData: !!c.hasData
-        }))
-      });
-    } else {
-      console.warn("[KPI4 DEBUG] No calendar row found for TODAY month", {
-        todayMonth,
-        sampleFirst: portfolioRows[0]?.date,
-        sampleLast: portfolioRows.at(-1)?.date
-      });
-    }
+  if (!portfolioRows.length) {
+    openDrawer();
+    return;
   }
-
-  
-  // -----------------------------
-  // Build projected monthly rows
-  // -----------------------------
-  const maxMonths = Math.max(
-    ...activeLoans.map(l => l.earningsSchedule.length)
-  );
-
-  // Portfolio start = first earnings month across loans
-  const firstDate = activeLoans
-    .map(l => l.earningsSchedule[0]?.loanDate)
-    .find(d => d instanceof Date);
-
-  const START = firstDate
-    ? new Date(firstDate.getFullYear(), firstDate.getMonth(), 1)
-    : new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
-
-  const portfolioMonthsToDate =
-    PORTFOLIO_KPIS?.monthsCounted ?? 0;
 
   let cumulativeNet = 0;
-const projectedRows = [];
+  const projectedRows = [];
 
-  if (window.EARNINGS_DEBUG) {
-    console.log("[KPI4 DEBUG] INDEX ALIGNMENT SAMPLE (first 5 rows per loan)");
-    activeLoans.slice(0, 8).forEach(l => {
-      const s = l.earningsSchedule || [];
-      console.log("loan", l.loanId, l.loanName, s.slice(0, 5).map(r => ({
-        i: s.indexOf(r),
-        loanDate: r.loanDate,
-        ownershipDate: r.ownershipDate,
-        monthlyNet: r.monthlyNet
-      })));
+  portfolioRows.forEach((row, i) => {
+    const monthNet = row.contributions.reduce(
+      (s, c) => s + Number(c.monthlyNet || 0),
+      0
+    );
+
+    cumulativeNet += monthNet;
+
+    const monthsElapsed = i + 1;
+
+    projectedRows.push({
+      date: row.date,
+      avg: cumulativeNet / monthsElapsed,
+      netToDate: cumulativeNet
     });
-  }
 
-  
-for (let i = 0; i < maxMonths; i++) {
-  const monthNet = activeLoans.reduce((sum, l) => {
-    const r =
-      i < l.earningsSchedule.length
-        ? l.earningsSchedule[i]
-        : null;
-
-    // After loan maturity → zero contribution
-    return sum + Number(r?.monthlyNet || 0);
-  }, 0);
-
-  cumulativeNet += monthNet;
-
-  const d = new Date(START);
-  d.setMonth(d.getMonth() + i);
-
-  // 🔑 CORRECT MONTH COUNT: portfolio-time, not index-time
-  const monthsElapsed =
-    PORTFOLIO_START instanceof Date
-      ? Math.max(
-          1,
-          monthDiff(PORTFOLIO_START, d) + 1
-        )
-      : i + 1;
-
-  projectedRows.push({
-    date: d,
-    avg: cumulativeNet / monthsElapsed,
-    netToDate: cumulativeNet
+    // 🔍 Debug TODAY alignment
+    if (window.EARNINGS_DEBUG) {
+      const today = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+      if (
+        row.date.getFullYear() === today.getFullYear() &&
+        row.date.getMonth() === today.getMonth()
+      ) {
+        console.log("[KPI4 DEBUG] TODAY (calendar-aligned)", {
+          date: row.date,
+          monthNet,
+          cumulativeNet,
+          avg: cumulativeNet / monthsElapsed,
+          byLoan: row.contributions.map(c => ({
+            loanId: c.loanId,
+            monthlyNet: c.monthlyNet
+          }))
+        });
+      }
+    }
   });
-}
-
 
   // -----------------------------
-  // KPI4 STAT BOXES (FROM CHART)
+  // KPI4 STAT BOXES
   // -----------------------------
   const last = projectedRows.at(-1);
 
   drawerPrimaryTitle.textContent = "Avg / Month";
-  drawerPrimary.textContent =
-    formatCurrency(last?.avg || 0);
+  drawerPrimary.textContent = formatCurrency(last?.avg || 0);
 
-  drawerSecondaryTitle.textContent =
-    "Months Through Maturity";
-  drawerSecondary.textContent =
-    String(projectedRows.length);
+  drawerSecondaryTitle.textContent = "Months Through Maturity";
+  drawerSecondary.textContent = String(projectedRows.length);
 
   // -----------------------------
-  // Chart (same renderer as KPI3)
+  // Chart
   // -----------------------------
   renderKpi3AvgLineChart(
     document.getElementById("drawerChartArea"),
@@ -4071,13 +3999,13 @@ for (let i = 0; i < maxMonths; i++) {
     console.log("[KPI4 FINAL]", {
       monthsThroughMaturity: projectedRows.length,
       avgProjectedMonthly: last?.avg,
-      netProjectedTotal: last?.netToDate,
-      portfolioMonthsToDate
+      netProjectedTotal: last?.netToDate
     });
   }
 
   openDrawer();
 }
+
 
 
 function normalizeEarningsKpiParam(kpi) {
