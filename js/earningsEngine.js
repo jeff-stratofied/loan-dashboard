@@ -278,8 +278,8 @@ export function computePortfolioEarningsKPIs(
   let totalFeesProjected = 0;
   let totalPrincipal = 0;
 
-  let projectedNetTotal = 0;
-  let projectedMonthsTotal = 0;
+  // 🔑 portfolio monthly aggregation
+  const monthlyNetByMonth = new Map();
 
   const kpi2Rows = [];
 
@@ -289,8 +289,9 @@ export function computePortfolioEarningsKPIs(
     const sched = l.earningsSchedule || [];
     if (!sched.length) return;
 
-    const atEnd = sched[sched.length - 1];
+    const atEnd = sched.at(-1);
 
+    // KPI2 (unchanged)
     kpi2Rows.push({
       loanId: l.loanId,
       loanName: l.loanName,
@@ -301,30 +302,54 @@ export function computePortfolioEarningsKPIs(
       fees: -Number(atEnd.cumFees || 0)
     });
 
-    projectedNetTotal += Number(atEnd.netEarnings || 0);
-    projectedMonthsTotal += sched.length;
+    totalNetProjected += Number(atEnd.netEarnings || 0);
+    totalFeesProjected += Number(atEnd.cumFees || 0);
 
     const currentRow = getCanonicalCurrentEarningsRow(sched, today);
-
     totalNetToDate += Number(currentRow?.netEarnings ?? 0);
     totalFeesToDate += Number(currentRow?.cumFees ?? 0);
 
-    totalNetProjected += Number(atEnd.netEarnings || 0);
-    totalFeesProjected += Number(atEnd.cumFees || 0);
+    // 🔑 ACCUMULATE MONTHLY NET (authoritative)
+    sched.forEach(r => {
+      if (!r.isOwned || !r.loanDate) return;
+
+      const key = `${r.loanDate.getFullYear()}-${r.loanDate.getMonth()}`;
+      const prev = monthlyNetByMonth.get(key) || 0;
+      monthlyNetByMonth.set(
+        key,
+        prev + Number(r.monthlyNet || 0)
+      );
+    });
   });
 
+  // 🔑 TRUE months counted
+  const monthsCounted = monthlyNetByMonth.size;
 
+  // 🔑 TRUE avg monthly earnings to date
+  const avgMonthlyNet =
+    monthsCounted > 0
+      ? totalNetToDate / monthsCounted
+      : 0;
+
+  // 🔑 Projected avg monthly (lifetime)
+  const projectedAvgMonthlyNet =
+    monthsCounted > 0
+      ? totalNetProjected / monthsCounted
+      : 0;
 
   return {
-  totalNetToDate,
-  totalNetProjected,
-  totalFeesToDate,
-  totalFeesProjected,
-  totalPrincipal,
+    totalNetToDate,
+    totalNetProjected,
+    totalFeesToDate,
+    totalFeesProjected,
+    totalPrincipal,
 
-  // Used by KPI2 table only (per-loan lifetime totals)
-  kpi2Rows
-};
+    avgMonthlyNet,
+    projectedAvgMonthlyNet,
+    monthsCounted,
 
+    kpi2Rows
+  };
 }
+
 
