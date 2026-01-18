@@ -304,8 +304,7 @@ export function computePortfolioEarningsKPIs(
     projectedNetTotal += Number(atEnd.netEarnings || 0);
     projectedMonthsTotal += sched.length;
 
-    const currentRow =
-      getCanonicalCurrentEarningsRow(sched, today);
+    const currentRow = getCanonicalCurrentEarningsRow(sched, today);
 
     totalNetToDate += Number(currentRow?.netEarnings ?? 0);
     totalFeesToDate += Number(currentRow?.cumFees ?? 0);
@@ -314,42 +313,70 @@ export function computePortfolioEarningsKPIs(
     totalFeesProjected += Number(atEnd.cumFees || 0);
   });
 
-  const projectedAvgMonthlyNet =
-    projectedMonthsTotal > 0
-      ? projectedNetTotal / projectedMonthsTotal
+  // ==========================================================
+  // ✅ KPI3 denominator: portfolio calendar months since FIRST
+  // owned earnings month (NOT loan origination, NOT passed-in date)
+  // ==========================================================
+  let inception = null;
+
+  loansWithEarnings.forEach(l => {
+    const sched = l.earningsSchedule || [];
+    if (!sched.length) return;
+
+    const first = sched[0];
+    const d = first?.loanDate;
+
+    if (d instanceof Date && Number.isFinite(d.getTime())) {
+      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
+      if (!inception || monthStart < inception) inception = monthStart;
+    }
+  });
+
+  const todayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // Inclusive months (Jan 2024 → Jan 2026 = 25)
+  // If you later want "completed months" (24), we can subtract 1 safely.
+  const portfolioMonths =
+    inception instanceof Date
+      ? Math.max(1, monthDiff(inception, todayMonth) + 1)
       : 0;
 
-// 🔑 TRUE portfolio months (NOT per-loan)
-const portfolioMonths =
-  portfolioStartDate instanceof Date
-    ? monthDiff(portfolioStartDate, today) + 1
-    : 0;
+  const avgMonthlyNet =
+    portfolioMonths > 0
+      ? totalNetToDate / portfolioMonths
+      : 0;
 
-const avgMonthlyNet =
-  portfolioMonths > 0
-    ? totalNetToDate / portfolioMonths
-    : 0;
+  // ==========================================================
+  // ✅ KPI4 projected avg monthly: use max months through maturity
+  // (NOT sum of loan months, which double-counts time)
+  // ==========================================================
+  const maxMonthsThroughMaturity = loansWithEarnings.reduce(
+    (max, l) => Math.max(max, l.earningsSchedule?.length || 0),
+    0
+  );
 
+  const projectedAvgMonthlyNet =
+    maxMonthsThroughMaturity > 0
+      ? projectedNetTotal / maxMonthsThroughMaturity
+      : 0;
 
+  return {
+    totalNetToDate,
+    totalNetProjected,
+    totalFeesToDate,
+    totalFeesProjected,
+    totalPrincipal,
 
-return {
-  totalNetToDate,
-  totalNetProjected,
-  totalFeesToDate,
-  totalFeesProjected,
-  totalPrincipal,
+    // 🔑 Avg monthly earnings to date (portfolio)
+    avgMonthlyNet,
 
-  // 🔑 Avg monthly earnings to date (portfolio)
-  avgMonthlyNet,
+    // 🔑 Projected avg monthly earnings (lifetime)
+    projectedAvgMonthlyNet,
 
-  // 🔑 Projected avg monthly earnings (lifetime)
-  projectedAvgMonthlyNet,
+    // 🔑 Denominator used for avgMonthlyNet
+    monthsCounted: portfolioMonths,
 
-  // 🔑 TRUE denominator
-  monthsCounted: portfolioMonths,
-
-  kpi2Rows
-};
-
-
+    kpi2Rows
+  };
 }
+
