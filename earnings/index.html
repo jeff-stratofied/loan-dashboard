@@ -1372,6 +1372,8 @@ let currentMode = 'portfolio';
 
 let PORTFOLIO_START = null;
 let PORTFOLIO_KPIS = null;
+  let TABLE_SORT_WIRED = false;
+
 
 if (isEmbed) {
   document.documentElement.style.visibility = 'hidden';
@@ -4489,28 +4491,39 @@ async function initPage() {
    TABLE SORTING (table-only)
    ========================= */
 function wireLoanTableColumnSort() {
+  // 🔒 IMPORTANT: only wire once
+  if (TABLE_SORT_WIRED) return;
+  TABLE_SORT_WIRED = true;
+
   const ths = document.querySelectorAll("#loanTable thead th[data-key]");
   const tableWrapEl = document.getElementById("loanTableWrap");
 
   ths.forEach(th => {
     th.addEventListener("click", () => {
       const key = th.dataset.key;
+      if (!key) return;
 
-      if (TABLE_SORT.key === key) TABLE_SORT.dir *= -1;
-      else {
+      if (TABLE_SORT.key === key) {
+        TABLE_SORT.dir *= -1;   // toggle direction
+      } else {
         TABLE_SORT.key = key;
-        TABLE_SORT.dir = 1;
+        TABLE_SORT.dir = 1;     // reset to asc on new column
       }
+
+      // update header indicators
+      ths.forEach(x => x.removeAttribute("data-sort"));
+      th.setAttribute(
+        "data-sort",
+        TABLE_SORT.dir === 1 ? "asc" : "desc"
+      );
 
       if (tableWrapEl && !tableWrapEl.hidden) {
         renderLoanTable(getLoansForTableView());
       }
-
-      ths.forEach(x => x.removeAttribute("data-sort"));
-      th.setAttribute("data-sort", TABLE_SORT.dir === 1 ? "asc" : "desc");
     });
   });
 }
+
 
   
 function applyLoanFilters() {
