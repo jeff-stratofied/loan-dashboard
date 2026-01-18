@@ -319,13 +319,16 @@ export function computePortfolioEarningsKPIs(
       ? projectedNetTotal / projectedMonthsTotal
       : 0;
 
-  const portfolioMonths =
-    Math.max(1, monthDiff(portfolioStartDate, today) + 1);
+  const ownedMonthsTotal = loansWithEarnings.reduce(
+  (sum, l) => sum + (l.earningsSchedule?.length || 0),
+  0
+);
 
-  const avgMonthlyNet =
-    portfolioMonths > 0
-      ? totalNetToDate / portfolioMonths
-      : 0;
+const avgMonthlyNet =
+  ownedMonthsTotal > 0
+    ? totalNetToDate / ownedMonthsTotal
+    : 0;
+
 
   return {
     totalNetToDate,
