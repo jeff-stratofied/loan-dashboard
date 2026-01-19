@@ -1624,6 +1624,64 @@ function renderEventBadgeCell(loan) {
 // =====================================================
 // Ownership Pie — MATCH EARNINGS (20-slice SVG)
 // =====================================================
+
+function buildOwnershipPie(loan) {
+  const pct = Math.max(0, Math.min(1, loan.ownershipPct || 0));
+  const slices = Math.round(pct * 20); // 5% per slice
+
+  if (slices === 0) return "";
+
+  const radius = 9;
+  const cx = 12;
+  const cy = 12;
+  const sliceAngle = 360 / 20;
+
+  const color =
+    window.KPI_COLOR_MAP?.[loan.loanId ?? loan.id] ||
+    "var(--brand)";
+
+  const paths = [];
+
+  for (let i = 0; i < 20; i++) {
+    const start = i * sliceAngle;
+    const end = start + sliceAngle;
+
+    const largeArc = sliceAngle > 180 ? 1 : 0;
+    const rads = d => (Math.PI / 180) * d;
+
+    const x1 = cx + radius * Math.cos(rads(start - 90));
+    const y1 = cy + radius * Math.sin(rads(start - 90));
+    const x2 = cx + radius * Math.cos(rads(end - 90));
+    const y2 = cy + radius * Math.sin(rads(end - 90));
+
+    const filled = i < slices;
+
+    paths.push(`
+      <path
+        d="M ${cx} ${cy}
+           L ${x1} ${y1}
+           A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}
+           Z"
+        fill="${filled ? color : "transparent"}"
+        stroke="var(--border)"
+        stroke-width="0.8"
+      />
+    `);
+  }
+
+  return `
+    <svg
+      class="ownership-pie"
+      viewBox="0 0 24 24"
+      data-tooltip="${Math.round(pct * 100)}% of Loan Owned"
+      aria-label="${Math.round(pct * 100)}% of Loan Owned"
+    >
+      ${paths.join("")}
+    </svg>
+  `;
+}    
+    
+/* delete?    
 function buildOwnershipPie(loan) {
   if (!Array.isArray(loan.ownershipLots)) return null;
 
@@ -1689,7 +1747,7 @@ path.setAttribute("stroke-width", "0.6");
 
   return svg;
 }
-
+*/
     
 // ----------------------------------
 // Badge tooltip text (ROI tiles)
