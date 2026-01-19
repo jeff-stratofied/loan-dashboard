@@ -1649,10 +1649,17 @@ function buildOwnershipPie(loan) {
       `M ${radius} ${radius} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`
     );
 
-    path.setAttribute(
-      "fill",
-      i < ownedSlices ? "var(--brand)" : "var(--border)"
-    );
+    const loanColor =
+  window.KPI_COLOR_MAP?.[loan.id] || "var(--brand)";
+
+path.setAttribute(
+  "fill",
+  i < ownedSlices ? loanColor : "var(--border)"
+);
+
+    path.setAttribute("stroke", "var(--card)");
+path.setAttribute("stroke-width", "0.6");
+
 
     svg.appendChild(path);
   }
