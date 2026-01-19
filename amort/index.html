@@ -3205,12 +3205,13 @@ const schedule =
     ? loan.cumSchedule
     : loan.amort?.schedule || [];
 
-  if (!schedule.length) {
-    drawerChartArea.innerHTML = "<p>No schedule data available</p>";
-    drawer.classList.add('open');
-    drawer.setAttribute('aria-hidden', 'false');
-    return;
-  }
+if (!schedule.length) {
+  drawerChartArea.innerHTML = "<p>No schedule data available</p>";
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  return;
+}
+
 
   // NEW: Compute cumulative fields on the fly (since they're not in the base schedule)
   let cumInterest = 0;
