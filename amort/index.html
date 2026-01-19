@@ -3081,6 +3081,15 @@ const monthAnchor = new Date(
   1
 );
 
+  // =====================================
+// 🔑 Ownership-aware schedule (single source)
+// Prefer user-scoped schedule if present
+// =====================================
+const schedule =
+  Array.isArray(loan.cumSchedule) && loan.cumSchedule.length
+    ? loan.cumSchedule
+    : (loan.amort?.schedule || []);
+
 
 // =====================================
 // Build event lookup (READ-ONLY)
@@ -3094,9 +3103,10 @@ const eventByMonth = {};
   // DEFERRAL
   if (e.type === "deferral" && (e.startDate || e.date) && e.months) {
     const startIdx = monthIndexFromDate(
-      e.startDate || e.date,
-      loan.amort.schedule
-    );
+  e.startDate || e.date,
+  schedule
+);
+
     if (startIdx !== null) {
       for (let i = 0; i < e.months; i++) {
         eventByMonth[startIdx + i] = "deferral";
@@ -3107,9 +3117,10 @@ const eventByMonth = {};
 
   // PREPAYMENT
   if (e.type === "prepayment") {
-    const row = loan.amort.schedule.find(
-      r => r.prepayment && r.prepayment > 0
-    );
+    const row = schedule.find(
+  r => r.prepayment && r.prepayment > 0
+);
+
     if (row) eventByMonth[row.monthIndex] = "prepayment";
     return;
   }
@@ -3120,16 +3131,18 @@ const defaultEvent = (loan.events || []).find(e => e.type === "default" && e.dat
 
 if (defaultEvent) {
   const idx = monthIndexFromDate(
-    defaultEvent.date,
-    loan.amort.schedule
-  );
+  defaultEvent.date,
+  schedule
+);
+
   if (idx !== null) {
     eventByMonth[idx] = "default";
   }
 }
 
   
-loan.amort.schedule.forEach((r) => {
+schedule.forEach((r) => {
+
   const rowDate = displayDateForMonthIndex(r.monthIndex, monthAnchor);
 
   const isBeforePurchase = rowDate < purchaseDate;
@@ -3186,7 +3199,12 @@ if (eventType) {
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
 
-  const schedule = loan.amort?.schedule || [];
+  // 🔑 Ownership-aware amort schedule (drawer only)
+const schedule =
+  Array.isArray(loan.cumSchedule) && loan.cumSchedule.length
+    ? loan.cumSchedule
+    : loan.amort?.schedule || [];
+
   if (!schedule.length) {
     drawerChartArea.innerHTML = "<p>No schedule data available</p>";
     drawer.classList.add('open');
