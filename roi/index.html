@@ -2635,41 +2635,63 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   const loanPaths = [];
   let weightedPath = null;
 
-  // 🔑 ROI → chart adapter (MUST COME FIRST)
-  loanSeriesList = (loanSeriesList || []).map(series => ({
+  // -----------------------------------
+// Path refs (REQUIRED)
+// -----------------------------------
+const loanPaths = [];
+let weightedPath = null;
+
+/* =====================================================
+   FIX 1 — ROI → Chart Adapter (AUTHORITATIVE)
+   MUST run before any scale or SVG logic
+   ===================================================== */
+loanSeriesList = (loanSeriesList || []).map(series => {
+  const raw = series.points || series.data || [];
+
+  return {
     ...series,
-    points: (series.points || []).map(p => ({
-      x: p.date,
-      y: p.roi
+    points: raw.map(p => ({
+      x: p.date instanceof Date ? p.date : new Date(p.date),
+      y: Number.isFinite(p.y)
+        ? p.y
+        : Number.isFinite(p.roi)
+        ? p.roi
+        : NaN
     }))
-  }));
+  };
+});
 
-  if (weightedSeries && Array.isArray(weightedSeries.points)) {
-    weightedSeries = {
-      ...weightedSeries,
-      points: weightedSeries.points.map(p => ({
-        x: p.date,
-        y: p.roi
-      }))
-    };
-  }
-
-  // 🔒 NOW filter invalid points / short series
-  loanSeriesList = loanSeriesList
-    .map(s => ({
-      ...s,
-      points: s.points.filter(
-        p => Number.isFinite(p.x) && Number.isFinite(p.y)
-      )
+if (weightedSeries) {
+  const raw = weightedSeries.points || weightedSeries.data || [];
+  weightedSeries = {
+    ...weightedSeries,
+    points: raw.map(p => ({
+      x: p.date instanceof Date ? p.date : new Date(p.date),
+      y: Number.isFinite(p.y)
+        ? p.y
+        : Number.isFinite(p.roi)
+        ? p.roi
+        : NaN
     }))
-    .filter(s => s.points.length >= 2);
+  };
+}
 
-  if (!loanSeriesList.length) {
-    containerEl.appendChild(document.createElementNS(svgNS, "svg"));
-    return;
-  }
+// 🔒 Drop invalid points AFTER normalization (AUTHORITATIVE)
+loanSeriesList = loanSeriesList
+  .map(s => ({
+    ...s,
+    points: (s.points || []).filter(
+      p => p.x instanceof Date && Number.isFinite(p.y)
+    )
+  }))
+  .filter(s => s.points.length >= 2);
 
-  // ⬇️ rest of your chart code continues unchanged
+if (!loanSeriesList.length) {
+  // Render empty SVG so KPI drawer layout remains stable
+  containerEl.appendChild(document.createElementNS(svgNS, "svg"));
+  return;
+}
+
 
 
   const rect = containerEl.getBoundingClientRect();
