@@ -1505,6 +1505,31 @@ function createBadgeTooltip(badge, text) {
   badge.addEventListener('remove', () => tooltip.remove());
 }
 
+    // =====================================================
+// Lens tooltip helpers (MATCH EARNINGS)
+// =====================================================
+function showLensTooltip(text, event) {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+
+  tooltip.textContent = text;
+  tooltip.style.display = "block";
+
+  const offset = 14;
+  const x = event.clientX;
+  const y = event.clientY;
+
+  tooltip.style.left = `${x}px`;
+  tooltip.style.top = `${y - offset}px`;
+}
+
+function hideLensTooltip() {
+  const tooltip = document.getElementById("tooltip");
+  if (!tooltip) return;
+
+  tooltip.style.display = "none";
+}
+
  
   function getLoanMaturityFromAmort(loan) {
   if (!loan.amort || !loan.amort.schedule || !loan.amort.schedule.length) {
