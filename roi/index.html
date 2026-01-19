@@ -2405,6 +2405,8 @@ const roiSeries = cumSchedule.map(r => {
       // 🔑 RETURN MUST BE HERE
       return {
         ...l,
+
+        purchaseDate: effectivePurchaseDate, // 🔑 overwrite for ROI engine
         amort: { schedule: amortSchedule },
         scheduleWithOwnership,
         cumSchedule,
