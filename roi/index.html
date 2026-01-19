@@ -1581,6 +1581,67 @@ function renderEventBadgeCell(loan) {
   `;
 }
 
+// =====================================================
+// Ownership Pie — MATCH EARNINGS (20-slice SVG)
+// =====================================================
+function buildOwnershipPie(loan) {
+  if (!Array.isArray(loan.ownershipLots)) return null;
+
+  const totalPct = loan.ownershipLots.reduce(
+    (s, t) => s + (Number(t.pct) || 0),
+    0
+  );
+
+  if (totalPct <= 0) return null;
+
+  const size = 26;
+  const radius = 13;
+  const slices = 20;
+  const sliceAngle = (2 * Math.PI) / slices;
+
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+
+  svg.setAttribute("viewBox", "0 0 26 26");
+  svg.setAttribute("width", size);
+  svg.setAttribute("height", size);
+  svg.setAttribute("aria-label", "Ownership distribution");
+
+  const ownedSlices = Math.round(totalPct * slices);
+
+  for (let i = 0; i < slices; i++) {
+    const start = i * sliceAngle - Math.PI / 2;
+    const end = start + sliceAngle;
+
+    const x1 = radius + radius * Math.cos(start);
+    const y1 = radius + radius * Math.sin(start);
+    const x2 = radius + radius * Math.cos(end);
+    const y2 = radius + radius * Math.sin(end);
+
+    const path = document.createElementNS(svgNS, "path");
+    path.setAttribute(
+      "d",
+      `M ${radius} ${radius} L ${x1} ${y1} A ${radius} ${radius} 0 0 1 ${x2} ${y2} Z`
+    );
+
+    path.setAttribute(
+      "fill",
+      i < ownedSlices ? "var(--brand)" : "var(--border)"
+    );
+
+    svg.appendChild(path);
+  }
+
+  // Tooltip (MATCH EARNINGS)
+  svg.addEventListener("mouseenter", e => {
+    const pct = Math.round(totalPct * 1000) / 10;
+    showLensTooltip(`${pct}% owned`, e);
+  });
+
+  svg.addEventListener("mouseleave", hideLensTooltip);
+
+  return svg;
+}
 
     
 // ----------------------------------
