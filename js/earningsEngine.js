@@ -327,7 +327,7 @@ export function computePortfolioEarningsKPIs(
   const monthlyNetByMonth = new Map();
 
   loansWithEarnings.forEach(l => {
-    totalPrincipal += Number(l.purchasePrice || 0);
+    totalPrincipal += Number(l.purchasePrice || 0) * Number(l.ownershipPct || 0);
 
     const sched = Array.isArray(l.earningsSchedule) ? l.earningsSchedule : [];
     if (!sched.length) return;
@@ -351,7 +351,11 @@ export function computePortfolioEarningsKPIs(
 
     // Portfolio to-date totals should use the canonical current row (cumulative per loan)
     // BUT avg monthly must be based on monthlyNet, so totals can stay cumulative.
-    const currentRow = getCanonicalCurrentEarningsRow(sched, today);
+    const currentRow = getCanonicalCurrentEarningsRow(
+  sched.filter(r => r.isOwned === true),
+  today
+);
+
     totalNetToDate += Number(currentRow?.netEarnings ?? 0);
     totalFeesToDate += Number(currentRow?.cumFees ?? 0);
 
