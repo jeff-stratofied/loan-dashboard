@@ -187,6 +187,23 @@ export function computeKPIs(loans, asOfMonth) {
 }
 
 export function buildProjectedRoiTimeline(loans, opts = {}) {
+
+console.group("🧪 ROI ENGINE — PROJECTED TIMELINE");
+
+loans.forEach(l => {
+  console.log({
+    loan: l.name,
+    purchaseDate: l.purchaseDate,
+    roiSeriesLength: l.roiSeries?.length,
+    firstRoiDate: l.roiSeries?.[0]?.date,
+    lastRoiDate: l.roiSeries?.slice(-1)[0]?.date,
+    investedLast: l.roiSeries?.slice(-1)[0]?.invested
+  });
+});
+
+console.groupEnd();
+
+  
   if (!Array.isArray(loans) || loans.length === 0) {
     return { dates: [], perLoanSeries: [], weightedSeries: [] };
   }
