@@ -4673,7 +4673,7 @@ function renderRatesDrawer() {
   // =====================================================
   // 3. Build ROI timeline (PORTFOLIO LEVEL)
   // =====================================================
-  const timeline = buildProjectedRoiTimeline(allLoans);
+  const timeline = buildProjectedRoiTimeline(currentLoans);
 
   // 🔑 FORCE COLORS FOR KPI2 (engine does not assign them)
 const colorMap = buildKpiColorMap(allLoans);
@@ -4813,13 +4813,14 @@ const globalDates = buildGlobalDatesFromLoans(currentLoans);
 createMultiSeriesChart(
   drawerChartArea,
   timeline.perLoanSeries,
-  null, // ⛔ NO weighted line
+  { points: [] }, // ✅ explicit empty weighted series
   {
     dates: timeline.dates,
-    tickSpacingX: 3,     // SAME as Weighted ROI to Date
+    tickSpacingX: 3,
     hideWeighted: true
   }
 );
+
 
 
   // -------------------------------
@@ -5059,17 +5060,17 @@ function renderCapitalRecoveryDrawer() {
   // Render chart (CLEAN X-AXIS)
   // --------------------------------------------------
   
-  createMultiSeriesChart(
-    document.getElementById('drawerChartArea'),
-    loanSeriesList,
-    portfolioSeries,
-    {
-      dates: globalDates,
-      weightedColor: '#111827',
-      weightedWidth: 3,
-      tickSpacingX
-    }
-  );
+createMultiSeriesChart(
+  drawerChartArea,
+  timeline.perLoanSeries,
+  { points: [] }, // ✅ explicit empty weighted series
+  {
+    dates: timeline.dates,
+    tickSpacingX: 3,
+    hideWeighted: true
+  }
+);
+
 
   // --------------------------------------------------
   // Metrics
