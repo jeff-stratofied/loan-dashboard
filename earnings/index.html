@@ -1949,7 +1949,8 @@ let loansWithEarnings = [];
 const hiddenLoans = new Set();
 
 function rebuildLoansWithEarnings() {
-loansWithEarnings = loans.map((raw, idx) => {
+loansWithEarnings = loans
+  .map((raw, idx) => {
 
 const id = raw.id ?? (idx + 1);
 const loanId = raw.loanId ?? id;
@@ -2011,6 +2012,14 @@ raw.feeStartMonth ??
 // =====================================================
 const userOwnershipLots = (raw.ownershipLots || [])
   .filter(lot => lot.user === PAGE_USER && lot.pct > 0);
+
+  // =====================================================
+// 🔑 OPTION A INVARIANT — SKIP UNOWNED LOANS EARLY
+// =====================================================
+if (userOwnershipLots.length === 0) {
+  return null; // ⛔ do NOT amort loans the user does not own
+}
+
 
 const canonicalPurchaseDate =
   userOwnershipLots.length
@@ -2221,6 +2230,9 @@ return {
   })()
 };
 });
+}
+  .filter(Boolean); // 🔑 remove skipped loans
+
 
 loansWithEarnings.sort((a, b) => {
 const da = new Date(a.purchaseDate).getTime() || 0;
