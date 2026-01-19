@@ -1369,14 +1369,15 @@ allLoans = enrichedLoans
     if (userPct <= 0) return null;
 
     const scaledSchedule = loan.amort.schedule.map(r => ({
-      ...r,
-      payment:      r.payment      * userPct,
-      principal:    r.principal    * userPct,
-      interest:     r.interest     * userPct,
-      balance:      r.balance      * userPct,
-      cumPrincipal: r.cumPrincipal * userPct,
-      cumInterest:  r.cumInterest  * userPct
-    }));
+  ...r,
+  payment:        r.payment        * userPct,
+  principalPaid:  r.principalPaid  * userPct,
+  interest:       r.interest       * userPct,
+  balance:        r.balance        * userPct,
+  cumPrincipal:   r.cumPrincipal   * userPct,
+  cumInterest:    r.cumInterest    * userPct
+}));
+
 
     return {
       ...loan,
@@ -3232,7 +3233,17 @@ if (eventType) {
     ...cumI.map(p => p.y),
     ...cumT.map(p => p.y)
   ];
-  const maxY = Math.max(...allYs);
+  // Scale chart to user's invested capital (not full loan)
+const investedCap = Math.max(
+  1,
+  (loan.ownershipLots || [])
+    .filter(l => l.user === PAGE_CONTEXT.user)
+    .reduce((s, l) => s + (Number(l.pricePaid) || 0), 0)
+);
+
+// Allow slight headroom so lines don’t pin top
+const maxY = Math.max(...allYs, investedCap * 1.1);
+
   const minY = Math.min(...allYs);
   const range = Math.max(1, maxY - minY);
   const stepX = (w - pad * 2) / Math.max(1, schedule.length - 1);
