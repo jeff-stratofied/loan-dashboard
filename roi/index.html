@@ -4248,23 +4248,25 @@ function populateROILoanTable(){
    });
  }
 
-function populateProjectedROILoanTable(){
+function populateProjectedROILoanTable() {
   const tbody = document.querySelector("#roiProjectedLoansTable tbody");
-  if(!tbody) return;
+  if (!tbody) return;
 
-  tbody.innerHTML = allLoans.map(l => {
+  // 🔑 KPI2 TABLE MUST MATCH KPI2 CHART — OWNED LOANS ONLY
+  const loans = currentLoans;
+
+  tbody.innerHTML = loans.map(l => {
     const roiEntry =
-  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-  { roi: 0, loanValue: l.purchasePrice };
-
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      { roi: 0, loanValue: l.purchasePrice };
 
     let matStr = '';
     try {
       const pd = new Date(l.purchaseDate);
       const months = Math.round((l.termYears + l.graceYears) * 12);
       pd.setMonth(pd.getMonth() + months);
-      matStr = pd.toISOString().slice(0,10);
-    } catch(e) {
+      matStr = pd.toISOString().slice(0, 10);
+    } catch (e) {
       matStr = '';
     }
 
@@ -4300,7 +4302,6 @@ function populateProjectedROILoanTable(){
   if (!svgs.length) return;
   const chartSvg = svgs[svgs.length - 1];
 
-
   const table = document.getElementById("roiProjectedLoansTable");
   if (!table) return;
 
@@ -4324,7 +4325,6 @@ function populateProjectedROILoanTable(){
         }
       });
 
-      // weighted projected line stays neutral
       if (weightedPath) {
         weightedPath.setAttribute("stroke-opacity", "1");
       }
@@ -4342,6 +4342,7 @@ function populateProjectedROILoanTable(){
     });
   });
 }
+
 
 
 
