@@ -2264,7 +2264,27 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
     .map(l => {
       if (!l) return null;
 
-      const rawAmort = buildAmortSchedule(l);
+      // 🔑 FIX: ensure purchaseDate exists BEFORE loanEngine runs
+      const lots = Array.isArray(l.ownershipLots) ? l.ownershipLots : [];
+      const lotPurchaseDate =
+        lots.find(x => x && x.purchaseDate)?.purchaseDate || null;
+
+      const effectivePurchaseDate = l.purchaseDate || lotPurchaseDate;
+
+      // Call loanEngine with a safe, normalized purchaseDate
+      const rawAmort = buildAmortSchedule({
+        ...l,
+        purchaseDate: effectivePurchaseDate
+      });
+
+      // Attach ownership flags
+      const purchase = parseISODateLocal(effectivePurchaseDate);
+
+      if (!purchase || !Number.isFinite(purchase.getTime())) {
+        throw new Error(
+          `Invalid purchaseDate for loan "${l.name}": ${effectivePurchaseDate}`
+        );
+      }
 
       // ----------------------------------
       // Respect terminal rows from engine
