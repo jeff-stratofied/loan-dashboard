@@ -3081,7 +3081,7 @@ const monthAnchor = new Date(
   1
 );
 
-  // =====================================
+// =====================================
 // 🔑 Ownership-aware schedule (single source)
 // Prefer user-scoped schedule if present
 // =====================================
@@ -3089,6 +3089,14 @@ const schedule =
   Array.isArray(loan.cumSchedule) && loan.cumSchedule.length
     ? loan.cumSchedule
     : (loan.amort?.schedule || []);
+
+if (!schedule.length) {
+  drawerChartArea.innerHTML = "<p>No schedule data available</p>";
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
+  return;
+}
+
 
 
 // =====================================
@@ -3181,7 +3189,6 @@ if (eventType) {
 });
 
 
-
   /* build drawer chart (multi-line with legend & current date marker) */
   drawerChartArea.innerHTML = '';
   drawerLegend.style.display = 'flex';
@@ -3198,21 +3205,6 @@ if (eventType) {
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
-
-// 🔑 Ownership-aware amort schedule
-schedule =
-  Array.isArray(loan.cumSchedule) && loan.cumSchedule.length
-    ? loan.cumSchedule
-    : loan.amort?.schedule || [];
-
-if (!schedule.length) {
-  drawerChartArea.innerHTML = "<p>No schedule data available</p>";
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden', 'false');
-  return;
-}
-
-
 
   // NEW: Compute cumulative fields on the fly (since they're not in the base schedule)
   let cumInterest = 0;
