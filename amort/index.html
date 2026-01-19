@@ -4436,14 +4436,16 @@ console.log(
     const globalMonth = ymToDate(ym);
 
     return loansForSeries.reduce((sum, loan) => {
-      if (!loan.loanStartDate || !loan.amort?.schedule?.length) return sum;
+  const schedule = loan.cumSchedule || [];
+  if (!loan.loanStartDate || !schedule.length) return sum;
 
-      const start = toMonthStart(loan.loanStartDate);
-      const off = monthOffset(globalMonth, start);
-      if (off < 0 || off >= loan.amort.schedule.length) return sum;
+  const start = toMonthStart(loan.loanStartDate);
+  const off = monthOffset(globalMonth, start);
+  if (off < 0 || off >= schedule.length) return sum;
 
-      return sum + (loan.amort.schedule[off]?.payment || 0);
-    }, 0);
+  return sum + (schedule[off]?.payment || 0);
+}, 0);
+
   });
 
   // --------------------------------------------------
