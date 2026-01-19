@@ -1884,6 +1884,8 @@ function openLoanDrawerSafe(loan) {
 // KPI DRAWER RENDERER — ROI (MISSING, REQUIRED)
 // =====================================================
 function renderKpiDrawer(kpiId) {
+  // 🔑 KPI drawers must operate ONLY on visible (owned) loans
+  const kpiLoans = currentLoans;
 
 console.group(`🧪 KPI DEBUG — ${kpiId}`);
 
