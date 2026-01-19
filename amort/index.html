@@ -1291,49 +1291,68 @@ async function loadAndNormalizeLoans() {
   // =========================================
   rawLoans.forEach(l => normalizeOwnership(l));
 
-  // =========================================
-// DEV SEED — assign Market loans to user
-// REMOVE once real ownership UI exists
+// =========================================
+// 🔑 AMORT COMPATIBILITY FIX
+// -----------------------------------------
+// Amort engine still requires loan.purchaseDate.
+// For partial ownership, derive it from earliest lot.
 // =========================================
 rawLoans.forEach(l => {
-  if (
-    l.ownership.allocations.length === 1 &&
-    l.ownership.allocations[0].user === "Market"
-  ) {
-    l.ownership.allocations = [
-      { user: PAGE_CONTEXT.user, percent: 100 },
-      { user: "Market", percent: 0 }
-    ];
+  if (!l.purchaseDate) {
+    const lots = Array.isArray(l.ownershipLots) ? l.ownershipLots : [];
+    if (lots.length) {
+      const earliest = lots
+        .map(x => x.purchaseDate)
+        .filter(Boolean)
+        .sort()[0];
+
+      if (earliest) {
+        l.purchaseDate = earliest;
+      }
+    }
   }
 });
 
+// --------------------------------------------------
+// DEV-ONLY SCHEMA DRIFT GUARD (OWNERSHIP-AWARE)
+// --------------------------------------------------
+const DEV_MODE =
+  location.hostname === "localhost" ||
+  location.hostname.includes("github.io");
 
-  // --------------------------------------------------
-  // DEV-ONLY SCHEMA DRIFT GUARD
-  // --------------------------------------------------
-  const DEV_MODE =
-    location.hostname === "localhost" ||
-    location.hostname.includes("github.io");
+if (DEV_MODE) {
+  rawLoans.forEach(l => {
+    const problems = [];
 
-  if (DEV_MODE) {
-    rawLoans.forEach(l => {
-      const problems = [];
+    if (!Number.isFinite(l.principal)) problems.push("principal");
+    if (!Number.isFinite(l.termYears)) problems.push("termYears");
+    if (!l.loanStartDate) problems.push("loanStartDate");
 
-      if (!Number.isFinite(l.principal)) problems.push("principal");
-      if (!Number.isFinite(l.purchasePrice)) problems.push("purchasePrice");
-      if (!Number.isFinite(l.termYears)) problems.push("termYears");
-      if (!l.loanStartDate) problems.push("loanStartDate");
+    // 🔑 Ownership invariants
+    if (!Array.isArray(l.ownershipLots) || !l.ownershipLots.length) {
+      problems.push("ownershipLots");
+    } else {
+      const sum = l.ownershipLots.reduce((s, lot) => s + (Number(lot.pct) || 0), 0);
+      if (Math.abs(sum - 1) > 0.0001) problems.push("ownershipLots ≠ 100%");
 
-      if (problems.length) {
-        console.warn("⚠️ Loan schema issue", {
-          loanId: l.loanId,
-          loanName: l.loanName,
-          problems,
-          loan: l
-        });
-      }
-    });
-  }
+      l.ownershipLots.forEach((lot, i) => {
+        if (!lot.user) problems.push(`lot[${i}].user`);
+        if (!lot.purchaseDate) problems.push(`lot[${i}].purchaseDate`);
+        if (!Number.isFinite(lot.pricePaid)) problems.push(`lot[${i}].pricePaid`);
+      });
+    }
+
+    if (problems.length) {
+      console.warn("⚠️ Loan schema issue", {
+        loanId: l.loanId,
+        loanName: l.loanName,
+        problems,
+        loan: l
+      });
+    }
+  });
+}
+
 
   const enrichedLoans = attachSchedules(
     rawLoans.map(normalizeLoan)
