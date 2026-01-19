@@ -349,14 +349,19 @@ export function computePortfolioEarningsKPIs(
     totalNetProjected += Number(atEnd.netEarnings || 0);
     totalFeesProjected += Number(atEnd.cumFees || 0);
 
-    // Portfolio to-date totals should use the canonical current row (cumulative per loan)
-    // BUT avg monthly must be based on monthlyNet, so totals can stay cumulative.
-    const currentRow = getCanonicalCurrentEarningsRow(
-  sched.filter(r => r.isOwned === true),
-  today
-);
+ // 🔑 KPI1 MUST be calendar-based (match chart)
+let loanNetToDate = 0;
 
-    totalNetToDate += Number(currentRow?.netEarnings ?? 0);
+sched.forEach(r => {
+  if (!r || r.isOwned !== true) return;
+  if (!(r.loanDate instanceof Date)) return;
+  if (r.loanDate > today) return;
+
+  loanNetToDate += Number(r.monthlyNet || 0);
+});
+
+totalNetToDate += loanNetToDate;
+
     totalFeesToDate += Number(currentRow?.cumFees ?? 0);
 
     // 🔑 Accumulate MONTHLY net (this is what supports the true avg definition)
