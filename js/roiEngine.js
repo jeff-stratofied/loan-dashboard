@@ -18,7 +18,7 @@
 // UI must never recompute ROI, invested, or ownership
 
 
-import { buildAmortSchedule } from "./loanEngine.js";
+import { buildAmortSchedule } from "./loanEngine.js?v=dev";
 
 // =====================================================
 // INTERNAL HELPERS (PURE)
