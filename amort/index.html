@@ -1943,9 +1943,10 @@ svg.addEventListener("mousemove", ev => {
   const dateLabel = formatMonthYear(hoverDate);
 
   tooltip.innerHTML =
-    `${dateLabel} • ` +
-    `Principal $${p.cumPrincipal.toLocaleString()} • ` +
-    `Interest $${p.cumInterest.toLocaleString()}`;
+  `${dateLabel}<br>` +
+  `<span style="opacity:0.85">Scheduled Principal</span>: $${p.cumPrincipal.toLocaleString()}<br>` +
+  `<span style="opacity:0.85">Accrued Interest</span>: $${p.cumInterest.toLocaleString()}`;
+
 
   tooltip.style.left = `${ev.clientX}px`;
   tooltip.style.top = `${ev.clientY - 10}px`;
@@ -3412,13 +3413,17 @@ svg.addEventListener('mousemove', (ev) => {
   tooltip.style.left = `${lineScreenX}px`;
   tooltip.style.top = `${ev.clientY - 12}px`;
 
-  tooltip.innerHTML = `
-    ${dateLabel}<br>
-    Balance $${row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
-    Principal $${row.cumPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
-    Interest $${row.cumInterest.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
-    Total $${row.cumTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-  `;
+ tooltip.innerHTML = `
+  ${dateLabel}<br>
+  <span style="opacity:0.85">Remaining Balance</span>
+  $${row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+  <span style="opacity:0.85">Scheduled Principal</span>
+  $${row.cumPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+  <span style="opacity:0.85">Accrued Interest</span>
+  $${row.cumInterest.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
+  <span style="opacity:0.85">Total Scheduled</span>
+  $${row.cumTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+`;
 });
 
 svg.addEventListener('mouseleave', () => {
