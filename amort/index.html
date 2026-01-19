@@ -4292,7 +4292,7 @@ svg.setAttribute('preserveAspectRatio', 'none');
 
                 <td>${l.purchaseDate}</td>
                 <td style="text-align:right;">
-                  $${l.purchasePrice.toLocaleString()}
+                  $${getUserInvestedCapital(l, PAGE_CONTEXT.user).toLocaleString()}
                 </td>
               </tr>
             `).join('')}
