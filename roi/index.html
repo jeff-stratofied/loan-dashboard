@@ -1901,7 +1901,8 @@ console.log({
 console.groupEnd();
 
   
-  const kpis = computeKPIs(allLoans, KPI_CURRENT_MONTH);
+  const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
+
 
 
   drawerTitle.textContent = "";
@@ -1940,9 +1941,10 @@ else if (kpiId === "kpi2") {
   // =====================================================
   // KPI2 — Projected Portfolio ROI chart (WITH COLORS)
   // =====================================================
-const timeline = buildProjectedRoiTimeline(allLoans, {
-  colors: buildKpiColorMap(allLoans)   // 🔑 correct option name
+const timeline = buildProjectedRoiTimeline(currentLoans, {
+  colors: buildKpiColorMap(currentLoans)
 });
+
   
 createMultiSeriesChart(
   drawerChartArea,
@@ -2612,6 +2614,22 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   // -----------------------------------
   const loanPaths = [];
   let weightedPath = null;
+
+  // 🔒 FIX: sanitize series to prevent NaN SVG paths
+loanSeriesList = (loanSeriesList || [])
+  .map(s => ({
+    ...s,
+    points: (s.points || []).filter(
+      p => Number.isFinite(p.x) && Number.isFinite(p.y)
+    )
+  }))
+  .filter(s => s.points.length >= 2);
+
+if (!loanSeriesList.length) {
+  // Still render empty axes container (prevents KPI drawer crash)
+  containerEl.appendChild(document.createElementNS(svgNS, "svg"));
+  return;
+}
 
 
   const rect = containerEl.getBoundingClientRect();
