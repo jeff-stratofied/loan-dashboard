@@ -1153,6 +1153,7 @@ tr.event-default td {
         <th data-key="nominalRate">Rate</th>
         <th data-key="termYears">Term</th>
         <th data-key="graceYears">Grace</th>
+        <th data-key="ownedPct">% Owned</th>
         <th data-key="roiToDate">ROI</th>
       </tr>
     </thead>
@@ -3234,6 +3235,19 @@ function renderLoanTableROI(list = currentLoans) {
       <td>${((loan.nominalRate || 0) * 100).toFixed(2)}%</td>
       <td>${loan.termYears ?? ""}</td>
       <td>${loan.graceYears ?? ""}</td>
+      <td>
+  ${(
+    (Array.isArray(loan.ownershipLots)
+      ? loan.ownershipLots.reduce(
+          (sum, lot) =>
+            sum + (lot.user === PAGE_USER ? (lot.pct || 0) : 0),
+          0
+        )
+      : 0
+    ) * 100
+  ).toFixed(1)}%
+</td>
+
       <td>${(
   (getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.roi || 0) * 100
 ).toFixed(2)}%</td>
