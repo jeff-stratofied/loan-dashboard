@@ -222,14 +222,22 @@ const earliestPurchase = new Date(
   Math.min(...validPurchases.map(d => d.getTime()))
 );
 
-
-  const latestMaturity = loans.reduce((latest, l) => {
-    const mat = new Date(l.purchaseDate);
-    mat.setMonth(
-      mat.getMonth() + Math.round((safeNum(l.termYears) + safeNum(l.graceYears)) * 12)
+const maturityDates = loans
+  .map(l => {
+    const d = new Date(l.purchaseDate);
+    if (isNaN(+d)) return null;
+    d.setMonth(
+      d.getMonth() +
+      Math.round((safeNum(l.termYears) + safeNum(l.graceYears)) * 12)
     );
-    return mat > latest ? mat : latest;
-  }, new Date(earliestPurchase));
+    return d;
+  })
+  .filter(Boolean);
+
+const latestMaturity = new Date(
+  Math.max(...maturityDates.map(d => d.getTime()))
+);
+
 
   const dates = [];
   const cursor = new Date(earliestPurchase);
