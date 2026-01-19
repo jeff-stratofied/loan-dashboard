@@ -2012,6 +2012,13 @@ raw.feeStartMonth ??
 const userOwnershipLots = (raw.ownershipLots || [])
   .filter(lot => lot.user === PAGE_USER && lot.pct > 0);
 
+// =====================================================
+// 🔑 OPTION A INVARIANT — SKIP UNOWNED LOANS
+// =====================================================
+if (userOwnershipLots.length === 0) {
+  return null; // ⛔ do not evaluate dates, amort, or earnings
+}
+  
 const canonicalPurchaseDate =
   userOwnershipLots.length
     ? userOwnershipLots
@@ -2221,6 +2228,7 @@ return {
   })()
 };
 });
+  .filter(Boolean);
 
 loansWithEarnings.sort((a, b) => {
 const da = new Date(a.purchaseDate).getTime() || 0;
