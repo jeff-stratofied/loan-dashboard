@@ -4171,13 +4171,13 @@ function forceDrawerVisible() {
     
 function populateROILoanTable(){
   const tbody = document.querySelector("#roiLoansTable tbody");
-  if(!tbody) return;
+  if (!tbody) return;
 
-  tbody.innerHTML = allLoans.map(l => {
+  tbody.innerHTML = currentLoans.map(l => {
     const roiEntry =
-  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-  { roi: 0, loanValue: l.purchasePrice };
-
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      getLastOwnedRoiEntry?.(l) ??
+      { roi: 0, loanValue: l.purchasePrice };
 
     let matStr = '';
     try {
@@ -4193,7 +4193,6 @@ function populateROILoanTable(){
     const id = l.id ?? l.loanId;
     const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
 
-    // ✅ ADD data-loan-id HERE
     return `<tr data-loan-id="${id}">
       <td style="text-align:left;">
         <span style="
@@ -4215,38 +4214,36 @@ function populateROILoanTable(){
       </td>
     </tr>`;
   }).join('');
-    
-      const chartSvg = drawerChartArea.querySelector("svg");
-      if (!chartSvg) return;
-    
-      const table = document.getElementById("roiLoansTable");
-      if (!table) return;
-    
-      const loanPaths = Array.from(
-        chartSvg.querySelectorAll('path[data-type="loan"]')
-      );
 
-      table.querySelectorAll("tbody tr").forEach(row => {
-        const rowLoanId = row.dataset.loanId;
-        if (!rowLoanId) return;
-    
+  // ---------- hover logic ----------
+  const chartSvg = drawerChartArea.querySelector("svg");
+  if (!chartSvg) return;
+
+  const loanPaths = Array.from(
+    chartSvg.querySelectorAll('path[data-type="loan"]')
+  );
+
+  document.querySelectorAll("#roiLoansTable tbody tr").forEach(row => {
+    const rowLoanId = row.dataset.loanId;
+    if (!rowLoanId) return;
+
     row.addEventListener("mouseenter", () => {
       loanPaths.forEach(p => {
         const isTarget = p.dataset.loanId === rowLoanId;
-    
         p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
-        p.setAttribute("stroke-width", "1.2"); // KEEP ALL LINES SAME WIDTH
+        p.setAttribute("stroke-width", "1.2");
       });
     });
-    
+
     row.addEventListener("mouseleave", () => {
       loanPaths.forEach(p => {
         p.setAttribute("stroke-opacity", "0.9");
         p.setAttribute("stroke-width", "1.2");
       });
     });
-   });
- }
+  });
+}
+
 
 function populateProjectedROILoanTable() {
   const tbody = document.querySelector("#roiProjectedLoansTable tbody");
