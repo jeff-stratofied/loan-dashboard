@@ -1361,73 +1361,35 @@ if (DEV_MODE) {
 // =========================================
 // BUILD USER-SCOPED AMORT FROM OWNERSHIP LOTS
 // =========================================
-
 const USER = PAGE_CONTEXT.user;
 
-allLoans = enrichedLoans.map(loan => {
-  // Only keep lots owned by current user
-  const userLots = (loan.ownershipLots || []).filter(
-    l => l.user === USER
-  );
+allLoans = enrichedLoans
+  .map(loan => {
+    const userPct = getUserOwnershipPct(loan, USER);
+    if (userPct <= 0) return null;
 
-  if (!userLots.length) return null;
+    const scaledSchedule = loan.amort.schedule.map(r => ({
+      ...r,
+      payment:      r.payment      * userPct,
+      principal:    r.principal    * userPct,
+      interest:     r.interest     * userPct,
+      balance:      r.balance      * userPct,
+      cumPrincipal: r.cumPrincipal * userPct,
+      cumInterest:  r.cumInterest  * userPct
+    }));
 
-  // Build amort PER LOT using lot purchase date + capital
-  const lotSchedules = userLots.map(lot => {
-    const purchase = new Date(lot.purchaseDate + "T00:00:00");
-    if (!Number.isFinite(purchase.getTime())) {
-      throw new Error(
-        `Invalid purchaseDate for loan "${loan.loanName}": ${lot.purchaseDate}`
-      );
-    }
-
-    const lotLoan = {
+    return {
       ...loan,
-      purchaseDate: lot.purchaseDate,
-      purchasePrice: lot.pricePaid,
-      principal: lot.pricePaid
+      amort: {
+        ...loan.amort,
+        schedule: scaledSchedule
+      },
+      cumSchedule: scaledSchedule,
+      ownershipPct: userPct
     };
+  })
+  .filter(Boolean);
 
-    const withSchedule = attachSchedules([lotLoan])[0];
-    return withSchedule.amort.schedule;
-  });
-
-  // Merge lot schedules month-by-month
-  const mergedSchedule = [];
-
-  lotSchedules.forEach(schedule => {
-    schedule.forEach((row, i) => {
-      if (!mergedSchedule[i]) {
-        mergedSchedule[i] = {
-          ...row,
-          payment: 0,
-          principal: 0,
-          interest: 0,
-          balance: 0,
-          cumPrincipal: 0,
-          cumInterest: 0
-        };
-      }
-
-      mergedSchedule[i].payment      += row.payment || 0;
-      mergedSchedule[i].principal    += row.principal || 0;
-      mergedSchedule[i].interest     += row.interest || 0;
-      mergedSchedule[i].balance      += row.balance || 0;
-      mergedSchedule[i].cumPrincipal += row.cumPrincipal || 0;
-      mergedSchedule[i].cumInterest  += row.cumInterest || 0;
-    });
-  });
-
-  return {
-    ...loan,
-    amort: {
-      ...loan.amort,
-      schedule: mergedSchedule
-    },
-    cumSchedule: mergedSchedule,
-    ownershipPct: userLots.reduce((s, l) => s + l.pct, 0)
-  };
-}).filter(Boolean);
 
 // =========================================
 // MATERIALIZE CURRENT BALANCE (FOR SORTING)
@@ -3087,11 +3049,21 @@ assert(loan, "openDrawerForLoan called with null loan");
       • Orig Loan Amt ${formatCurrency(loan.purchasePrice || loan.origLoanAmt || 0)}
     </div>
   `;
-  drawerPrimaryTitle.textContent = 'Purchase Price';
-  drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
-  drawerSecondaryTitle.textContent = 'Rate';
-  drawerPrimary.textContent = `$${loan.purchasePrice.toLocaleString()}`;
-  drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
+// ----------------------------------
+// Primary / Secondary stat boxes
+// ----------------------------------
+
+// User-specific invested capital
+const investedCapital = (loan.ownershipLots || [])
+  .filter(l => l.user === PAGE_CONTEXT.user)
+  .reduce((sum, l) => sum + (Number(l.pricePaid) || 0), 0);
+
+drawerPrimaryTitle.textContent = "Invested Capital";
+drawerPrimary.textContent = `$${Math.round(investedCapital).toLocaleString()}`;
+
+drawerSecondaryTitle.textContent = "Rate";
+drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
+
 
   /* render amort rows */
   drawerAmortContainer.style.display = 'block';
