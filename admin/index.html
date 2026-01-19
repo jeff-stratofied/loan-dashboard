@@ -1230,10 +1230,12 @@ loanTable.addEventListener("change", (e) => {
 
 
   document.getElementById("loan-table").addEventListener("click", (e) => {
-    const action = e.target.dataset.action;
-    if (!action) return;
+const actionEl = e.target.closest("[data-action]");
+if (!actionEl) return;
 
-    const row = e.target.closest("tr");
+const action = actionEl.dataset.action;
+const row = actionEl.closest("tr");
+
     const idx = Array.from(row.parentNode.children).indexOf(row);
     
       if (action === "events") {
