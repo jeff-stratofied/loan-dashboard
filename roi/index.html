@@ -1585,6 +1585,61 @@ function renderEventBadgeCell(loan) {
   `;
 }
 
+// =========================================
+// Ownership Pie — ROI (MATCH AMORT/EARNINGS)
+// =========================================
+function renderOwnershipPie(loan) {
+  const pct = getUserOwnershipPct(loan); // 🔑 single source of truth
+
+  if (!pct || pct <= 0) return "";
+
+  const slices = Math.round(pct * 20); // 5% per slice
+  const size = 26;
+  const cx = 13;
+  const cy = 13;
+  const r = 11;
+
+  let paths = "";
+
+  for (let i = 0; i < 20; i++) {
+    const start = (i / 20) * Math.PI * 2 - Math.PI / 2;
+    const end   = ((i + 1) / 20) * Math.PI * 2 - Math.PI / 2;
+
+    const x1 = cx + r * Math.cos(start);
+    const y1 = cy + r * Math.sin(start);
+    const x2 = cx + r * Math.cos(end);
+    const y2 = cy + r * Math.sin(end);
+
+    const d = `
+      M ${cx} ${cy}
+      L ${x1} ${y1}
+      A ${r} ${r} 0 0 1 ${x2} ${y2}
+      Z
+    `;
+
+    paths += `
+      <path
+        d="${d}"
+        fill="${
+          i < slices
+            ? "rgba(14,165,233,0.95)"
+            : "rgba(148,163,184,0.22)"
+        }"
+      />
+    `;
+  }
+
+  return `
+    <svg
+      class="ownership-pie"
+      viewBox="0 0 ${size} ${size}"
+      title="${Math.round(pct * 100)}% owned"
+      aria-label="${Math.round(pct * 100)}% owned"
+    >
+      ${paths}
+    </svg>
+  `;
+}
 
     
 // ----------------------------------
