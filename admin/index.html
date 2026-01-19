@@ -686,6 +686,125 @@ function openEventsDrawer(loan) {
   };
 }
 
+function openOwnershipDrawer(loan) {
+  const existing = document.getElementById("ownership-drawer");
+  if (existing) existing.remove();
+
+  const drawer = document.createElement("div");
+  drawer.id = "ownership-drawer";
+  drawer.style.cssText = `
+    position:fixed;
+    top:0;
+    right:0;
+    width:420px;
+    height:100%;
+    background:var(--card);
+    box-shadow:var(--shadow);
+    padding:16px;
+    z-index:1000;
+    overflow:auto;
+  `;
+
+  function renderLots() {
+    return loan.ownershipLots.map((lot, idx) => `
+      <div style="display:grid;grid-template-columns:1fr 80px 120px 100px auto;gap:6px;margin-bottom:6px">
+        <select data-idx="${idx}" data-field="user">
+          ${USER_OPTIONS.map(u =>
+            `<option value="${u.value}" ${u.value === lot.user ? "selected" : ""}>
+              ${u.label}
+            </option>`
+          ).join("")}
+        </select>
+
+        <input type="number" step="0.01" min="0"
+          data-idx="${idx}" data-field="pct"
+          value="${(lot.pct * 100).toFixed(2)}">
+
+        <input type="date"
+          data-idx="${idx}" data-field="purchaseDate"
+          value="${lot.purchaseDate || ""}">
+
+        <input type="number" step="0.01"
+          data-idx="${idx}" data-field="pricePaid"
+          value="${lot.pricePaid ?? 0}">
+
+        <button data-action="remove-lot" data-idx="${idx}">✕</button>
+      </div>
+    `).join("");
+  }
+
+  drawer.innerHTML = `
+    <h3 style="margin-top:0">Ownership — ${loan.loanName}</h3>
+
+    <div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px">
+      Each row is a distinct ownership lot. Percentages must total 100%.
+    </div>
+
+    <div id="lot-list">
+      ${renderLots()}
+    </div>
+
+    <button id="add-lot-btn" style="margin-top:8px">+ Add Lot</button>
+
+    <hr style="margin:14px 0;border-color:var(--border)">
+
+    <button id="close-ownership-btn">Close</button>
+  `;
+
+  document.body.appendChild(drawer);
+
+  // -------------------------
+  // Change handlers
+  // -------------------------
+  drawer.addEventListener("input", e => {
+    const idx = Number(e.target.dataset.idx);
+    const field = e.target.dataset.field;
+    if (Number.isNaN(idx) || !field) return;
+
+    if (field === "pct") {
+      loan.ownershipLots[idx].pct = Number(e.target.value) / 100;
+    } else {
+      loan.ownershipLots[idx][field] = e.target.value;
+    }
+
+    markDirty();
+    renderTable();
+  });
+
+  // -------------------------
+  // Remove lot
+  // -------------------------
+  drawer.addEventListener("click", e => {
+    if (e.target.dataset.action === "remove-lot") {
+      const idx = Number(e.target.dataset.idx);
+      loan.ownershipLots.splice(idx, 1);
+      markDirty();
+      drawer.remove();
+      openOwnershipDrawer(loan);
+      renderTable();
+    }
+  });
+
+  // -------------------------
+  // Add lot
+  // -------------------------
+  drawer.querySelector("#add-lot-btn").onclick = () => {
+    loan.ownershipLots.push({
+      user: USER_OPTIONS[0].value,
+      pct: 0,
+      purchaseDate: "",
+      pricePaid: 0
+    });
+
+    markDirty();
+    drawer.remove();
+    openOwnershipDrawer(loan);
+  };
+
+  drawer.querySelector("#close-ownership-btn").onclick = () => {
+    drawer.remove();
+  };
+}
 
 
 
@@ -1123,6 +1242,13 @@ loanTable.addEventListener("change", (e) => {
       return;
     }
 
+if (action === "ownership") {
+  const loan = currentLoans[idx];
+  openOwnershipDrawer(loan);
+  return;
+}
+
+    
    if (action === "delete") {
   if (!confirm("Delete this loan?")) return;
 
