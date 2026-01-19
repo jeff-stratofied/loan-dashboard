@@ -306,9 +306,13 @@
 .loan-badges {
   display: flex;
   gap: 6px;
-  margin-top: 4px;   /* 🔑 remove bottom margin */
+  margin-top: 4px;
   flex-wrap: wrap;
+  align-items: center;     /* 🔑 vertical centering */
+  position: relative;      /* 🔑 allow micro-adjust */
+  top: -0.5px;             /* 🔑 match ownership-pie offset */
 }
+
 
 .loan-badge {
   display: inline-flex;
