@@ -293,29 +293,29 @@
     .tile:hover{ transform:translateY(-6px); box-shadow:var(--shadow) }
 
     .tile-left{ flex:1; padding-right:10px }
-    .loan-name{ font-weight:700; font-size:14px }
+    .loan-name {
+  font-weight:600;   /* match earnings */
+  font-size:13px;    /* match earnings */
+}
     .loan-sub{ font-size:12px; color:var(--muted); margin-top:6px }
     .loan-meta{ display:flex; gap:8px; font-size:12px; color:var(--muted); margin-top:8px }
 
   /* =========================================
    Loan event badges (tile-level)
     ========================================= */
- .loan-badges {
+.loan-badges {
   display: flex;
   gap: 6px;
-  align-items: center;
-
-  /* 🔑 REMOVE vertical drift */
-  margin: 4px 0;     /* equal space above & below */
-  line-height: 20px; /* defines the vertical band */
+  margin-top: 4px;   /* 🔑 remove bottom margin */
+  flex-wrap: wrap;
 }
 
- .loan-badge {
+.loan-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 20px;          /* 🔑 lock badge height */
-  line-height: 1;        /* 🔑 prevent font from pushing baseline */
+  height: 20px;          /* 🔑 critical */
+  line-height: 1;        /* 🔑 no font push */
   padding: 2px 6px;
   font-size: 11px;
   font-weight: 600;
