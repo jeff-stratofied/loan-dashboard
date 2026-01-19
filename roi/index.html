@@ -1994,6 +1994,10 @@ function openRoiKpiDrawer(kpiId) {
   currentMode = "kpi";
   currentLoan = null;
 
+// 🔑 KPI drawers must scope tables to owned loans
+filteredLoans = currentLoans.slice();
+
+  
   // Hide loan-only UI
   drawerAmortContainer.style.display = "none";
   drawerLegend.style.display = "none";
@@ -3474,6 +3478,13 @@ data.forEach((p, i) => {
    - Row / tile interactions
    ============================================================ */
 function renderLoanTableROI(list = currentLoans) {
+console.log("[ROI TABLE DATA]", {
+  currentMode,
+  rows: loans.length,
+  sample: loans[0]?.name
+});
+
+  
   const tableWrap = document.getElementById("loanTableWrap");
   const table = document.getElementById("loanTable");
   const tbody = table?.querySelector("tbody");
