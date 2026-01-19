@@ -349,20 +349,24 @@ export function computePortfolioEarningsKPIs(
     totalNetProjected += Number(atEnd.netEarnings || 0);
     totalFeesProjected += Number(atEnd.cumFees || 0);
 
- // 🔑 KPI1 MUST be calendar-based (match chart)
+// =====================================================
+// KPI1 — CALENDAR-BASED CASH FLOW (MATCH CHART EXACTLY)
+// =====================================================
 let loanNetToDate = 0;
+let loanFeesToDate = 0;
 
 sched.forEach(r => {
   if (!r || r.isOwned !== true) return;
   if (!(r.loanDate instanceof Date)) return;
   if (r.loanDate > today) return;
 
-  loanNetToDate += Number(r.monthlyNet || 0);
+  loanNetToDate  += Number(r.monthlyNet  || 0);
+  loanFeesToDate += Number(r.monthlyFees || 0);
 });
 
-totalNetToDate += loanNetToDate;
+totalNetToDate  += loanNetToDate;
+totalFeesToDate += loanFeesToDate;
 
-    totalFeesToDate += Number(currentRow?.cumFees ?? 0);
 
     // 🔑 Accumulate MONTHLY net (this is what supports the true avg definition)
     // Only include owned months up to "today"
