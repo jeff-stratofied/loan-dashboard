@@ -2618,40 +2618,58 @@ function createMiniSparkline(svg, series, opts = {}) {
    ============================================================ */
 
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
-console.group("🧪 ENTER createMultiSeriesChart");
+  console.group("🧪 ENTER createMultiSeriesChart");
+  console.log({
+    loanSeriesListCount: loanSeriesList?.length,
+    weightedSeriesPoints: weightedSeries?.points?.length,
+    datesCount: opts?.dates?.length
+  });
+  console.groupEnd();
 
-console.log({
-  loanSeriesListCount: loanSeriesList?.length,
-  weightedSeriesPoints: weightedSeries?.points?.length,
-  datesCount: opts?.dates?.length
-});
-
-console.groupEnd();
-
-  
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
-    // -----------------------------------
+
+  // -----------------------------------
   // Path refs (REQUIRED)
   // -----------------------------------
   const loanPaths = [];
   let weightedPath = null;
 
-  // 🔒 FIX: sanitize series to prevent NaN SVG paths
-loanSeriesList = (loanSeriesList || [])
-  .map(s => ({
-    ...s,
-    points: (s.points || []).filter(
-      p => Number.isFinite(p.x) && Number.isFinite(p.y)
-    )
-  }))
-  .filter(s => s.points.length >= 2);
+  // 🔑 ROI → chart adapter (MUST COME FIRST)
+  loanSeriesList = (loanSeriesList || []).map(series => ({
+    ...series,
+    points: (series.points || []).map(p => ({
+      x: p.date,
+      y: p.roi
+    }))
+  }));
 
-if (!loanSeriesList.length) {
-  // Still render empty axes container (prevents KPI drawer crash)
-  containerEl.appendChild(document.createElementNS(svgNS, "svg"));
-  return;
-}
+  if (weightedSeries && Array.isArray(weightedSeries.points)) {
+    weightedSeries = {
+      ...weightedSeries,
+      points: weightedSeries.points.map(p => ({
+        x: p.date,
+        y: p.roi
+      }))
+    };
+  }
+
+  // 🔒 NOW filter invalid points / short series
+  loanSeriesList = loanSeriesList
+    .map(s => ({
+      ...s,
+      points: s.points.filter(
+        p => Number.isFinite(p.x) && Number.isFinite(p.y)
+      )
+    }))
+    .filter(s => s.points.length >= 2);
+
+  if (!loanSeriesList.length) {
+    containerEl.appendChild(document.createElementNS(svgNS, "svg"));
+    return;
+  }
+
+  // ⬇️ rest of your chart code continues unchanged
 
 
   const rect = containerEl.getBoundingClientRect();
