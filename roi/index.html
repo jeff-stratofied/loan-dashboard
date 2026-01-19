@@ -5078,6 +5078,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   // =========================================
   const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 
+// 🔑 SOURCE OF TRUTH — MATCH AMORT & EARNINGS
+allLoans = derivedLoans;
+
+// Only control VISIBILITY — not interaction
+currentLoans = allLoans.filter(loan => {
+  const lots = Array.isArray(loan.ownershipLots)
+    ? loan.ownershipLots
+    : [];
+
+  // Visible if user owns ANY tranche
+  return lots.some(lot => lot.user === PAGE_USER && lot.pct > 0);
+});
+
+// Filters & views operate on visible loans only
+filteredLoans = currentLoans.slice();
+
+  
   // =====================================================
   // 🔒 INVARIANT: ROI must exist for current KPI month
   // =====================================================
