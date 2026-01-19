@@ -518,18 +518,29 @@ html[data-theme="dark"] body {
   width: 26px;
   height: 26px;
   flex-shrink: 0;
-  cursor: pointer;
-  display: block;
+
+  cursor: pointer;              /* match event badge */
+  display: block;               /* avoid inline SVG baseline issues */
+
+  /* 🔑 vertical rhythm alignment */
   position: relative;
   top: 0.5px;
+
+  /* 🔑 smooth hover zoom */
   transition:
     transform 0.15s ease,
     filter 0.15s ease;
 }
 
+/* Prevent layout shift during tooltip positioning */
 .ownership-pie:hover {
-  transform: scale(1.5);
   filter: brightness(1.05);
+}
+
+/* 🔑 Disable transforms when tooltip is active */
+.lens-tooltip-html ~ .ownership-pie,
+.lens-tooltip-html ~ .loan-badge {
+  transform: none !important;
 }
 
 
@@ -548,6 +559,10 @@ html[data-theme="dark"] body {
   transform-origin: 50% 50%;
 }
 
+    .ownership-pie:hover {
+  transform: scale(1.5);
+  filter: brightness(1.05);
+}
     
     
 /* MATCH AMORT TILE HOVER BEHAVIOR */
