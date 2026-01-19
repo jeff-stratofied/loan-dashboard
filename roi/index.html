@@ -201,6 +201,7 @@ html,body{
 
 
   /* Compact view toggle */
+/* delete
 .compact-toggle {
   display: flex;
   align-items: center;
@@ -210,13 +211,14 @@ html,body{
   cursor: pointer;
   user-select: none;
 }
-
+*/
 /* =========================================
    Compact / Table toggle checkbox (Amort)
    ========================================= */
-.compact-toggle input[type="checkbox"] {
+/* delete
+    .compact-toggle input[type="checkbox"] {
   accent-color: var(--brand);
-  color-scheme: light;   /* 🔑 forces white checkmark */
+  color-scheme: light;  
   cursor: pointer;
 }
 
@@ -225,7 +227,7 @@ html,body{
     .compact-toggle span {
   font-weight: 500;   /* match Amort */
 }
-
+*/
     
 /* Force layout to match Amort: body does NOT scroll */
 html, body {
@@ -508,6 +510,49 @@ html[data-theme="dark"] body {
   opacity: 1;
 }
 
+/* =========================================
+   Ownership Pie (20-slice)
+   ========================================= */
+
+.ownership-pie {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+
+  cursor: pointer;              /* match event badge */
+  display: block;               /* avoid inline SVG baseline issues */
+
+  /* 🔑 vertical rhythm alignment */
+  position: relative;
+  top: 0.5px;
+
+  /* 🔑 smooth hover zoom */
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+.ownership-pie:hover {
+  transform: scale(1.5);
+  filter: brightness(1.05);
+}
+
+/* (legacy ring styles — safe to keep, no effect on slice version) */
+.ownership-pie circle.bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 4;
+}
+
+.ownership-pie circle.fg {
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: butt;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+    
     
 /* MATCH AMORT TILE HOVER BEHAVIOR */
 .tile {
@@ -685,6 +730,12 @@ tr.event-default td {
              border-color .25s ease, box-shadow .25s ease;
     }
 
+/* MATCH EARNINGS TOOLTIP POSITIONING */
+.tooltip {
+  transform: translate(-50%, -120%);
+}
+
+    
     .small{ font-size:12px; color:var(--muted) }
 
     /* tiny responsive tweaks */
