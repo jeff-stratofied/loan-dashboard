@@ -3480,6 +3480,14 @@ drawerBody.scrollTop = 0;
       return d.toLocaleString(undefined, { year: 'numeric', month: 'short' });
     }
 
+function getUserInvestedCapital(loan, user) {
+  return (loan.ownershipLots || [])
+    .filter(lot => lot.user === user)
+    .reduce((sum, lot) => sum + (Number(lot.pricePaid) || 0), 0);
+}
+
+
+    
 function renderDistributionDrawer() {
   currentMode = 'kpi';
   currentLoan = null;
@@ -3489,9 +3497,10 @@ drawer.classList.add('kpi-interactive');
   drawerSub.textContent = 'Number of loans purchased by month';
 
   const totalInvested = allLoans.reduce(
-    (s, l) => s + (l.purchasePrice || 0),
-    0
-  );
+  (s, l) => s + getUserInvestedCapital(l, PAGE_CONTEXT.user),
+  0
+);
+
 
   drawerPrimaryTitle.textContent = 'Total Invested';
   drawerPrimary.textContent = `$${totalInvested.toLocaleString()}`;
@@ -3555,11 +3564,15 @@ svg.setAttribute('preserveAspectRatio', 'none');
   svg.appendChild(xAxis);
 
   const maxValue = Math.max(
-    ...months.map(m =>
-      loansByMonth[m].reduce((s, l) => s + l.purchasePrice, 0)
-    ),
-    1
-  );
+  ...months.map(m =>
+    loansByMonth[m].reduce(
+      (s, l) => s + getUserInvestedCapital(l, PAGE_CONTEXT.user),
+      0
+    )
+  ),
+  1
+);
+
 
   // Y-axis ticks
   const steps = 4;
@@ -3694,7 +3707,7 @@ svg.setAttribute('preserveAspectRatio', 'none');
                   ${(l.nominalRate * 100).toFixed(2)}%
                 </td>
                 <td>
-                  $${Number(l.purchasePrice || 0).toLocaleString()}
+                  $${Math.round(getUserInvestedCapital(l, PAGE_CONTEXT.user)).toLocaleString()}
                 </td>
               </tr>
             `).join('')}
