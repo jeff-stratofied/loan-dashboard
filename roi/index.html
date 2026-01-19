@@ -4499,69 +4499,78 @@ function smoothPath(points) {
    Using the same stable timeline engine as Projected ROI
    ============================================================ */
 function renderTPVDrawer() {
-  
-  currentMode = 'kpi';
+  currentMode = "kpi";
   currentLoan = null;
 
-  drawer.classList.remove('loan-mode');
+  drawer.classList.remove("loan-mode");
 
-
+  // ------------------------------
   // Reset drawer
-  drawerAmortContainer.style.display = 'none';
-  drawerLegend.style.display = 'none';
-  drawerChartArea.innerHTML = '';
-  drawerExtra.innerHTML = '';
+  // ------------------------------
+  drawerAmortContainer.style.display = "none";
+  drawerLegend.style.display = "none";
+  drawerChartArea.innerHTML = "";
+  drawerExtra.innerHTML = "";
 
   drawerTitle.textContent = "Weighted ROI to Date";
   drawerSub.textContent = "Current Portfolio Snapshot";
 
-  // ===============================
-  // 1. Compute weighted ROI to date
-  // ===============================
-  const totalInv = allLoans.reduce((s,l)=> s + l.purchasePrice, 0);
+  // ==================================================
+  // 1. Compute weighted ROI to date (OWNED LOANS ONLY)
+  // ==================================================
+  const totalInv = currentLoans.reduce(
+    (s, l) => s + (l.purchasePrice || 0),
+    0
+  );
 
   let weightedROI = 0;
-  allLoans.forEach(l => {
-  const last =
-    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-    { roi: 0, loanValue: l.purchasePrice };
+  currentLoans.forEach(l => {
+    const last =
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      { roi: 0, loanValue: l.purchasePrice };
 
-  weightedROI += l.purchasePrice * (last.roi || 0);
-});
+    weightedROI += (l.purchasePrice || 0) * (last.roi || 0);
+  });
 
   weightedROI = weightedROI / Math.max(1, totalInv);
 
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
   drawerPrimary.textContent = (weightedROI * 100).toFixed(2) + "%";
 
-  // ===============================
-  // 2. Compute portfolio value today
-  // ===============================
+  // ======================================
+  // 2. Compute portfolio value (OWNED ONLY)
+  // ======================================
   let portfolioValue = 0;
-  allLoans.forEach(l => {
-  const last =
-    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-    { roi: 0, loanValue: l.purchasePrice };
+  currentLoans.forEach(l => {
+    const last =
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      { roi: 0, loanValue: l.purchasePrice };
 
-  portfolioValue += last.loanValue || 0;
-});
-
+    portfolioValue += last.loanValue || 0;
+  });
 
   drawerSecondaryTitle.textContent = "Portfolio Value";
-  drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
+  drawerSecondary.textContent =
+    "$" + Math.round(portfolioValue).toLocaleString();
 
-  // ===============================
-  // 3. Build TIMELINE using the
-  //    existing stable Projected ROI engine
-  //    BUT using today's ROI values
-  // ===============================
-  const timeline = buildHistoricalRoiTimeline(allLoans);
+  // =====================================================
+  // 3. Build ROI timeline (MATCH KPI2 / OWNED LOANS ONLY)
+  // =====================================================
+  const timeline = buildHistoricalRoiTimeline(currentLoans);
 
-  // ===============================
+  if (!timeline?.dates?.length || !timeline?.perLoanSeries?.length) {
+    drawerExtra.innerHTML =
+      `<div style="padding:12px;color:var(--muted)">
+        No ROI history available.
+      </div>`;
+    drawer.classList.add("open");
+    drawer.setAttribute("aria-hidden", "false");
+    return;
+  }
+
+  // =====================================================
   // 4. Render multi-series chart
-  // ===============================
- const globalDates = buildGlobalDatesFromLoans(currentLoans);
-  
+  // =====================================================
   createMultiSeriesChart(
     drawerChartArea,
     timeline.perLoanSeries,
@@ -4570,17 +4579,16 @@ function renderTPVDrawer() {
       weightedColor: "#000",
       weightedWidth: 2.6,
       dates: timeline.dates,
-      tickSpacingX: 3   // label every other month
+      tickSpacingX: 3
     }
   );
 
-
-  // ===============================
-  // 5. ROI-to-Date Table
-  // ===============================
+  // =====================================================
+  // 5. ROI-to-Date Table (OWNED LOANS ONLY)
+  // =====================================================
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">ROI to Date — All Loans</h3>
+      <h3 style="margin:0 0 8px 0">ROI to Date — Owned Loans</h3>
       <div style="
         max-height:300px;
         overflow:auto;
@@ -4589,7 +4597,8 @@ function renderTPVDrawer() {
         padding:6px;
         background:var(--card);
       ">
-        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
+        <table id="roiLoansTable" class="roi-table"
+               style="width:100%;font-size:13px;">
           <thead>
             <tr>
               <th style="text-align:left;">Loan</th>
@@ -4604,15 +4613,17 @@ function renderTPVDrawer() {
     </div>
   `;
 
-  populateROILoanTable();  // already implemented
+  // IMPORTANT: populate function already respects currentLoans
+  populateROILoanTable();
 
-  // ===============================
+  // =====================================================
   // 6. Open drawer
-  // ===============================
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden','false');
+  // =====================================================
+  drawer.classList.add("open");
+  drawer.setAttribute("aria-hidden", "false");
   drawer.scrollTop = 0;
 }
+
 
 
 function renderRatesDrawer() {
