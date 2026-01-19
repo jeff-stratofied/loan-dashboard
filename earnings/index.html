@@ -2138,7 +2138,17 @@ const ownedEarningsSchedule = earningsScheduleRaw.map(r => {
 return {
   ...r,
   loanDate,
-  isOwned: userPct > 0,
+  // ✅ preserve month-level ownership from the engine
+isOwned:
+  (Boolean(r.isOwned) ||
+    (r.loanDate instanceof Date
+      ? r.loanDate >= amortPurchase
+      : loanDate instanceof Date
+      ? loanDate >= amortPurchase
+      : false)) &&
+  userPct > 0,
+
+
 
   // ============================
   // 🔑 SCALE CUMULATIVE VALUES
@@ -2243,18 +2253,17 @@ window.LoanMap = Object.fromEntries(
   loansWithEarnings.map(l => [l.loanId, l])
 );
 
-// ✅ SET PORTFOLIO START (REQUIRED FOR AVG KPIs)
-PORTFOLIO_START = getPortfolioStartDate(loansWithEarnings);
-window.__PORTFOLIO_START__ = PORTFOLIO_START;
-
 // =====================================================
-// OPTION A — USER-SCOPED EARNINGS VIEW
-// Hide loans not owned by the current user
+// OPTION A — USER-SCOPED EARNINGS VIEW (AUTHORITATIVE)
 // =====================================================
 const userLoansWithEarnings =
   loansWithEarnings.filter(
     loan => getUserOwnershipPct(loan, PAGE_USER) > 0
   );
+
+// ✅ USER-SCOPED portfolio start (CRITICAL FOR KPI1/KPI3/KPI4)
+PORTFOLIO_START = getPortfolioStartDate(userLoansWithEarnings);
+window.__PORTFOLIO_START__ = PORTFOLIO_START;
 
 // 🔑 Use USER loans for KPIs + rendering
 PORTFOLIO_KPIS =
@@ -2263,6 +2272,7 @@ PORTFOLIO_KPIS =
     TODAY,
     PORTFOLIO_START
   );
+
 
 window.EARNINGS_DEBUG = true;
 
