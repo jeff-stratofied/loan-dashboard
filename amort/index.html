@@ -2730,44 +2730,56 @@ function displayDateForMonthIndex(monthIndex, monthAnchor) {
 ============================ */
 function computeKPIs(list) {
 
-  // Total Portfolio Value (purchase price sum)
-  const totalPrincipal = list.reduce((sum, loan) => sum + loan.purchasePrice, 0);
+  // ---------------------------------------------
+  // OWNERSHIP-AWARE TOTAL INVESTED (not purchasePrice)
+  // ---------------------------------------------
+  const totalPrincipal = list.reduce(
+    (sum, loan) => sum + getUserInvestedCapital(loan, PAGE_CONTEXT.user),
+    0
+  );
 
-  // Weighted Average Rate
+  // ---------------------------------------------
+  // OWNERSHIP-AWARE WEIGHTED RATE
+  // Weight by user invested capital (pricePaid)
+  // ---------------------------------------------
   const weightedRate =
     totalPrincipal > 0
-      ? list.reduce((sum, loan) => sum + loan.nominalRate * loan.purchasePrice, 0) / totalPrincipal
+      ? list.reduce((sum, loan) => {
+          const invested = getUserInvestedCapital(loan, PAGE_CONTEXT.user);
+          return sum + (loan.nominalRate || 0) * invested;
+        }, 0) / totalPrincipal
       : 0;
 
-// =====================================================
-// KPI 3 — Monthly Income (calendar-month aligned)
-// Matches chart + table exactly
-// =====================================================
-const now = new Date();
-const targetYear = now.getFullYear();
-const targetMonth = now.getMonth(); // 0-based
+  // =====================================================
+  // KPI 3 — Monthly Income (calendar-month aligned)
+  // Matches chart + table exactly
+  // =====================================================
+  const now = new Date();
+  const targetYear = now.getFullYear();
+  const targetMonth = now.getMonth(); // 0-based
 
-const monthlyIncome = list.reduce((sum, loan) => {
-  const schedule = loan.amort?.schedule || [];
-  if (!schedule.length) return sum;
+  const monthlyIncome = list.reduce((sum, loan) => {
+    const schedule = loan.amort?.schedule || [];
+    if (!schedule.length) return sum;
 
-  // Anchor to FIRST of loan purchase month
-  const start = new Date(loan.loanStartDate + "T00:00:00");
-  const monthAnchor = new Date(start.getFullYear(), start.getMonth(), 1);
+    // Anchor to FIRST of loan start month (your existing logic)
+    const start = new Date(loan.loanStartDate + "T00:00:00");
+    const monthAnchor = new Date(start.getFullYear(), start.getMonth(), 1);
 
-  // Find schedule row that maps to current calendar month
-  const row = schedule.find(r => {
-    const d = new Date(monthAnchor);
-    d.setMonth(d.getMonth() + (r.monthIndex - 1));
+    // Find schedule row that maps to current calendar month
+    const row = schedule.find(r => {
+      const d = new Date(monthAnchor);
+      d.setMonth(d.getMonth() + (r.monthIndex - 1));
 
-    return (
-      d.getFullYear() === targetYear &&
-      d.getMonth() === targetMonth
-    );
-  });
+      return (
+        d.getFullYear() === targetYear &&
+        d.getMonth() === targetMonth
+      );
+    });
 
-  return sum + (row?.payment || 0);
-}, 0);
+    // schedule rows are already ownership-scaled upstream
+    return sum + (row?.payment || 0);
+  }, 0);
 
   // Total loan count
   const loanCount = list.length;
@@ -2779,6 +2791,7 @@ const monthlyIncome = list.reduce((sum, loan) => {
     loanCount
   };
 }
+
 
     /* ============================
        Small helper — create SVG path from points
@@ -4341,7 +4354,9 @@ function renderPaymentsDrawer() {
 
   drawerSecondaryTitle.textContent = 'Total Invested';
   drawerSecondary.textContent =
-    `$${loansForSeries.reduce((s, l) => s + (l.purchasePrice || 0), 0).toLocaleString()}`;
+    `$${loansForSeries
+    .reduce((s, l) => s + getUserInvestedCapital(l, PAGE_CONTEXT.user), 0)
+    .toLocaleString()}`;
 
   drawerAmortContainer.style.display = 'none';
   drawerLegend.style.display = 'none';
