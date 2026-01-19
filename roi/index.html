@@ -518,15 +518,10 @@ html[data-theme="dark"] body {
   width: 26px;
   height: 26px;
   flex-shrink: 0;
-
-  cursor: pointer;              /* match event badge */
-  display: block;               /* avoid inline SVG baseline issues */
-
-  /* 🔑 vertical rhythm alignment */
+  cursor: pointer;
+  display: block;
   position: relative;
   top: 0.5px;
-
-  /* 🔑 smooth hover zoom */
   transition:
     transform 0.15s ease,
     filter 0.15s ease;
@@ -536,6 +531,7 @@ html[data-theme="dark"] body {
   transform: scale(1.5);
   filter: brightness(1.05);
 }
+
 
 /* (legacy ring styles — safe to keep, no effect on slice version) */
 .ownership-pie circle.bg {
@@ -3345,26 +3341,23 @@ if (eventType) tr.classList.add(`event-${eventType}`);
     
     
 function renderLoanGrid(loans) {
-const tableWrap = document.getElementById("loanTableWrap");
-if (tableWrap) {
-  tableWrap.hidden = true;
-  tableWrap.style.display = "none";
-}
-  
-const grid = document.getElementById("loanGrid");
-const wrap = document.getElementById("loanTableWrap");
+  const tableWrap = document.getElementById("loanTableWrap");
+  if (tableWrap) {
+    tableWrap.hidden = true;
+    tableWrap.style.display = "none";
+  }
 
-if (!grid) return;
+  const grid = document.getElementById("loanGrid");
+  const wrap = document.getElementById("loanTableWrap");
 
-// 🔑 canonical visibility reset
-if (wrap) wrap.style.display = "none";
-grid.style.display = "grid";
+  if (!grid) return;
 
-
+  // 🔑 canonical visibility reset
+  if (wrap) wrap.style.display = "none";
+  grid.style.display = "grid";
 
   // 🔑 HARD RESET — prevents duplicate tiles
   grid.innerHTML = "";
-
 
   if (!Array.isArray(loans) || !loans.length) return;
 
@@ -3373,84 +3366,101 @@ grid.style.display = "grid";
     tile.className = "tile";
     tile.dataset.renderId = window.__gridRenderCount;
 
+    // -------------------------------
+    // Tile shell (NO badges yet)
+    // -------------------------------
     tile.innerHTML = `
-  <div class="tile-left">
-    <div class="loan-name">${loan.name}</div>
+      <div class="tile-left">
+        <div class="loan-name">${loan.name}</div>
 
-    ${
-      getLoanEventBadges(loan).length
-        ? `<div class="loan-badges">
-            ${getLoanEventBadges(loan)
-              .map(
-                b =>
-                  `<span class="loan-badge ${b.type}">${b.label}</span>`
-              )
-              .join("")}
-          </div>`
-        : ""
+        <!-- badges + ownership pie inserted here -->
+
+        <div class="loan-sub">
+          ${loan.school || ""}
+        </div>
+
+        <div class="loan-meta">
+          <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
+          <span>·</span>
+          <span>${loan.termYears} yrs</span>
+          <span>·</span>
+          <span>
+            Matures: ${
+              getLoanMaturityFromAmort(loan)
+                ? formatMonthYear(getLoanMaturityFromAmort(loan))
+                : "—"
+            }
+          </span>
+        </div>
+
+        <div class="loan-meta">
+          Loan ${loan.id}
+        </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="mini-label">
+          ROI ${(
+            (getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.roi || 0) * 100
+          ).toFixed(2)}%
+        </div>
+
+        <svg class="sparkline"></svg>
+      </div>
+    `;
+
+    const tileLeft = tile.querySelector(".tile-left");
+
+    // =====================================================
+    // Badge + Ownership Pie row (MATCH EARNINGS EXACTLY)
+    // =====================================================
+    const badges = getLoanEventBadges(loan);
+    const ownershipSvg = buildOwnershipPie?.(loan);
+
+    if ((badges && badges.length) || ownershipSvg) {
+      const badgesRow = document.createElement("div");
+      badgesRow.className = "loan-badges";
+
+      // Event badges
+      (badges || []).forEach(b => {
+        const el = document.createElement("span");
+        el.className = `loan-badge ${b.type}`;
+        el.textContent = b.label;
+
+        const tooltipText = getBadgeTooltipText(loan, b.type);
+        if (tooltipText) {
+          createBadgeTooltip(el, tooltipText);
+        }
+
+        badgesRow.appendChild(el);
+      });
+
+      // Ownership pie (to the RIGHT of badges)
+      if (ownershipSvg) {
+        ownershipSvg.classList.add("ownership-pie");
+        badgesRow.appendChild(ownershipSvg);
+      }
+
+      // Insert directly under loan name
+      tileLeft.insertBefore(
+        badgesRow,
+        tileLeft.querySelector(".loan-sub")
+      );
     }
 
-    <div class="loan-sub">
-      ${loan.school || ""}
-    </div>
-
-    <div class="loan-meta">
-      <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
-      <span>·</span>
-      <span>${loan.termYears} yrs</span>
-      <span>·</span>
-      <span>
-        Matures: ${
-          getLoanMaturityFromAmort(loan)
-            ? formatMonthYear(getLoanMaturityFromAmort(loan))
-            : "—"
-        }
-      </span>
-    </div>
-
-    <div class="loan-meta">
-      Loan ${loan.id}
-    </div>
-  </div>
-
-  <div class="chart-wrap">
-    <div class="mini-label">
-  ROI ${(
-  (getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.roi || 0) * 100
-).toFixed(2)}%
-
-</div>
-
-    <svg class="sparkline"></svg>
-  </div>
-`;
-
-// 🔑 Attach loan badge hover tooltips (canonical copy)
-tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
-  const type =
-    badgeEl.classList.contains("prepayment") ? "prepayment" :
-    badgeEl.classList.contains("deferral") ? "deferral" :
-    badgeEl.classList.contains("default") ? "default" :
-    null;
-
-  if (!type) return;
-
-  const tooltipText = getBadgeTooltipText(loan, type);
-  if (tooltipText) {
-    createBadgeTooltip(badgeEl, tooltipText);
-  }
-});
-
-
-
+    // -------------------------------
+    // Click → drawer
+    // -------------------------------
     tile.addEventListener("click", () => openLoanDrawerSafe(loan));
 
+    // -------------------------------
+    // Sparkline
+    // -------------------------------
     const svg = tile.querySelector("svg.sparkline");
     const series = (loan.roiSeries || []).map(p => ({
-  date: p.date,
-  y: p.roi
-}));
-
+      date: p.date,
+      y: p.roi
+    }));
 
     createMiniSparkline(svg, series, {
       color: window.KPI_COLOR_MAP?.[loan.id],
@@ -3460,6 +3470,7 @@ tile.querySelectorAll(".loan-badge").forEach(badgeEl => {
     grid.appendChild(tile);
   });
 }
+
 
 
 
