@@ -1884,6 +1884,23 @@ function openLoanDrawerSafe(loan) {
 // KPI DRAWER RENDERER — ROI (MISSING, REQUIRED)
 // =====================================================
 function renderKpiDrawer(kpiId) {
+
+console.group(`🧪 KPI DEBUG — ${kpiId}`);
+
+console.log({
+  loansCount: allLoans.length,
+  currentMonth: KPI_CURRENT_MONTH,
+  sampleLoan: {
+    name: allLoans[0]?.name,
+    roiSeriesLength: allLoans[0]?.roiSeries?.length,
+    investedLast: allLoans[0]?.roiSeries?.slice(-1)[0]?.invested,
+    roiLast: allLoans[0]?.roiSeries?.slice(-1)[0]?.roi
+  }
+});
+
+console.groupEnd();
+
+  
   const kpis = computeKPIs(allLoans, KPI_CURRENT_MONTH);
 
 
@@ -5295,6 +5312,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // 🔑 SOURCE OF TRUTH — MATCH AMORT & EARNINGS
 allLoans = derivedLoans;
+
+  console.group("🧪 ROI DEBUG — POST DERIVATION");
+
+allLoans.forEach(l => {
+  const firstOwned = l.cumSchedule?.[0];
+
+  console.log({
+    loan: l.name,
+    loanPurchaseDate: l.purchaseDate,
+    ownershipLots: l.ownershipLots?.map(o => ({
+      pct: o.pct,
+      purchaseDate: o.purchaseDate,
+      pricePaid: o.pricePaid
+    })),
+    derivedPurchaseDate: firstOwned?.loanDate,
+    amortFirstDate: l.amort?.schedule?.[0]?.loanDate,
+    amortLastDate: l.amort?.schedule?.slice(-1)[0]?.loanDate,
+    roiSeriesLength: l.roiSeries?.length,
+    investedLast: l.roiSeries?.slice(-1)[0]?.invested
+  });
+});
+
+console.groupEnd();
+
 
 // Only control VISIBILITY — not interaction
 currentLoans = allLoans.filter(loan => {
