@@ -210,10 +210,18 @@ console.groupEnd();
 
   const colorMap = opts.colorMap || {};
 
-  const earliestPurchase = loans.reduce((earliest, l) => {
-    const d = new Date(l.purchaseDate);
-    return d < earliest ? d : earliest;
-  }, new Date(loans[0].purchaseDate));
+const validPurchases = loans
+  .map(l => new Date(l.purchaseDate))
+  .filter(d => d instanceof Date && !isNaN(+d));
+
+if (!validPurchases.length) {
+  return { dates: [], perLoanSeries: [], weightedSeries: [] };
+}
+
+const earliestPurchase = new Date(
+  Math.min(...validPurchases.map(d => d.getTime()))
+);
+
 
   const latestMaturity = loans.reduce((latest, l) => {
     const mat = new Date(l.purchaseDate);
