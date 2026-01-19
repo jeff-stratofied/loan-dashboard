@@ -1949,7 +1949,8 @@ let loansWithEarnings = [];
 const hiddenLoans = new Set();
 
 function rebuildLoansWithEarnings() {
-loansWithEarnings = loans.map((raw, idx) => {
+loansWithEarnings = loans
+  .map((raw, idx) => {
 
 const id = raw.id ?? (idx + 1);
 const loanId = raw.loanId ?? id;
