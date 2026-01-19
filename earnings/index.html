@@ -1202,21 +1202,23 @@ tr.row-hover {
 <!-- Loan Filters / Sort -->
 <section class="loan-filters" id="loanFilters">
   <select id="filterName">
-    <option value="">All loan names</option>
+    <option value="">Name</option>
   </select>
 
   <select id="filterSchool">
-    <option value="">All schools</option>
+    <option value="">School</option>
   </select>
 
   <select id="filterRate">
-    <option value="">All interest rates</option>
+    <option value="">Rate</option>
     <option value="low">Below 5%</option>
     <option value="mid">5% – 8%</option>
     <option value="high">Above 8%</option>
   </select>
 
   <select id="sortLoans">
+    <option value="" disabled selected>Sort</option>
+</select>
     <option value="purchase_asc">Purchase date ↑</option>
     <option value="purchase_desc">Purchase date ↓</option>
     <option value="start_asc">Loan start date ↑</option>
