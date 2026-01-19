@@ -2006,6 +2006,21 @@ raw.feeStartMonth ??
 1
 );
 
+// =====================================================
+// 🔑 CANONICAL PURCHASE DATE (MULTI-OWNER SAFE)
+// =====================================================
+const userOwnershipLots = (raw.ownershipLots || [])
+  .filter(lot => lot.user === PAGE_USER && lot.pct > 0);
+
+const canonicalPurchaseDate =
+  userOwnershipLots.length
+    ? userOwnershipLots
+        .map(lot => lot.purchaseDate)
+        .filter(Boolean)
+        .sort()[0]            // earliest date
+    : raw.purchaseDate;      // fallback for legacy data
+
+  
 const normalizedLoan = {
   ...raw,
   loanId,
@@ -2017,7 +2032,7 @@ const normalizedLoan = {
 
   // 🔑 CANONICAL DATES (FIXED)
   loanStartDate: raw.loanStartDate || raw.originationDate || raw.purchaseDate,
-  purchaseDate: raw.purchaseDate,
+  purchaseDate: canonicalPurchaseDate,
 
   purchasePrice,
   balanceForAmort,
