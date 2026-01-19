@@ -4502,90 +4502,58 @@ function renderTPVDrawer() {
   currentMode = "kpi";
   currentLoan = null;
 
+  // 🔑 KPI drawers operate ONLY on owned loans
+  const kpiLoans = currentLoans;
+
   drawer.classList.remove("loan-mode");
 
-  // ------------------------------
-  // Reset drawer
-  // ------------------------------
+  // Reset UI
   drawerAmortContainer.style.display = "none";
   drawerLegend.style.display = "none";
   drawerChartArea.innerHTML = "";
   drawerExtra.innerHTML = "";
 
   drawerTitle.textContent = "Weighted ROI to Date";
-  drawerSub.textContent = "Current Portfolio Snapshot";
+  drawerSub.textContent = "Owned Loans Only";
 
-  // ==================================================
-  // 1. Compute weighted ROI to date (OWNED LOANS ONLY)
-  // ==================================================
-  const totalInv = currentLoans.reduce(
-    (s, l) => s + (l.purchasePrice || 0),
-    0
-  );
+  // ===============================
+  // 1. Compute KPI values (CANONICAL)
+  // ===============================
+  const kpis = computeKPIs(kpiLoans, KPI_CURRENT_MONTH);
 
-  let weightedROI = 0;
-  currentLoans.forEach(l => {
-    const last =
-      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-      { roi: 0, loanValue: l.purchasePrice };
+  drawerPrimaryTitle.textContent = "ROI to Date";
+  drawerPrimary.textContent =
+    (kpis.weightedROI * 100).toFixed(2) + "%";
 
-    weightedROI += (l.purchasePrice || 0) * (last.roi || 0);
-  });
-
-  weightedROI = weightedROI / Math.max(1, totalInv);
-
-  drawerPrimaryTitle.textContent = "Weighted ROI to Date";
-  drawerPrimary.textContent = (weightedROI * 100).toFixed(2) + "%";
-
-  // ======================================
-  // 2. Compute portfolio value (OWNED ONLY)
-  // ======================================
-  let portfolioValue = 0;
-  currentLoans.forEach(l => {
-    const last =
-      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-      { roi: 0, loanValue: l.purchasePrice };
-
-    portfolioValue += last.loanValue || 0;
-  });
-
-  drawerSecondaryTitle.textContent = "Portfolio Value";
+  drawerSecondaryTitle.textContent = "As of";
   drawerSecondary.textContent =
-    "$" + Math.round(portfolioValue).toLocaleString();
+    formatMonthYear(KPI_CURRENT_MONTH);
 
-  // =====================================================
-  // 3. Build ROI timeline (MATCH KPI2 / OWNED LOANS ONLY)
-  // =====================================================
-  const timeline = buildHistoricalRoiTimeline(currentLoans);
+  // ===============================
+  // 2. Build HISTORICAL timeline (NOT projected)
+  // ===============================
+  const timeline = buildHistoricalRoiTimeline(kpiLoans, {
+    colors: buildKpiColorMap(kpiLoans)
+  });
 
-  if (!timeline?.dates?.length || !timeline?.perLoanSeries?.length) {
-    drawerExtra.innerHTML =
-      `<div style="padding:12px;color:var(--muted)">
-        No ROI history available.
-      </div>`;
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
-    return;
-  }
-
-  // =====================================================
-  // 4. Render multi-series chart
-  // =====================================================
+  // ===============================
+  // 3. Render chart (same adapter as KPI2)
+  // ===============================
   createMultiSeriesChart(
     drawerChartArea,
     timeline.perLoanSeries,
     timeline.weightedSeries,
     {
+      dates: timeline.dates,
       weightedColor: "#000",
       weightedWidth: 2.6,
-      dates: timeline.dates,
       tickSpacingX: 3
     }
   );
 
-  // =====================================================
-  // 5. ROI-to-Date Table (OWNED LOANS ONLY)
-  // =====================================================
+  // ===============================
+  // 4. ROI-to-date table (OWNED ONLY)
+  // ===============================
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
       <h3 style="margin:0 0 8px 0">ROI to Date — Owned Loans</h3>
@@ -4597,8 +4565,7 @@ function renderTPVDrawer() {
         padding:6px;
         background:var(--card);
       ">
-        <table id="roiLoansTable" class="roi-table"
-               style="width:100%;font-size:13px;">
+        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
           <thead>
             <tr>
               <th style="text-align:left;">Loan</th>
@@ -4613,16 +4580,18 @@ function renderTPVDrawer() {
     </div>
   `;
 
-  // IMPORTANT: populate function already respects currentLoans
+  // 🔑 IMPORTANT: scope table to owned loans
+  filteredLoans = kpiLoans.slice();
   populateROILoanTable();
 
-  // =====================================================
-  // 6. Open drawer
-  // =====================================================
+  // ===============================
+  // 5. Open drawer
+  // ===============================
   drawer.classList.add("open");
   drawer.setAttribute("aria-hidden", "false");
   drawer.scrollTop = 0;
 }
+
 
 
 
