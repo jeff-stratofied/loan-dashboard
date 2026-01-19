@@ -4352,6 +4352,19 @@ function renderPaymentsDrawer() {
     return;
   }
 
+console.log(
+  '[KPI4 SOURCE CHECK]',
+  loansForSeries.map(l => ({
+    loanId: l.loanId,
+    ownershipPct: l.ownershipPct,
+    payment0: l.amort?.schedule?.[0]?.payment,
+    isScaled: l.ownershipPct < 1
+      ? l.amort?.schedule?.[0]?.payment < l.purchasePrice
+      : true
+  }))
+);
+
+  
   drawerSecondaryTitle.textContent = 'Total Invested';
   drawerSecondary.textContent =
     `$${loansForSeries
