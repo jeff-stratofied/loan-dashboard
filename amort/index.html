@@ -3502,6 +3502,18 @@ function getUserInvestedCapital(loan, user) {
 
     
 function renderDistributionDrawer() {
+
+console.log(
+  "[DIST DEBUG loans]",
+  currentLoans.map(l => ({
+    loanId: l.loanId,
+    purchasePrice: l.purchasePrice,
+    ownershipPct: l.ownershipPct,
+    userInvested: getUserInvestedCapital(l, PAGE_CONTEXT.user)
+  }))
+);
+
+  
   currentMode = 'kpi';
   currentLoan = null;
 drawer.classList.add('kpi-interactive');
@@ -3618,7 +3630,9 @@ svg.setAttribute('preserveAspectRatio', 'none');
     const scale = (h - pad * 2) / maxValue;
 
     loans.forEach(l => {
-      const segH = l.purchasePrice * scale;
+      const segH =
+  getUserInvestedCapital(l, PAGE_CONTEXT.user) * scale;
+
       yCursor -= segH;
 
       const rect = document.createElementNS(svgNS, 'rect');
