@@ -3199,8 +3199,8 @@ if (eventType) {
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
 
-  // 🔑 Ownership-aware amort schedule (drawer only)
-const schedule =
+// 🔑 Ownership-aware amort schedule
+schedule =
   Array.isArray(loan.cumSchedule) && loan.cumSchedule.length
     ? loan.cumSchedule
     : loan.amort?.schedule || [];
@@ -3211,6 +3211,7 @@ if (!schedule.length) {
   drawer.setAttribute('aria-hidden', 'false');
   return;
 }
+
 
 
   // NEW: Compute cumulative fields on the fly (since they're not in the base schedule)
