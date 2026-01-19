@@ -393,13 +393,11 @@ input:focus, select:focus {
     <tr>
       <th data-field="loanId" class="sortable">ID</th>
       <th data-field="loanName" class="sortable">Loan Name</th>
-      <th data-field="user" class="sortable">User</th>
+      <th>Ownership</th>
       <th data-field="visible" class="sortable">Show</th>
       <th data-field="school" class="sortable">School</th>
       <th data-field="loanStartDate" class="sortable">Loan Start Date</th>
-      <th data-field="purchaseDate" class="sortable">Purchase Date</th>
       <th data-field="principal" class="sortable col-money">Orig Loan Amt</th>
-      <th data-field="purchasePrice" class="sortable col-money">Purchase Price</th>
       <th data-field="rate" class="sortable col-rate">Rate</th>
       <th data-field="termYears" class="sortable col-years">Term (yrs)</th>
       <th data-field="graceYears" class="sortable col-years">Grace (yrs)</th>
@@ -413,7 +411,9 @@ input:focus, select:focus {
      SCRIPT: FUNCTIONALITY (from working WrongColors version)
      ========================================================= -->
 <script type="module">
-  import { loadLoans } from "/loan-dashboard/js/loadLoans.js";
+  import { loadLoans } from "/loan-dashboard/js/loadLoans.js?v=dev";
+
+  import { normalizeOwnership } from "/loan-dashboard/js/ownershipEngine.js?v=dev";
 
   const USER_OPTIONS = [
   { value: "jeff", label: "Jeff Customer" },
@@ -690,7 +690,6 @@ function openEventsDrawer(loan) {
 
 
 function normalizeLoan(l, idx) {
-
   // If backend ID is numeric (old system), replace it with a new random ID
   let newId;
   if (!l.loanId || /^[0-9]+$/.test(String(l.loanId))) {
@@ -699,39 +698,47 @@ function normalizeLoan(l, idx) {
     newId = l.loanId;
   }
 
-  return {
+  const loan = {
     loanId: newId,
     loanName: l.loanName ?? "",
     school: l.school ?? "",
     loanStartDate: l.loanStartDate ?? "",
-    purchaseDate: l.purchaseDate ?? "",
     principal: Number(l.principal ?? 0),
-    purchasePrice: Number(l.purchasePrice ?? 0),
     rate: Number(l.rate ?? 0),
     termYears: Number(l.termYears ?? 10),
     graceYears: Number(l.graceYears ?? 0),
 
-    // REQUIRED FIELDS
+    // legacy fields (USED ONLY FOR MIGRATION)
     user: l.user ?? "jeff",
+    purchaseDate: l.purchaseDate ?? "",
+    purchasePrice: Number(l.purchasePrice ?? 0),
+
     visible: l.visible !== false,
 
-    // ✅ NEW (inert for now)
     events: Array.isArray(l.events)
-  ? l.events.map(e => {
-      if (e.type === "default") {
-        return {
-          id: e.id ?? crypto.randomUUID(),
-          type: "default",
-          date: e.date ?? "",
-          recoveryAmount: Number(e.recoveryAmount ?? 0)
-        };
-      }
-      return e;
-    })
-  : []
+      ? l.events.map(e => {
+          if (e.type === "default") {
+            return {
+              id: e.id ?? crypto.randomUUID(),
+              type: "default",
+              date: e.date ?? "",
+              recoveryAmount: Number(e.recoveryAmount ?? 0)
+            };
+          }
+          return e;
+        })
+      : [],
 
+    ownership: l.ownership,
+    ownershipLots: l.ownershipLots
   };
+
+  // 🔑 CANONICALIZE OWNERSHIP
+  normalizeOwnership(loan);
+
+  return loan;
 }
+
 
 /* Sort loans */
 function sortLoans() {
@@ -762,6 +769,31 @@ function sortLoans() {
   });
 }
 
+function renderOwnershipCell(loan) {
+  const byUser = {};
+
+  loan.ownershipLots.forEach(lot => {
+    if (!byUser[lot.user]) byUser[lot.user] = [];
+    byUser[lot.user].push(lot);
+  });
+
+  return Object.entries(byUser)
+    .map(([user, lots]) => {
+      return lots
+        .sort((a, b) => new Date(a.purchaseDate) - new Date(b.purchaseDate))
+        .map(lot => {
+          const pct = Math.round(lot.pct * 100);
+          const date = lot.purchaseDate || "—";
+          return `<div style="font-size:11px">
+            <strong>${user}</strong> ${pct}% <span style="color:var(--muted)">(${date})</span>
+          </div>`;
+        })
+        .join("");
+    })
+    .join("");
+}
+
+  
 /* Render table */
 function renderTable() {
   sortLoans(); // Sort before rendering
@@ -778,13 +810,10 @@ function renderTable() {
         <input type="text" value="${loan.loanName}" data-field="loanName">
       </td>
 
-      <td>
-        <select data-field="user">
-          <option value="jeff" ${loan.user === "jeff" ? "selected" : ""}>Jeff Customer</option>
-          <option value="nick" ${loan.user === "nick" ? "selected" : ""}>Nick Lender</option>
-          <option value="john" ${loan.user === "john" ? "selected" : ""}>John Investor</option>
-        </select>
-      </td>
+      <td data-action="ownership" style="cursor:pointer">
+  ${renderOwnershipCell(loan)}
+</td>
+
 
       <td style="text-align:center">
         <input
@@ -858,24 +887,35 @@ function collectLoans() {
 
   rows.forEach(row => {
     const obj = {};
-    const inputs = row.querySelectorAll("[data-field]");
+    const ALLOWED_FIELDS = new Set([
+  "loanName",
+  "visible",
+  "school",
+  "loanStartDate",
+  "principal",
+  "rate",
+  "termYears",
+  "graceYears"
+]);
 
-    inputs.forEach(inp => {
-      const k = inp.dataset.field;
-      let v;
+inputs.forEach(inp => {
+  const k = inp.dataset.field;
+  if (!ALLOWED_FIELDS.has(k)) return;
 
-      if (inp.type === "checkbox") {
-        v = inp.checked;
-      } else {
-        v = inp.value;
-      }
+  let v;
+  if (inp.type === "checkbox") {
+    v = inp.checked;
+  } else {
+    v = inp.value;
+  }
 
-      if (["principal","purchasePrice","rate","termYears","graceYears"].includes(k)) {
-        v = Number(v);
-      }
+  if (["principal","rate","termYears","graceYears"].includes(k)) {
+    v = Number(v);
+  }
 
-      obj[k] = v;
-    });
+  obj[k] = v;
+});
+
 
     const loanId = row.dataset.loanId;
     obj.loanId = loanId;
@@ -884,6 +924,12 @@ function collectLoans() {
     const existing = currentLoans.find(l => String(l.loanId) === String(loanId));
     obj.events = Array.isArray(existing?.events) ? existing.events : [];
 
+// 🔑 PRESERVE OWNERSHIP LOTS (CANONICAL)
+obj.ownershipLots = Array.isArray(existing?.ownershipLots)
+  ? structuredClone(existing.ownershipLots)
+  : [];
+
+    
     list.push(obj);
   });
 
@@ -941,12 +987,6 @@ async function saveToBackend() {
       return;
     }
 
-    if (!loan.purchaseDate || loan.purchaseDate === "") {
-      alert(`Loan "${loan.loanName}" is missing a Purchase Date.`);
-      status.textContent = "Save blocked";
-      return;
-    }
-
     if (!loan.loanStartDate || loan.loanStartDate === "") {
       alert(`Loan "${loan.loanName}" is missing a Loan Start Date.`);
       status.textContent = "Save blocked";
@@ -979,6 +1019,35 @@ async function saveToBackend() {
     }
   }
 
+updated.forEach(loan => {
+  delete loan.user;
+  delete loan.purchaseDate;
+  delete loan.purchasePrice;
+});
+
+// ---- OWNERSHIP VALIDATION ----
+if (!Array.isArray(loan.ownershipLots) || loan.ownershipLots.length === 0) {
+  alert(`Loan "${loan.loanName}" has no ownership lots.`);
+  status.textContent = "Save blocked";
+  return;
+}
+
+const sum = loan.ownershipLots.reduce((s, l) => s + (Number(l.pct) || 0), 0);
+if (Math.abs(sum - 1) > 0.0001) {
+  alert(`Loan "${loan.loanName}" ownership must total 100%.`);
+  status.textContent = "Save blocked";
+  return;
+}
+
+for (const lot of loan.ownershipLots) {
+  if (!lot.user || !lot.purchaseDate || lot.pct <= 0) {
+    alert(`Loan "${loan.loanName}" has an invalid ownership lot.`);
+    status.textContent = "Save blocked";
+    return;
+  }
+}
+
+  
   // =====================================================
   // SAVE (only runs if validation passed)
   // =====================================================
