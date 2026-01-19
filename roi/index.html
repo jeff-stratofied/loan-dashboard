@@ -1945,6 +1945,17 @@ const timeline = buildProjectedRoiTimeline(currentLoans, {
   colors: buildKpiColorMap(currentLoans)
 });
 
+  console.group("🧪 KPI2 → Chart Payload");
+
+console.log({
+  datesCount: timeline.dates?.length,
+  perLoanSeriesCount: timeline.perLoanSeries?.length,
+  weightedSeriesCount: timeline.weightedSeries?.length,
+  sampleLoanSeries: timeline.perLoanSeries?.[0]
+});
+
+console.groupEnd();
+
   
 createMultiSeriesChart(
   drawerChartArea,
@@ -2607,6 +2618,17 @@ function createMiniSparkline(svg, series, opts = {}) {
    ============================================================ */
 
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
+console.group("🧪 ENTER createMultiSeriesChart");
+
+console.log({
+  loanSeriesListCount: loanSeriesList?.length,
+  weightedSeriesPoints: weightedSeries?.points?.length,
+  datesCount: opts?.dates?.length
+});
+
+console.groupEnd();
+
+  
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
     // -----------------------------------
@@ -2764,6 +2786,9 @@ loanSeriesList.forEach(ls => {
   path.dataset.type = "loan";
   path.dataset.loanId = String(ls.id);
   svg.appendChild(path);
+console.log("🧪 Path appended", path.getAttribute("d"));
+
+  
   loanPaths.push(path);
 
   
