@@ -887,6 +887,8 @@ function collectLoans() {
 
   rows.forEach(row => {
     const obj = {};
+    const inputs = row.querySelectorAll("[data-field]");
+
     const ALLOWED_FIELDS = new Set([
   "loanName",
   "visible",
@@ -1017,13 +1019,6 @@ async function saveToBackend() {
         return;
       }
     }
-  }
-
-updated.forEach(loan => {
-  delete loan.user;
-  delete loan.purchaseDate;
-  delete loan.purchasePrice;
-});
 
 // ---- OWNERSHIP VALIDATION ----
 if (!Array.isArray(loan.ownershipLots) || loan.ownershipLots.length === 0) {
@@ -1046,6 +1041,16 @@ for (const lot of loan.ownershipLots) {
     return;
   }
 }
+    
+  }
+
+updated.forEach(loan => {
+  delete loan.user;
+  delete loan.purchaseDate;
+  delete loan.purchasePrice;
+});
+
+
 
   
   // =====================================================
