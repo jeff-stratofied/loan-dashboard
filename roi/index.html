@@ -4261,7 +4261,10 @@ function buildHistoricalRoiTimeline(loans) {
 
   // ---- 2. Align each loan ROI onto the global date timeline ----
   const perLoanSeries = loans.map((loan, idx) => {
-    const purchase = new Date(loan.purchaseDate);
+    const purchase =
+  loan._effectivePurchaseDate ??
+  parseISODateLocal(loan.purchaseDate);
+
     const id = loan.id ?? loan.loanId;
     const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
 
