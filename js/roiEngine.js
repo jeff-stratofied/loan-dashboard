@@ -326,6 +326,91 @@ const latestMaturity = new Date(
   return { dates, perLoanSeries, weightedSeries };
 }
 
+export function buildHistoricalRoiTimeline(loans) {
+  if (!Array.isArray(loans) || loans.length === 0) {
+    return { dates: [], perLoanSeries: [], weightedSeries: [] };
+  }
+
+  // ----------------------------------
+  // Global date range (earliest purchase → today)
+  // ----------------------------------
+  const validPurchases = loans
+    .map(l => new Date(l.purchaseDate))
+    .filter(d => d instanceof Date && Number.isFinite(+d));
+
+  if (!validPurchases.length) {
+    return { dates: [], perLoanSeries: [], weightedSeries: [] };
+  }
+
+  const start = new Date(Math.min(...validPurchases.map(d => +d)));
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setDate(1);
+  today.setHours(0, 0, 0, 0);
+
+  const dates = [];
+  const cursor = new Date(start);
+  while (cursor <= today) {
+    dates.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  // ----------------------------------
+  // Per-loan series (SAFE, FINITE ONLY)
+  // ----------------------------------
+  const perLoanSeries = loans.map(loan => {
+    const id = loan.id ?? loan.loanId;
+    const name = loan.name || `Loan ${id}`;
+
+    const roiMap = new Map();
+    (loan.roiSeries || []).forEach(r => {
+      if (r?.date instanceof Date && Number.isFinite(r.roi)) {
+        roiMap.set(
+          r.date.getFullYear() + "-" + r.date.getMonth(),
+          r.roi
+        );
+      }
+    });
+
+    let lastKnown = 0;
+    const data = dates.map(d => {
+      const key = d.getFullYear() + "-" + d.getMonth();
+      if (roiMap.has(key)) lastKnown = roiMap.get(key);
+      return { date: d, y: lastKnown };
+    });
+
+    return { id, name, data };
+  });
+
+  // ----------------------------------
+  // Weighted portfolio series (INVESTED-WEIGHTED)
+  // ----------------------------------
+  const totalInvested = loans.reduce((s, l) => {
+    const last = l.roiSeries?.slice(-1)[0];
+    return s + (Number.isFinite(last?.invested) ? last.invested : 0);
+  }, 0);
+
+  const weightedSeries = dates.map((d, i) => {
+    if (!totalInvested) return { date: d, y: 0 };
+
+    let sum = 0;
+    loans.forEach((loan, idx) => {
+      const roi = perLoanSeries[idx].data[i].y;
+      const entry = getRoiEntryAsOfMonth(loan, d);
+      const invested = Number(entry?.invested || 0);
+      if (invested > 0) sum += roi * invested;
+    });
+
+    return { date: d, y: sum / totalInvested };
+  });
+
+  return { dates, perLoanSeries, weightedSeries };
+}
+
+
+
 //  ----- Helpers ------
 
 export function normalizeLoansForRoi(loans) {
