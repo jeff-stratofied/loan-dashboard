@@ -3903,9 +3903,13 @@ document.querySelectorAll(".kpi").forEach(kpi => {
     
 async function initROI() {
 
+console.warn("🟥 initROI() RUNNING — THIS OVERRIDES KPI TILE VALUES");
+
+  
   const formatLoanLabel = (loan) =>
     `Loan ${loan.id} — ${loan.name} (${loan.school})`;
 
+  /* delete
   // --------------------------------------------------
   // FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
   // --------------------------------------------------
@@ -3934,7 +3938,30 @@ async function initROI() {
   allLoans = loansWithAmort;        // 🔑 master list
   currentLoans = loansWithAmort;
   filteredLoans = loansWithAmort.slice();
+  */
 
+// --------------------------------------------------
+// IMPORTANT: do NOT rebuild currentLoans here.
+// currentLoans/allLoans must already be set by the
+// ownership-based init flow.
+// --------------------------------------------------
+if (!Array.isArray(currentLoans) || currentLoans.length === 0) {
+  console.warn("🟥 initROI(): currentLoans is empty — KPI tiles not rendered");
+  return;
+}
+
+// Always compute KPI tiles from the SAME source as KPI drawers
+const loansForKpis = getLoansForKpis();
+const kpis = computeKPIs(loansForKpis, KPI_CURRENT_MONTH);
+
+console.log("🟩 KPI TILE SOURCE CHECK", {
+  currentLoansCount: currentLoans.length,
+  loansForKpisCount: loansForKpis.length,
+  KPI_CURRENT_MONTH,
+  weightedROI: kpis.weightedROI
+});
+
+  
   // --------------------------------------------------
   // KPI color map (must exist before drawers open)
   // --------------------------------------------------
@@ -3977,6 +4004,17 @@ async function initROI() {
     </div>
   `;
 
+setTimeout(() => {
+  const el = document.getElementById("wroi");
+  console.log("🧪 wroi DOM AFTER 0ms:", el?.textContent);
+}, 0);
+
+setTimeout(() => {
+  const el = document.getElementById("wroi");
+  console.log("🧪 wroi DOM AFTER 250ms:", el?.textContent);
+}, 250);
+
+  
   // --------------------------------------------------
   // KPI tile click (FULL ROI PAGE ONLY)
   // --------------------------------------------------
