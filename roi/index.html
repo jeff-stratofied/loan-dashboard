@@ -2265,7 +2265,7 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
       if (!l) return null;
 
       // ----------------------------------
-      // 🔑 REQUIRED: validate purchaseDate
+      // 🔑 REQUIRED: validate purchaseDate (ONCE)
       // ----------------------------------
       const purchase = parseISODateLocal(l.purchaseDate);
 
@@ -2283,7 +2283,6 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
         purchaseDate: purchase
       });
 
-
       // ----------------------------------
       // Respect terminal rows from engine
       // ----------------------------------
@@ -2296,16 +2295,9 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
         return out;
       })();
 
+      // ----------------------------------
       // Attach ownership flags
-      const purchase = parseISODateLocal(l.purchaseDate);
-
-if (!purchase || !Number.isFinite(purchase.getTime())) {
-  throw new Error(
-    `Invalid purchaseDate for loan "${l.name}": ${l.purchaseDate}`
-  );
-}
-
-
+      // ----------------------------------
       const scheduleWithOwnership = amortSchedule.map(r => ({
         ...r,
         isOwned: r.loanDate >= purchase,
@@ -2313,7 +2305,8 @@ if (!purchase || !Number.isFinite(purchase.getTime())) {
           r.loanDate >= purchase
             ? monthDiff(purchase, r.loanDate) + 1
             : 0,
-        ownershipDate: r.loanDate >= purchase ? r.loanDate : null
+        ownershipDate:
+          r.loanDate >= purchase ? r.loanDate : null
       }));
 
       let cumP = 0;
@@ -2338,61 +2331,60 @@ if (!purchase || !Number.isFinite(purchase.getTime())) {
           return rows;
         }, []);
 
-      // ROI timeline
-const roiSeries = cumSchedule.map(r => {
-  // ----------------------------------
-  // STEP 6 — Tranche-aware ownership
-  // ----------------------------------
-  const tranches = Array.isArray(l.ownershipLots)
-  ? l.ownershipLots
-  : [];;
+      // ----------------------------------
+      // ROI timeline (tranche-aware)
+      // ----------------------------------
+      const roiSeries = cumSchedule.map(r => {
+        const tranches = Array.isArray(l.ownershipLots)
+          ? l.ownershipLots
+          : [];
 
-  const ownershipPct = tranches.reduce(
-  (s, t) => s + (Number(t.pct) || 0),
-  0
-);
+        const ownershipPct = tranches.reduce(
+          (s, t) => s + (Number(t.pct) || 0),
+          0
+        );
 
-  // Total invested capital (absolute dollars)
-  const invested = tranches.reduce(
-    (s, t) => s + (Number(t.pricePaid) || 0),
-    0
-  );
+        const invested = tranches.reduce(
+          (s, t) => s + (Number(t.pricePaid) || 0),
+          0
+        );
 
-  // Scale loan economics by owned %
-  const realized =
-    ((r.cumPrincipal + r.cumInterest) - r.cumFees) * ownershipPct;
+        const realized =
+          ((r.cumPrincipal + r.cumInterest) - r.cumFees) *
+          ownershipPct;
 
-  const unrealized =
-    (r.balance * 0.95) * ownershipPct;
+        const unrealized =
+          (r.balance * 0.95) * ownershipPct;
 
-  const loanValue = realized + unrealized;
+        const loanValue = realized + unrealized;
 
-  const roi =
-    invested > 0
-      ? (loanValue - invested) / invested
-      : 0;
+        const roi =
+          invested > 0
+            ? (loanValue - invested) / invested
+            : 0;
 
-  return {
-    month: r.ownershipMonthIndex,
-    date: r.loanDate,
-    displayDate: r.displayDate,
+        return {
+          month: r.ownershipMonthIndex,
+          date: r.loanDate,
+          displayDate: r.displayDate,
 
-    roi,
-    loanValue,
-    invested,          // 🔑 canonical basis
-    ownershipPct,      // derived convenience
-    tranches,          // 🔑 future-proof
+          roi,
+          loanValue,
+          invested,
+          ownershipPct,
+          tranches,
 
-    cumFees: r.cumFees,
-    realized,
-    remainingBalance: r.balance,
-    unrealized,
-    isTerminal: r.isTerminal === true
-  };
-});
+          cumFees: r.cumFees,
+          realized,
+          remainingBalance: r.balance,
+          unrealized,
+          isTerminal: r.isTerminal === true
+        };
+      });
 
-
-      // 🔑 RETURN MUST BE HERE
+      // ----------------------------------
+      // RETURN DERIVED LOAN
+      // ----------------------------------
       return {
         ...l,
         amort: { schedule: amortSchedule },
@@ -2403,8 +2395,9 @@ const roiSeries = cumSchedule.map(r => {
         roiSeries
       };
     })
-    .filter(Boolean); // 🔒 guarantees no undefined loans
+    .filter(Boolean);
 }
+
 
 
 
