@@ -367,16 +367,15 @@ export function buildHistoricalRoiTimeline(loans) {
     const roiMap = new Map();
     (loan.roiSeries || []).forEach(r => {
       if (r?.date instanceof Date && Number.isFinite(r.roi)) {
-        roiMap.set(
-          r.date.getFullYear() + "-" + r.date.getMonth(),
-          r.roi
-        );
+        const key = monthKeyFromDate(r.date);
+if (key) roiMap.set(key, r.roi);
+
       }
     });
 
     let lastKnown = 0;
     const data = dates.map(d => {
-      const key = d.getFullYear() + "-" + d.getMonth();
+      const key = monthKeyFromDate(d);
       if (roiMap.has(key)) lastKnown = roiMap.get(key);
       return { date: d, y: lastKnown };
     });
