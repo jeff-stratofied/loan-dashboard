@@ -4796,17 +4796,37 @@ drawerSecondary.textContent = formatMonthYear(KPI_CURRENT_MONTH);
 loans.forEach(l => {
   if (!Array.isArray(l.cumSchedule) || !l.cumSchedule.length) return;
 
-  // 🔑 AUTHORITATIVE LAST ROW (to date)
-  const last = l.cumSchedule.at(-1);
+// 🔑 AUTHORITATIVE ownership-scaled recovery
+const roiLast = l.roiSeries?.at(-1);
+if (!roiLast) return;
 
-  const invested = l.userPurchasePrice || 0;
-  const recovered = last.cumPrincipal || 0;
-  const pct = invested > 0 ? recovered / invested : 0;
+const invested = l.userPurchasePrice || 0;
 
-  // 🔑 Remaining principal (ownership-aware)
-  const remaining =
-    Math.max(0, last.balance || 0);
+// principal-only portion of realized value
+const ownershipPct = roiLast.ownershipPct || 0;
 
+const recovered =
+  (roiLast.realized || 0) -
+  ((roiLast.cumInterest || 0) * ownershipPct) +
+  ((roiLast.cumFees || 0) * ownershipPct);
+
+// % recovered (capital recovery KPI definition)
+const pct =
+  invested > 0 ? recovered / invested : 0;
+
+// Remaining owned principal
+const remaining =
+  Math.max(0, roiLast.remainingBalance * ownershipPct);
+
+if (Math.abs(pct - kpis.capitalRecoveredPct) > 1e-6) {
+  console.error("[KPI3 OWNERSHIP MISMATCH]", {
+    loan: l.name,
+    pct,
+    tile: kpis.capitalRecoveredPct
+  });
+}
+
+  
   const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
 
   html += `
