@@ -4796,9 +4796,6 @@ drawerSecondary.textContent = formatMonthYear(KPI_CURRENT_MONTH);
         <tbody>
   `;
 
-
-const asOfEnd = new Date(asOfMonth.getFullYear(), asOfMonth.getMonth() + 1, 0, 23, 59, 59, 999);
-
 loans.forEach(l => {
   if (!Array.isArray(l.cumSchedule) || !l.cumSchedule.length) return;
 
