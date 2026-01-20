@@ -1317,11 +1317,13 @@ tr.event-default td {
        ==================================== -->
   <script type="module">
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
+    
     import {
-  buildProjectedRoiTimeline,
+    buildHistoricalRoiTimeline,
+      buildProjectedRoiTimeline,
   getRoiEntryAsOfMonth,
       computeKPIs,
-  computeWeightedRoiAsOfMonth
+  computeWeightedRoiAsOfMonth      
 } from "../js/roiEngine.js?v=dev";
 
 import {
@@ -4295,7 +4297,7 @@ function populateProjectedROILoanTable() {
    Builds a unified date-based ROI timeline
    For all loans, from earliest purchase → today
    ============================================ */
-
+/* delete - moved to roi engine
 function buildHistoricalRoiTimeline(loans) {
   const today = new Date();
 
@@ -4400,7 +4402,9 @@ function buildHistoricalRoiTimeline(loans) {
     earliestDate: earliestPurchase
   };
 }
+*/
 
+    
 /* ==========================================================
    DATE-ALIGNED CHART ENGINE HELPERS
    ========================================================== */
