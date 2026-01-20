@@ -4870,7 +4870,6 @@ loans.forEach(l => {
 // ==================================================
 try {
   const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-  const asOfEnd = new Date(asOfMonth.getFullYear(), asOfMonth.getMonth() + 1, 0, 23, 59, 59, 999);
 
   let sumRecovered = 0;
   let sumInvested = 0;
