@@ -4726,7 +4726,7 @@ function renderRatesDrawer() {
   // KPI3 Capital Recovery
   // =====================================================
     
-function renderCapitalRecoveryDrawer() {
+function renderCapitalRecoveredDrawer() {
 
   currentMode = 'kpi';
   currentLoan = null;
@@ -5003,21 +5003,50 @@ function renderROISpreadDrawer() {
   drawerSecondaryTitle.textContent = "Loans";
   drawerSecondary.textContent = rows.length;
 
-  // -------------------------------
-  // Chart for Spread Drawer
-  // -------------------------------
-  const timeline = buildHistoricalRoiTimeline(loans);
+// -------------------------------
+// Chart for Spread Drawer (ROI to Date)
+// -------------------------------
+const dates = Array.from(
+  new Set(
+    loans.flatMap(l =>
+      (l.roiSeries || [])
+        .filter(r => r.date <= KPI_CURRENT_MONTH)
+        .map(r => r.date.getTime())
+    )
+  )
+)
+  .sort((a, b) => a - b)
+  .map(ms => new Date(ms));
 
-  createMultiSeriesChart(
-    drawerChartArea,
-    timeline.perLoanSeries,
-    null, // ⛔ NO weighted line
-    {
-      dates: timeline.dates,
-      tickSpacingX: 3,
-      hideWeighted: true
-    }
+const perLoanSeries = loans.map(l => {
+  const roiMap = new Map(
+    (l.roiSeries || [])
+      .filter(r => r.date <= KPI_CURRENT_MONTH)
+      .map(r => [r.date.getTime(), r.roi])
   );
+
+  return {
+    id: l.id,
+    name: l.name,
+    color: window.KPI_COLOR_MAP?.[l.id] || '#64748b',
+    data: dates.map(d => ({
+      date: d,
+      y: roiMap.get(d.getTime()) ?? null
+    }))
+  };
+});
+
+createMultiSeriesChart(
+  drawerChartArea,
+  perLoanSeries,
+  null, // ⛔ NO weighted line for spread
+  {
+    dates,
+    tickSpacingX: 3,
+    hideWeighted: true
+  }
+);
+
 
   // -------------------------------
   // Table
