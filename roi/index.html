@@ -4672,8 +4672,7 @@ function renderCapitalRecoveredDrawer() {
         cumPrincipal += r.principalPaid || 0;
 
         const invested = l.userPurchasePrice || 0;
-const pct = invested > 0 ? recovered / invested : 0;
-
+const pct = invested > 0 ? cumPrincipal / invested : 0;
 
         monthly.set(k, { date: m, y: pct });
         monthMap.set(k, m);
