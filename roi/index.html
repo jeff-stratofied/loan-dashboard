@@ -4643,6 +4643,22 @@ function renderCapitalRecoveredDrawer() {
   // 🔑 AUTHORITATIVE KPI VALUES
   const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
+  // --------------------------------------------------
+// Shared containers (AUTHORITATIVE)
+// --------------------------------------------------
+const loanSeriesList = [];
+const monthMap = new Map(); // key = ms → Date(month start)
+
+// KPI "as of" anchors (declare ONCE)
+const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+const asOfEnd = new Date(
+  asOfMonth.getFullYear(),
+  asOfMonth.getMonth() + 1,
+  0,
+  23, 59, 59, 999
+);
+
+
 loans.forEach(l => {
   if (!l.amort || !l.amort.schedule) return;
 
@@ -4699,14 +4715,6 @@ loans.forEach(l => {
 // --------------------------------------------------
 // Portfolio cumulative line (MONTHLY, AUTHORITATIVE)
 // --------------------------------------------------
-
-// NOTE: asOfMonth already exists in this function
-const asOfEnd = new Date(
-  asOfMonth.getFullYear(),
-  asOfMonth.getMonth() + 1,
-  0,
-  23, 59, 59, 999
-);
 
 // Total invested MUST match computeKPIs()
 const totalInvested = loans.reduce((s, l) => {
@@ -4797,23 +4805,32 @@ drawerSecondary.textContent = formatMonthYear(KPI_CURRENT_MONTH);
   `;
 
 loans.forEach(l => {
-  if (!Array.isArray(l.cumSchedule) || !l.cumSchedule.length) return;
-
   const invested = Number(l.userPurchasePrice || 0);
   const ownPct = Number(l.userOwnershipPct || 0);
   if (!invested || !ownPct) return;
 
-  // ✅ pick the last cumulative row THROUGH KPI month (not maturity)
-  const row = l.cumSchedule
-    .filter(r => r.loanDate && r.loanDate <= asOfEnd)
+  let recovered = 0;
+
+  l.amort?.schedule?.forEach(r => {
+    if (
+      r.isOwned &&
+      r.loanDate instanceof Date &&
+      r.loanDate <= asOfEnd
+    ) {
+      recovered += (Number(r.principalPaid) || 0) * ownPct;
+    }
+  });
+
+  const pct = recovered / invested;
+
+  // Remaining principal (ownership-scaled)
+  const last = l.cumSchedule
+    ?.filter(r => r.loanDate && r.loanDate <= asOfEnd)
     .at(-1);
 
-  if (!row) return;
-
-  const recovered = (Number(row.cumPrincipal || 0)) * ownPct;
-  const pct = invested > 0 ? recovered / invested : 0;
-
-  const remaining = Math.max(0, (Number(row.balance || 0)) * ownPct);
+  const remaining = last
+    ? Math.max(0, (Number(last.balance || 0)) * ownPct)
+    : 0;
 
   const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
 
@@ -4836,6 +4853,7 @@ loans.forEach(l => {
     </tr>
   `;
 });
+
 
 
   html += `
@@ -4879,7 +4897,16 @@ try {
     const row = l.cumSchedule?.filter(r => r.loanDate && r.loanDate <= asOfEnd).at(-1);
     if (!row) return;
 
-    sumRecovered += (Number(row.cumPrincipal || 0)) * ownPct;
+    l.amort?.schedule?.forEach(r => {
+  if (
+    r.isOwned &&
+    r.loanDate instanceof Date &&
+    r.loanDate <= asOfEnd
+  ) {
+    sumRecovered += (Number(r.principalPaid) || 0) * ownPct;
+  }
+});
+
     sumInvested += invested;
   });
 
