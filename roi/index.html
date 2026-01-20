@@ -4630,25 +4630,43 @@ function getUserOwnedPct(loan) {
   // 🔑 SINGLE SOURCE OF TRUTH — OWNED LOANS ONLY
   const loans = getLoansForKpis();
 
-// ==========================================
-// KPI3 DEBUG — PSU loan deep inspection
-// ==========================================
-const DEBUG_USER = PAGE_USER;
+// ==================================================
+// KPI3 PSU DEBUG (SAFE — NO GLOBALS)
+// ==================================================
+const DEBUG_LOAN_ID = "PSU"; // or whatever uniquely identifies it
 
-const psuLots = Array.isArray(psu.ownershipLots)
-  ? psu.ownershipLots
-  : [];
+const psuLoan = loans.find(l =>
+  String(l.name || "").includes("PSU") ||
+  String(l.id || "").includes("PSU")
+);
 
-const psuOwnPct = psuLots
-  .filter(t => t.user === DEBUG_USER)
-  .reduce((s, t) => s + (Number(t.pct) || 0), 0);
+if (!psuLoan) {
+  console.warn("[KPI3 PSU DEBUG] PSU loan not found");
+} else {
+  const DEBUG_USER = PAGE_USER;
 
-console.log("DEBUG user:", DEBUG_USER);
-console.log("Ownership lots:", psuLots);
-console.log("Ownership % (USER-SCOPED):", psuOwnPct);
-console.log("Ownership % (LOAN FIELD):", psu.userOwnershipPct);
+  const lots = Array.isArray(psuLoan.ownershipLots)
+    ? psuLoan.ownershipLots
+    : [];
 
+  const userPct = lots
+    .filter(t => t.user === DEBUG_USER)
+    .reduce((s, t) => s + (Number(t.pct) || 0), 0);
 
+  console.group("[KPI3 PSU DEBUG]");
+  console.log("Loan ID:", psuLoan.id);
+  console.log("Loan name:", psuLoan.name);
+  console.log("DEBUG user:", DEBUG_USER);
+  console.log("Ownership lots:", lots);
+  console.log("Ownership % (USER-SCOPED):", userPct);
+  console.log("Ownership % (LOAN FIELD):", psuLoan.userOwnershipPct);
+  console.log("User purchase price:", psuLoan.userPurchasePrice);
+  console.log(
+    "Cum rows <= KPI month:",
+    psuLoan.cumSchedule?.filter(r => r.loanDate && r.loanDate <= KPI_CURRENT_MONTH).length
+  );
+  console.groupEnd();
+}
 
   
   // -----------------------------
