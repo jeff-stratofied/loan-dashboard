@@ -1628,16 +1628,19 @@ function renderEventBadgeCell(loan) {
 function buildOwnershipPie(loan) {
   if (!Array.isArray(loan.ownershipLots)) return null;
 
-  const pct = Math.max(
-    0,
-    Math.min(
-      1,
-      loan.ownershipLots.reduce(
+const pct = Math.max(
+  0,
+  Math.min(
+    1,
+    loan.ownershipLots
+      .filter(t => t.user === PAGE_USER)   // 🔑 USER-ONLY
+      .reduce(
         (s, t) => s + (Number(t.pct) || 0),
         0
       )
-    )
-  );
+  )
+);
+
 
   const slices = Math.round(pct * 20);
   if (slices === 0) return null;
