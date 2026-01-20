@@ -3903,38 +3903,48 @@ document.querySelectorAll(".kpi").forEach(kpi => {
     
 async function initROI() {
 
-  console.warn("🟥 initROI() RUNNING");
-
   const formatLoanLabel = (loan) =>
     `Loan ${loan.id} — ${loan.name} (${loan.school})`;
 
   // --------------------------------------------------
-  // IMPORTANT: do NOT rebuild currentLoans here.
-  // currentLoans/allLoans must already be set by the
-  // ownership-based init flow.
+  // FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
   // --------------------------------------------------
-  if (!Array.isArray(currentLoans) || currentLoans.length === 0) {
-    console.warn("🟥 initROI(): currentLoans is empty — KPI tiles not rendered");
-    return;
-  }
+  const userLoans = loans
+    .map(l => ({
+      ...l,
+      user: l.user ?? "jeff",
+      visible: l.visible !== false
+    }))
+    .filter(l => l.user === PAGE_USER && l.visible === true);
 
   // --------------------------------------------------
-  // KPI COLOR MAP (MUST USE SAME LOANS AS CHARTS)
+  // Normalize numeric fields (ONLY user loans)
   // --------------------------------------------------
-  const loansForKpis = getLoansForKpis();
-  window.KPI_COLOR_MAP = buildKpiColorMap(loansForKpis);
+  const formattedLoans = userLoans.map(l => ({
+    ...l,
+    purchasePrice: Number(l.purchasePrice ?? 0),
+    nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
+  }));
 
   // --------------------------------------------------
-  // COMPUTE KPIs — SINGLE SOURCE OF TRUTH
+  // Derive amort + ROI (DATA CREATION POINT)
   // --------------------------------------------------
-  const kpis = computeKPIs(loansForKpis, KPI_CURRENT_MONTH);
+  const loansWithAmort = deriveLoansWithAmortAndRoi(formattedLoans);
 
-  console.log("🟩 KPI TILE SOURCE CHECK", {
-    currentLoansCount: currentLoans.length,
-    loansForKpisCount: loansForKpis.length,
-    KPI_CURRENT_MONTH,
-    weightedROI: kpis.weightedROI
-  });
+  allLoans = loansWithAmort;        // 🔑 master list
+  currentLoans = loansWithAmort;
+  filteredLoans = loansWithAmort.slice();
+
+  // --------------------------------------------------
+  // KPI color map (must exist before drawers open)
+  // --------------------------------------------------
+  window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
+
+  // --------------------------------------------------
+  // Compute KPIs
+  // --------------------------------------------------
+  const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
+
 
   // --------------------------------------------------
   // Initial render (grid / table via filters)
@@ -3967,17 +3977,6 @@ async function initROI() {
     </div>
   `;
 
-setTimeout(() => {
-  const el = document.getElementById("wroi");
-  console.log("🧪 wroi DOM AFTER 0ms:", el?.textContent);
-}, 0);
-
-setTimeout(() => {
-  const el = document.getElementById("wroi");
-  console.log("🧪 wroi DOM AFTER 250ms:", el?.textContent);
-}, 250);
-
-  
   // --------------------------------------------------
   // KPI tile click (FULL ROI PAGE ONLY)
   // --------------------------------------------------
