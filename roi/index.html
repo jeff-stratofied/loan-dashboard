@@ -2661,7 +2661,7 @@ function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opt
   console.group("🧪 ENTER createMultiSeriesChart");
   console.log({
     loanSeriesListCount: loanSeriesList?.length,
-    weightedSeriesPoints: weightedSeries?.points?.length,
+    weightedSeriesPoints: Array.isArray(weightedSeries) ? weightedSeries.length : (weightedSeries?.points?.length ?? 0),
     datesCount: opts?.dates?.length
   });
   console.groupEnd();
@@ -2677,55 +2677,74 @@ const loanPaths = [];
 let weightedPath = null;
 
 /* =====================================================
-   FIX 1 — ROI → Chart Adapter (AUTHORITATIVE)
-   MUST run before any scale or SVG logic
+   NORMALIZE INPUTS (AUTHORITATIVE)
+   Canonical shape for renderer:
+   - loanSeriesList[i].data = [{ date: Date, y: number|null }]
+   - weightedSeries         = [{ date: Date, y: number|null }]
    ===================================================== */
+
+const toDate = (d) => (d instanceof Date ? d : new Date(d));
+
+const toY = (p) => {
+  // support {y}, {roi}, {net}, etc.
+  const v =
+    Number.isFinite(p?.y) ? p.y :
+    Number.isFinite(p?.roi) ? p.roi :
+    NaN;
+  return Number.isFinite(v) ? v : null;
+};
+
+// ---- Normalize loan series into .data ----
 loanSeriesList = (loanSeriesList || []).map(series => {
-  const raw = series.points || series.data || [];
+  const raw = series.data || series.points || [];
+
+  const data = raw.map(p => ({
+    date: toDate(p.date ?? p.x),
+    y: toY(p)
+  }));
 
   return {
     ...series,
-    points: raw.map(p => ({
-      x: p.date instanceof Date ? p.date : new Date(p.date),
-      y: Number.isFinite(p.y)
-        ? p.y
-        : Number.isFinite(p.roi)
-        ? p.roi
-        : NaN
-    }))
+    data,
+    // keep points too (optional) but renderer uses data
+    points: data.map(p => ({ x: p.date, y: p.y }))
   };
 });
 
+// ---- Normalize weighted series into an ARRAY ----
 if (weightedSeries) {
-  const raw = weightedSeries.points || weightedSeries.data || [];
-  weightedSeries = {
-    ...weightedSeries,
-    points: raw.map(p => ({
-      x: p.date instanceof Date ? p.date : new Date(p.date),
-      y: Number.isFinite(p.y)
-        ? p.y
-        : Number.isFinite(p.roi)
-        ? p.roi
-        : NaN
-    }))
-  };
+  const raw =
+    Array.isArray(weightedSeries)
+      ? weightedSeries
+      : (weightedSeries.data || weightedSeries.points || []);
+
+  weightedSeries = raw.map(p => ({
+    date: toDate(p.date ?? p.x),
+    y: toY(p)
+  }));
+} else {
+  weightedSeries = [];
 }
 
-// 🔒 Drop invalid points AFTER normalization (AUTHORITATIVE)
+// 🔒 Drop invalid points AFTER normalization
 loanSeriesList = loanSeriesList
   .map(s => ({
     ...s,
-    points: (s.points || []).filter(
-      p => p.x instanceof Date && Number.isFinite(p.y)
+    data: (s.data || []).filter(
+      p => p.date instanceof Date && Number.isFinite(p.date.getTime()) && p.y != null
     )
   }))
-  .filter(s => s.points.length >= 2);
+  .filter(s => s.data.length >= 2);
+
+weightedSeries = (weightedSeries || []).filter(
+  p => p.date instanceof Date && Number.isFinite(p.date.getTime()) && p.y != null
+);
 
 if (!loanSeriesList.length) {
-  // Render empty SVG so KPI drawer layout remains stable
   containerEl.appendChild(document.createElementNS(svgNS, "svg"));
   return;
 }
+
 
 
 
