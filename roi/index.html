@@ -1918,18 +1918,68 @@ function renderKpiDrawer(kpiId) {
       formatMonthYear(KPI_CURRENT_MONTH);
 
     // =====================================================
-    // KPI1 — Weighted ROI to Date chart (MISSING BEFORE)
+    // KPI1 — Weighted ROI to Date (REUSE TILE ROI SERIES)
     // =====================================================
-    const timeline = buildHistoricalRoiTimeline(loans);
 
+    // 1️⃣ Build unified month axis from existing roiSeries
+    const dates = Array.from(
+      new Set(
+        loans.flatMap(l =>
+          (l.roiSeries || []).map(r => r.date.getTime())
+        )
+      )
+    )
+      .sort((a, b) => a - b)
+      .map(ms => new Date(ms));
+
+    // 2️⃣ Per-loan ROI series (direct reuse, no recompute)
+    const perLoanSeries = loans.map(loan => {
+      const id = loan.id ?? loan.loanId;
+      const roiMap = new Map(
+        (loan.roiSeries || []).map(r => [r.date.getTime(), r.roi])
+      );
+
+      return {
+        id,
+        name: loan.name,
+        color: window.KPI_COLOR_MAP?.[id] || "var(--muted)",
+        data: dates.map(d => ({
+          date: d,
+          y: roiMap.get(d.getTime()) ?? null
+        }))
+      };
+    });
+
+    // 3️⃣ Weighted portfolio series (invested-weighted)
+    const weightedSeries = dates.map(d => {
+      let sum = 0;
+      let invested = 0;
+
+      loans.forEach(l => {
+        const entry = l.roiSeries?.find(
+          r => r.date.getTime() === d.getTime()
+        );
+        if (!entry || !entry.invested) return;
+
+        sum += entry.roi * entry.invested;
+        invested += entry.invested;
+      });
+
+      return {
+        date: d,
+        y: invested > 0 ? sum / invested : null
+      };
+    });
+
+    // 4️⃣ Render chart
     createMultiSeriesChart(
       drawerChartArea,
-      timeline.perLoanSeries,
-      timeline.weightedSeries,
+      perLoanSeries,
+      weightedSeries,
       {
         weightedColor: "#000",
         weightedWidth: 2.6,
-        dates: timeline.dates,
+        dates,
         tickSpacingX: 3
       }
     );
@@ -1946,10 +1996,10 @@ function renderKpiDrawer(kpiId) {
     drawerSecondary.textContent = "All Loans";
 
     // =====================================================
-    // KPI2 — Projected Portfolio ROI chart
+    // KPI2 — Projected Portfolio ROI chart (UNCHANGED)
     // =====================================================
     const timeline = buildProjectedRoiTimeline(loans, {
-      colors: buildKpiColorMap(loans)
+      colorMap: buildKpiColorMap(loans)
     });
 
     createMultiSeriesChart(
@@ -1976,6 +2026,7 @@ function renderKpiDrawer(kpiId) {
     console.warn("Unknown KPI:", kpiId);
   }
 }
+
 
 
 
