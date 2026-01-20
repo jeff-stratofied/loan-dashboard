@@ -4359,7 +4359,6 @@ function buildHistoricalRoiTimeline(loans) {
     return d < earliest ? d : earliest;
   }, new Date(loans[0].purchaseDate));
 
-  // Build monthly date list from earliest → today
   const dates = [];
   const cursor = new Date(earliestPurchase);
   while (cursor <= today) {
@@ -4367,88 +4366,99 @@ function buildHistoricalRoiTimeline(loans) {
     cursor.setMonth(cursor.getMonth() + 1);
   }
 
-  // ---- 2. Align each loan ROI onto the global date timeline ----
-  const perLoanSeries = loans.map((loan, idx) => {
+  // ---- 2. Per-loan series (OWNED MONTHS ONLY) ----
+  const perLoanSeries = loans.map(loan => {
     const purchase =
-  loan._effectivePurchaseDate ??
-  parseISODateLocal(loan.purchaseDate);
+      loan._effectivePurchaseDate ??
+      parseISODateLocal(loan.purchaseDate);
 
     const id = loan.id ?? loan.loanId;
-    const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
+    const color = window.KPI_COLOR_MAP?.[id] || "#64748b";
 
-
-    // Map ownershipDate -> ROI for quick lookup
+    // Map YYYY-MM -> ROI
     const roiMap = {};
     loan.cumSchedule.forEach(row => {
+      if (!row.isOwned) return;
 
-  if (!row.isOwned) return;
+      const rowDate = row.displayDate || row.loanDate;
+      if (!rowDate) return;
 
-  const rowDate = row.displayDate || row.loanDate;
-  if (!rowDate) return;
+      const realized = (row.cumPrincipal + row.cumInterest) - row.cumFees;
+      const unrealized = row.balance * 0.95;
+      const loanValue = realized + unrealized;
 
-  const realized = (row.cumPrincipal + row.cumInterest) - row.cumFees;
-  const unrealized = row.balance * 0.95;
-  const loanValue = realized + unrealized;
+      const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
 
-  const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
+      const key =
+        rowDate.getFullYear() + "-" +
+        String(rowDate.getMonth() + 1).padStart(2, "0");
 
-  // Month-safe key (NO UTC rollover)
-  const key =
-    rowDate.getFullYear() + "-" +
-    String(rowDate.getMonth() + 1).padStart(2, "0");
-
-  roiMap[key] = roi;
-});
-
-
-
-   // Build calendar-aligned ROI (null before purchase)
-    // Initialize to the ROI of the first owned month to avoid a spike
-    const roiKeys = Object.keys(roiMap).sort();
-    let lastKnownROI = roiKeys.length ? roiMap[roiKeys[0]] : 0;
-    
-    const data = dates.map(date => {
-      if (date < purchase) {
-      return { date, y: null };
-      }
-
-    const key = date.toISOString().slice(0, 7);
-
-    if (key in roiMap) {
-    lastKnownROI = roiMap[key];
-    }
-
-    // forward-fill ROI after purchase
-    return { date, y: lastKnownROI };
+      roiMap[key] = roi;
     });
 
-    const displayName = loan.name || loan.loanName || `Loan ${id}`;
-    
+    const roiKeys = Object.keys(roiMap).sort();
+    let lastKnownROI = roiKeys.length ? roiMap[roiKeys[0]] : null;
+
+    // 🔑 CRITICAL: normalize to chart-ready points
+    const points = dates
+      .filter(d => d >= purchase)
+      .map(date => {
+        const key =
+          date.getFullYear() + "-" +
+          String(date.getMonth() + 1).padStart(2, "0");
+
+        if (key in roiMap) {
+          lastKnownROI = roiMap[key];
+        }
+
+        if (lastKnownROI == null) return null;
+
+        return {
+          x: date,
+          y: lastKnownROI
+        };
+      })
+      .filter(Boolean);
+
     return {
       id,
-      name: displayName,
+      name: loan.name || loan.loanName || `Loan ${id}`,
       color,
-      data
+      points
     };
   });
 
-  // ---- 3. Build weighted ROI series ----
+  // ---- 3. Weighted ROI series ----
   const totalInvested = loans.reduce((s, l) => s + l.purchasePrice, 0);
 
-  const weightedSeries = dates.map((date, i) => {
-    let weightedSum = 0;
+  const weightedSeries = {
+    id: "weighted",
+    name: "Weighted ROI",
+    color: "#000",
+    points: dates.map((date, i) => {
+      let sum = 0;
+      let weight = 0;
 
-    loans.forEach((loan, idx) => {
-      const roi = perLoanSeries[idx].data[i].y;
-      if (roi != null) {
-        weightedSum += roi * loan.purchasePrice;
-      }
-    });
+      loans.forEach((loan, idx) => {
+        const p = perLoanSeries[idx].points.find(pt =>
+          pt.x.getFullYear() === date.getFullYear() &&
+          pt.x.getMonth() === date.getMonth()
+        );
 
-    const weightedRoi = weightedSum / totalInvested;
+        if (p) {
+          sum += p.y * loan.purchasePrice;
+          weight += loan.purchasePrice;
+        }
+      });
 
-    return { date, y: weightedRoi };
-  });
+      if (!weight) return null;
+
+      return {
+        x: date,
+        y: sum / weight
+      };
+    }).filter(Boolean)
+  };
 
   return {
     dates,
@@ -4457,6 +4467,7 @@ function buildHistoricalRoiTimeline(loans) {
     earliestDate: earliestPurchase
   };
 }
+
 
 /* ==========================================================
    DATE-ALIGNED CHART ENGINE HELPERS
