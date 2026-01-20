@@ -2364,12 +2364,12 @@ const rowClass = getEventRowClass(loan, cs || s);
    ============================================================ */
 
       const TODAY = new Date();
-const KPI_CURRENT_MONTH = new Date(
-  TODAY.getFullYear(),
-  TODAY.getMonth(),
-  1
-);
+const KPI_CURRENT_MONTH = normalizeToMonthStart(new Date());
 
+
+function normalizeToMonthStart(d) {
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
 
 
 
@@ -4573,7 +4573,11 @@ function renderTPVDrawer() {
   // ===============================
   // 1. KPI tile number (AUTHORITATIVE)
   // ===============================
-  const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
+  const kpis = computeKPIs(
+  loans,
+  normalizeToMonthStart(KPI_CURRENT_MONTH)
+);
+
 
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
   drawerPrimary.textContent =
