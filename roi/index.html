@@ -1921,15 +1921,49 @@ console.groupEnd();
   // KPI SWITCH
   // -------------------------
   if (kpiId === "kpi1") {
-    drawerTitle.textContent = "Weighted ROI to Date";
-    drawerPrimaryTitle.textContent = "ROI to Date";
-    drawerPrimary.textContent =
-      (kpis.weightedROI * 100).toFixed(2) + "%";
+  drawerTitle.textContent = "Weighted ROI to Date";
 
-    drawerSecondaryTitle.textContent = "As of";
-    drawerSecondary.textContent =
-      formatMonthYear(KPI_CURRENT_MONTH);
-  }
+  drawerPrimaryTitle.textContent = "ROI to Date";
+  drawerPrimary.textContent =
+    (kpis.weightedROI * 100).toFixed(2) + "%";
+
+  drawerSecondaryTitle.textContent = "As of";
+  drawerSecondary.textContent =
+    formatMonthYear(KPI_CURRENT_MONTH);
+
+  // =====================================================
+  // KPI1 — HISTORICAL (TO-DATE) ROI CHART
+  // =====================================================
+  const timeline = buildHistoricalRoiTimeline(currentLoans);
+
+  console.group("🧪 KPI1 → Chart Payload");
+  console.log({
+    loans: currentLoans.length,
+    dates: timeline.dates?.length,
+    perLoanSeries: timeline.perLoanSeries?.length,
+    weightedSeries: timeline.weightedSeries?.length,
+    sampleLoan: timeline.perLoanSeries?.[0]
+  });
+  console.groupEnd();
+
+  createMultiSeriesChart(
+    drawerChartArea,
+    timeline.perLoanSeries,
+    {
+      points: timeline.weightedSeries.map(p => ({
+        date: p.date,
+        roi: p.y
+      }))
+    },
+    {
+      dates: timeline.dates,
+      weightedColor: "#000",
+      weightedWidth: 2.6,
+      tickSpacingX: 3
+    }
+  );
+}
+
 
 else if (kpiId === "kpi2") {
   drawerTitle.textContent = "Projected Portfolio ROI";
