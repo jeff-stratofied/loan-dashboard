@@ -4795,7 +4795,7 @@ drawerSecondary.textContent = formatMonthYear(KPI_CURRENT_MONTH);
         <tbody>
   `;
 
-const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+
 const asOfEnd = new Date(asOfMonth.getFullYear(), asOfMonth.getMonth() + 1, 0, 23, 59, 59, 999);
 
 loans.forEach(l => {
