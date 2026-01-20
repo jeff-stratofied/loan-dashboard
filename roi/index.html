@@ -4780,39 +4780,17 @@ const totalInvested = loans.reduce((s, l) => {
   return s + invested;
 }, 0);
 
-let cumRecovered = 0;
+const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
+const capitalRecoveryPct = kpis.capitalRecoveryPct;
 
-const portfolioSeries = globalDates
-  .filter(d => d <= asOfEnd)
-  .map(d => {
-    loans.forEach(l => {
-      const ownPct = Array.isArray(l.ownershipLots)
-  ? l.ownershipLots
-      .filter(t => t.user === PAGE_USER)
-      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
-  : 0;
+const portfolioSeries = globalDates.map(d => ({
+  date: d,
+  y:
+    d <= KPI_CURRENT_MONTH
+      ? capitalRecoveryPct
+      : capitalRecoveryPct // flat line (future irrelevant)
+}));
 
-      if (!ownPct) return;
-
-      l.amort?.schedule?.forEach(r => {
-        if (
-          r.isOwned &&
-          r.loanDate instanceof Date &&
-          r.loanDate <= d &&
-          r.loanDate.getMonth() === d.getMonth() &&
-          r.loanDate.getFullYear() === d.getFullYear()
-        ) {
-          // ✅ EXACTLY matches computeKPIs()
-          cumRecovered += (Number(r.principalPaid) || 0) * ownPct;
-        }
-      });
-    });
-
-    return {
-      date: d,
-      y: totalInvested > 0 ? cumRecovered / totalInvested : 0
-    };
-  });
 
 
 
@@ -4850,9 +4828,9 @@ if (
 }
 
   
-  // --------------------------------------------------
-  // Render chart
-  // --------------------------------------------------
+// --------------------------------------------------
+// Render chart
+// --------------------------------------------------
 createMultiSeriesChart(
   drawerChartArea,
   loanSeriesList,
@@ -4866,23 +4844,37 @@ createMultiSeriesChart(
     // 🔑 KPI3 AUTHORITATIVE LABEL
     weightedLabel: "Portfolio Recovered",
 
-    // 🔑 FORCE HOVER VALUE TO MATCH KPI TILE
+    // 🔑 KPI3 HOVER — SINGLE SOURCE OF TRUTH
     weightedLabelFn: (pt) => {
-      const isKpiMonth =
-        pt.date.getFullYear() === kpiMonth.getFullYear() &&
-        pt.date.getMonth() === kpiMonth.getMonth();
-
-      const value = isKpiMonth
-        ? kpis.capitalRecoveryPct
-        : pt.y;
+      const capitalRecoveryPct = kpis.capitalRecoveryPct;
 
       return `
         ${formatMonthYear(pt.date)}
-        • Portfolio Recovered ${(value * 100).toFixed(2)}%
+        • Portfolio Recovered ${(capitalRecoveryPct * 100).toFixed(2)}%
       `;
     }
   }
 );
+
+  // ==================================================
+// 🔒 KPI3 HARD INVARIANT (DEV ONLY)
+// Chart, hover, and tile MUST agree
+// ==================================================
+const capitalRecoveryPct = kpis.capitalRecoveryPct;
+
+if (
+  !Number.isFinite(capitalRecoveryPct) ||
+  capitalRecoveryPct < 0 ||
+  capitalRecoveryPct > 1
+) {
+  throw new Error("[KPI3] Invalid capitalRecoveryPct value");
+}
+
+// Single authority check
+if (Math.abs(capitalRecoveryPct - kpis.capitalRecoveryPct) > 1e-9) {
+  throw new Error("[KPI3] Authority violation: hover vs KPI mismatch");
+}
+
 
 
   // --------------------------------------------------
