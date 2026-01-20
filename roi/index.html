@@ -2095,14 +2095,21 @@ async function loadLoans() {
   // 1. Normalize raw loan fields (CANONICAL)
   // --------------------------------------------
   loans = (data.loans || []).map(l => {
-    const purchasePrice = Number(l.purchasePrice ?? 0);
-
-    // 🔑 CANONICAL PURCHASE DATE (REQUIRED)
-    const purchaseDate =
+    // 🔑 CANONICAL PURCHASE DATE (RAW — may be overridden later)
+    const rawPurchaseDate =
       l.purchaseDate ??
       l.purchase_date ??
       l.purchasedAt ??
       null;
+
+    // 🔑 FULL LOAN PRINCIPAL (NEVER DERIVED FROM PURCHASE PRICE)
+    const originalLoanAmount = Number(
+      l.originalLoanAmount ??
+      l.origLoanAmount ??
+      l.loanAmount ??
+      l.principal ??
+      0
+    );
 
     return {
       ...l,
@@ -2112,15 +2119,16 @@ async function loadLoans() {
       name: l.loanName ?? `Loan ${l.loanId}`,
 
       // 🔑 canonical dates
-      purchaseDate,
+      purchaseDate: rawPurchaseDate,
       loanStartDate: l.loanStartDate || "",
 
       school: l.school ?? "",
       termYears: Number(l.termYears ?? 0),
       graceYears: Number(l.graceYears ?? 0),
 
-      purchasePrice,
-      originalLoanAmount: purchasePrice, // 🔑 legacy compatibility
+      // 🔑 CANONICAL MONEY FIELDS
+      originalLoanAmount,                 // FULL loan size
+      purchasePrice: Number(l.purchasePrice ?? 0), // RAW (may be 0 for partial)
 
       nominalRate: Number(l.nominalRate ?? 0),
       upfrontFee: Number(l.upfrontFee ?? 150),
@@ -2128,33 +2136,46 @@ async function loadLoans() {
     };
   });
 
-// --------------------------------------------
-// 2. NORMALIZE OWNERSHIP (REQUIRED)
-// --------------------------------------------
-loans.forEach(loan => {
-  normalizeOwnership(loan); // creates ownershipLots
-});
+  // --------------------------------------------
+  // 2. NORMALIZE OWNERSHIP (REQUIRED)
+  // --------------------------------------------
+  loans.forEach(loan => {
+    normalizeOwnership(loan); // creates ownershipLots
+  });
 
-// --------------------------------------------
-// 3. CANONICAL PURCHASE DATE (REQUIRED)
-// --------------------------------------------
-loans.forEach(loan => {
-  loan.purchaseDate = deriveLoanPurchaseDate(loan);
-});
+  // --------------------------------------------
+  // 3. DERIVE CANONICAL PURCHASE DATE
+  //    (ownership-aware)
+  // --------------------------------------------
+  loans.forEach(loan => {
+    loan.purchaseDate = deriveLoanPurchaseDate(loan);
+  });
 
-// --------------------------------------------
-// 4. DERIVE userOwnershipPct (UI convenience)
-// --------------------------------------------
-loans.forEach(loan => {
-  loan.userOwnershipPct = Array.isArray(loan.ownershipLots)
-    ? loan.ownershipLots.reduce(
-        (s, t) => s + (Number(t.pct) || 0),
-        0
-      )
-    : 0;
-});
+  // --------------------------------------------
+  // 4. DERIVE USER OWNERSHIP %
+  //    (UI convenience only)
+  // --------------------------------------------
+  loans.forEach(loan => {
+    loan.userOwnershipPct = Array.isArray(loan.ownershipLots)
+      ? loan.ownershipLots.reduce(
+          (s, t) => s + (Number(t.pct) || 0),
+          0
+        )
+      : 0;
+  });
 
+  // --------------------------------------------
+  // 5. DERIVE USER PURCHASE PRICE (AUTHORITATIVE)
+  // --------------------------------------------
+  loans.forEach(loan => {
+    loan.userPurchasePrice = Array.isArray(loan.ownershipLots)
+      ? loan.ownershipLots
+          .filter(t => t.user === PAGE_USER)
+          .reduce((s, t) => s + (Number(t.pricePaid) || 0), 0)
+      : 0;
+  });
 }
+
 
 
 
@@ -3446,51 +3467,64 @@ function renderLoanTableROI(list = currentLoans) {
     const tr = document.createElement("tr");
     tr.dataset.loanId = loan.id;
 
+    // 🔑 AUTHORITATIVE AMOUNTS
+    const originalAmt = Number(loan.originalLoanAmount || 0);
+    const userPurchase = Number(loan.userPurchasePrice || 0);
+
+    // 🔑 OWNERSHIP %
+    const ownershipPct = Array.isArray(loan.ownershipLots)
+      ? loan.ownershipLots.reduce(
+          (sum, lot) =>
+            sum + (lot.user === PAGE_USER ? (Number(lot.pct) || 0) : 0),
+          0
+        )
+      : 0;
+
+    // 🔑 ROI TO DATE
+    const roiPct =
+      (getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.roi || 0) * 100;
+
     tr.innerHTML = `
       <td>${loan.id}</td>
-        <td style="text-align:center">
-    ${renderEventBadgeCell(loan)}
-  </td>
+
+      <td style="text-align:center">
+        ${renderEventBadgeCell(loan)}
+      </td>
+
       <td>${loan.name}</td>
       <td>${loan.school || ""}</td>
       <td>${loan.loanStartDate || ""}</td>
       <td>${loan.purchaseDate || ""}</td>
-      <td>$${Number(loan.originalLoanAmount || 0).toLocaleString()}</td>
-      <td>$${Number(loan.purchasePrice || 0).toLocaleString()}</td>
+
+      <!-- FULL LOAN PRINCIPAL -->
+      <td>$${originalAmt.toLocaleString()}</td>
+
+      <!-- USER INVESTED CAPITAL -->
+      <td>$${userPurchase.toLocaleString()}</td>
+
       <td>${((loan.nominalRate || 0) * 100).toFixed(2)}%</td>
       <td>${loan.termYears ?? ""}</td>
       <td>${loan.graceYears ?? ""}</td>
-      <td>
-  ${(
-    (Array.isArray(loan.ownershipLots)
-      ? loan.ownershipLots.reduce(
-          (sum, lot) =>
-            sum + (lot.user === PAGE_USER ? (lot.pct || 0) : 0),
-          0
-        )
-      : 0
-    ) * 100
-  ).toFixed(1)}%
-</td>
 
-      <td>${(
-  (getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.roi || 0) * 100
-).toFixed(2)}%</td>
+      <!-- % OWNED -->
+      <td>${(ownershipPct * 100).toFixed(1)}%</td>
 
+      <!-- ROI -->
+      <td>${roiPct.toFixed(2)}%</td>
     `;
-// ----------------------------------
-// Event badge hover (table view)
-// ----------------------------------
-const badge = tr.querySelector(".table-event-badge");
-if (badge) {
-  const type = badge.dataset.eventType;
-  const text = getBadgeTooltipText(loan, type);
-  if (text) {
-    createBadgeTooltip(badge, text);
-  }
-}
 
-    
+    // ----------------------------------
+    // Event badge hover (table view)
+    // ----------------------------------
+    const badge = tr.querySelector(".table-event-badge");
+    if (badge) {
+      const type = badge.dataset.eventType;
+      const text = getBadgeTooltipText(loan, type);
+      if (text) {
+        createBadgeTooltip(badge, text);
+      }
+    }
+
     // =====================================================
     // HOVER (MATCH AMORT)
     // =====================================================
@@ -3505,17 +3539,19 @@ if (badge) {
     // =====================================================
     // CLICK → OPEN LOAN DRAWER
     // =====================================================
-    tr.addEventListener("click", (e) => {
+    tr.addEventListener("click", e => {
       e.preventDefault();
       e.stopPropagation(); // 🔑 prevents global close handler
       openLoanDrawerSafe(loan);
     });
-const eventType = getPrimaryEventType(loan);
-if (eventType) tr.classList.add(`event-${eventType}`);
+
+    const eventType = getPrimaryEventType(loan);
+    if (eventType) tr.classList.add(`event-${eventType}`);
 
     tbody.appendChild(tr);
   });
 }
+
     
     
 function renderLoanGrid(loans) {
