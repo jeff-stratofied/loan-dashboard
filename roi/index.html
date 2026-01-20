@@ -1966,34 +1966,34 @@ console.assert(
 
     // 3️⃣ Weighted portfolio series (invested-weighted)
 // 🔑 FIXED INVESTMENT BASIS — use CURRENT invested for all months
-const investedToday = loans.reduce((s, loan) => {
-  const last = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
-  return s + Number(last?.invested || 0);
-}, 0);
-
 const weightedSeries = dates.map(d => {
   let sum = 0;
+  let invested = 0;
 
   loans.forEach(loan => {
     const entry = getRoiEntryAsOfMonth(loan, d);
-    if (!entry) return;
+    if (!entry || !Number.isFinite(entry.invested)) return;
 
-    const investedTodayForLoan =
-      Number(
-        getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH)?.invested || 0
-      );
-
-    if (investedTodayForLoan > 0) {
-      sum += entry.roi * investedTodayForLoan;
-    }
+    sum += entry.roi * entry.invested;
+    invested += entry.invested;
   });
 
   return {
     date: d,
-    y: investedToday > 0 ? sum / investedToday : 0
+    y: invested > 0 ? sum / invested : null
   };
 });
 
+// 🔎 KPI1 FINAL CONSISTENCY CHECK
+const lastChartPoint = weightedSeries.at(-1)?.y;
+
+console.assert(
+  Math.abs(lastChartPoint - kpis.weightedROI) < 1e-8,
+  "KPI1 mismatch: tile vs chart",
+  { tile: kpis.weightedROI, chart: lastChartPoint }
+);
+
+    
     // 🔎 DEBUG: KPI tile vs chart final value
 const lastChartPoint =
   weightedSeries[weightedSeries.length - 1]?.y;
