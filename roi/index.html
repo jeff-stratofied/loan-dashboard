@@ -4857,14 +4857,33 @@ createMultiSeriesChart(
   drawerChartArea,
   loanSeriesList,
   portfolioSeries,
-{
-  dates: globalDates,
-  weightedColor: '#111827',
-  weightedWidth: 3,
-  tickSpacingX,
-  weightedLabel: "Portfolio Recovered"
-}
+  {
+    dates: globalDates,
+    weightedColor: "#111827",
+    weightedWidth: 3,
+    tickSpacingX,
+
+    // 🔑 KPI3 AUTHORITATIVE LABEL
+    weightedLabel: "Portfolio Recovered",
+
+    // 🔑 FORCE HOVER VALUE TO MATCH KPI TILE
+    weightedLabelFn: (pt) => {
+      const isKpiMonth =
+        pt.date.getFullYear() === kpiMonth.getFullYear() &&
+        pt.date.getMonth() === kpiMonth.getMonth();
+
+      const value = isKpiMonth
+        ? kpis.capitalRecoveryPct
+        : pt.y;
+
+      return `
+        ${formatMonthYear(pt.date)}
+        • Portfolio Recovered ${(value * 100).toFixed(2)}%
+      `;
+    }
+  }
 );
+
 
   // --------------------------------------------------
   // Metrics (AUTHORITATIVE)
