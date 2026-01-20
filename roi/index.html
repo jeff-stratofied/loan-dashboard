@@ -1893,6 +1893,9 @@ function renderKpiDrawer(kpiId) {
   const loans = getLoansForKpis();
   const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
+  // 🔑 AUTHORITATIVE KPI1 VALUE (SINGLE SOURCE OF TRUTH)
+  const weightedRoiValue = kpis.weightedROI;
+
   drawerTitle.textContent = "";
   drawerSub.textContent = "";
 
@@ -1911,7 +1914,7 @@ function renderKpiDrawer(kpiId) {
 
     drawerPrimaryTitle.textContent = "ROI to Date";
     drawerPrimary.textContent =
-      (kpis.weightedROI * 100).toFixed(2) + "%";
+      (weightedRoiValue * 100).toFixed(2) + "%";
 
     drawerSecondaryTitle.textContent = "As of";
     drawerSecondary.textContent =
@@ -1932,68 +1935,64 @@ function renderKpiDrawer(kpiId) {
       .sort((a, b) => a - b)
       .map(ms => new Date(ms));
 
-   // 2️⃣ Per-loan ROI series (direct reuse, no recompute)
-const perLoanSeries = loans.map(loan => {
-  const id = loan.id ?? loan.loanId;
-  const roiMap = new Map(
-    (loan.roiSeries || []).map(r => [r.date.getTime(), r.roi])
-  );
+    // 2️⃣ Per-loan ROI series (direct reuse, no recompute)
+    const perLoanSeries = loans.map(loan => {
+      const id = loan.id ?? loan.loanId;
+      const roiMap = new Map(
+        (loan.roiSeries || []).map(r => [r.date.getTime(), r.roi])
+      );
 
-  return {
-    id,
-    name: loan.name,
-    color: window.KPI_COLOR_MAP?.[id] || "var(--muted)",
-    data: dates.map(d => ({
-      date: d,
-      y: roiMap.get(d.getTime()) ?? null
-    }))
-  };
-});
+      return {
+        id,
+        name: loan.name,
+        color: window.KPI_COLOR_MAP?.[id] || "var(--muted)",
+        data: dates.map(d => ({
+          date: d,
+          y: roiMap.get(d.getTime()) ?? null
+        }))
+      };
+    });
 
-/* 🔒 DEV-ONLY INVARIANT — PLACE HERE */
-console.assert(
-  perLoanSeries.every(s =>
-    s.data.every((p, i, a) =>
-      i === 0 ||
-      p.y == null ||
-      a[i - 1].y == null ||
-      p.y >= a[i - 1].y - 1e-6
-    )
-  ),
-  "KPI1 ROI regression detected"
-);
+    // 🔒 DEV-ONLY INVARIANT — PER-LOAN ROI SHOULD NOT REGRESS
+    console.assert(
+      perLoanSeries.every(s =>
+        s.data.every((p, i, a) =>
+          i === 0 ||
+          p.y == null ||
+          a[i - 1].y == null ||
+          p.y >= a[i - 1].y - 1e-6
+        )
+      ),
+      "KPI1 ROI regression detected"
+    );
 
+    // 3️⃣ Weighted portfolio series (MATCH KPI DEFINITION)
+    const weightedSeries = dates.map(d => {
+      let sum = 0;
+      let invested = 0;
 
-    // 3️⃣ Weighted portfolio series (invested-weighted)
-// 🔑 FIXED INVESTMENT BASIS — use CURRENT invested for all months
-const weightedSeries = dates.map(d => {
-  let sum = 0;
-  let invested = 0;
+      loans.forEach(loan => {
+        const entry = getRoiEntryAsOfMonth(loan, d);
+        if (!entry || !Number.isFinite(entry.invested)) return;
 
-  loans.forEach(loan => {
-    const entry = getRoiEntryAsOfMonth(loan, d);
-    if (!entry || !Number.isFinite(entry.invested)) return;
+        sum += entry.roi * entry.invested;
+        invested += entry.invested;
+      });
 
-    sum += entry.roi * entry.invested;
-    invested += entry.invested;
-  });
+      return {
+        date: d,
+        y: invested > 0 ? sum / invested : null
+      };
+    });
 
-  return {
-    date: d,
-    y: invested > 0 ? sum / invested : null
-  };
-});
+    // 🔎 FINAL CONSISTENCY CHECK — LAST POINT MUST EQUAL KPI TILE
+    const lastChartPoint = weightedSeries.at(-1)?.y;
+    console.assert(
+      Math.abs(lastChartPoint - weightedRoiValue) < 1e-8,
+      "KPI1 mismatch: tile vs chart",
+      { tile: weightedRoiValue, chart: lastChartPoint }
+    );
 
-// 🔎 KPI1 FINAL CONSISTENCY CHECK
-const lastChartPoint = weightedSeries.at(-1)?.y;
-
-console.assert(
-  Math.abs(lastChartPoint - kpis.weightedROI) < 1e-8,
-  "KPI1 mismatch: tile vs chart",
-  { tile: kpis.weightedROI, chart: lastChartPoint }
-);
-
-    
     // 4️⃣ Render chart
     createMultiSeriesChart(
       drawerChartArea,
@@ -2018,9 +2017,6 @@ console.assert(
     drawerSecondaryTitle.textContent = "Lifetime";
     drawerSecondary.textContent = "All Loans";
 
-    // =====================================================
-    // KPI2 — Projected Portfolio ROI chart (UNCHANGED)
-    // =====================================================
     const timeline = buildProjectedRoiTimeline(loans, {
       colorMap: buildKpiColorMap(loans)
     });
@@ -2049,6 +2045,7 @@ console.assert(
     console.warn("Unknown KPI:", kpiId);
   }
 }
+
 
 
 
@@ -2889,22 +2886,33 @@ loanPaths.forEach(p => {
 });
 
 
-  // -----------------------------------
-  // Weighted line (OPTIONAL)
-  // -----------------------------------
-  if (!opts.hideWeighted && Array.isArray(weightedSeries) && weightedSeries.length) {
-    const pts = weightedSeries.map(p => [dateToX(p.date), yScale(p.y)]);
+ // -----------------------------------
+// Weighted line (OPTIONAL)
+// -----------------------------------
+if (!opts.hideWeighted && Array.isArray(weightedSeries) && weightedSeries.length) {
+  const pts = weightedSeries
+    .filter(p => p.y != null)
+    .map(p => [dateToX(p.date), yScale(p.y)]);
+
+  if (pts.length) {
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      d += ` L ${pts[i][0]} ${pts[i][1]}`;
+    }
+
     const path = document.createElementNS(svgNS, "path");
-    path.setAttribute("d", smoothPathFromPointsCubic(pts));
+    path.setAttribute("d", d);
     path.setAttribute("fill", "none");
     path.setAttribute("stroke", opts.weightedColor || "#000");
     path.setAttribute("stroke-width", opts.weightedWidth || "2.6");
     path.dataset.type = "weighted";
-    path.dataset.role = "weighted-line"; 
-    path.style.pointerEvents = "none"; 
+    path.dataset.role = "weighted-line";
+    path.style.pointerEvents = "none";
     weightedPath = path;
     svg.appendChild(path);
   }
+}
+
 
   // -----------------------------------
   // TODAY vertical reference line
@@ -3017,16 +3025,18 @@ svg.addEventListener("mousemove", ev => {
     </div>
   `;
 
-  // weighted series
-const weightedAtDate =
-  computeWeightedRoiAsOfMonth(currentLoans, date);
+// weighted series — USE CHART DATA, NOT RECOMPUTE
+const weightedAtDate = weightedSeries[idx]?.y;
 
-html += `
-  <div style="margin-bottom:6px">
-    <span style="font-weight:600">Weighted:</span>
-    ${(weightedAtDate * 100).toFixed(2)}%
-  </div>
-`;
+if (weightedAtDate != null) {
+  html += `
+    <div style="margin-bottom:6px">
+      <span style="font-weight:600">Weighted:</span>
+      ${(weightedAtDate * 100).toFixed(2)}%
+    </div>
+  `;
+}
+
 
   // per-loan series (SQUARE swatches)
 loanSeriesList.forEach(ls => {
