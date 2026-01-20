@@ -1319,11 +1319,9 @@ tr.event-default td {
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
     
     import {
-    buildHistoricalRoiTimeline,
       buildProjectedRoiTimeline,
   getRoiEntryAsOfMonth,
-      computeKPIs,
-  computeWeightedRoiAsOfMonth      
+      computeKPIs,      
 } from "../js/roiEngine.js?v=dev";
 
 import {
@@ -1966,11 +1964,15 @@ function renderKpiDrawer(kpiId) {
       "KPI1 ROI regression detected"
     );
 
-// 3️⃣ Weighted portfolio series (AUTHORITATIVE)
-const weightedSeries = dates.map(d => ({
-  date: d,
-  y: computeWeightedRoiAsOfMonth(loans, d)
-}));
+// 3️⃣ Weighted portfolio series (AUTHORITATIVE — from engine KPIs)
+const weightedSeries = dates.map(d => {
+  const month = normalizeToMonthStart(d);
+  return {
+    date: month,
+    y: computeKPIs(loans, month).weightedROI
+  };
+});
+
 
 
     // 🔎 FINAL CONSISTENCY CHECK — LAST POINT MUST EQUAL KPI TILE
@@ -2094,9 +2096,9 @@ function openRoiKpiFromUrl(kpiOverride = null) {
   drawerExtra.innerHTML = "";
 
   switch (kpi) {
-    case "tpv":
-      renderTPVDrawer();
-      break;
+  case "tpv":
+    openRoiKpiDrawer("kpi1");
+    break;
     case "rates":
       renderRatesDrawer();
       break;
@@ -3017,7 +3019,11 @@ svg.addEventListener("mousemove", ev => {
 // weighted series — USE CHART DATA, NOT RECOMPUTE
 // 🔑 AUTHORITATIVE hover value — SAME logic as KPI tile
 const monthAnchor = normalizeToMonthStart(date);
-const weightedAtDate = computeWeightedRoiAsOfMonth(currentLoans, monthAnchor);
+const weightedAtDate = computeKPIs(
+  currentLoans,
+  monthAnchor
+).weightedROI;
+
 
 if (Number.isFinite(weightedAtDate)) {
   html += `
@@ -4560,7 +4566,9 @@ function smoothPath(points) {
    TPV Drawer — Weighted ROI To Date
    Using the same stable timeline engine as Projected ROI
    ============================================================ */
-function renderTPVDrawer() {
+
+/* delete
+    function renderTPVDrawer() {
   console.groupCollapsed("🟦 renderTPVDrawer() KPI1 — using roiSeries", Date.now());
   currentMode = 'kpi';
   currentLoan = null;
@@ -4748,7 +4756,7 @@ function renderTPVDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 }
-
+*/
 
 
 
