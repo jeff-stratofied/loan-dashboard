@@ -4615,6 +4615,15 @@ function renderRatesDrawer() {
     
 function renderCapitalRecoveredDrawer() {
 
+function getUserOwnedPct(loan) {
+  return Array.isArray(loan.ownershipLots)
+    ? loan.ownershipLots
+        .filter(t => t.user === PAGE_USER)
+        .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+    : 0;
+}
+
+  
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -4624,56 +4633,21 @@ function renderCapitalRecoveredDrawer() {
 // ==========================================
 // KPI3 DEBUG — PSU loan deep inspection
 // ==========================================
-const PSU_DEBUG_ID = "PSU 2024 8.83"; // adjust if name differs
+const DEBUG_USER = PAGE_USER;
 
-const psu = loans.find(l => l.name === PSU_DEBUG_ID);
-if (psu) {
-  console.group("🔍 KPI3 PSU DEBUG");
+const psuLots = Array.isArray(psu.ownershipLots)
+  ? psu.ownershipLots
+  : [];
 
-  console.log("Ownership %:", psu.userOwnershipPct);
-  console.log("User purchase price:", psu.userPurchasePrice);
-  console.log("Purchase date:", psu.purchaseDate);
+const psuOwnPct = psuLots
+  .filter(t => t.user === DEBUG_USER)
+  .reduce((s, t) => s + (Number(t.pct) || 0), 0);
 
-  const rows = psu.amort?.schedule || [];
-  const ownedRows = rows.filter(r => r.isOwned);
+console.log("DEBUG user:", DEBUG_USER);
+console.log("Ownership lots:", psuLots);
+console.log("Ownership % (USER-SCOPED):", psuOwnPct);
+console.log("Ownership % (LOAN FIELD):", psu.userOwnershipPct);
 
-  console.log("Total amort rows:", rows.length);
-  console.log("Owned rows:", ownedRows.length);
-
-  const cutoff = new Date(KPI_CURRENT_MONTH);
-  cutoff.setHours(23,59,59,999);
-
-  const rowsToDate = ownedRows.filter(r => r.loanDate <= cutoff);
-
-  const principalSum = rowsToDate.reduce(
-    (s, r) => s + (Number(r.principalPaid) || 0),
-    0
-  );
-
-  console.log("Rows <= KPI month:", rowsToDate.length);
-  console.log("Sum principalPaid (FULL loan):", principalSum);
-  console.log(
-    "Recovered (owned):",
-    principalSum * psu.userOwnershipPct
-  );
-
-  console.log(
-    "Recovered %:",
-    (principalSum * psu.userOwnershipPct) / psu.userPurchasePrice
-  );
-
-  console.table(
-    rowsToDate.map(r => ({
-      date: formatMonthYear(r.loanDate),
-      principalPaid: r.principalPaid,
-      balance: r.balance,
-      isTerminal: r.isTerminal,
-      isDeferred: r.isDeferred
-    }))
-  );
-
-  console.groupEnd();
-}
 
 
   
