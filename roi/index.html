@@ -1907,8 +1907,11 @@ function openRoiKpiDrawer(kpiId) {
   else if (kpiId === "kpi2" || kpiId === "rates") {
     renderRatesDrawer();
   }
-  else if (kpiId === "kpi3") {
+  else if (kpiId === "kpi3" || kpiId === "capitalRecovery") {
     renderCapitalRecoveredDrawer();
+  }
+  else if (kpiId === "kpi4" || kpiId === "spread") {
+    renderROISpreadDrawer();
   }
   else {
     console.warn("Unknown KPI:", kpiId);
@@ -1921,21 +1924,20 @@ function openRoiKpiDrawer(kpiId) {
 }
 
 
+
 /* ============================
    KPI deep-link router (ROI)
    ============================ */
 function openRoiKpiFromUrl(kpiOverride = null) {
-  const loans = getLoansForKpis();
-
   let kpi =
     kpiOverride ??
     new URLSearchParams(window.location.search).get("open");
 
   if (!kpi) return;
 
-  // =====================================================
-  // 🔑 FIX: normalize legacy KPI ids (reporting iframe)
-  // =====================================================
+  // -----------------------------------------------------
+  // Normalize legacy KPI ids (reporting iframe / old links)
+  // -----------------------------------------------------
   const KPI_ALIAS_MAP = {
     kpi1: "tpv",
     kpi2: "rates",
@@ -1947,44 +1949,8 @@ function openRoiKpiFromUrl(kpiOverride = null) {
     kpi = KPI_ALIAS_MAP[kpi];
   }
 
-  currentMode = "kpi";
-  currentLoan = null;
-
-  drawer.classList.remove("loan-mode");
-  drawerAmortContainer.style.display = "none";
-  drawerLegend.style.display = "none";
-  drawerExtra.innerHTML = "";
-
-  switch (kpi) {
-  case "tpv":
-    openRoiKpiDrawer("kpi1");
-    break;
-    case "rates":
-      renderRatesDrawer();
-      break;
-    case "capitalRecovery":
-      renderCapitalRecoveryDrawer();
-      break;
-    case "spread":
-      renderROISpreadDrawer();
-      break;
-    default:
-      console.warn("Unknown ROI KPI:", kpi);
-      return;
-  }
-
-  drawer.classList.add("open");
-  drawer.setAttribute("aria-hidden", "false");
-
-  // 🔑 FORCE VISIBILITY (ROI KPI FIX)
-  if (!PAGE_CONTEXT.isEmbed) {
-    forceDrawerVisible();
-  }
-
-  drawer.scrollTop = 0;
-
-  requestAnimationFrame(() => {
-  });
+  // 🔑 SINGLE ENTRY POINT — SAME AS CLICK HANDLERS
+  openRoiKpiDrawer(kpi);
 }
 
 
@@ -3729,42 +3695,25 @@ function renderLoanGrid(loans) {
 });
 
 // =====================================================
-// KPI CLICK HANDLERS — ROI (REQUIRED)
+// KPI CLICK HANDLERS — ROI (ROUTING ONLY)
 // =====================================================
 document.querySelectorAll(".kpi").forEach(kpi => {
-  kpi.addEventListener("click", (e) => {
-    e.stopPropagation(); // 🔑 prevent outside-close
+  kpi.addEventListener("click", e => {
+    e.preventDefault();
+    e.stopPropagation(); // prevent outside-close
 
     const key = kpi.dataset.kpi;
+    if (!key) return;
 
-    switch (key) {
-      case "tpv":
-        renderTPVDrawer();
-        break;
-      case "rates":
-        renderRatesDrawer();
-        break;
-      case "capitalRecovery":
-        renderCapitalRecoveryDrawer();
-        break;
-      case "spread":
-        renderROISpreadDrawer();
-        break;
-      default:
-        console.warn("Unknown KPI:", key);
-        return;
-    }
-
-    drawer.classList.add("open");
-    drawer.setAttribute("aria-hidden", "false");
+    // 🔑 Single entry point for ALL KPI drawers
+    openRoiKpiDrawer(key);
 
     if (!PAGE_CONTEXT.isEmbed) {
       forceDrawerVisible();
     }
-
-    drawer.scrollTop = 0;
   });
 });
+
 
 
 
@@ -4418,9 +4367,21 @@ function smoothPath(points) {
 
 
       
-    /* -------------------------
-       KPI drawer renderers
-       ------------------------- */
+// =====================================================
+// KPI AUTHORITIES (DO NOT VIOLATE)
+// =====================================================
+//
+// KPI1 (Weighted ROI to Date):
+//   computeKPIs(loans, KPI_CURRENT_MONTH).weightedROI
+//
+// KPI2 (Projected Weighted ROI):
+//   computeKPIs(loans, KPI_CURRENT_MONTH).projectedWeightedROI
+//
+// KPI3 (Capital Recovery):
+//   computeKPIs(loans, KPI_CURRENT_MONTH).capitalRecoveryPct
+//
+// UI MUST NOT recompute these values independently.
+
       
 /* ============================================================
    TPV Drawer — Weighted ROI To Date
@@ -5176,19 +5137,19 @@ function renderROISpreadDrawer() {
 
 
 // ----------------------------------
-// Embed auto-open handling (KPI2)
+// Embed auto-open handling (ROI KPIs)
 // ----------------------------------
 const urlParams = new URLSearchParams(window.location.search);
 const EMBED_MODE = urlParams.get("embed") === "true";
 const OPEN_TARGET = urlParams.get("open");
 
 requestAnimationFrame(() => {
-  if (OPEN_TARGET === "kpi2" || OPEN_TARGET === "projectedROI") {
-    if (typeof renderRatesDrawer === "function") {
-      renderRatesDrawer();
-    }
-  }
+  if (!EMBED_MODE || !OPEN_TARGET) return;
+
+  // 🔑 Route through the SAME deep-link handler
+  openRoiKpiFromUrl(OPEN_TARGET);
 });
+
 
 
 // ----------------------------------
@@ -5247,19 +5208,38 @@ document.body.style.height = 'auto';
   const feedbackBtn = document.getElementById('feedback-btn');
   if (feedbackBtn) feedbackBtn.style.display = 'none';
 
-  // Ensure auto-open works in embed
-  requestAnimationFrame(() => {
-      if (OPEN_TARGET === "kpi2" || OPEN_TARGET === "projectedROI") {
-          renderRatesDrawer(); // Open KPI2 drawer (as existing)
-      }
-  });
+// ----------------------------------
+// Embed auto-open handling (ROI KPIs)
+// ----------------------------------
+requestAnimationFrame(() => {
+  if (!EMBED_MODE || !OPEN_TARGET) return;
+
+  // 🔑 Route through the SAME deep-link handler as clicks & URLs
+  openRoiKpiFromUrl(OPEN_TARGET);
+});
+
 }
 
       
-    /* -------------------------
-       KPI wiring & interactions
-       ------------------------- */
-    document.querySelectorAll('.kpi').forEach(k=>{ k.addEventListener('click', ev=>{ ev.stopPropagation(); const key=k.getAttribute('data-kpi'); if(key==='spread') renderROISpreadDrawer(); if(key==='tpv') renderTPVDrawer(); if(key==='rates') renderRatesDrawer(); if(key==='capitalRecovery') renderCapitalRecoveryDrawer(); }); });
+ /* -------------------------
+   KPI wiring & interactions
+   ------------------------- */
+document.querySelectorAll(".kpi").forEach(kpi => {
+  kpi.addEventListener("click", ev => {
+    ev.preventDefault();
+    ev.stopPropagation(); // prevent outside-close
+
+    const key = kpi.dataset.kpi;
+    if (!key) return;
+
+    // 🔑 SINGLE routing path for all KPI drawers
+    openRoiKpiDrawer(key);
+
+    if (!PAGE_CONTEXT.isEmbed) {
+      forceDrawerVisible();
+    }
+  });
+});
 
     /* -------------------------
        CSV / clipboard / download / print
