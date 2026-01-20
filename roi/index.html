@@ -4668,24 +4668,40 @@ const monthly = new Map();
 const ownPct = Number(l.userOwnershipPct || 0);
 if (!ownPct) return;
 
-l.cumSchedule
-  .filter(r => r.loanDate && r.loanDate <= TODAY)
-  .forEach(r => {
-    const m = monthStart(r.loanDate);
-    const k = monthKey(m);
+const ownPct = Number(l.userOwnershipPct || 0);
+if (!ownPct || !invested) return;
 
-    // ✅ user-owned principal recovered (scale full-loan cumPrincipal)
-    const recoveredOwned = (Number(r.cumPrincipal || 0)) * ownPct;
+let recoveredOwned = 0;
 
-    const pct = invested > 0 ? recoveredOwned / invested : 0;
+// Walk the SAME amort schedule the engine uses
+l.amort?.schedule?.forEach(r => {
+  if (
+    r.isOwned &&
+    r.loanDate instanceof Date &&
+    r.loanDate <= KPI_CURRENT_MONTH
+  ) {
+    // ✅ ownership-scaled principalPaid (AUTHORITATIVE)
+    recoveredOwned += (Number(r.principalPaid) || 0) * ownPct;
+  }
 
-    monthly.set(k, {
-      date: m,
-      y: pct
-    });
+  // Emit one point per month boundary
+  if (r.loanDate instanceof Date) {
+    const m = normalizeToMonthStart(r.loanDate);
+    const k = m.getTime();
 
-    monthMap.set(k, m);
-  });
+    if (!monthly.has(k)) {
+      const pct = invested > 0 ? recoveredOwned / invested : 0;
+
+      monthly.set(k, {
+        date: m,
+        y: pct
+      });
+
+      monthMap.set(k, m);
+    }
+  }
+});
+
 
 
 
@@ -4704,44 +4720,53 @@ l.cumSchedule
     (a, b) => a - b
   );
 
-  // --------------------------------------------------
-  // Portfolio cumulative line (MONTHLY)
-  // --------------------------------------------------
-const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+// --------------------------------------------------
+// Portfolio cumulative line (MONTHLY, AUTHORITATIVE)
+// --------------------------------------------------
 
-const totalInvested = loans.reduce(
-  (s, l) => s + (Number(l.userPurchasePrice) || 0),
-  0
+// NOTE: asOfMonth already exists in this function
+const asOfEnd = new Date(
+  asOfMonth.getFullYear(),
+  asOfMonth.getMonth() + 1,
+  0,
+  23, 59, 59, 999
 );
+
+// Total invested MUST match computeKPIs()
+const totalInvested = loans.reduce((s, l) => {
+  const invested = Number(l.userPurchasePrice || 0);
+  return s + invested;
+}, 0);
 
 let cumRecovered = 0;
 
 const portfolioSeries = globalDates
-  .filter(d => normalizeToMonthStart(d) <= asOfMonth) // ✅ stop at KPI month
+  .filter(d => d <= asOfEnd)
   .map(d => {
     loans.forEach(l => {
       const ownPct = Number(l.userOwnershipPct || 0);
       if (!ownPct) return;
 
-      l.amort?.schedule
-        ?.filter(r =>
+      l.amort?.schedule?.forEach(r => {
+        if (
           r.isOwned &&
-          r.loanDate &&
+          r.loanDate instanceof Date &&
           r.loanDate <= d &&
           r.loanDate.getMonth() === d.getMonth() &&
           r.loanDate.getFullYear() === d.getFullYear()
-        )
-        .forEach(r => {
-          // ✅ scale principal by ownership %
+        ) {
+          // ✅ EXACTLY matches computeKPIs()
           cumRecovered += (Number(r.principalPaid) || 0) * ownPct;
-        });
+        }
+      });
     });
 
     return {
       date: d,
-      y: totalInvested > 0 ? cumRecovered / totalInvested : null
+      y: totalInvested > 0 ? cumRecovered / totalInvested : 0
     };
   });
+
 
 
   // --------------------------------------------------
@@ -4773,7 +4798,7 @@ createMultiSeriesChart(
   // --------------------------------------------------
 drawerPrimaryTitle.textContent = "Capital Recovered";
 drawerPrimary.textContent =
-  (kpis.capitalRecoveredPct * 100).toFixed(2) + "%";
+  (kpis.capitalRecoveryPct * 100).toFixed(2) + "%";
 
 drawerSecondaryTitle.textContent = "As of";
 drawerSecondary.textContent = formatMonthYear(KPI_CURRENT_MONTH);
