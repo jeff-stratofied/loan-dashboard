@@ -4761,9 +4761,14 @@ loans.forEach(l => {
   // --------------------------------------------------
   // Unified MONTHLY date axis
   // --------------------------------------------------
-  const globalDates = Array.from(monthMap.values()).sort(
-    (a, b) => a - b
-  );
+  const globalDates = Array.from(monthMap.values())
+  .filter(d => d <= asOfMonth)   // 🔑 HARD STOP AT KPI MONTH
+  .sort((a, b) => a - b);
+
+  if (globalDates.at(-1) > asOfMonth) {
+  console.warn("[KPI3] Axis exceeds KPI month — check truncation");
+}
+
 
 // --------------------------------------------------
 // Portfolio cumulative line (MONTHLY, AUTHORITATIVE)
