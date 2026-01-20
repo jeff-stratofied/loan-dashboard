@@ -2854,7 +2854,9 @@ const weightedAtDate = computeKPIs(
 if (Number.isFinite(weightedAtDate)) {
   html += `
     <div style="margin-bottom:6px">
-      <span style="font-weight:600">Weighted:</span>
+      <span style="font-weight:600">
+  ${opts.weightedLabel || "Weighted"}:
+</span>
       ${(weightedAtDate * 100).toFixed(2)}%
     </div>
   `;
@@ -4222,121 +4224,6 @@ function populateProjectedROILoanTable() {
 }
 
 
-
-
-
-    /* ============================================
-   HISTORICAL ROI TIMELINE ENGINE
-   Builds a unified date-based ROI timeline
-   For all loans, from earliest purchase → today
-   ============================================ */
-/* delete - moved to roi engine
-function buildHistoricalRoiTimeline(loans) {
-  const today = new Date();
-
-  // ---- 1. Determine global timeline ----
-  const earliestPurchase = loans.reduce((earliest, l) => {
-    const d = new Date(l.purchaseDate);
-    return d < earliest ? d : earliest;
-  }, new Date(loans[0].purchaseDate));
-
-  // Build monthly date list from earliest → today
-  const dates = [];
-  const cursor = new Date(earliestPurchase);
-  while (cursor <= today) {
-    dates.push(new Date(cursor));
-    cursor.setMonth(cursor.getMonth() + 1);
-  }
-
-  // ---- 2. Align each loan ROI onto the global date timeline ----
-  const perLoanSeries = loans.map((loan, idx) => {
-    const purchase = new Date(loan.purchaseDate);
-    const id = loan.id ?? loan.loanId;
-    const color = window.KPI_COLOR_MAP?.[id] || '#64748b';
-
-
-    // Map ownershipDate -> ROI for quick lookup
-    const roiMap = {};
-    loan.cumSchedule.forEach(row => {
-
-  if (!row.isOwned) return;
-
-  const rowDate = row.displayDate || row.loanDate;
-  if (!rowDate) return;
-
-  const realized = (row.cumPrincipal + row.cumInterest) - row.cumFees;
-  const unrealized = row.balance * 0.95;
-  const loanValue = realized + unrealized;
-
-  const roi = (loanValue - loan.purchasePrice) / loan.purchasePrice;
-
-  // Month-safe key (NO UTC rollover)
-  const key =
-    rowDate.getFullYear() + "-" +
-    String(rowDate.getMonth() + 1).padStart(2, "0");
-
-  roiMap[key] = roi;
-});
-
-
-
-   // Build calendar-aligned ROI (null before purchase)
-    // Initialize to the ROI of the first owned month to avoid a spike
-    const roiKeys = Object.keys(roiMap).sort();
-    let lastKnownROI = roiKeys.length ? roiMap[roiKeys[0]] : 0;
-    
-    const data = dates.map(date => {
-      if (date < purchase) {
-      return { date, y: null };
-      }
-
-    const key = date.toISOString().slice(0, 7);
-
-    if (key in roiMap) {
-    lastKnownROI = roiMap[key];
-    }
-
-    // forward-fill ROI after purchase
-    return { date, y: lastKnownROI };
-    });
-
-    const displayName = loan.name || loan.loanName || `Loan ${id}`;
-    
-    return {
-      id,
-      name: displayName,
-      color,
-      data
-    };
-  });
-
-  // ---- 3. Build weighted ROI series ----
-  const totalInvested = loans.reduce((s, l) => s + l.purchasePrice, 0);
-
-  const weightedSeries = dates.map((date, i) => {
-    let weightedSum = 0;
-
-    loans.forEach((loan, idx) => {
-      const roi = perLoanSeries[idx].data[i].y;
-      if (roi != null) {
-        weightedSum += roi * loan.purchasePrice;
-      }
-    });
-
-    const weightedRoi = weightedSum / totalInvested;
-
-    return { date, y: weightedRoi };
-  });
-
-  return {
-    dates,
-    perLoanSeries,
-    weightedSeries,
-    earliestDate: earliestPurchase
-  };
-}
-*/
-
     
 /* ==========================================================
    DATE-ALIGNED CHART ENGINE HELPERS
@@ -4809,40 +4696,35 @@ function renderCapitalRecoveredDrawer() {
   // --------------------------------------------------
   // Portfolio cumulative line (MONTHLY)
   // --------------------------------------------------
-  const totalInvested = loans.reduce(
-    (s, l) => s + (l.purchasePrice || 0),
-    0
-  );
+const totalInvested = loans.reduce(
+  (s, l) => s + (l.userPurchasePrice || 0),
+  0
+);
 
-  let cumPortfolioRecovered = 0;
+let cumRecovered = 0;
 
-  const portfolioSeries = globalDates.map(d => {
-    let monthRecovered = 0;
-
-    loans.forEach(l => {
-      l.amort?.schedule
-        ?.filter(
-          r =>
-            r.isOwned &&
-            r.loanDate &&
-            r.loanDate <= TODAY &&
-            r.loanDate.getFullYear() === d.getFullYear() &&
-            r.loanDate.getMonth() === d.getMonth()
-        )
-        .forEach(r => {
-          monthRecovered += r.principalPaid || 0;
-        });
-    });
-
-    cumPortfolioRecovered += monthRecovered;
-
-    return {
-      date: d,
-      y: totalInvested > 0
-        ? cumPortfolioRecovered / totalInvested
-        : 0
-    };
+const portfolioSeries = globalDates.map(d => {
+  loans.forEach(l => {
+    l.amort?.schedule
+      ?.filter(
+        r =>
+          r.isOwned &&
+          r.loanDate &&
+          r.loanDate <= d &&
+          r.loanDate.getMonth() === d.getMonth() &&
+          r.loanDate.getFullYear() === d.getFullYear()
+      )
+      .forEach(r => {
+        cumRecovered += r.principalPaid || 0;
+      });
   });
+
+  return {
+    date: d,
+    y: totalInvested > 0 ? cumRecovered / totalInvested : null
+  };
+});
+
 
   // --------------------------------------------------
   // Dynamic x-axis spacing
@@ -4855,17 +4737,18 @@ function renderCapitalRecoveredDrawer() {
   // --------------------------------------------------
   // Render chart
   // --------------------------------------------------
-  createMultiSeriesChart(
-    drawerChartArea,
-    loanSeriesList,
-    portfolioSeries,
-    {
-      dates: globalDates,
-      weightedColor: '#111827',
-      weightedWidth: 3,
-      tickSpacingX
-    }
-  );
+createMultiSeriesChart(
+  drawerChartArea,
+  loanSeriesList,
+  portfolioSeries,
+{
+  dates: globalDates,
+  weightedColor: '#111827',
+  weightedWidth: 3,
+  tickSpacingX,
+  weightedLabel: "Portfolio Recovered"
+}
+);
 
   // --------------------------------------------------
   // Metrics (AUTHORITATIVE)
@@ -4895,16 +4778,20 @@ function renderCapitalRecoveredDrawer() {
         <tbody>
   `;
 
-  loans.forEach(l => {
-    if (!l.amort || !l.amort.schedule) return;
+loans.forEach(l => {
+  if (!l.amort || !l.amort.schedule) return;
 
-    const recovered = l.amort.schedule
-      .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
-      .reduce((s, r) => s + (r.principalPaid || 0), 0);
+  const recovered = l.amort.schedule
+    .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
+    .reduce((s, r) => s + (r.principalPaid || 0), 0);
 
-    const pct = l.purchasePrice > 0 ? recovered / l.purchasePrice : 0;
-    const remaining =
-      Math.max(0, (l.balanceAtPurchase || 0) - recovered);
+  // 🔑 FIX 4 — USE USER INVESTMENT, NOT LOAN PRICE
+  const invested = l.userPurchasePrice || 0;
+  const pct = invested > 0 ? recovered / invested : 0;
+
+  const remaining =
+    Math.max(0, invested - recovered);
+
 
     const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
 
