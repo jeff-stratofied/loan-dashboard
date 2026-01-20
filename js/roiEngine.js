@@ -303,25 +303,34 @@ const latestMaturity = new Date(
     return s + safeNum(last?.invested);
   }, 0);
 
-  const weightedSeries = dates.map((date, i) => {
-    if (!totalInvested) return { date, y: 0 };
+// 🔒 FIXED: freeze invested weights at KPI month
+const frozenInvested = loans.map(l => {
+  const last = Array.isArray(l.roiSeries) && l.roiSeries.length
+    ? l.roiSeries[l.roiSeries.length - 1]
+    : null;
+  return safeNum(last?.invested);
+});
 
-    let weightedSum = 0;
+const frozenTotalInvested = frozenInvested.reduce((a, b) => a + b, 0);
 
-    loans.forEach((loan, idx) => {
-      const roi = perLoanSeries[idx]?.data?.[i]?.y;
-      if (roi == null) return;
+const weightedSeries = dates.map((date, i) => {
+  if (!frozenTotalInvested) return { date, y: 0 };
 
-      const entry = getRoiEntryAsOfMonth(loan, date);
-      const invested = safeNum(entry?.invested);
+  let weightedSum = 0;
 
-      if (invested > 0) {
-        weightedSum += roi * invested;
-      }
-    });
+  loans.forEach((loan, idx) => {
+    const roi = perLoanSeries[idx]?.data?.[i]?.y;
+    if (roi == null) return;
 
-    return { date, y: weightedSum / totalInvested };
+    const invested = frozenInvested[idx];
+    if (invested > 0) {
+      weightedSum += roi * invested;
+    }
   });
+
+  return { date, y: weightedSum / frozenTotalInvested };
+});
+
 
   return { dates, perLoanSeries, weightedSeries };
 }
