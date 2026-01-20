@@ -4643,35 +4643,51 @@ function renderCapitalRecoveredDrawer() {
   // 🔑 AUTHORITATIVE KPI VALUES
   const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
-  // --------------------------------------------------
-  // Build per-loan recovery series (MONTHLY, TO TODAY)
-  // --------------------------------------------------
-  const loanSeriesList = [];
-  const monthMap = new Map(); // key = YYYY-MM → Date(1st)
+loans.forEach(l => {
+  if (!l.amort || !l.amort.schedule) return;
 
-  function monthKey(d) {
-    return `${d.getFullYear()}-${d.getMonth()}`;
-  }
+  const invested = Number(l.userPurchasePrice || 0);
+  const ownPct = Number(l.userOwnershipPct || 0);
 
-  function monthStart(d) {
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  }
+  if (!invested || !ownPct) return;
 
-  loans.forEach(l => {
-    if (!l.amort || !l.amort.schedule) return;
+  const monthly = new Map();
+  let recoveredOwned = 0;
 
-const invested = l.userPurchasePrice || 0;
-if (!invested) return;
+  l.amort.schedule.forEach(r => {
+    if (
+      r.isOwned &&
+      r.loanDate instanceof Date &&
+      r.loanDate <= KPI_CURRENT_MONTH
+    ) {
+      recoveredOwned += (Number(r.principalPaid) || 0) * ownPct;
+    }
 
-const monthly = new Map();
+    if (r.loanDate instanceof Date) {
+      const m = normalizeToMonthStart(r.loanDate);
+      const k = m.getTime();
 
-const ownPct = Number(l.userOwnershipPct || 0);
-if (!ownPct) return;
+      if (!monthly.has(k)) {
+        const pct = recoveredOwned / invested;
 
-const ownPct = Number(l.userOwnershipPct || 0);
-if (!ownPct || !invested) return;
+        monthly.set(k, {
+          date: m,
+          y: pct
+        });
 
-let recoveredOwned = 0;
+        monthMap.set(k, m);
+      }
+    }
+  });
+
+  loanSeriesList.push({
+    id: l.id,
+    name: l.name,
+    color: window.KPI_COLOR_MAP?.[l.id],
+    data: Array.from(monthly.values())
+  });
+});
+
 
 // Walk the SAME amort schedule the engine uses
 l.amort?.schedule?.forEach(r => {
