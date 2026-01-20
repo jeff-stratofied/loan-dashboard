@@ -2043,6 +2043,22 @@ function openRoiKpiFromUrl(kpiOverride = null) {
 }
 
 
+function deriveLoanPurchaseDate(loan) {
+  // 1️⃣ explicit loan-level purchaseDate (preferred)
+  if (loan.purchaseDate) return loan.purchaseDate;
+
+  // 2️⃣ earliest tranche purchaseDate
+  if (Array.isArray(loan.ownershipLots) && loan.ownershipLots.length) {
+    const dates = loan.ownershipLots
+      .map(t => t.purchaseDate)
+      .filter(Boolean)
+      .sort();
+    if (dates.length) return dates[0];
+  }
+
+  // 3️⃣ hard failure — data is invalid
+  return null;
+}
 
     
 async function loadLoans() {
@@ -2088,24 +2104,32 @@ async function loadLoans() {
     };
   });
 
-  // --------------------------------------------
-  // 2. NORMALIZE OWNERSHIP (REQUIRED)
-  // --------------------------------------------
-  loans.forEach(loan => {
-    normalizeOwnership(loan); // 🔑 creates ownershipLots
-  });
+// --------------------------------------------
+// 2. NORMALIZE OWNERSHIP (REQUIRED)
+// --------------------------------------------
+loans.forEach(loan => {
+  normalizeOwnership(loan); // creates ownershipLots
+});
 
-  // --------------------------------------------
-  // 3. DERIVE userOwnershipPct (UI convenience)
-  // --------------------------------------------
-  loans.forEach(loan => {
-    loan.userOwnershipPct = Array.isArray(loan.ownershipLots)
-      ? loan.ownershipLots.reduce(
-          (s, t) => s + (Number(t.pct) || 0),
-          0
-        )
-      : 0;
-  });
+// --------------------------------------------
+// 3. CANONICAL PURCHASE DATE (REQUIRED)
+// --------------------------------------------
+loans.forEach(loan => {
+  loan.purchaseDate = deriveLoanPurchaseDate(loan);
+});
+
+// --------------------------------------------
+// 4. DERIVE userOwnershipPct (UI convenience)
+// --------------------------------------------
+loans.forEach(loan => {
+  loan.userOwnershipPct = Array.isArray(loan.ownershipLots)
+    ? loan.ownershipLots.reduce(
+        (s, t) => s + (Number(t.pct) || 0),
+        0
+      )
+    : 0;
+});
+
 }
 
 
