@@ -1889,7 +1889,7 @@ function openLoanDrawerSafe(loan) {
 // =====================================================
 function renderKpiDrawer(kpiId) {
   const loans = getLoansForKpis();
-const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
+  const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
   drawerTitle.textContent = "";
   drawerSub.textContent = "";
@@ -1906,6 +1906,7 @@ const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
   // -------------------------
   if (kpiId === "kpi1") {
     drawerTitle.textContent = "Weighted ROI to Date";
+
     drawerPrimaryTitle.textContent = "ROI to Date";
     drawerPrimary.textContent =
       (kpis.weightedROI * 100).toFixed(2) + "%";
@@ -1913,39 +1914,53 @@ const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
     drawerSecondaryTitle.textContent = "As of";
     drawerSecondary.textContent =
       formatMonthYear(KPI_CURRENT_MONTH);
+
+    // =====================================================
+    // KPI1 — Weighted ROI to Date chart (MISSING BEFORE)
+    // =====================================================
+    const timeline = buildHistoricalRoiTimeline(loans);
+
+    createMultiSeriesChart(
+      drawerChartArea,
+      timeline.perLoanSeries,
+      timeline.weightedSeries,
+      {
+        weightedColor: "#000",
+        weightedWidth: 2.6,
+        dates: timeline.dates,
+        tickSpacingX: 3
+      }
+    );
   }
 
-else if (kpiId === "kpi2") {
-  drawerTitle.textContent = "Projected Portfolio ROI";
-  drawerPrimaryTitle.textContent = "Projected ROI";
-  drawerPrimary.textContent =
-    (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
+  else if (kpiId === "kpi2") {
+    drawerTitle.textContent = "Projected Portfolio ROI";
 
-  drawerSecondaryTitle.textContent = "Lifetime";
-  drawerSecondary.textContent = "All Loans";
+    drawerPrimaryTitle.textContent = "Projected ROI";
+    drawerPrimary.textContent =
+      (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
 
-  // =====================================================
-  // KPI2 — Projected Portfolio ROI chart (WITH COLORS)
-  // =====================================================
-const loans = getLoansForKpis();
+    drawerSecondaryTitle.textContent = "Lifetime";
+    drawerSecondary.textContent = "All Loans";
 
-const timeline = buildProjectedRoiTimeline(loans, {
-  colors: buildKpiColorMap(loans)
-});
+    // =====================================================
+    // KPI2 — Projected Portfolio ROI chart
+    // =====================================================
+    const timeline = buildProjectedRoiTimeline(loans, {
+      colors: buildKpiColorMap(loans)
+    });
 
-  
-createMultiSeriesChart(
-  drawerChartArea,
-  timeline.perLoanSeries,   // 🔑 includes colors
-  timeline.weightedSeries,
-  { dates: timeline.dates }
-);
+    createMultiSeriesChart(
+      drawerChartArea,
+      timeline.perLoanSeries,
+      timeline.weightedSeries,
+      { dates: timeline.dates }
+    );
+  }
 
-}
-
-    
   else if (kpiId === "kpi3") {
     drawerTitle.textContent = "Capital Recovered";
+
     drawerPrimaryTitle.textContent = "Recovered";
     drawerPrimary.textContent =
       "$" + formatCurrency(kpis.capitalRecoveredAmount);
@@ -1959,6 +1974,7 @@ createMultiSeriesChart(
     console.warn("Unknown KPI:", kpiId);
   }
 }
+
 
 
     
