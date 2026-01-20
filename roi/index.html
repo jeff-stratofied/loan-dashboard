@@ -3903,75 +3903,38 @@ document.querySelectorAll(".kpi").forEach(kpi => {
     
 async function initROI() {
 
-console.warn("🟥 initROI() RUNNING — THIS OVERRIDES KPI TILE VALUES");
+  console.warn("🟥 initROI() RUNNING");
 
-  
   const formatLoanLabel = (loan) =>
     `Loan ${loan.id} — ${loan.name} (${loan.school})`;
 
-  /* delete
   // --------------------------------------------------
-  // FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
+  // IMPORTANT: do NOT rebuild currentLoans here.
+  // currentLoans/allLoans must already be set by the
+  // ownership-based init flow.
   // --------------------------------------------------
-  const userLoans = loans
-    .map(l => ({
-      ...l,
-      user: l.user ?? "jeff",
-      visible: l.visible !== false
-    }))
-    .filter(l => l.user === PAGE_USER && l.visible === true);
+  if (!Array.isArray(currentLoans) || currentLoans.length === 0) {
+    console.warn("🟥 initROI(): currentLoans is empty — KPI tiles not rendered");
+    return;
+  }
 
   // --------------------------------------------------
-  // Normalize numeric fields (ONLY user loans)
+  // KPI COLOR MAP (MUST USE SAME LOANS AS CHARTS)
   // --------------------------------------------------
-  const formattedLoans = userLoans.map(l => ({
-    ...l,
-    purchasePrice: Number(l.purchasePrice ?? 0),
-    nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
-  }));
+  const loansForKpis = getLoansForKpis();
+  window.KPI_COLOR_MAP = buildKpiColorMap(loansForKpis);
 
   // --------------------------------------------------
-  // Derive amort + ROI (DATA CREATION POINT)
+  // COMPUTE KPIs — SINGLE SOURCE OF TRUTH
   // --------------------------------------------------
-  const loansWithAmort = deriveLoansWithAmortAndRoi(formattedLoans);
+  const kpis = computeKPIs(loansForKpis, KPI_CURRENT_MONTH);
 
-  allLoans = loansWithAmort;        // 🔑 master list
-  currentLoans = loansWithAmort;
-  filteredLoans = loansWithAmort.slice();
-  */
-
-// --------------------------------------------------
-// IMPORTANT: do NOT rebuild currentLoans here.
-// currentLoans/allLoans must already be set by the
-// ownership-based init flow.
-// --------------------------------------------------
-if (!Array.isArray(currentLoans) || currentLoans.length === 0) {
-  console.warn("🟥 initROI(): currentLoans is empty — KPI tiles not rendered");
-  return;
-}
-
-// Always compute KPI tiles from the SAME source as KPI drawers
-const loansForKpis = getLoansForKpis();
-const kpis = computeKPIs(loansForKpis, KPI_CURRENT_MONTH);
-
-console.log("🟩 KPI TILE SOURCE CHECK", {
-  currentLoansCount: currentLoans.length,
-  loansForKpisCount: loansForKpis.length,
-  KPI_CURRENT_MONTH,
-  weightedROI: kpis.weightedROI
-});
-
-  
-  // --------------------------------------------------
-  // KPI color map (must exist before drawers open)
-  // --------------------------------------------------
-  window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
-
-  // --------------------------------------------------
-  // Compute KPIs
-  // --------------------------------------------------
-  const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
-
+  console.log("🟩 KPI TILE SOURCE CHECK", {
+    currentLoansCount: currentLoans.length,
+    loansForKpisCount: loansForKpis.length,
+    KPI_CURRENT_MONTH,
+    weightedROI: kpis.weightedROI
+  });
 
   // --------------------------------------------------
   // Initial render (grid / table via filters)
