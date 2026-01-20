@@ -1797,9 +1797,6 @@ if (Array.isArray(loan.events)) {
     }
   }
 }
-
-
-
   return "";
 }
 
@@ -1836,6 +1833,10 @@ function getLoansForTableView() {
     .sort((a, b) => dir * compareForKey(a, b, key));
 }
 
+function getLoansForKpis() {
+  return currentLoans;
+}
+    
 function compareForKey(a, b, key) {
 
   // Helper: ROI to-date (single source of truth)
@@ -1887,8 +1888,8 @@ function openLoanDrawerSafe(loan) {
 // KPI DRAWER RENDERER — ROI (MISSING, REQUIRED)
 // =====================================================
 function renderKpiDrawer(kpiId) {
-  const kpis = computeKPIs(allLoans, KPI_CURRENT_MONTH);
-
+  const loans = getLoansForKpis();
+const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
   drawerTitle.textContent = "";
   drawerSub.textContent = "";
@@ -1926,9 +1927,12 @@ else if (kpiId === "kpi2") {
   // =====================================================
   // KPI2 — Projected Portfolio ROI chart (WITH COLORS)
   // =====================================================
-const timeline = buildProjectedRoiTimeline(allLoans, {
-  colors: buildKpiColorMap(allLoans)   // 🔑 correct option name
+const loans = getLoansForKpis();
+
+const timeline = buildProjectedRoiTimeline(loans, {
+  colors: buildKpiColorMap(loans)
 });
+
   
 createMultiSeriesChart(
   drawerChartArea,
@@ -1982,8 +1986,7 @@ function openRoiKpiDrawer(kpiId) {
    KPI deep-link router (ROI)
    ============================ */
 function openRoiKpiFromUrl(kpiOverride = null) {
-
-
+  const loans = getLoansForKpis();
 
   let kpi =
     kpiOverride ??
@@ -4406,12 +4409,10 @@ function smoothPath(points) {
    Using the same stable timeline engine as Projected ROI
    ============================================================ */
 function renderTPVDrawer() {
-  
   currentMode = 'kpi';
   currentLoan = null;
 
   drawer.classList.remove('loan-mode');
-
 
   // Reset drawer
   drawerAmortContainer.style.display = 'none';
@@ -4422,53 +4423,44 @@ function renderTPVDrawer() {
   drawerTitle.textContent = "Weighted ROI to Date";
   drawerSub.textContent = "Current Portfolio Snapshot";
 
+  // 🔑 SINGLE SOURCE OF TRUTH — OWNED LOANS ONLY
+  const loans = getLoansForKpis();
+
   // ===============================
   // 1. Compute weighted ROI to date
+  //    (AUTHORITATIVE ENGINE)
   // ===============================
-  const totalInv = allLoans.reduce((s,l)=> s + l.purchasePrice, 0);
-
-  let weightedROI = 0;
-  allLoans.forEach(l => {
-  const last =
-    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-    { roi: 0, loanValue: l.purchasePrice };
-
-  weightedROI += l.purchasePrice * (last.roi || 0);
-});
-
-  weightedROI = weightedROI / Math.max(1, totalInv);
+  const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
-  drawerPrimary.textContent = (weightedROI * 100).toFixed(2) + "%";
+  drawerPrimary.textContent =
+    (kpis.weightedROI * 100).toFixed(2) + "%";
 
   // ===============================
-  // 2. Compute portfolio value today
+  // 2. Portfolio value today
   // ===============================
   let portfolioValue = 0;
-  allLoans.forEach(l => {
-  const last =
-    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-    { roi: 0, loanValue: l.purchasePrice };
 
-  portfolioValue += last.loanValue || 0;
-});
+  loans.forEach(l => {
+    const last =
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      { loanValue: 0 };
 
+    portfolioValue += Number(last.loanValue || 0);
+  });
 
   drawerSecondaryTitle.textContent = "Portfolio Value";
-  drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
+  drawerSecondary.textContent =
+    "$" + portfolioValue.toLocaleString();
 
   // ===============================
-  // 3. Build TIMELINE using the
-  //    existing stable Projected ROI engine
-  //    BUT using today's ROI values
+  // 3. ROI timeline (OWNED LOANS ONLY)
   // ===============================
-  const timeline = buildHistoricalRoiTimeline(allLoans);
+  const timeline = buildHistoricalRoiTimeline(loans);
 
   // ===============================
   // 4. Render multi-series chart
   // ===============================
- const globalDates = buildGlobalDatesFromLoans(currentLoans);
-  
   createMultiSeriesChart(
     drawerChartArea,
     timeline.perLoanSeries,
@@ -4477,17 +4469,16 @@ function renderTPVDrawer() {
       weightedColor: "#000",
       weightedWidth: 2.6,
       dates: timeline.dates,
-      tickSpacingX: 3   // label every other month
+      tickSpacingX: 3
     }
   );
-
 
   // ===============================
   // 5. ROI-to-Date Table
   // ===============================
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
-      <h3 style="margin:0 0 8px 0">ROI to Date — All Loans</h3>
+      <h3 style="margin:0 0 8px 0">ROI to Date — Owned Loans</h3>
       <div style="
         max-height:300px;
         overflow:auto;
@@ -4511,23 +4502,28 @@ function renderTPVDrawer() {
     </div>
   `;
 
-  populateROILoanTable();  // already implemented
+  // 🔑 table already respects currentLoans
+  populateROILoanTable();
 
   // ===============================
   // 6. Open drawer
   // ===============================
   drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden','false');
+  drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 }
 
 
+
 function renderRatesDrawer() {
 
+  // 🔑 SINGLE SOURCE OF TRUTH — OWNED LOANS ONLY
+  const loans = getLoansForKpis();
+
   if (
-    !Array.isArray(allLoans) ||
-    allLoans.length === 0 ||
-    allLoans.some(l => !l || !l.purchaseDate)
+    !Array.isArray(loans) ||
+    loans.length === 0 ||
+    loans.some(l => !l || !l.purchaseDate)
   ) {
     console.warn("[Rates Drawer] aborted — loans not ready");
     return;
@@ -4547,44 +4543,26 @@ function renderRatesDrawer() {
   drawerSub.textContent = "Projection to Maturity";
 
   // =====================================================
-  // 1. Compute projected weighted ROI (headline KPI)
+  // 1. Compute projected weighted ROI (AUTHORITATIVE)
   // =====================================================
-  const totalInv = allLoans.reduce(
-    (s, l) => s + (l.purchasePrice || 0),
-    0
-  );
-
-  let projWeightedROI = 0;
-
-  allLoans.forEach(l => {
-  const last =
-    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-    { roi: 0, loanValue: l.purchasePrice };
-
-  projWeightedROI += l.purchasePrice * (last.roi || 0);
-});
-
-
-  projWeightedROI =
-    projWeightedROI / Math.max(1, totalInv);
+  const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
   drawerPrimaryTitle.textContent = "Projected Weighted ROI";
   drawerPrimary.textContent =
-    (projWeightedROI * 100).toFixed(2) + "%";
+    (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
 
   // =====================================================
   // 2. Compute projected portfolio value
   // =====================================================
   let projPortfolioValue = 0;
 
-  allLoans.forEach(l => {
-  const last =
-    getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-    { roi: 0, loanValue: l.purchasePrice };
+  loans.forEach(l => {
+    const last =
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      { loanValue: 0 };
 
-  projPortfolioValue += last.loanValue || 0;
-});
-
+    projPortfolioValue += Number(last.loanValue || 0);
+  });
 
   drawerSecondaryTitle.textContent =
     "Projected Portfolio Value";
@@ -4592,18 +4570,17 @@ function renderRatesDrawer() {
     "$" + projPortfolioValue.toLocaleString();
 
   // =====================================================
-  // 3. Build ROI timeline (PORTFOLIO LEVEL)
+  // 3. Build ROI timeline (OWNED LOANS ONLY)
   // =====================================================
-  const timeline = buildProjectedRoiTimeline(allLoans);
+  const timeline = buildProjectedRoiTimeline(loans);
 
-  // 🔑 FORCE COLORS FOR KPI2 (engine does not assign them)
-const colorMap = buildKpiColorMap(allLoans);
+  // 🔑 FORCE COLORS FOR KPI2
+  const colorMap = buildKpiColorMap(loans);
 
-timeline.perLoanSeries.forEach(s => {
-  const id = s.id ?? s.loanId;
-  s.color = colorMap[id];
-});
-
+  timeline.perLoanSeries.forEach(s => {
+    const id = s.id ?? s.loanId;
+    s.color = colorMap[id];
+  });
 
   // 🔒 Guard: never partially render KPI drawer
   if (
@@ -4639,7 +4616,7 @@ timeline.perLoanSeries.forEach(s => {
   drawerExtra.innerHTML = `
     <div style="margin-top:12px">
       <h3 style="margin:0 0 8px 0">
-        Projected ROI at Maturity — All Loans
+        Projected ROI at Maturity — Owned Loans
       </h3>
       <div style="
         max-height:300px;
@@ -4668,6 +4645,7 @@ timeline.perLoanSeries.forEach(s => {
     </div>
   `;
 
+  // 🔑 already respects currentLoans
   populateProjectedROILoanTable();
 
   // =====================================================
@@ -4678,190 +4656,18 @@ timeline.perLoanSeries.forEach(s => {
   drawer.scrollTop = 0;
 }
 
-
-// ============================================================
-// KPI4 — ROI SPREAD DRAWER
-// ============================================================
-function renderROISpreadDrawer() {
-  currentMode = 'kpi';
-  currentLoan = null;
-  drawer.classList.remove('loan-mode');
-
-  drawerAmortContainer.style.display = 'none';
-  drawerLegend.style.display = 'none';
-  drawerChartArea.innerHTML = '';
-  drawerExtra.innerHTML = '';
-
-  drawerTitle.textContent = "ROI Spread";
-  drawerSub.textContent = "Best vs Worst Performing Loans";
-
-  // -------------------------------
-  // Compute spread stats
-  // -------------------------------
-  const rows = allLoans.map(l => {
-    const e =
-  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-  { roi: 0, loanValue: l.purchasePrice };
-
-    return {
-      id: l.id,
-      name: l.name,
-      school: l.school,
-      roi: e?.roi ?? 0,
-      color: window.KPI_COLOR_MAP?.[l.id] || '#64748b'
-    };
-  });
-
-  rows.sort((a, b) => b.roi - a.roi);
-
-  const best = rows[0];
-  const worst = rows[rows.length - 1];
-  const spread = best.roi - worst.roi;
-
-  drawerPrimaryTitle.textContent = "ROI Spread";
-  drawerPrimary.textContent = (spread * 100).toFixed(2) + "%";
-
-  drawerSecondaryTitle.textContent = "Loans";
-  drawerSecondary.textContent = rows.length;
-
-  // -------------------------------
-  // Chart for Spread Drawer (multi-series)
-  // -------------------------------
- const timeline = buildHistoricalRoiTimeline(allLoans);
-
-const globalDates = buildGlobalDatesFromLoans(currentLoans);
-  
-createMultiSeriesChart(
-  drawerChartArea,
-  timeline.perLoanSeries,
-  null, // ⛔ NO weighted line
-  {
-    dates: timeline.dates,
-    tickSpacingX: 3,     // SAME as Weighted ROI to Date
-    hideWeighted: true
-  }
-);
-
-
-  // -------------------------------
-  // Table
-  // -------------------------------
-drawerExtra.innerHTML = `
-  <div style="margin-top:12px">
-    <h3 style="margin:0 0 8px 0">ROI by Loan</h3>
-    <div style="
-      max-height:320px;
-      overflow:auto;
-      border:1px solid var(--border);
-      border-radius:8px;
-      padding:6px;
-      background:var(--card);
-    ">
-      <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
-        <thead>
-          <tr>
-            <th style="text-align:left">Loan</th>
-            <th style="text-align:left">Purchase Date</th>
-            <th style="text-align:left">Maturity Date</th>
-            <th style="text-align:right">ROI to Date</th>
-            <th style="text-align:right">Δ vs Best</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.map(r => {
-            const loan = allLoans.find(l => l.id === r.id);
-            if (!loan) return '';
-
-            let maturity = '';
-            try {
-              const d = new Date(loan.purchaseDate);
-              const months = Math.round((loan.termYears + loan.graceYears) * 12);
-              d.setMonth(d.getMonth() + months);
-              maturity = d.toISOString().slice(0,10);
-            } catch {}
-
-            return `
-              <tr data-loan-id="${r.id}">
-                <td style="text-align:left;">
-                  <span style="
-                    display:inline-block;
-                    width:10px;
-                    height:10px;
-                    background:${r.color};
-                    border-radius:2px;
-                    margin-right:8px;
-                    vertical-align:middle;
-                  "></span>
-                  <strong>${r.name}</strong>
-                  <div style="font-size:12px;color:var(--muted)">
-                    ${r.school || ""}
-                  </div>
-                </td>
-                <td style="text-align:left;">
-                  ${loan.purchaseDate || ""}
-                </td>
-                <td style="text-align:left;">
-                  ${maturity}
-                </td>
-                <td style="text-align:right;color:${r.color};font-weight:700">
-                  ${(r.roi * 100).toFixed(2)}%
-                </td>
-                <td style="text-align:right;color:var(--muted)">
-                  ${((r.roi - best.roi) * 100).toFixed(2)}%
-                </td>
-              </tr>
-            `;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>
-  </div>
-`;
-
-  // -----------------------------------------
-  // ROI Spread table row → chart hover binding
-  // -----------------------------------------
-  const chartSvg = drawerChartArea.querySelector("svg");
-  if (chartSvg) {
-    const loanPaths = Array.from(
-      chartSvg.querySelectorAll('path[data-type="loan"]')
-    );
-  
-    const table = document.getElementById("roiLoansTable");
-    if (table) {
-      table.querySelectorAll("tbody tr").forEach(row => {
-        const rowLoanId = row.dataset.loanId;
-        if (!rowLoanId) return;
-  
-        row.addEventListener("mouseenter", () => {
-          loanPaths.forEach(p => {
-            const isTarget = p.dataset.loanId === rowLoanId;
-            p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
-            p.setAttribute("stroke-width", isTarget ? "2.6" : "1.2");
-          });
-        });
-  
-        row.addEventListener("mouseleave", () => {
-          loanPaths.forEach(p => {
-            p.setAttribute("stroke-opacity", "0.9");
-            p.setAttribute("stroke-width", "1.2");
-          });
-        });
-      });
-    }
-  }
-
-
-  drawer.classList.add('open');
-  drawer.setAttribute('aria-hidden','false');
-  drawer.scrollTop = 0;
-
-}
-
+    
+  // =====================================================
+  // KPI3 Capital Recovery
+  // =====================================================
+    
 function renderCapitalRecoveryDrawer() {
-  
+
   currentMode = 'kpi';
   currentLoan = null;
+
+  // 🔑 SINGLE SOURCE OF TRUTH — OWNED LOANS ONLY
+  const loans = getLoansForKpis();
 
   // -----------------------------
   // Open + reset drawer
@@ -4882,6 +4688,9 @@ function renderCapitalRecoveryDrawer() {
   const TODAY = new Date();
   TODAY.setHours(23, 59, 59, 999);
 
+  // 🔑 AUTHORITATIVE KPI VALUES
+  const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
+
   // --------------------------------------------------
   // Build per-loan recovery series (MONTHLY, TO TODAY)
   // --------------------------------------------------
@@ -4896,7 +4705,7 @@ function renderCapitalRecoveryDrawer() {
     return new Date(d.getFullYear(), d.getMonth(), 1);
   }
 
-  currentLoans.forEach(l => {
+  loans.forEach(l => {
     if (!l.amort || !l.amort.schedule) return;
 
     let cumPrincipal = 0;
@@ -4926,7 +4735,7 @@ function renderCapitalRecoveryDrawer() {
   });
 
   // --------------------------------------------------
-  // Unified MONTHLY date axis (clean)
+  // Unified MONTHLY date axis
   // --------------------------------------------------
   const globalDates = Array.from(monthMap.values()).sort(
     (a, b) => a - b
@@ -4935,7 +4744,7 @@ function renderCapitalRecoveryDrawer() {
   // --------------------------------------------------
   // Portfolio cumulative line (MONTHLY)
   // --------------------------------------------------
-  const totalInvested = currentLoans.reduce(
+  const totalInvested = loans.reduce(
     (s, l) => s + (l.purchasePrice || 0),
     0
   );
@@ -4945,7 +4754,7 @@ function renderCapitalRecoveryDrawer() {
   const portfolioSeries = globalDates.map(d => {
     let monthRecovered = 0;
 
-    currentLoans.forEach(l => {
+    loans.forEach(l => {
       l.amort?.schedule
         ?.filter(
           r =>
@@ -4964,12 +4773,14 @@ function renderCapitalRecoveryDrawer() {
 
     return {
       date: d,
-      y: totalInvested > 0 ? cumPortfolioRecovered / totalInvested : 0
+      y: totalInvested > 0
+        ? cumPortfolioRecovered / totalInvested
+        : 0
     };
   });
 
   // --------------------------------------------------
-  // Dynamic x-axis spacing (≈ 6–8 labels max)
+  // Dynamic x-axis spacing
   // --------------------------------------------------
   const tickSpacingX = Math.max(
     1,
@@ -4977,11 +4788,10 @@ function renderCapitalRecoveryDrawer() {
   );
 
   // --------------------------------------------------
-  // Render chart (CLEAN X-AXIS)
+  // Render chart
   // --------------------------------------------------
-  
   createMultiSeriesChart(
-    document.getElementById('drawerChartArea'),
+    drawerChartArea,
     loanSeriesList,
     portfolioSeries,
     {
@@ -4993,7 +4803,7 @@ function renderCapitalRecoveryDrawer() {
   );
 
   // --------------------------------------------------
-  // Metrics
+  // Metrics (AUTHORITATIVE)
   // --------------------------------------------------
   drawerPrimaryTitle.textContent = "Capital Recovered";
   drawerPrimary.textContent =
@@ -5004,7 +4814,7 @@ function renderCapitalRecoveryDrawer() {
     ((kpis.capitalRecoveryPct || 0) * 100).toFixed(2) + "%";
 
   // --------------------------------------------------
-  // Table (unchanged)
+  // Table
   // --------------------------------------------------
   let html = `
     <div class="amort-wrap">
@@ -5020,7 +4830,7 @@ function renderCapitalRecoveryDrawer() {
         <tbody>
   `;
 
-  currentLoans.forEach(l => {
+  loans.forEach(l => {
     if (!l.amort || !l.amort.schedule) return;
 
     const recovered = l.amort.schedule
@@ -5059,28 +4869,207 @@ function renderCapitalRecoveryDrawer() {
 
   drawerExtra.innerHTML = html;
 
-const table = document.getElementById("capitalRecoveryTable");
-if (table) {
-  table.querySelectorAll("tbody tr").forEach(row => {
-    const loanId = row.dataset.loanId;
-    if (!loanId) return;
+  const table = document.getElementById("capitalRecoveryTable");
+  if (table) {
+    table.querySelectorAll("tbody tr").forEach(row => {
+      const loanId = row.dataset.loanId;
+      if (!loanId) return;
 
-    row.addEventListener("mouseenter", () => {
-      if (window.__roiChartFocusLoan) {
-        window.__roiChartFocusLoan(loanId);
-      }
-    });
+      row.addEventListener("mouseenter", () => {
+        window.__roiChartFocusLoan?.(loanId);
+      });
 
-    row.addEventListener("mouseleave", () => {
-      if (window.__roiChartClearFocus) {
-        window.__roiChartClearFocus();
-      }
+      row.addEventListener("mouseleave", () => {
+        window.__roiChartClearFocus?.();
+      });
     });
+  }
+}
+
+
+    
+// ============================================================
+// KPI4 — ROI SPREAD DRAWER
+// ============================================================
+function renderROISpreadDrawer() {
+  currentMode = 'kpi';
+  currentLoan = null;
+  drawer.classList.remove('loan-mode');
+
+  // 🔑 SINGLE SOURCE OF TRUTH — OWNED LOANS ONLY
+  const loans = getLoansForKpis();
+
+  drawerAmortContainer.style.display = 'none';
+  drawerLegend.style.display = 'none';
+  drawerChartArea.innerHTML = '';
+  drawerExtra.innerHTML = '';
+
+  drawerTitle.textContent = "ROI Spread";
+  drawerSub.textContent = "Best vs Worst Performing Loans";
+
+  // -------------------------------
+  // Compute spread stats
+  // -------------------------------
+  const rows = loans.map(l => {
+    const e =
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      { roi: 0, loanValue: l.purchasePrice };
+
+    return {
+      id: l.id,
+      name: l.name,
+      school: l.school,
+      roi: e?.roi ?? 0,
+      color: window.KPI_COLOR_MAP?.[l.id] || '#64748b'
+    };
   });
+
+  if (!rows.length) return;
+
+  rows.sort((a, b) => b.roi - a.roi);
+
+  const best = rows[0];
+  const worst = rows[rows.length - 1];
+  const spread = best.roi - worst.roi;
+
+  drawerPrimaryTitle.textContent = "ROI Spread";
+  drawerPrimary.textContent = (spread * 100).toFixed(2) + "%";
+
+  drawerSecondaryTitle.textContent = "Loans";
+  drawerSecondary.textContent = rows.length;
+
+  // -------------------------------
+  // Chart for Spread Drawer
+  // -------------------------------
+  const timeline = buildHistoricalRoiTimeline(loans);
+
+  createMultiSeriesChart(
+    drawerChartArea,
+    timeline.perLoanSeries,
+    null, // ⛔ NO weighted line
+    {
+      dates: timeline.dates,
+      tickSpacingX: 3,
+      hideWeighted: true
+    }
+  );
+
+  // -------------------------------
+  // Table
+  // -------------------------------
+  drawerExtra.innerHTML = `
+    <div style="margin-top:12px">
+      <h3 style="margin:0 0 8px 0">ROI by Loan</h3>
+      <div style="
+        max-height:320px;
+        overflow:auto;
+        border:1px solid var(--border);
+        border-radius:8px;
+        padding:6px;
+        background:var(--card);
+      ">
+        <table id="roiLoansTable" class="roi-table" style="width:100%;font-size:13px;">
+          <thead>
+            <tr>
+              <th style="text-align:left">Loan</th>
+              <th style="text-align:left">Purchase Date</th>
+              <th style="text-align:left">Maturity Date</th>
+              <th style="text-align:right">ROI to Date</th>
+              <th style="text-align:right">Δ vs Best</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map(r => {
+              const loan = loans.find(l => l.id === r.id);
+              if (!loan) return '';
+
+              let maturity = '';
+              try {
+                const d = new Date(loan.purchaseDate);
+                const months = Math.round(
+                  (loan.termYears + loan.graceYears) * 12
+                );
+                d.setMonth(d.getMonth() + months);
+                maturity = d.toISOString().slice(0, 10);
+              } catch {}
+
+              return `
+                <tr data-loan-id="${r.id}">
+                  <td style="text-align:left;">
+                    <span style="
+                      display:inline-block;
+                      width:10px;
+                      height:10px;
+                      background:${r.color};
+                      border-radius:2px;
+                      margin-right:8px;
+                      vertical-align:middle;
+                    "></span>
+                    <strong>${r.name}</strong>
+                    <div style="font-size:12px;color:var(--muted)">
+                      ${r.school || ""}
+                    </div>
+                  </td>
+                  <td style="text-align:left;">
+                    ${loan.purchaseDate || ""}
+                  </td>
+                  <td style="text-align:left;">
+                    ${maturity}
+                  </td>
+                  <td style="text-align:right;color:${r.color};font-weight:700">
+                    ${(r.roi * 100).toFixed(2)}%
+                  </td>
+                  <td style="text-align:right;color:var(--muted)">
+                    ${((r.roi - best.roi) * 100).toFixed(2)}%
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  // -----------------------------------------
+  // ROI Spread table row → chart hover binding
+  // -----------------------------------------
+  const chartSvg = drawerChartArea.querySelector("svg");
+  if (chartSvg) {
+    const loanPaths = Array.from(
+      chartSvg.querySelectorAll('path[data-type="loan"]')
+    );
+
+    const table = document.getElementById("roiLoansTable");
+    if (table) {
+      table.querySelectorAll("tbody tr").forEach(row => {
+        const rowLoanId = row.dataset.loanId;
+        if (!rowLoanId) return;
+
+        row.addEventListener("mouseenter", () => {
+          loanPaths.forEach(p => {
+            const isTarget = p.dataset.loanId === rowLoanId;
+            p.setAttribute("stroke-opacity", isTarget ? "1" : "0.15");
+            p.setAttribute("stroke-width", isTarget ? "2.6" : "1.2");
+          });
+        });
+
+        row.addEventListener("mouseleave", () => {
+          loanPaths.forEach(p => {
+            p.setAttribute("stroke-opacity", "0.9");
+            p.setAttribute("stroke-width", "1.2");
+          });
+        });
+      });
+    }
+  }
+
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  drawer.scrollTop = 0;
 }
 
 
-}
 
 // ----------------------------------
 // Embed auto-open handling (KPI2)
