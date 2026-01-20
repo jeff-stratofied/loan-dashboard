@@ -2264,7 +2264,25 @@ function deriveLoansWithAmortAndRoi(formattedLoans) {
     .map(l => {
       if (!l) return null;
 
-      const rawAmort = buildAmortSchedule(l);
+      // ----------------------------------
+      // 🔑 REQUIRED: validate purchaseDate
+      // ----------------------------------
+      const purchase = parseISODateLocal(l.purchaseDate);
+
+      if (!purchase || !Number.isFinite(purchase.getTime())) {
+        throw new Error(
+          `Invalid purchaseDate for loan "${l.name}": ${l.purchaseDate}`
+        );
+      }
+
+      // ----------------------------------
+      // Build amort schedule (SAFE)
+      // ----------------------------------
+      const rawAmort = buildAmortSchedule({
+        ...l,
+        purchaseDate: purchase
+      });
+
 
       // ----------------------------------
       // Respect terminal rows from engine
