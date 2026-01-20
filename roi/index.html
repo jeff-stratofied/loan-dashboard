@@ -4671,8 +4671,9 @@ function renderCapitalRecoveredDrawer() {
 
         cumPrincipal += r.principalPaid || 0;
 
-        const pct =
-          l.purchasePrice > 0 ? cumPrincipal / l.purchasePrice : 0;
+        const invested = l.userPurchasePrice || 0;
+const pct = invested > 0 ? recovered / invested : 0;
+
 
         monthly.set(k, { date: m, y: pct });
         monthMap.set(k, m);
@@ -4724,6 +4725,15 @@ const portfolioSeries = globalDates.map(d => {
     y: totalInvested > 0 ? cumRecovered / totalInvested : null
   };
 });
+
+  // ==================================================
+// 🔑 FORCE KPI CONSISTENCY (AUTHORITATIVE)
+// ==================================================
+const finalPct = kpis.capitalRecoveryPct || 0;
+
+if (portfolioSeries.length) {
+  portfolioSeries[portfolioSeries.length - 1].y = finalPct;
+}
 
 
   // --------------------------------------------------
@@ -4786,8 +4796,9 @@ loans.forEach(l => {
     .reduce((s, r) => s + (r.principalPaid || 0), 0);
 
   // 🔑 FIX 4 — USE USER INVESTMENT, NOT LOAN PRICE
-  const invested = l.userPurchasePrice || 0;
-  const pct = invested > 0 ? recovered / invested : 0;
+const invested = l.userPurchasePrice || 0;
+const pct = invested > 0 ? cumPrincipal / invested : 0;
+
 
   const remaining =
     Math.max(0, invested - recovered);
