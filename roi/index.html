@@ -3015,9 +3015,11 @@ svg.addEventListener("mousemove", ev => {
   `;
 
 // weighted series — USE CHART DATA, NOT RECOMPUTE
-const weightedAtDate = weightedSeries[idx]?.y;
+// 🔑 AUTHORITATIVE hover value — SAME logic as KPI tile
+const monthAnchor = normalizeToMonthStart(date);
+const weightedAtDate = computeWeightedRoiAsOfMonth(currentLoans, monthAnchor);
 
-if (weightedAtDate != null) {
+if (Number.isFinite(weightedAtDate)) {
   html += `
     <div style="margin-bottom:6px">
       <span style="font-weight:600">Weighted:</span>
@@ -3025,6 +3027,13 @@ if (weightedAtDate != null) {
     </div>
   `;
 }
+console.log(
+  "[KPI1 HOVER CHECK]",
+  formatMonthYear(monthAnchor),
+  "hover:", weightedAtDate,
+  "tile:", computeKPIs(currentLoans, monthAnchor).weightedROI
+);
+
 
 
   // per-loan series (SQUARE swatches)
