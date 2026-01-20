@@ -1932,23 +1932,37 @@ function renderKpiDrawer(kpiId) {
       .sort((a, b) => a - b)
       .map(ms => new Date(ms));
 
-    // 2️⃣ Per-loan ROI series (direct reuse, no recompute)
-    const perLoanSeries = loans.map(loan => {
-      const id = loan.id ?? loan.loanId;
-      const roiMap = new Map(
-        (loan.roiSeries || []).map(r => [r.date.getTime(), r.roi])
-      );
+   // 2️⃣ Per-loan ROI series (direct reuse, no recompute)
+const perLoanSeries = loans.map(loan => {
+  const id = loan.id ?? loan.loanId;
+  const roiMap = new Map(
+    (loan.roiSeries || []).map(r => [r.date.getTime(), r.roi])
+  );
 
-      return {
-        id,
-        name: loan.name,
-        color: window.KPI_COLOR_MAP?.[id] || "var(--muted)",
-        data: dates.map(d => ({
-          date: d,
-          y: roiMap.get(d.getTime()) ?? null
-        }))
-      };
-    });
+  return {
+    id,
+    name: loan.name,
+    color: window.KPI_COLOR_MAP?.[id] || "var(--muted)",
+    data: dates.map(d => ({
+      date: d,
+      y: roiMap.get(d.getTime()) ?? null
+    }))
+  };
+});
+
+/* 🔒 DEV-ONLY INVARIANT — PLACE HERE */
+console.assert(
+  perLoanSeries.every(s =>
+    s.data.every((p, i, a) =>
+      i === 0 ||
+      p.y == null ||
+      a[i - 1].y == null ||
+      p.y >= a[i - 1].y - 1e-6
+    )
+  ),
+  "KPI1 ROI regression detected"
+);
+
 
     // 3️⃣ Weighted portfolio series (invested-weighted)
     const weightedSeries = dates.map(d => {
