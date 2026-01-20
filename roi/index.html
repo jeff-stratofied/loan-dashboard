@@ -4544,6 +4544,7 @@ function smoothPath(points) {
    Using the same stable timeline engine as Projected ROI
    ============================================================ */
 function renderTPVDrawer() {
+  console.groupCollapsed("🟦 renderTPVDrawer() KPI1 — using roiSeries", Date.now());
   currentMode = 'kpi';
   currentLoan = null;
 
@@ -4562,8 +4563,7 @@ function renderTPVDrawer() {
   const loans = getLoansForKpis();
 
   // ===============================
-  // 1. Compute weighted ROI to date
-  //    (AUTHORITATIVE ENGINE)
+  // 1. KPI tile number (AUTHORITATIVE)
   // ===============================
   const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
@@ -4575,38 +4575,119 @@ function renderTPVDrawer() {
   // 2. Portfolio value today
   // ===============================
   let portfolioValue = 0;
-
   loans.forEach(l => {
-    const last =
-      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-      { loanValue: 0 };
-
+    const last = getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ?? { loanValue: 0 };
     portfolioValue += Number(last.loanValue || 0);
   });
 
   drawerSecondaryTitle.textContent = "Portfolio Value";
-  drawerSecondary.textContent =
-    "$" + portfolioValue.toLocaleString();
+  drawerSecondary.textContent = "$" + portfolioValue.toLocaleString();
 
-  // ===============================
-  // 3. ROI timeline (OWNED LOANS ONLY)
-  // ===============================
-  const timeline = buildHistoricalRoiTimeline(loans);
+  // =====================================================
+  // 3. KPI1 timeline — DO NOT use buildHistoricalRoiTimeline
+  //    Build directly from roiSeries/getRoiEntryAsOfMonth
+  // =====================================================
+
+  // Build a global month axis: earliest purchase -> KPI_CURRENT_MONTH
+  const validPurchases = loans
+    .map(l => new Date(l.purchaseDate))
+    .filter(d => d instanceof Date && Number.isFinite(+d));
+
+  const start = validPurchases.length
+    ? new Date(Math.min(...validPurchases.map(d => +d)))
+    : new Date(KPI_CURRENT_MONTH);
+
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(KPI_CURRENT_MONTH);
+  end.setDate(1);
+  end.setHours(0, 0, 0, 0);
+
+  const dates = [];
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    dates.push(new Date(cursor));
+    cursor.setMonth(cursor.getMonth() + 1);
+  }
+
+  // Per-loan series sampled from engine (matches KPI calc rules)
+  const perLoanSeries = loans.map((loan, idx) => {
+    const id = loan.id ?? loan.loanId ?? idx;
+    const purchase = new Date(loan.purchaseDate);
+    purchase.setHours(0, 0, 0, 0);
+
+    const data = dates.map(d => {
+      if (d < purchase) return { date: d, y: null };
+      const entry = getRoiEntryAsOfMonth(loan, d);
+      return { date: d, y: entry ? Number(entry.roi || 0) : null };
+    });
+
+    return {
+      id,
+      name: loan.name || `Loan ${id}`,
+      color: window.KPI_COLOR_MAP?.[id] || "#64748b",
+      data
+    };
+  });
+
+  // Weighted series computed per-month from engine entries
+  const weightedSeries = dates.map(d => {
+    let sum = 0;
+    let investedSum = 0;
+
+    loans.forEach(loan => {
+      const entry = getRoiEntryAsOfMonth(loan, d);
+      if (!entry) return;
+
+      const invested = Number(entry.invested || 0);
+      const roi = Number(entry.roi || 0);
+
+      if (invested > 0) {
+        sum += roi * invested;
+        investedSum += invested;
+      }
+    });
+
+    return { date: d, y: investedSum > 0 ? sum / investedSum : 0 };
+  });
+
+  // 🔎 Debug: KPI tile vs last chart point
+  const lastChart = weightedSeries[weightedSeries.length - 1]?.y ?? null;
+  console.log("KPI_CURRENT_MONTH:", KPI_CURRENT_MONTH);
+  console.log("kpis.weightedROI:", kpis.weightedROI, "chart.lastWeighted:", lastChart);
+  console.log("dates:", dates[0], "->", dates[dates.length - 1]);
+  console.log("perLoanSeries colors sample:", perLoanSeries.slice(0, 3).map(s => ({ id: s.id, color: s.color })));
+
+  // DEV-only monotonic sanity check (if ROI should never fall)
+  console.assert(
+    perLoanSeries.every(s =>
+      s.data.every((p, i, a) =>
+        i === 0 ||
+        p.y == null ||
+        a[i - 1].y == null ||
+        p.y >= a[i - 1].y - 1e-6
+      )
+    ),
+    "KPI1 ROI regression detected"
+  );
 
   // ===============================
   // 4. Render multi-series chart
   // ===============================
   createMultiSeriesChart(
     drawerChartArea,
-    timeline.perLoanSeries,
-    timeline.weightedSeries,
+    perLoanSeries,
+    weightedSeries,
     {
       weightedColor: "#000",
       weightedWidth: 2.6,
-      dates: timeline.dates,
+      dates,
       tickSpacingX: 3
     }
   );
+
+  console.groupEnd();
 
   // ===============================
   // 5. ROI-to-Date Table
@@ -4637,7 +4718,6 @@ function renderTPVDrawer() {
     </div>
   `;
 
-  // 🔑 table already respects currentLoans
   populateROILoanTable();
 
   // ===============================
@@ -4647,6 +4727,7 @@ function renderTPVDrawer() {
   drawer.setAttribute('aria-hidden', 'false');
   drawer.scrollTop = 0;
 }
+
 
 
 
