@@ -4719,7 +4719,12 @@ loans.forEach(l => {
   if (!l.amort || !l.amort.schedule) return;
 
   const invested = Number(l.userPurchasePrice || 0);
-  const ownPct = Number(l.userOwnershipPct || 0);
+  const ownPct = Array.isArray(l.ownershipLots)
+  ? l.ownershipLots
+      .filter(t => t.user === PAGE_USER)
+      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+  : 0;
+
 
   if (!invested || !ownPct) return;
 
@@ -4784,7 +4789,12 @@ const portfolioSeries = globalDates
   .filter(d => d <= asOfEnd)
   .map(d => {
     loans.forEach(l => {
-      const ownPct = Number(l.userOwnershipPct || 0);
+      const ownPct = Array.isArray(l.ownershipLots)
+  ? l.ownershipLots
+      .filter(t => t.user === PAGE_USER)
+      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+  : 0;
+
       if (!ownPct) return;
 
       l.amort?.schedule?.forEach(r => {
@@ -4862,7 +4872,12 @@ drawerSecondary.textContent = formatMonthYear(KPI_CURRENT_MONTH);
 
 loans.forEach(l => {
   const invested = Number(l.userPurchasePrice || 0);
-  const ownPct = Number(l.userOwnershipPct || 0);
+  const ownPct = Array.isArray(l.ownershipLots)
+  ? l.ownershipLots
+      .filter(t => t.user === PAGE_USER)
+      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+  : 0;
+
   if (!invested || !ownPct) return;
 
   let recovered = 0;
@@ -4947,7 +4962,12 @@ try {
 
   loans.forEach(l => {
     const invested = Number(l.userPurchasePrice || 0);
-    const ownPct = Number(l.userOwnershipPct || 0);
+    const ownPct = Array.isArray(l.ownershipLots)
+  ? l.ownershipLots
+      .filter(t => t.user === PAGE_USER)
+      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+  : 0;
+
     if (!invested || !ownPct) return;
 
     const row = l.cumSchedule?.filter(r => r.loanDate && r.loanDate <= asOfEnd).at(-1);
