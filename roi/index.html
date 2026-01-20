@@ -4808,20 +4808,48 @@ function renderROISpreadDrawer() {
   // -------------------------------
   // Chart for Spread Drawer (multi-series)
   // -------------------------------
- const timeline = buildHistoricalRoiTimeline(allLoans);
+// ===============================
+// 4. Render multi-series chart
+// ===============================
+const timeline = buildHistoricalRoiTimeline(currentLoans);
 
-const globalDates = buildGlobalDatesFromLoans(currentLoans);
-  
+// 🔑 ADAPT historical timeline → chart format
+const perLoanSeries = timeline.perLoanSeries.map(s => ({
+  id: s.id,
+  name: s.name,
+  color: s.color,
+  points: s.data
+    .filter(p => p.date instanceof Date && Number.isFinite(p.y))
+    .map(p => ({
+      x: p.date,
+      y: p.y
+    }))
+}));
+
+const weightedSeries = {
+  id: "weighted",
+  name: "Weighted ROI",
+  color: "#000",
+  points: timeline.weightedSeries
+    .filter(p => p.date instanceof Date && Number.isFinite(p.y))
+    .map(p => ({
+      x: p.date,
+      y: p.y
+    }))
+};
+
 createMultiSeriesChart(
   drawerChartArea,
-  timeline.perLoanSeries,
-  { points: [] }, // ✅ explicit empty weighted series
+  perLoanSeries,
+  weightedSeries,
   {
+    weightedColor: "#000",
+    weightedWidth: 2.6,
     dates: timeline.dates,
-    tickSpacingX: 3,
-    hideWeighted: true
+    tickSpacingX: 3
   }
 );
+
 
 
 
