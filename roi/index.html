@@ -1966,24 +1966,12 @@ function renderKpiDrawer(kpiId) {
       "KPI1 ROI regression detected"
     );
 
-    // 3️⃣ Weighted portfolio series (MATCH KPI DEFINITION)
-    const weightedSeries = dates.map(d => {
-      let sum = 0;
-      let invested = 0;
+// 3️⃣ Weighted portfolio series (AUTHORITATIVE)
+const weightedSeries = dates.map(d => ({
+  date: d,
+  y: computeWeightedRoiAsOfMonth(loans, d)
+}));
 
-      loans.forEach(loan => {
-        const entry = getRoiEntryAsOfMonth(loan, d);
-        if (!entry || !Number.isFinite(entry.invested)) return;
-
-        sum += entry.roi * entry.invested;
-        invested += entry.invested;
-      });
-
-      return {
-        date: d,
-        y: invested > 0 ? sum / invested : null
-      };
-    });
 
     // 🔎 FINAL CONSISTENCY CHECK — LAST POINT MUST EQUAL KPI TILE
     const lastChartPoint = weightedSeries.at(-1)?.y;
@@ -2886,8 +2874,8 @@ loanPaths.forEach(p => {
 });
 
 
- // -----------------------------------
-// Weighted line (OPTIONAL)
+// -----------------------------------
+// Weighted line (OPTIONAL) — LINEAR ONLY
 // -----------------------------------
 if (!opts.hideWeighted && Array.isArray(weightedSeries) && weightedSeries.length) {
   const pts = weightedSeries
@@ -2912,6 +2900,7 @@ if (!opts.hideWeighted && Array.isArray(weightedSeries) && weightedSeries.length
     svg.appendChild(path);
   }
 }
+
 
 
   // -----------------------------------
