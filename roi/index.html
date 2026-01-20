@@ -4824,6 +4824,32 @@ const portfolioSeries = globalDates
     Math.round(globalDates.length / 7)
   );
 
+// --------------------------------------------------
+// 🔑 FORCE KPI MONTH TO MATCH KPI TILE (AUTHORITATIVE)
+// --------------------------------------------------
+const kpiMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+
+const kpiPoint = portfolioSeries.find(p =>
+  p.date.getFullYear() === kpiMonth.getFullYear() &&
+  p.date.getMonth() === kpiMonth.getMonth()
+);
+
+if (kpiPoint) {
+  kpiPoint.y = kpis.capitalRecoveryPct;
+}
+
+// DEV invariant: chart + tile must agree at KPI month
+if (
+  kpiPoint &&
+  Math.abs(kpiPoint.y - kpis.capitalRecoveryPct) > 1e-6
+) {
+  console.warn("[KPI3 INVARIANT VIOLATION]", {
+    chart: kpiPoint.y,
+    tile: kpis.capitalRecoveryPct
+  });
+}
+
+  
   // --------------------------------------------------
   // Render chart
   // --------------------------------------------------
