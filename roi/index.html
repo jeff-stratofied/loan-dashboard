@@ -2784,17 +2784,19 @@ if (!loanSeriesList.length) {
   // -------------------------
   let ys = [];
 
-  if (!opts.hideWeighted && Array.isArray(weightedSeries)) {
+  if (!opts.hideWeighted && weightedSeries?.points?.length) {
+
     weightedSeries.forEach(p => ys.push(p.y));
   }
 
-  loanSeriesList.forEach(ls =>
-  ls.data.forEach(p => {
-    if (p.y != null && Number.isFinite(p.y)) {
+loanSeriesList.forEach(ls =>
+  ls.points.forEach(p => {
+    if (Number.isFinite(p.y)) {
       ys.push(p.y);
     }
   })
 );
+
 
 
   const minY = Math.min(...ys);
@@ -2857,14 +2859,16 @@ function smoothPathFromPointsCubic(points, isTruncated = false) {
 // Loan lines (ALWAYS draw)
 // -----------------------------------
 loanSeriesList.forEach(ls => {
-  const pts = ls.data
-    .filter(p => p.y != null)
-    .map(p => [dateToX(p.date), yScale(p.y)]);
+const pts = ls.points.map(p => [
+  dateToX(p.x),
+  yScale(p.y)
+]);
+
 
   if (!pts.length) return;
 
   // ✅ ADD THIS LINE
-  const isTruncated = ls.data.length < globalDates.length;
+  const isTruncated = ls.points.length < globalDates.length;
 
   // ✅ CHANGE THIS LINE
   const pathD = smoothPathFromPointsCubic(pts, isTruncated);
@@ -3050,9 +3054,10 @@ html += `
   // per-loan series (SQUARE swatches)
 loanSeriesList.forEach(ls => {
   // find last owned point at or before hovered date
-  const pt = ls.data
-    .filter(p => p.date && p.date <= date && p.y != null)
-    .slice(-1)[0];
+  const pt = ls.points
+  .filter(p => p.x && p.x <= date)
+  .slice(-1)[0];
+
 
   // 🚫 not owned yet → do not show
   if (!pt) return;
