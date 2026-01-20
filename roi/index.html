@@ -4635,7 +4635,7 @@ function renderCapitalRecoveredDrawer() {
 
   drawerTitle.textContent = "Capital Recovery Over Time";
   drawerSub.textContent =
-    "Cumulative principal returned as a percentage of purchase price (through today).";
+    "Cumulative principal returned as a percentage of purchase price (through the current month).";
 
   const TODAY = new Date();
   TODAY.setHours(23, 59, 59, 999);
@@ -4660,23 +4660,30 @@ function renderCapitalRecoveredDrawer() {
   loans.forEach(l => {
     if (!l.amort || !l.amort.schedule) return;
 
-    let cumPrincipal = 0;
-    const monthly = new Map();
+const invested = l.userPurchasePrice || 0;
+if (!invested) return;
 
-    l.amort.schedule
-      .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
-      .forEach(r => {
-        const m = monthStart(r.loanDate);
-        const k = monthKey(m);
+const monthly = new Map();
 
-        cumPrincipal += r.principalPaid || 0;
+l.cumSchedule
+  .filter(r => r.loanDate && r.loanDate <= TODAY)
+  .forEach(r => {
+    const m = monthStart(r.loanDate);
+    const k = monthKey(m);
 
-        const invested = l.userPurchasePrice || 0;
-const pct = invested > 0 ? cumPrincipal / invested : 0;
+    const pct =
+      invested > 0
+        ? (r.cumPrincipal || 0) / invested
+        : 0;
 
-        monthly.set(k, { date: m, y: pct });
-        monthMap.set(k, m);
-      });
+    monthly.set(k, {
+      date: m,
+      y: pct
+    });
+
+    monthMap.set(k, m);
+  });
+
 
     loanSeriesList.push({
       id: l.id,
@@ -4762,13 +4769,12 @@ createMultiSeriesChart(
   // --------------------------------------------------
   // Metrics (AUTHORITATIVE)
   // --------------------------------------------------
-  drawerPrimaryTitle.textContent = "Capital Recovered";
-  drawerPrimary.textContent =
-    "$" + (kpis.capitalRecoveredAmount || 0).toLocaleString();
+drawerPrimaryTitle.textContent = "Capital Recovered";
+drawerPrimary.textContent =
+  (kpis.capitalRecoveredPct * 100).toFixed(2) + "%";
 
-  drawerSecondaryTitle.textContent = "% Recovered";
-  drawerSecondary.textContent =
-    ((kpis.capitalRecoveryPct || 0) * 100).toFixed(2) + "%";
+drawerSecondaryTitle.textContent = "As of";
+drawerSecondary.textContent = formatMonthYear(KPI_CURRENT_MONTH);
 
   // --------------------------------------------------
   // Table
@@ -4788,40 +4794,54 @@ createMultiSeriesChart(
   `;
 
 loans.forEach(l => {
-  if (!l.amort || !l.amort.schedule) return;
+  if (!Array.isArray(l.cumSchedule) || !l.cumSchedule.length) return;
 
-  const recovered = l.amort.schedule
-    .filter(r => r.isOwned && r.loanDate && r.loanDate <= TODAY)
-    .reduce((s, r) => s + (r.principalPaid || 0), 0);
+  // 🔑 AUTHORITATIVE LAST ROW (to date)
+  const last = l.cumSchedule.at(-1);
 
-  // 🔑 FIX 4 — USE USER INVESTMENT, NOT LOAN PRICE
-const invested = l.userPurchasePrice || 0;
-const pct = invested > 0 ? cumPrincipal / invested : 0;
+  const invested = l.userPurchasePrice || 0;
+  const recovered = last.cumPrincipal || 0;
+  const pct = invested > 0 ? recovered / invested : 0;
 
-
+  // 🔑 Remaining principal (ownership-aware)
   const remaining =
-    Math.max(0, invested - recovered);
+    Math.max(0, last.balance || 0);
 
+  const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
 
-    const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
-
-    html += `
-      <tr data-loan-id="${l.id}">
-        <td>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span style="width:10px;height:10px;border-radius:2px;background:${color}"></span>
-            <div>
-              <div style="font-weight:500">${l.name}</div>
-              <div style="font-size:11px;color:#64748b">${l.school || ''}</div>
+  html += `
+    <tr data-loan-id="${l.id}">
+      <td>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="
+            width:10px;
+            height:10px;
+            border-radius:2px;
+            background:${color}">
+          </span>
+          <div>
+            <div style="font-weight:500">${l.name}</div>
+            <div style="font-size:11px;color:#64748b">
+              ${l.school || ''}
             </div>
           </div>
-        </td>
-        <td style="color:${color};font-weight:600">$${recovered.toLocaleString()}</td>
-        <td>${(pct * 100).toFixed(2)}%</td>
-        <td>$${remaining.toLocaleString()}</td>
-      </tr>
-    `;
-  });
+        </div>
+      </td>
+
+      <td style="color:${color};font-weight:600">
+        $${recovered.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      </td>
+
+      <td>
+        ${(pct * 100).toFixed(2)}%
+      </td>
+
+      <td>
+        $${remaining.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      </td>
+    </tr>
+  `;
+});
 
   html += `
         </tbody>
