@@ -2052,22 +2052,35 @@ async function loadLoans() {
   const data = await res.json();
 
   // --------------------------------------------
-  // 1. Normalize raw loan fields
+  // 1. Normalize raw loan fields (CANONICAL)
   // --------------------------------------------
   loans = (data.loans || []).map(l => {
     const purchasePrice = Number(l.purchasePrice ?? 0);
 
+    // 🔑 CANONICAL PURCHASE DATE (REQUIRED)
+    const purchaseDate =
+      l.purchaseDate ??
+      l.purchase_date ??
+      l.purchasedAt ??
+      null;
+
     return {
       ...l,
+
+      // 🔑 canonical identity
       id: l.loanId,
       name: l.loanName ?? `Loan ${l.loanId}`,
-      school: l.school ?? "",
+
+      // 🔑 canonical dates
+      purchaseDate,
       loanStartDate: l.loanStartDate || "",
+
+      school: l.school ?? "",
       termYears: Number(l.termYears ?? 0),
       graceYears: Number(l.graceYears ?? 0),
 
       purchasePrice,
-      originalLoanAmount: purchasePrice, // 🔑 canonical basis for legacy code
+      originalLoanAmount: purchasePrice, // 🔑 legacy compatibility
 
       nominalRate: Number(l.nominalRate ?? 0),
       upfrontFee: Number(l.upfrontFee ?? 150),
@@ -2082,38 +2095,19 @@ async function loadLoans() {
     normalizeOwnership(loan); // 🔑 creates ownershipLots
   });
 
-// --------------------------------------------
-// 3. DERIVE userOwnershipPct FROM ownershipLots
-// --------------------------------------------
-loans.forEach(loan => {
-  loan.userOwnershipPct = Array.isArray(loan.ownershipLots)
-    ? loan.ownershipLots.reduce((s, t) => s + (Number(t.pct) || 0), 0)
-    : 0;
-});
-
-  
   // --------------------------------------------
-  // 4. DEV OVERRIDE — FORCE 100% OWNERSHIP (JEFF)
+  // 3. DERIVE userOwnershipPct (UI convenience)
   // --------------------------------------------
-/* delete
-  if (PAGE_USER === "jeff") {
-    loans.forEach(loan => {
-      loan.userOwnershipPct = 1;
-
-      // 🔑 keep lots consistent with override
-      if (Array.isArray(loan.ownershipLots)) {
-        loan.ownershipLots = [{
-          user: "jeff",
-          pct: 1,
-          pricePaid: loan.purchasePrice,
-          purchaseDate: loan.purchaseDate
-        }];
-      }
-    });
-  }
-*/
-  
+  loans.forEach(loan => {
+    loan.userOwnershipPct = Array.isArray(loan.ownershipLots)
+      ? loan.ownershipLots.reduce(
+          (s, t) => s + (Number(t.pct) || 0),
+          0
+        )
+      : 0;
+  });
 }
+
 
 
 
