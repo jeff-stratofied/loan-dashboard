@@ -1884,192 +1884,42 @@ function openLoanDrawerSafe(loan) {
   openDrawerForLoan(loan);
 }
 
-// =====================================================
-// KPI DRAWER RENDERER — ROI (MISSING, REQUIRED)
-// =====================================================
-function renderKpiDrawer(kpiId) {
-  const loans = getLoansForKpis();
-  const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
-
-  // 🔑 AUTHORITATIVE KPI1 VALUE (SINGLE SOURCE OF TRUTH)
-  const weightedRoiValue = kpis.weightedROI;
-
-  drawerTitle.textContent = "";
-  drawerSub.textContent = "";
-
-  drawerLegend.style.display = "none";
-  drawerAmortContainer.style.display = "none";
-
-  // Clear chart + extra
-  drawerChartArea.innerHTML = "";
-  drawerExtra.innerHTML = "";
-
-  // -------------------------
-  // KPI SWITCH
-  // -------------------------
-  if (kpiId === "kpi1") {
-    drawerTitle.textContent = "Weighted ROI to Date";
-
-    drawerPrimaryTitle.textContent = "ROI to Date";
-    drawerPrimary.textContent =
-      (weightedRoiValue * 100).toFixed(2) + "%";
-
-    drawerSecondaryTitle.textContent = "As of";
-    drawerSecondary.textContent =
-      formatMonthYear(KPI_CURRENT_MONTH);
-
-    // =====================================================
-    // KPI1 — Weighted ROI to Date (REUSE TILE ROI SERIES)
-    // =====================================================
-
-    // 1️⃣ Build unified month axis from existing roiSeries
-    const dates = Array.from(
-      new Set(
-        loans.flatMap(l =>
-          (l.roiSeries || []).map(r => r.date.getTime())
-        )
-      )
-    )
-      .sort((a, b) => a - b)
-      .map(ms => new Date(ms));
-
-    // 2️⃣ Per-loan ROI series (direct reuse, no recompute)
-    const perLoanSeries = loans.map(loan => {
-      const id = loan.id ?? loan.loanId;
-      const roiMap = new Map(
-        (loan.roiSeries || []).map(r => [r.date.getTime(), r.roi])
-      );
-
-      return {
-        id,
-        name: loan.name,
-        color: window.KPI_COLOR_MAP?.[id] || "var(--muted)",
-        data: dates.map(d => ({
-          date: d,
-          y: roiMap.get(d.getTime()) ?? null
-        }))
-      };
-    });
-
-    // 🔒 DEV-ONLY INVARIANT — PER-LOAN ROI SHOULD NOT REGRESS
-    console.assert(
-      perLoanSeries.every(s =>
-        s.data.every((p, i, a) =>
-          i === 0 ||
-          p.y == null ||
-          a[i - 1].y == null ||
-          p.y >= a[i - 1].y - 1e-6
-        )
-      ),
-      "KPI1 ROI regression detected"
-    );
-
-// 3️⃣ Weighted portfolio series — DERIVED FROM ROI SERIES (NOT KPIs)
-const weightedSeries = dates.map(d => {
-  let sum = 0;
-  let invested = 0;
-
-  loans.forEach(loan => {
-    const entry = getRoiEntryAsOfMonth(loan, d);
-    if (!entry || !Number.isFinite(entry.invested)) return;
-
-    sum += entry.roi * entry.invested;
-    invested += entry.invested;
-  });
-
-  return {
-    date: d,
-    y: invested > 0 ? sum / invested : null
-  };
-});
-
-
-
-    // 🔎 FINAL CONSISTENCY CHECK — LAST POINT MUST EQUAL KPI TILE
-    const lastChartPoint = weightedSeries.at(-1)?.y;
-    console.assert(
-      Math.abs(lastChartPoint - weightedRoiValue) < 1e-8,
-      "KPI1 mismatch: tile vs chart",
-      { tile: weightedRoiValue, chart: lastChartPoint }
-    );
-
-    // 4️⃣ Render chart
-    createMultiSeriesChart(
-      drawerChartArea,
-      perLoanSeries,
-      weightedSeries,
-      {
-        weightedColor: "#000",
-        weightedWidth: 2.6,
-        dates,
-        tickSpacingX: 3
-      }
-    );
-  }
-
-  else if (kpiId === "kpi2") {
-    drawerTitle.textContent = "Projected Portfolio ROI";
-
-    drawerPrimaryTitle.textContent = "Projected ROI";
-    drawerPrimary.textContent =
-      (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
-
-    drawerSecondaryTitle.textContent = "Lifetime";
-    drawerSecondary.textContent = "All Loans";
-
-    const timeline = buildProjectedRoiTimeline(loans, {
-      colorMap: buildKpiColorMap(loans)
-    });
-
-    createMultiSeriesChart(
-      drawerChartArea,
-      timeline.perLoanSeries,
-      timeline.weightedSeries,
-      { dates: timeline.dates }
-    );
-  }
-
-  else if (kpiId === "kpi3") {
-    drawerTitle.textContent = "Capital Recovered";
-
-    drawerPrimaryTitle.textContent = "Recovered";
-    drawerPrimary.textContent =
-      "$" + formatCurrency(kpis.capitalRecoveredAmount);
-
-    drawerSecondaryTitle.textContent = "Recovery %";
-    drawerSecondary.textContent =
-      (kpis.capitalRecoveryPct * 100).toFixed(1) + "%";
-  }
-
-  else {
-    console.warn("Unknown KPI:", kpiId);
-  }
-}
-
-
-
-
-
     
- // =====================================================
-// KPI DRAWER OPEN — ROI (REQUIRED FOR EMBED)
+// =====================================================
+// KPI DRAWER OPEN — ROI (KPI-SPECIFIC)
 // =====================================================
 function openRoiKpiDrawer(kpiId) {
   currentMode = "kpi";
   currentLoan = null;
 
-  // Hide loan-only UI
+  // Reset shared drawer UI
   drawerAmortContainer.style.display = "none";
   drawerLegend.style.display = "none";
   drawerExtra.innerHTML = "";
+  drawerChartArea.innerHTML = "";
 
-  // Delegate to existing KPI renderer
-  renderKpiDrawer(kpiId);
+  // -------------------------
+  // KPI-specific dispatch
+  // -------------------------
+  if (kpiId === "kpi1" || kpiId === "tpv") {
+    renderTPVDrawer();
+  }
+  else if (kpiId === "kpi2" || kpiId === "rates") {
+    renderRatesDrawer();
+  }
+  else if (kpiId === "kpi3") {
+    renderCapitalRecoveredDrawer();
+  }
+  else {
+    console.warn("Unknown KPI:", kpiId);
+    return;
+  }
 
   drawer.classList.add("open");
   drawer.setAttribute("aria-hidden", "false");
   drawer.scrollTop = 0;
 }
+
 
 /* ============================
    KPI deep-link router (ROI)
