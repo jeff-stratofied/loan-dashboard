@@ -1964,12 +1964,22 @@ function renderKpiDrawer(kpiId) {
       "KPI1 ROI regression detected"
     );
 
-// 3️⃣ Weighted portfolio series (AUTHORITATIVE — from engine KPIs)
+// 3️⃣ Weighted portfolio series — DERIVED FROM ROI SERIES (NOT KPIs)
 const weightedSeries = dates.map(d => {
-  const month = normalizeToMonthStart(d);
+  let sum = 0;
+  let invested = 0;
+
+  loans.forEach(loan => {
+    const entry = getRoiEntryAsOfMonth(loan, d);
+    if (!entry || !Number.isFinite(entry.invested)) return;
+
+    sum += entry.roi * entry.invested;
+    invested += entry.invested;
+  });
+
   return {
-    date: month,
-    y: computeKPIs(loans, month).weightedROI
+    date: d,
+    y: invested > 0 ? sum / invested : null
   };
 });
 
