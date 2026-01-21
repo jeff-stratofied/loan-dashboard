@@ -3511,7 +3511,8 @@ function renderLoanTableROI(list = currentLoans) {
   const kpisEl = document.getElementById("kpis");
   if (!kpisEl) return;
 
-  const kpis = computeKPIs(getLoansForKpis(), KPI_CURRENT_MONTH);
+  const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
+
 
   console.group("🟥 KPI TILE RENDER — KPI1");
   console.log("weightedROI raw:", kpis.weightedROI);
