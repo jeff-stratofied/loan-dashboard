@@ -5474,6 +5474,22 @@ renderKpiTiles();
 // KPI TILE RENDER — AUTHORITATIVE
 // --------------------------------------------------
 function renderKpiTiles() {
+
+console.group("🧪 KPI TILE DEBUG");
+console.log("KPI_CURRENT_MONTH:", KPI_CURRENT_MONTH);
+console.log("currentLoans.length:", currentLoans.length);
+console.log("currentLoans ids:", currentLoans.map(l => l.id));
+console.log(
+  "ownership pcts:",
+  currentLoans.map(l =>
+    l.ownershipLots
+      ?.filter(t => t.user === PAGE_USER)
+      .reduce((s, t) => s + Number(t.pct || 0), 0)
+  )
+);
+console.groupEnd();
+
+  
   const kpisEl = document.getElementById("kpis");
   if (!kpisEl) return;
 
