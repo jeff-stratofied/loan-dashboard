@@ -4767,83 +4767,58 @@ loans.forEach(l => {
 
 
 // --------------------------------------------------
-// Portfolio cumulative line (MONTHLY, AUTHORITATIVE)
+// KPI3 Portfolio cumulative line (AUTHORITATIVE)
+// Option A: paymentsToDate ÷ totalLifetimeInvested
 // --------------------------------------------------
 
-// Total invested MUST match computeKPIs()
-const totalInvested = loans.reduce((s, l) => {
-  const invested = Number(l.userPurchasePrice || 0);
-  return s + invested;
-}, 0);
+// Lifetime invested capital — MUST match roiEngine
+const totalInvestedLifetime = loans.reduce(
+  (sum, l) => sum + Number(l.userPurchasePrice || 0),
+  0
+);
 
-let cumRecovered = 0;
+let cumulativeRecovered = 0;
 
 const portfolioSeries = globalDates
   .filter(d => d <= asOfEnd)
   .map(d => {
+
     loans.forEach(l => {
       const ownPct = Array.isArray(l.ownershipLots)
-  ? l.ownershipLots
-      .filter(t => t.user === PAGE_USER)
-      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
-  : 0;
+        ? l.ownershipLots
+            .filter(t => t.user === PAGE_USER)
+            .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+        : 0;
 
       if (!ownPct) return;
 
-      l.amort?.schedule?.forEach(r => {
+      const sched = l?.amort?.schedule;
+      if (!Array.isArray(sched)) return;
+
+      sched.forEach(r => {
         if (
-          r.isOwned &&
+          r?.isOwned &&
           r.loanDate instanceof Date &&
-          r.loanDate <= d &&
-          r.loanDate.getMonth() === d.getMonth() &&
-          r.loanDate.getFullYear() === d.getFullYear()
+          r.loanDate.getFullYear() === d.getFullYear() &&
+          r.loanDate.getMonth() === d.getMonth()
         ) {
-          // ✅ EXACTLY matches computeKPIs()
-          cumRecovered += (Number(r.principalPaid) || 0) * ownPct;
+          cumulativeRecovered +=
+            (
+              Number(r.principalPaid || 0) +
+              Number(r.interest || 0) -
+              Number(r.feeThisMonth || 0)
+            ) * ownPct;
         }
       });
     });
 
     return {
       date: d,
-      y: totalInvested > 0 ? cumRecovered / totalInvested : 0
+      y: totalInvestedLifetime > 0
+        ? cumulativeRecovered / totalInvestedLifetime
+        : 0
     };
   });
-
-
-
-  // --------------------------------------------------
-  // Dynamic x-axis spacing
-  // --------------------------------------------------
-  const tickSpacingX = Math.max(
-    1,
-    Math.round(globalDates.length / 7)
-  );
-
-// --------------------------------------------------
-// 🔑 FORCE KPI MONTH TO MATCH KPI TILE (AUTHORITATIVE)
-// --------------------------------------------------
-const kpiMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-
-const kpiPoint = portfolioSeries.find(p =>
-  p.date.getFullYear() === kpiMonth.getFullYear() &&
-  p.date.getMonth() === kpiMonth.getMonth()
-);
-
-if (kpiPoint) {
-  kpiPoint.y = kpis.capitalRecoveryPct;
-}
-
-// DEV invariant: chart + tile must agree at KPI month
-if (
-  kpiPoint &&
-  Math.abs(kpiPoint.y - kpis.capitalRecoveryPct) > 1e-6
-) {
-  console.warn("[KPI3 INVARIANT VIOLATION]", {
-    chart: kpiPoint.y,
-    tile: kpis.capitalRecoveryPct
-  });
-}
 
   
   // --------------------------------------------------
@@ -4859,17 +4834,16 @@ createMultiSeriesChart(
     weightedWidth: 3,
     tickSpacingX,
 
-    // 🔑 KPI3 AUTHORITATIVE LABEL
     weightedLabel: "Portfolio Recovered",
 
-// 🔑 KPI3 AUTHORITATIVE HOVER — engine owns the value
-weightedLabelFn: () => `
-  ${formatMonthYear(KPI_CURRENT_MONTH)}
-  • Portfolio Recovered ${(kpis.capitalRecoveryPct * 100).toFixed(2)}%
-`
-
+    // Display KPI value, but DO NOT override series
+    weightedLabelFn: () => `
+      ${formatMonthYear(KPI_CURRENT_MONTH)}
+      • Portfolio Recovered ${(kpis.capitalRecoveryPct * 100).toFixed(2)}%
+    `
   }
 );
+
 
 
   // --------------------------------------------------
