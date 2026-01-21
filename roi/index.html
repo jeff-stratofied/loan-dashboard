@@ -5477,7 +5477,8 @@ function renderKpiTiles() {
   const kpisEl = document.getElementById("kpis");
   if (!kpisEl) return;
 
-  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+  const asOfMonth = KPI_CURRENT_MONTH;
+
   const kpis = computeKPIs(currentLoans, asOfMonth);
 
   kpisEl.innerHTML = `
