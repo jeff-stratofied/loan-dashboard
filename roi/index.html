@@ -5455,10 +5455,19 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 document.addEventListener("DOMContentLoaded", async () => {
   await loadLoans();
 
-  // =========================================
-  // DERIVE + INITIALIZE FILTER STATE (REQUIRED)
-  // =========================================
-  const derivedLoans = deriveLoansWithAmortAndRoi(loans);
+// =========================================
+// DERIVE + INITIALIZE FILTER STATE (REQUIRED)
+// =========================================
+const derivedLoans = deriveLoansWithAmortAndRoi(loans);
+
+// 🔒 IMMUTABLE KPI LOAN UNIVERSE (DERIVED + OWNED)
+// KPIs must NEVER depend on UI-mutated loan arrays
+const KPI_LOANS = derivedLoans.filter(loan =>
+  Array.isArray(loan.ownershipLots) &&
+  loan.ownershipLots.some(
+    lot => lot.user === PAGE_USER && Number(lot.pct) > 0
+  )
+);
 
 // 🔑 SOURCE OF TRUTH — MATCH AMORT & EARNINGS
 allLoans = derivedLoans;
@@ -5479,6 +5488,8 @@ filteredLoans = currentLoans.slice();
 // 🔑 KPI tiles render ONCE, after ownership is final
 renderKpiTiles();
 
+
+  
   
 // --------------------------------------------------
 // KPI TILE RENDER — AUTHORITATIVE
@@ -5511,7 +5522,7 @@ const loansForKpis =
     ? getLoansForKpis()
     : currentLoans;
 
-const kpis = computeKPIs(loansForKpis, asOfMonth);
+const kpis = computeKPIs(KPI_LOANS, asOfMonth);
 
 console.log("KPI TILE (renderKpiTiles)", {
   asOfMonth,
