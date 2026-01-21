@@ -1398,6 +1398,7 @@ function setViewMode(mode) {
   if (mode === "compact") {
     loanGrid.classList.add("compact");
     renderLoanGrid(currentLoans);
+    renderRoiKpiTiles();
   }
 
   else if (mode === "table") {
@@ -1408,6 +1409,7 @@ function setViewMode(mode) {
 
   else {
     renderLoanGrid(currentLoans); // full
+    renderRoiKpiTiles();
   }
 
 }
@@ -3075,6 +3077,7 @@ function applyLoanFilters() {
     renderLoanTableROI(getLoansForTableView());
   } else {
     renderLoanGrid(currentLoans);
+    renderRoiKpiTiles();
   }
 }
 
@@ -3813,53 +3816,47 @@ async function initROI() {
 // --------------------------------------------------
 // UI: Render KPI tiles
 // --------------------------------------------------
+function renderRoiKpiTiles() {
+  const loans = getLoansForKpis();
 
-const kpisEl = document.getElementById("kpis");
+  if (!Array.isArray(loans) || loans.length === 0) {
+    console.warn("[KPI] render skipped — loans not ready");
+    return;
+  }
 
-// 🟥 DEBUG: KPI TILE RENDER — KPI1
-window.__kpiTileRenderCount =
-  (window.__kpiTileRenderCount || 0) + 1;
+  // 🔑 SINGLE SOURCE OF TRUTH
+  const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
-console.group(
-  "🟥 KPI TILE RENDER #" + window.__kpiTileRenderCount
-);
-console.log("kpis object:", kpis);
-console.log("kpis.weightedROI:", kpis.weightedROI);
-console.log(
-  "formatted KPI1:",
-  (kpis.weightedROI * 100).toFixed(2) + "%"
-);
-console.log(
-  "kpis.projectedWeightedROI:",
-  kpis.projectedWeightedROI
-);
-console.trace("KPI TILE RENDER STACK TRACE");
-console.groupEnd();
+  console.group("🟦 KPI TILE RENDER");
+  console.log("loan count:", loans.length);
+  console.log("weightedROI:", kpis.weightedROI);
+  console.log("projectedWeightedROI:", kpis.projectedWeightedROI);
+  console.groupEnd();
 
-// 🔴 END DEBUG
+  const kpisEl = document.getElementById("kpis");
+  kpisEl.innerHTML = `
+    <div class="kpi" data-kpi="tpv">
+      <h3>Weighted ROI to Current Month</h3>
+      <p id="wroi">${(kpis.weightedROI * 100).toFixed(2)}%</p>
+    </div>
 
-kpisEl.innerHTML = `
-  
-  <div class="kpi" data-kpi="tpv">
-    <h3>Weighted ROI to Current Month</h3>
-    <p id="wroi">${(kpis.weightedROI * 100).toFixed(2)}%</p>
-  </div>
+    <div class="kpi" data-kpi="rates">
+      <h3>Projected Weighted ROI</h3>
+      <p id="wproj">${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
+    </div>
 
-  <div class="kpi" data-kpi="rates">
-    <h3>Projected Weighted ROI</h3>
-    <p id="wproj">${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
-  </div>
+    <div class="kpi" data-kpi="capitalRecovery">
+      <h3>Capital Recovered</h3>
+      <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
+    </div>
 
-  <div class="kpi" data-kpi="capitalRecovery">
-    <h3>Capital Recovered</h3>
-    <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
-  </div>
+    <div class="kpi" data-kpi="spread">
+      <h3>ROI Spread</h3>
+      <p id="roiSpread"></p>
+    </div>
+  `;
+}
 
-  <div class="kpi" data-kpi="spread">
-    <h3>ROI Spread</h3>
-    <p id="roiSpread"></p>
-  </div>
-`;
 
 
   // --------------------------------------------------
@@ -5586,6 +5583,8 @@ currentLoans = allLoans.filter(loan => {
 
 // Filters & views operate on visible loans only
 filteredLoans = currentLoans.slice();
+
+  renderRoiKpiTiles();
 
   
   // =====================================================
