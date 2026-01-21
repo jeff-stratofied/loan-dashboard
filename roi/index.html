@@ -4725,7 +4725,12 @@ loans.forEach(l => {
       r.loanDate instanceof Date &&
       r.loanDate <= KPI_CURRENT_MONTH
     ) {
-      recoveredOwned += (Number(r.principalPaid) || 0) * ownPct;
+      recoveredOwned += (
+  (Number(r.principalPaid) || 0) +
+  (Number(r.interest) || 0) -
+  (Number(r.feeThisMonth) || 0)
+) * ownPct;
+
     }
 
     if (r.loanDate instanceof Date) {
