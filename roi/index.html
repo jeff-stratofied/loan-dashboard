@@ -4862,13 +4862,11 @@ createMultiSeriesChart(
     // 🔑 KPI3 AUTHORITATIVE LABEL
     weightedLabel: "Portfolio Recovered",
 
-// 🔑 KPI3 AUTHORITATIVE HOVER — chart owns its value
-weightedLabelFn: (pt) => {
-  return `
-    ${formatMonthYear(pt.date)}
-    • Portfolio Recovered ${(pt.y * 100).toFixed(2)}%
-  `;
-}
+// 🔑 KPI3 AUTHORITATIVE HOVER — engine owns the value
+weightedLabelFn: () => `
+  ${formatMonthYear(KPI_CURRENT_MONTH)}
+  • Portfolio Recovered ${(kpis.capitalRecoveryPct * 100).toFixed(2)}%
+`
 
   }
 );
@@ -4981,57 +4979,6 @@ loans.forEach(l => {
       });
     });
   }
-
-// ==================================================
-// KPI3 DEBUG — portfolio consistency check
-// ==================================================
-try {
-  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-
-  let sumRecovered = 0;
-  let sumInvested = 0;
-
-  loans.forEach(l => {
-    const invested = Number(l.userPurchasePrice || 0);
-    const ownPct = Array.isArray(l.ownershipLots)
-  ? l.ownershipLots
-      .filter(t => t.user === PAGE_USER)
-      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
-  : 0;
-
-    if (!invested || !ownPct) return;
-
-    const row = l.cumSchedule?.filter(r => r.loanDate && r.loanDate <= asOfEnd).at(-1);
-    if (!row) return;
-
-    l.amort?.schedule?.forEach(r => {
-  if (
-    r.isOwned &&
-    r.loanDate instanceof Date &&
-    r.loanDate <= asOfEnd
-  ) {
-    sumRecovered += (Number(r.principalPaid) || 0) * ownPct;
-  }
-});
-
-    sumInvested += invested;
-  });
-
-  const computed = sumInvested > 0 ? sumRecovered / sumInvested : 0;
-
-  console.log("[KPI3 PORTFOLIO CHECK]", {
-    asOf: formatMonthYear(KPI_CURRENT_MONTH),
-    computed,
-    tile: kpis.capitalRecoveryPct,
-    diff: computed - (kpis.capitalRecoveryPct || 0),
-    sumRecovered,
-    sumInvested
-  });
-} catch (e) {
-  console.warn("[KPI3 PORTFOLIO CHECK] failed", e);
-}
-
-  
 }
 
 
