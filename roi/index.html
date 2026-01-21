@@ -4691,6 +4691,14 @@ function renderCapitalRecoveredDrawer() {
   const globalDates = Array.from(monthMap.values())
     .sort((a, b) => a - b);
 
+// --------------------------------------------------
+// Dynamic x-axis spacing (REQUIRED)
+// --------------------------------------------------
+const tickSpacingX = Math.max(
+  1,
+  Math.round(globalDates.length / 7)
+);
+  
 // ==================================================
 // KPI3 historical path (SAFE, OWNED, CLAMPED)
 // ==================================================
