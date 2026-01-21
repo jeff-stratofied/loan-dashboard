@@ -2882,8 +2882,13 @@ if (Number.isFinite(weightedAtDate)) {
 }
 
 
-// per-loan series (SQUARE swatches + NAME)
+// per-loan series (SQUARE swatches + NAME, LIMITED)
+let shown = 0;
+const MAX_HOVER_LOANS = 10;
+
 loanSeriesList.forEach(ls => {
+  if (shown >= MAX_HOVER_LOANS) return;
+
   // find last owned point at or before hovered date
   const pt = ls.data
     .filter(p => p.date && p.date <= date && p.y != null)
@@ -2891,6 +2896,8 @@ loanSeriesList.forEach(ls => {
 
   // 🚫 not owned yet → do not show
   if (!pt) return;
+
+  shown++;
 
   html += `
     <div style="
@@ -2905,16 +2912,18 @@ loanSeriesList.forEach(ls => {
         background:${ls.color || "#888"};
         display:inline-block;
         flex-shrink:0;
+        border-radius:2px;
       "></span>
-      <span style="flex:1">
+      <span style="flex:1;white-space:nowrap">
         ${ls.name}
       </span>
-      <span>
+      <span style="font-weight:600">
         ${(pt.y * 100).toFixed(2)}%
       </span>
     </div>
   `;
 });
+
 
 
 
