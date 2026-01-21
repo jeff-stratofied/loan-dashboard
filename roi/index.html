@@ -5466,14 +5466,20 @@ currentLoans = allLoans.filter(loan => {
 // Filters & views operate on visible loans only
 filteredLoans = currentLoans.slice();
 
+// 🔑 KPI tiles render ONCE, after ownership is final
+renderKpiTiles();
+
+  
 // --------------------------------------------------
 // KPI TILE RENDER — AUTHORITATIVE
 // --------------------------------------------------
-const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-const kpis = computeKPIs(currentLoans, asOfMonth);
+function renderKpiTiles() {
+  const kpisEl = document.getElementById("kpis");
+  if (!kpisEl) return;
 
-const kpisEl = document.getElementById("kpis");
-if (kpisEl) {
+  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+  const kpis = computeKPIs(currentLoans, asOfMonth);
+
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
       <h3>Weighted ROI to Current Month</h3>
@@ -5496,6 +5502,7 @@ if (kpisEl) {
     </div>
   `;
 }
+
 
   
   // =====================================================
