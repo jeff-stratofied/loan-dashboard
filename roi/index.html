@@ -3815,6 +3815,23 @@ async function initROI() {
   // --------------------------------------------------
   const kpisEl = document.getElementById("kpis");
   kpisEl.innerHTML = `
+    
+    console.group("🟥 KPI TILE RENDER — KPI1");
+console.log("value passed to tile:", value);
+console.log("value * 100:", value * 100);
+console.log("formatted:", (value * 100).toFixed(2) + "%");
+console.trace("KPI TILE STACK TRACE");
+console.groupEnd();
+
+window.__kpiTileRenderCount =
+  (window.__kpiTileRenderCount || 0) + 1;
+
+console.log(
+  "🟥 KPI TILE RENDER COUNT:",
+  window.__kpiTileRenderCount
+);
+
+    
     <div class="kpi" data-kpi="tpv">
       <h3>Weighted ROI to Current Month</h3>
       <p id="wroi">${(kpis.weightedROI * 100).toFixed(2)}%</p>
@@ -3842,13 +3859,22 @@ async function initROI() {
   document.querySelectorAll("#kpis .kpi").forEach(tile => {
     tile.addEventListener("click", e => {
       e.preventDefault();
-
+      
       const kpi = tile.dataset.kpi;
       if (!kpi) return;
 
       if (!PAGE_CONTEXT.isEmbed) {
         openRoiKpiFromUrl(kpi);
       }
+
+console.group("🟥 KPI TILE VALUE SOURCE");
+console.log("loans.length:", loans?.length);
+console.log("asOf used:", someDate);
+console.log("weightedROI:", weightedRoi);
+console.trace("VALUE SOURCE TRACE");
+console.groupEnd();
+
+      
     });
   });
 
@@ -4343,6 +4369,18 @@ function renderTPVDrawer() {
   drawerPrimary.textContent =
     (kpis.weightedROI * 100).toFixed(2) + "%";
 
+setTimeout(() => {
+  console.warn("🔴 FORCING KPI1 TILE TO DRAWER VALUE");
+  const tile = document.querySelector(
+    '.kpi:nth-child(1) p'
+  );
+  if (tile) {
+    tile.textContent =
+      (kpis.weightedROI * 100).toFixed(2) + "%";
+  }
+}, 0);
+
+  
   // ===============================
   // 2. Portfolio value as of KPI month
   // ===============================
