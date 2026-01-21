@@ -127,10 +127,14 @@ export function computeKPIs(loans, asOfMonth) {
     };
   }
 
+  // ----------------------------------
+  // Total invested (ownership-aware)
+  // ----------------------------------
   const totalInvested = loans.reduce((s, l) => {
-    const last = Array.isArray(l.roiSeries) && l.roiSeries.length
-      ? l.roiSeries[l.roiSeries.length - 1]
-      : null;
+    const last =
+      Array.isArray(l.roiSeries) && l.roiSeries.length
+        ? l.roiSeries[l.roiSeries.length - 1]
+        : null;
     return s + safeNum(last?.invested);
   }, 0);
 
@@ -144,47 +148,54 @@ export function computeKPIs(loans, asOfMonth) {
     };
   }
 
+  // ----------------------------------
+  // Weighted ROI to date
+  // ----------------------------------
   const weightedROI = computeWeightedRoiAsOfMonth(loans, asOfMonth);
 
+  // ----------------------------------
+  // Projected weighted ROI (terminal)
+  // ----------------------------------
   const projectedWeightedROI =
     loans.reduce((sum, l) => {
-      const last = Array.isArray(l.roiSeries) && l.roiSeries.length
-        ? l.roiSeries[l.roiSeries.length - 1]
-        : null;
+      const last =
+        Array.isArray(l.roiSeries) && l.roiSeries.length
+          ? l.roiSeries[l.roiSeries.length - 1]
+          : null;
 
       if (!last) return sum;
       return sum + safeNum(last.roi) * safeNum(last.invested);
-    }, 0) / (totalInvested || 1);
+    }, 0) / totalInvested;
 
+  // ----------------------------------
+  // Capital recovered to date
+  // (paid principal + interest − fees)
+  // ----------------------------------
   const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
 
-  let recoveredPrincipalTotal = 0;
+  let recoveredCashTotal = 0;
 
   loans.forEach(l => {
-    const sched = l?.amort?.schedule;
-    if (!Array.isArray(sched)) return;
+    const entry = getRoiEntryAsOfMonth(l, asOf);
+    if (!entry) return;
 
-    const { ownershipPct } = getOwnershipBasis(l);
-
-    sched.forEach(r => {
-      if (r?.isOwned && r?.loanDate instanceof Date && r.loanDate <= asOf) {
-        // principalPaid is whole-loan; scale to owned pct
-        recoveredPrincipalTotal += safeNum(r.principalPaid) * ownershipPct;
-      }
-    });
+    // entry.realized is already:
+    // (cumPrincipal + cumInterest − cumFees) * ownershipPct
+    recoveredCashTotal += safeNum(entry.realized);
   });
 
   const capitalRecoveryPct =
-    totalInvested > 0 ? recoveredPrincipalTotal / totalInvested : 0;
+    totalInvested > 0 ? recoveredCashTotal / totalInvested : 0;
 
   return {
     totalInvested,
     weightedROI,
     projectedWeightedROI,
-    capitalRecoveredAmount: recoveredPrincipalTotal,
+    capitalRecoveredAmount: recoveredCashTotal,
     capitalRecoveryPct
   };
 }
+
 
 export function buildProjectedRoiTimeline(loans, opts = {}) {
 
