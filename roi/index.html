@@ -2882,8 +2882,7 @@ if (Number.isFinite(weightedAtDate)) {
 }
 
 
-
-  // per-loan series (SQUARE swatches)
+// per-loan series (SQUARE swatches + NAME)
 loanSeriesList.forEach(ls => {
   // find last owned point at or before hovered date
   const pt = ls.data
@@ -2894,7 +2893,12 @@ loanSeriesList.forEach(ls => {
   if (!pt) return;
 
   html += `
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:2px">
+    <div style="
+      display:flex;
+      gap:8px;
+      align-items:center;
+      margin-bottom:2px
+    ">
       <span style="
         width:10px;
         height:10px;
@@ -2902,10 +2906,16 @@ loanSeriesList.forEach(ls => {
         display:inline-block;
         flex-shrink:0;
       "></span>
-      <span>${(pt.y * 100).toFixed(2)}%</span>
+      <span style="flex:1">
+        ${ls.name}
+      </span>
+      <span>
+        ${(pt.y * 100).toFixed(2)}%
+      </span>
     </div>
   `;
 });
+
 
 
   tooltip.innerHTML = html;
