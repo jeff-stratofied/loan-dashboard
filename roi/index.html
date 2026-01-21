@@ -4984,15 +4984,19 @@ const remaining = Math.max(0, invested - recovered);
   }
 
 // ==================================================
-// KPI3 EXPLICIT HOVER (AUTHORITATIVE)
+// KPI3 EXPLICIT HOVER (SCOPED)
 // ==================================================
 const tooltip = document.getElementById("tooltip");
 
-// Defensive: remove any prior KPI3 hover bindings
-drawerChartArea.onmousemove = null;
-drawerChartArea.onmouseleave = null;
+// Clean up any previous KPI3 handlers first
+if (drawerChartArea.__kpi3HoverHandlers) {
+  const { move, leave } = drawerChartArea.__kpi3HoverHandlers;
+  drawerChartArea.removeEventListener("mousemove", move);
+  drawerChartArea.removeEventListener("mouseleave", leave);
+  drawerChartArea.__kpi3HoverHandlers = null;
+}
 
-drawerChartArea.addEventListener("mousemove", e => {
+const moveHandler = e => {
   if (!tooltip) return;
 
   const pct = (kpis.capitalRecoveryPct * 100).toFixed(2);
@@ -5003,12 +5007,22 @@ drawerChartArea.addEventListener("mousemove", e => {
   tooltip.style.display = "block";
   tooltip.style.left = `${e.clientX + 8}px`;
   tooltip.style.top = `${e.clientY - 12}px`;
-});
+};
 
-drawerChartArea.addEventListener("mouseleave", () => {
+const leaveHandler = () => {
   if (!tooltip) return;
   tooltip.style.display = "none";
-});
+};
+
+drawerChartArea.addEventListener("mousemove", moveHandler);
+drawerChartArea.addEventListener("mouseleave", leaveHandler);
+
+// 🔑 remember handlers so we can remove them later
+drawerChartArea.__kpi3HoverHandlers = {
+  move: moveHandler,
+  leave: leaveHandler
+};
+
 
   
 }
