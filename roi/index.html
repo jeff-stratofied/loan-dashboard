@@ -5489,48 +5489,75 @@ filteredLoans = currentLoans.slice();
 renderKpiTiles();
 
 
-  
+  function computeKpisFromRoiSeries(loans, asOfMonth) {
+  let invested = 0;
+  let loanValue = 0;
+  let finalLoanValue = 0;
+  let capitalRecovered = 0;
+
+  loans.forEach(loan => {
+    const entry = getRoiEntryAsOfMonth(loan, asOfMonth);
+    if (!entry) return;
+
+    invested += entry.invested;
+    loanValue += entry.loanValue;
+    capitalRecovered += entry.realized;
+
+    const last = loan.roiSeries?.[loan.roiSeries.length - 1];
+    if (last) {
+      finalLoanValue += last.loanValue;
+    }
+  });
+
+  return {
+    weightedROI: invested > 0 ? (loanValue - invested) / invested : 0,
+    projectedWeightedROI: invested > 0 ? (finalLoanValue - invested) / invested : 0,
+    capitalRecoveryPct: invested > 0 ? capitalRecovered / invested : 0
+  };
+}
+
   
 // --------------------------------------------------
 // KPI TILE RENDER — AUTHORITATIVE
 // --------------------------------------------------
 function renderKpiTiles() {
+  // ============================
+  // DEBUG (can remove later)
+  // ============================
+  console.group("🧪 KPI TILE DEBUG");
+  console.log("KPI_CURRENT_MONTH:", KPI_CURRENT_MONTH);
+  console.log("KPI_LOANS.length:", KPI_LOANS.length);
+  console.log("KPI_LOANS ids:", KPI_LOANS.map(l => l.id));
+  console.log(
+    "ownership pcts:",
+    KPI_LOANS.map(l =>
+      l.ownershipLots
+        ?.filter(t => t.user === PAGE_USER)
+        .reduce((s, t) => s + Number(t.pct || 0), 0)
+    )
+  );
+  console.groupEnd();
 
-console.group("🧪 KPI TILE DEBUG");
-console.log("KPI_CURRENT_MONTH:", KPI_CURRENT_MONTH);
-console.log("currentLoans.length:", currentLoans.length);
-console.log("currentLoans ids:", currentLoans.map(l => l.id));
-console.log(
-  "ownership pcts:",
-  currentLoans.map(l =>
-    l.ownershipLots
-      ?.filter(t => t.user === PAGE_USER)
-      .reduce((s, t) => s + Number(t.pct || 0), 0)
-  )
-);
-console.groupEnd();
-
-  
   const kpisEl = document.getElementById("kpis");
   if (!kpisEl) return;
 
-const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+  // 🔑 Use the SAME month anchor as the drawer
+  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
 
-// Use the SAME loan-set the KPI drawer uses (if available)
-const loansForKpis =
-  typeof getLoansForKpis === "function"
-    ? getLoansForKpis()
-    : currentLoans;
+  // 🔑 Compute KPIs from ROI SERIES (authoritative)
+  const kpis = computeKpisFromRoiSeries(KPI_LOANS, asOfMonth);
 
-const kpis = computeKPIs(KPI_LOANS, asOfMonth);
+  console.log("KPI TILE (renderKpiTiles)", {
+    asOfMonth,
+    count: KPI_LOANS.length,
+    weightedROI: kpis.weightedROI,
+    projectedWeightedROI: kpis.projectedWeightedROI,
+    capitalRecoveryPct: kpis.capitalRecoveryPct
+  });
 
-console.log("KPI TILE (renderKpiTiles)", {
-  asOfMonth,
-  count: loansForKpis.length,
-  weightedROI: kpis.weightedROI
-});
-
-  
+  // ============================
+  // RENDER
+  // ============================
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
       <h3>Weighted ROI to Current Month</h3>
@@ -5553,6 +5580,7 @@ console.log("KPI TILE (renderKpiTiles)", {
     </div>
   `;
 }
+
 
 
   
