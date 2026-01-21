@@ -4982,6 +4982,35 @@ const remaining = Math.max(0, invested - recovered);
       });
     });
   }
+
+// ==================================================
+// KPI3 EXPLICIT HOVER (AUTHORITATIVE)
+// ==================================================
+const tooltip = document.getElementById("tooltip");
+
+// Defensive: remove any prior KPI3 hover bindings
+drawerChartArea.onmousemove = null;
+drawerChartArea.onmouseleave = null;
+
+drawerChartArea.addEventListener("mousemove", e => {
+  if (!tooltip) return;
+
+  const pct = (kpis.capitalRecoveryPct * 100).toFixed(2);
+
+  tooltip.textContent =
+    `${formatMonthYear(KPI_CURRENT_MONTH)} • Portfolio Recovered ${pct}%`;
+
+  tooltip.style.display = "block";
+  tooltip.style.left = `${e.clientX + 8}px`;
+  tooltip.style.top = `${e.clientY - 12}px`;
+});
+
+drawerChartArea.addEventListener("mouseleave", () => {
+  if (!tooltip) return;
+  tooltip.style.display = "none";
+});
+
+  
 }
 
 
