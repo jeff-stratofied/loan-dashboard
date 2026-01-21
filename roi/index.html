@@ -2842,13 +2842,16 @@ svg.addEventListener("mousemove", ev => {
     </div>
   `;
 
-// weighted series — USE CHART DATA, NOT RECOMPUTE
-// 🔑 AUTHORITATIVE hover value — SAME logic as KPI tile
-const monthAnchor = normalizeToMonthStart(date);
-const weightedAtDate = computeKPIs(
-  currentLoans,
-  monthAnchor
-).weightedROI;
+// 🔑 Weighted hover MUST come from weighted series data
+const weightedPoint = weightedSeries
+  ?.filter(p => p.date && p.date <= date)
+  .slice(-1)[0];
+
+const weightedAtDate =
+  weightedPoint && Number.isFinite(weightedPoint.y)
+    ? weightedPoint.y
+    : null;
+
 
 
 if (Number.isFinite(weightedAtDate)) {
