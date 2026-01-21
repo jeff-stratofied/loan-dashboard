@@ -4407,32 +4407,47 @@ function renderTPVDrawer() {
     };
   });
 
+// 🔑 FREEZE invested weights at KPI month (MATCH KPI TILE)
+const frozenInvested = loans.map(l => {
+  const entry = getRoiEntryAsOfMonth(l, asOfMonth);
+  return Number(entry?.invested || 0);
+});
+
+const frozenTotalInvested = frozenInvested.reduce(
+  (s, v) => s + v,
+  0
+);
+
+  
   // ---------------------------------
   // Weighted portfolio series
   // (EXACT same math as KPI tile)
   // ---------------------------------
-  const weightedSeries = dates.map(d => {
-    let weightedSum = 0;
-    let investedTotal = 0;
+const weightedSeries = dates.map((d, i) => {
+  if (!frozenTotalInvested) {
+    return { date: d, y: 0 };
+  }
 
-    loans.forEach(loan => {
-      const entry = getRoiEntryAsOfMonth(loan, d);
-      if (!entry) return;
+  let weightedSum = 0;
 
-      const invested = Number(entry.invested || 0);
-      const roi = Number(entry.roi || 0);
+  loans.forEach((loan, idx) => {
+    const entry = getRoiEntryAsOfMonth(loan, d);
+    if (!entry) return;
 
-      if (invested > 0) {
-        weightedSum += roi * invested;
-        investedTotal += invested;
-      }
-    });
+    const roi = Number(entry.roi || 0);
+    const invested = frozenInvested[idx]; // 🔑 FROZEN
 
-    return {
-      date: d,
-      y: investedTotal > 0 ? weightedSum / investedTotal : 0
-    };
+    if (invested > 0) {
+      weightedSum += roi * invested;
+    }
   });
+
+  return {
+    date: d,
+    y: weightedSum / frozenTotalInvested
+  };
+});
+
 
   // 🔎 DEV sanity check — MUST MATCH KPI TILE
   const lastChartValue =
