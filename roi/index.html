@@ -549,6 +549,23 @@ html[data-theme="dark"] body {
   box-shadow: var(--shadow);
 }
 
+/* =========================================
+   ROI — Compact tile school label
+   ========================================= */
+
+.loan-school {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.2;
+}
+
+/* Only show in compact mode */
+.grid:not(.compact) .loan-school {
+  display: none;
+}
+
+    
     .tile-left{ flex:1; padding-right:10px }
     .loan-name{ font-weight:700; font-size:14px }
     .loan-sub{ font-size:12px; color:var(--muted); margin-top:6px }
@@ -3383,9 +3400,9 @@ function renderLoanGrid(loans) {
 
         <!-- badges + ownership pie inserted here -->
 
-        <div class="loan-sub">
-          ${loan.school || ""}
-        </div>
+        <div class="loan-school">
+  ${loan.school || ""}
+</div>
 
         <div class="loan-meta">
           <span>${(loan.nominalRate * 100).toFixed(2)}%</span>
@@ -3452,7 +3469,7 @@ function renderLoanGrid(loans) {
       // Insert directly under loan name
       tileLeft.insertBefore(
         badgesRow,
-        tileLeft.querySelector(".loan-sub")
+        tileLeft.querySelector(".loan-school")
       );
     }
 
