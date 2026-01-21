@@ -3799,11 +3799,6 @@ async function initROI() {
   // --------------------------------------------------
   window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
-  // --------------------------------------------------
-  // Compute KPIs
-  // --------------------------------------------------
-  const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
-
 
   // --------------------------------------------------
   // Initial render (grid / table via filters)
@@ -4377,17 +4372,6 @@ function renderTPVDrawer() {
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
   drawerPrimary.textContent =
     (kpis.weightedROI * 100).toFixed(2) + "%";
-
-setTimeout(() => {
-  console.warn("🔴 FORCING KPI1 TILE TO DRAWER VALUE");
-  const tile = document.querySelector(
-    '.kpi:nth-child(1) p'
-  );
-  if (tile) {
-    tile.textContent =
-      (kpis.weightedROI * 100).toFixed(2) + "%";
-  }
-}, 0);
 
   
   // ===============================
@@ -5587,6 +5571,7 @@ currentLoans = allLoans.filter(loan => {
 // Filters & views operate on visible loans only
 filteredLoans = currentLoans.slice();
 
+const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
 
 
   
