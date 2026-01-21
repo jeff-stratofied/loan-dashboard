@@ -4459,28 +4459,6 @@ const weightedSeries = dates.map((d, i) => {
 });
 
 
-// 🔎 DEV sanity check — KPI1 ENGINE INVARIANT (NOT chart-derived)
-const engineWeightedAtAsOf =
-  computeWeightedRoiAsOfMonth(
-    getLoansForKpis(),
-    asOfMonth
-  );
-
-console.log("KPI1 asOfMonth:", asOfMonth);
-console.log(
-  "KPI1 tile (computeKPIs):",
-  kpis.weightedROI
-);
-console.log(
-  "KPI1 engine (direct):",
-  engineWeightedAtAsOf
-);
-
-console.assert(
-  Math.abs(kpis.weightedROI - engineWeightedAtAsOf) < 1e-10,
-  "❌ KPI1 ENGINE MISMATCH"
-);
-
 // ===============================
 // 4. Render chart
 // ===============================
