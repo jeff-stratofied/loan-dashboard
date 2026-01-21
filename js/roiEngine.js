@@ -177,64 +177,50 @@ console.groupEnd();
       return sum + safeNum(last.roi) * safeNum(last.invested);
     }, 0) / (totalInvestedForRoi || 1);
 
-  // ==========================================================
-  // KPI3: CAPITAL RECOVERY (MATCHES TABLE EXACTLY)
-  //
-  // Numerator   = cumulative owned principal paid
-  // Denominator = cumulative owned principal paid
-  //               + owned remaining principal
-  // ==========================================================
-  const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
+// ==========================================================
+// KPI3: CAPITAL RECOVERY (SINGLE SOURCE OF TRUTH)
+// Definition:
+//   recovered principal ÷ user purchase price
+// ==========================================================
+const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
 
-  let recoveredPrincipalTotal = 0;
-  let remainingPrincipalTotal = 0;
+let recoveredPrincipalTotal = 0;
+let totalInvested = 0;
 
-  loans.forEach(l => {
-    const sched = l?.amort?.schedule;
-    if (!Array.isArray(sched) || !sched.length) return;
+loans.forEach(l => {
+  const sched = l?.amort?.schedule;
+  if (!Array.isArray(sched) || !sched.length) return;
 
-    // 🔑 MUST be user ownership (not whole-loan)
-    const { ownershipPct } = getOwnershipBasis(l);
-    if (!ownershipPct) return;
+  const { ownershipPct, invested } = getOwnershipBasis(l);
+  if (!ownershipPct || !invested) return;
 
-    let lastOwnedRow = null;
+  totalInvested += invested;
 
-    sched.forEach(r => {
-      if (
-        !r?.isOwned ||
-        !(r.loanDate instanceof Date) ||
-        r.loanDate > asOf
-      ) {
-        return;
-      }
-
-      recoveredPrincipalTotal += safeNum(r.principalPaid) * ownershipPct;
-      lastOwnedRow = r;
-    });
-
-    // Remaining principal = balance at last owned row <= asOf
-    if (lastOwnedRow) {
-      remainingPrincipalTotal +=
-        safeNum(lastOwnedRow.balance) * ownershipPct;
+  sched.forEach(r => {
+    if (
+      r?.isOwned &&
+      r.loanDate instanceof Date &&
+      r.loanDate <= asOf
+    ) {
+      recoveredPrincipalTotal +=
+        safeNum(r.principalPaid) * ownershipPct;
     }
   });
+});
 
-  const totalCapitalBasis =
-    recoveredPrincipalTotal + remainingPrincipalTotal;
+const capitalRecoveryPct =
+  totalInvested > 0
+    ? recoveredPrincipalTotal / totalInvested
+    : 0;
 
-  const capitalRecoveryPct =
-    totalCapitalBasis > 0
-      ? recoveredPrincipalTotal / totalCapitalBasis
-      : 0;
+return {
+  totalInvested,                     // ← PURCHASE PRICE
+  weightedROI,
+  projectedWeightedROI,
+  capitalRecoveredAmount: recoveredPrincipalTotal,
+  capitalRecoveryPct                  // ← SINGLE KPI3 %
+};
 
-  return {
-    // KPI3 uses recovered + remaining (NOT purchase price)
-    totalInvested: totalCapitalBasis,
-    weightedROI,
-    projectedWeightedROI,
-    capitalRecoveredAmount: recoveredPrincipalTotal,
-    capitalRecoveryPct
-  };
 }
 
 
