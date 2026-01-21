@@ -3776,7 +3776,9 @@ async function initROI() {
   // Compute KPIs
   // --------------------------------------------------
   const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-const kpis = computeKPIs(currentLoans, asOfMonth);
+const loansForKpis = getLoansForKpis();
+const kpis = computeKPIs(loansForKpis, asOfMonth);
+
 
 // =======================================
 // 🧪 KPI1 INPUT TRACE — initROI (AUTHORITATIVE)
