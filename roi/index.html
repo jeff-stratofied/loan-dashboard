@@ -3802,7 +3802,9 @@ async function initROI() {
   // --------------------------------------------------
   // Compute KPIs
   // --------------------------------------------------
-  const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
+  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+const kpis = computeKPIs(currentLoans, asOfMonth);
+
 
 
   // --------------------------------------------------
