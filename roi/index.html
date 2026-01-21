@@ -4691,18 +4691,53 @@ function renderCapitalRecoveredDrawer() {
   const globalDates = Array.from(monthMap.values())
     .sort((a, b) => a - b);
 
-  // ==================================================
-  // FLAT PORTFOLIO SERIES (KPI-DRIVEN)
-  // ==================================================
-  const portfolioSeries = globalDates.map(d => ({
-    date: d,
-    y: capitalRecoveryPct
-  }));
+// ==================================================
+// KPI3 historical path (SAFE, OWNED, CLAMPED)
+// ==================================================
+const totalInvested = loans.reduce(
+  (s, l) => s + Number(l.userPurchasePrice || 0),
+  0
+);
 
-  const tickSpacingX = Math.max(
-    1,
-    Math.round(globalDates.length / 7)
-  );
+// 1️⃣ Aggregate recovered principal BY MONTH (owned only)
+const recoveryByMonth = new Map();
+
+loans.forEach(l => {
+  const ownPct = getUserOwnedPct(l);
+  if (!ownPct) return;
+
+  l.amort?.schedule?.forEach(r => {
+    if (
+      r.isOwned &&
+      r.loanDate instanceof Date &&
+      r.loanDate <= asOfMonth
+    ) {
+      const m = normalizeToMonthStart(r.loanDate).getTime();
+      recoveryByMonth.set(
+        m,
+        (recoveryByMonth.get(m) || 0) +
+          (Number(r.principalPaid) || 0) * ownPct
+      );
+    }
+  });
+});
+
+// 2️⃣ Build cumulative series and CLAMP to KPI value
+let running = 0;
+
+const portfolioSeries = globalDates.map(d => {
+  const k = d.getTime();
+  running += recoveryByMonth.get(k) || 0;
+
+  const pct =
+    totalInvested > 0 ? running / totalInvested : 0;
+
+  return {
+    date: d,
+    y: Math.min(pct, capitalRecoveryPct) // 🔒 cannot exceed KPI
+  };
+});
+
 
   // ==================================================
   // Render chart (NO per-loan series)
