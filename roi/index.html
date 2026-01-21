@@ -3805,6 +3805,7 @@ async function initROI() {
   // --------------------------------------------------
   applyLoanFilters();
 
+/* deley
 // --------------------------------------------------
 // UI: Render KPI tiles
 // --------------------------------------------------
@@ -3855,7 +3856,7 @@ kpisEl.innerHTML = `
     <p id="roiSpread"></p>
   </div>
 `;
-
+*/
 
   // --------------------------------------------------
   // KPI tile click (FULL ROI PAGE ONLY)
@@ -5571,8 +5572,35 @@ currentLoans = allLoans.filter(loan => {
 // Filters & views operate on visible loans only
 filteredLoans = currentLoans.slice();
 
+// --------------------------------------------------
+// KPI TILE RENDER — AUTHORITATIVE
+// --------------------------------------------------
 const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
 
+const kpisEl = document.getElementById("kpis");
+if (kpisEl) {
+  kpisEl.innerHTML = `
+    <div class="kpi" data-kpi="tpv">
+      <h3>Weighted ROI to Current Month</h3>
+      <p>${(kpis.weightedROI * 100).toFixed(2)}%</p>
+    </div>
+
+    <div class="kpi" data-kpi="rates">
+      <h3>Projected Weighted ROI</h3>
+      <p>${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
+    </div>
+
+    <div class="kpi" data-kpi="capitalRecovery">
+      <h3>Capital Recovered</h3>
+      <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
+    </div>
+
+    <div class="kpi" data-kpi="spread">
+      <h3>ROI Spread</h3>
+      <p>${((kpis.projectedWeightedROI - kpis.weightedROI) * 100).toFixed(2)}%</p>
+    </div>
+  `;
+}
 
   
   // =====================================================
@@ -5587,7 +5615,6 @@ const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
     }
   });
 
-  // 🔑 SOURCE OF TRUTH
   // ============================================
   // 🔑 STEP 3 (SAFE): OWNERSHIP-BASED VISIBILITY
   // ============================================
