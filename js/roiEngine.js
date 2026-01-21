@@ -215,12 +215,20 @@ loans.forEach(l => {
       r.loanDate instanceof Date &&
       r.loanDate <= asOf
     ) {
-      recoveredCashTotal +=
-        (
-          safeNum(r.principalPaid) +
-          safeNum(r.interest) -
-          safeNum(r.feeThisMonth)
-        ) * ownershipPct;
+      // KPI3: total paid = (scheduled principal + interest - fees)
+// borrower prepayments must NOT inflate recovery
+const scheduledPrincipalThisMonth = Math.max(
+  0,
+  safeNum(r.principalPaid) - safeNum(r.prepayment)
+);
+
+const totalPaidThisMonth =
+  scheduledPrincipalThisMonth +
+  safeNum(r.interest) -
+  safeNum(r.feeThisMonth);
+
+recoveredCashTotal += totalPaidThisMonth * ownershipPct;
+
     }
   });
 });
