@@ -127,15 +127,11 @@ export function computeKPIs(loans, asOfMonth) {
     };
   }
 
-  // ----------------------------------
-  // Total invested (ownership-aware)
-  // ----------------------------------
+  // ==========================================================
+  // KPI3 denominator: USER PURCHASE PRICE (matches ROI index UI)
+  // ==========================================================
   const totalInvested = loans.reduce((s, l) => {
-    const last =
-      Array.isArray(l.roiSeries) && l.roiSeries.length
-        ? l.roiSeries[l.roiSeries.length - 1]
-        : null;
-    return s + safeNum(last?.invested);
+    return s + safeNum(l?.userPurchasePrice);
   }, 0);
 
   if (!totalInvested) {
@@ -148,6 +144,18 @@ export function computeKPIs(loans, asOfMonth) {
     };
   }
 
+  // ==========================================================
+  // KPI1 / KPI2 weighting basis (keep existing ROI behavior)
+  // Uses roiSeries[-1].invested (may differ from purchase price)
+  // ==========================================================
+  const totalInvestedForRoi = loans.reduce((s, l) => {
+    const last =
+      Array.isArray(l?.roiSeries) && l.roiSeries.length
+        ? l.roiSeries[l.roiSeries.length - 1]
+        : null;
+    return s + safeNum(last?.invested);
+  }, 0) || totalInvested;
+
   // ----------------------------------
   // Weighted ROI to date
   // ----------------------------------
@@ -159,42 +167,54 @@ export function computeKPIs(loans, asOfMonth) {
   const projectedWeightedROI =
     loans.reduce((sum, l) => {
       const last =
-        Array.isArray(l.roiSeries) && l.roiSeries.length
+        Array.isArray(l?.roiSeries) && l.roiSeries.length
           ? l.roiSeries[l.roiSeries.length - 1]
           : null;
 
       if (!last) return sum;
       return sum + safeNum(last.roi) * safeNum(last.invested);
-    }, 0) / totalInvested;
+    }, 0) / (totalInvestedForRoi || 1);
 
-  // ----------------------------------
-  // Capital recovered to date
-  // (paid principal + interest − fees)
-  // ----------------------------------
+  // ==========================================================
+  // KPI3 numerator: cumulative PRINCIPAL paid through asOfMonth
+  // (matches KPI3 drawer chart/table logic in index.html)
+  // ==========================================================
   const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
 
-  let recoveredCashTotal = 0;
+  let recoveredPrincipalTotal = 0;
 
   loans.forEach(l => {
-    const entry = getRoiEntryAsOfMonth(l, asOf);
-    if (!entry) return;
+    const sched = l?.amort?.schedule;
+    if (!Array.isArray(sched)) return;
 
-    // entry.realized is already:
-    // (cumPrincipal + cumInterest − cumFees) * ownershipPct
-    recoveredCashTotal += safeNum(entry.realized);
+    const { ownershipPct } = getOwnershipBasis(l);
+
+    if (!ownershipPct) return;
+
+    sched.forEach(r => {
+      if (
+        r?.isOwned &&
+        r?.loanDate instanceof Date &&
+        r.loanDate <= asOf
+      ) {
+        recoveredPrincipalTotal += safeNum(r.principalPaid) * ownershipPct;
+      }
+    });
   });
 
   const capitalRecoveryPct =
-    totalInvested > 0 ? recoveredCashTotal / totalInvested : 0;
+    totalInvested > 0 ? recoveredPrincipalTotal / totalInvested : 0;
 
   return {
+    // IMPORTANT: totalInvested is now PURCHASE PRICE (matches KPI3 UI)
     totalInvested,
     weightedROI,
     projectedWeightedROI,
-    capitalRecoveredAmount: recoveredCashTotal,
+    capitalRecoveredAmount: recoveredPrincipalTotal,
     capitalRecoveryPct
   };
 }
+
 
 
 export function buildProjectedRoiTimeline(loans, opts = {}) {
