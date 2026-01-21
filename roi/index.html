@@ -4749,6 +4749,12 @@ loans.forEach(l => {
 // 2️⃣ Build cumulative series and CLAMP to KPI value
 let running = 0;
 
+// --------------------------------------------------
+// KPI3 per-loan series (temporarily disabled)
+// --------------------------------------------------
+const loanSeriesList = [];
+
+  
 const portfolioSeries = globalDates.map(d => {
   const k = d.getTime();
   running += recoveryByMonth.get(k) || 0;
