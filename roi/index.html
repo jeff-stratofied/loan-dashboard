@@ -1889,6 +1889,10 @@ function openLoanDrawerSafe(loan) {
 // KPI DRAWER OPEN — ROI (KPI-SPECIFIC)
 // =====================================================
 function openRoiKpiDrawer(kpiId) {
+// Clear KPI-specific hover gates
+window.__activeKpiId = null;
+
+  
   currentMode = "kpi";
   currentLoan = null;
 
@@ -4618,6 +4622,10 @@ function renderRatesDrawer() {
     
 function renderCapitalRecoveredDrawer() {
 
+  // 🔑 mark active KPI for hover gating
+window.__activeKpiId = "kpi3";
+
+
 function getUserOwnedPct(loan) {
   return Array.isArray(loan.ownershipLots)
     ? loan.ownershipLots
@@ -4997,6 +5005,8 @@ if (drawerChartArea.__kpi3HoverHandlers) {
 }
 
 const moveHandler = e => {
+  // 🔒 HARD GATE — only run for KPI3
+  if (window.__activeKpiId !== "kpi3") return;
   if (!tooltip) return;
 
   const pct = (kpis.capitalRecoveryPct * 100).toFixed(2);
@@ -5008,6 +5018,7 @@ const moveHandler = e => {
   tooltip.style.left = `${e.clientX + 8}px`;
   tooltip.style.top = `${e.clientY - 12}px`;
 };
+
 
 const leaveHandler = () => {
   if (!tooltip) return;
