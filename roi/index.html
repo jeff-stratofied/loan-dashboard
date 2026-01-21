@@ -1445,18 +1445,11 @@ if (cameFromReporting && backRow && backBtn) {
 };
 
     function formatMonthYear(date) {
-  if (!(date instanceof Date)) {
-    date = new Date(date);
-  }
-
-  if (!Number.isFinite(+date)) return "";
-
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short"
-  });
-}
-
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short"
+      });
+    }
 
 function formatCurrency(val) {
   return Number(val ?? 0).toLocaleString("en-US", {
@@ -2543,12 +2536,6 @@ function createMiniSparkline(svg, series, opts = {}) {
    ============================================================ */
 
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
-// 🔒 KPI3 isolation: do NOT reuse KPI1 weighted logic
-if (opts?.weightedLabel === "Portfolio Recovered") {
-  opts.useWeightedSeries = false;
-}
-
-  
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
     // -----------------------------------
@@ -2855,35 +2842,25 @@ svg.addEventListener("mousemove", ev => {
     </div>
   `;
 
-// -----------------------------------
-// Weighted hover (KPI1 ONLY)
-// -----------------------------------
-if (opts.useWeightedSeries !== false) {
-  const monthAnchor = normalizeToMonthStart(date);
-  const weightedAtDate = computeKPIs(
-    currentLoans,
-    monthAnchor
-  ).weightedROI;
+// weighted series — USE CHART DATA, NOT RECOMPUTE
+// 🔑 AUTHORITATIVE hover value — SAME logic as KPI tile
+const monthAnchor = normalizeToMonthStart(date);
+const weightedAtDate = computeKPIs(
+  currentLoans,
+  monthAnchor
+).weightedROI;
 
-  if (Number.isFinite(weightedAtDate)) {
-    html += `
-      <div style="margin-bottom:6px">
-        <span style="font-weight:600">
-          ${opts.weightedLabel || "Weighted"}:
-        </span>
-        ${(weightedAtDate * 100).toFixed(2)}%
-      </div>
-    `;
-  }
 
-  console.log(
-    "[KPI1 HOVER CHECK]",
-    formatMonthYear(monthAnchor),
-    "hover:", weightedAtDate,
-    "tile:", computeKPIs(currentLoans, monthAnchor).weightedROI
-  );
+if (Number.isFinite(weightedAtDate)) {
+  html += `
+    <div style="margin-bottom:6px">
+      <span style="font-weight:600">
+  ${opts.weightedLabel || "Weighted"}:
+</span>
+      ${(weightedAtDate * 100).toFixed(2)}%
+    </div>
+  `;
 }
-
 console.log(
   "[KPI1 HOVER CHECK]",
   formatMonthYear(monthAnchor),
@@ -4638,20 +4615,60 @@ function renderRatesDrawer() {
     
 function renderCapitalRecoveredDrawer() {
 
-  function getUserOwnedPct(loan) {
-    return Array.isArray(loan.ownershipLots)
-      ? loan.ownershipLots
-          .filter(t => t.user === PAGE_USER)
-          .reduce((s, t) => s + (Number(t.pct) || 0), 0)
-      : 0;
-  }
+function getUserOwnedPct(loan) {
+  return Array.isArray(loan.ownershipLots)
+    ? loan.ownershipLots
+        .filter(t => t.user === PAGE_USER)
+        .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+    : 0;
+}
 
+  
   currentMode = 'kpi';
   currentLoan = null;
 
   // 🔑 SINGLE SOURCE OF TRUTH — OWNED LOANS ONLY
   const loans = getLoansForKpis();
 
+// ==================================================
+// KPI3 PSU DEBUG (SAFE — NO GLOBALS)
+// ==================================================
+const DEBUG_LOAN_ID = "PSU"; // or whatever uniquely identifies it
+
+const psuLoan = loans.find(l =>
+  String(l.name || "").includes("PSU") ||
+  String(l.id || "").includes("PSU")
+);
+
+if (!psuLoan) {
+  console.warn("[KPI3 PSU DEBUG] PSU loan not found");
+} else {
+  const DEBUG_USER = PAGE_USER;
+
+  const lots = Array.isArray(psuLoan.ownershipLots)
+    ? psuLoan.ownershipLots
+    : [];
+
+  const userPct = lots
+    .filter(t => t.user === DEBUG_USER)
+    .reduce((s, t) => s + (Number(t.pct) || 0), 0);
+
+  console.group("[KPI3 PSU DEBUG]");
+  console.log("Loan ID:", psuLoan.id);
+  console.log("Loan name:", psuLoan.name);
+  console.log("DEBUG user:", DEBUG_USER);
+  console.log("Ownership lots:", lots);
+  console.log("Ownership % (USER-SCOPED):", userPct);
+  console.log("Ownership % (LOAN FIELD):", psuLoan.userOwnershipPct);
+  console.log("User purchase price:", psuLoan.userPurchasePrice);
+  console.log(
+    "Cum rows <= KPI month:",
+    psuLoan.cumSchedule?.filter(r => r.loanDate && r.loanDate <= KPI_CURRENT_MONTH).length
+  );
+  console.groupEnd();
+}
+
+  
   // -----------------------------
   // Open + reset drawer
   // -----------------------------
@@ -4668,114 +4685,211 @@ function renderCapitalRecoveredDrawer() {
   drawerSub.textContent =
     "Cumulative principal returned as a percentage of purchase price (through the current month).";
 
-  // ==================================================
-  // 🔑 AUTHORITATIVE KPI VALUE (DECLARE ONCE)
-  // ==================================================
+  const TODAY = new Date();
+  TODAY.setHours(23, 59, 59, 999);
+
+  // 🔑 AUTHORITATIVE KPI VALUES
   const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
-  const capitalRecoveryPct = kpis.capitalRecoveryPct;
 
-  // ==================================================
-  // Month axis (DATES ONLY — NO MATH)
-  // ==================================================
-  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-  const monthMap = new Map();
+  // --------------------------------------------------
+// Shared containers (AUTHORITATIVE)
+// --------------------------------------------------
+const loanSeriesList = [];
+const monthMap = new Map(); // key = ms → Date(month start)
 
-  loans.forEach(l => {
-    l.amort?.schedule?.forEach(r => {
-      if (!(r.loanDate instanceof Date)) return;
+// KPI "as of" anchors (declare ONCE)
+const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+const asOfEnd = new Date(
+  asOfMonth.getFullYear(),
+  asOfMonth.getMonth() + 1,
+  0,
+  23, 59, 59, 999
+);
+
+
+loans.forEach(l => {
+  if (!l.amort || !l.amort.schedule) return;
+
+  const invested = Number(l.userPurchasePrice || 0);
+  const ownPct = Array.isArray(l.ownershipLots)
+  ? l.ownershipLots
+      .filter(t => t.user === PAGE_USER)
+      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+  : 0;
+
+
+  if (!invested || !ownPct) return;
+
+  const monthly = new Map();
+  let recoveredOwned = 0;
+
+  l.amort.schedule.forEach(r => {
+    if (
+      r.isOwned &&
+      r.loanDate instanceof Date &&
+      r.loanDate <= KPI_CURRENT_MONTH
+    ) {
+      recoveredOwned += (Number(r.principalPaid) || 0) * ownPct;
+    }
+
+    if (r.loanDate instanceof Date) {
       const m = normalizeToMonthStart(r.loanDate);
-      if (m <= asOfMonth) {
-        monthMap.set(m.getTime(), m);
+      const k = m.getTime();
+
+      if (!monthly.has(k)) {
+        const pct = recoveredOwned / invested;
+
+        monthly.set(k, {
+          date: m,
+          y: pct
+        });
+
+        monthMap.set(k, m);
       }
-    });
+    }
   });
 
-  const globalDates = Array.from(monthMap.values())
-    .sort((a, b) => a - b);
+  loanSeriesList.push({
+    id: l.id,
+    name: l.name,
+    color: window.KPI_COLOR_MAP?.[l.id],
+    data: Array.from(monthly.values())
+  });
+});
 
+
+  // --------------------------------------------------
+  // Unified MONTHLY date axis
+  // --------------------------------------------------
+  const globalDates = Array.from(monthMap.values())
+  .filter(d => d <= asOfMonth)   // 🔑 HARD STOP AT KPI MONTH
+  .sort((a, b) => a - b);
+
+  if (globalDates.at(-1) > asOfMonth) {
+  console.warn("[KPI3] Axis exceeds KPI month — check truncation");
+}
+
+
+// --------------------------------------------------
+// Portfolio cumulative line (MONTHLY, AUTHORITATIVE)
+// --------------------------------------------------
+
+// Total invested MUST match computeKPIs()
+const totalInvested = loans.reduce((s, l) => {
+  const invested = Number(l.userPurchasePrice || 0);
+  return s + invested;
+}, 0);
+
+const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
+const capitalRecoveryPct = kpis.capitalRecoveryPct;
+
+const portfolioSeries = globalDates.map(d => ({
+  date: d,
+  y:
+    d <= KPI_CURRENT_MONTH
+      ? capitalRecoveryPct
+      : capitalRecoveryPct // flat line (future irrelevant)
+}));
+
+
+
+
+  // --------------------------------------------------
+  // Dynamic x-axis spacing
+  // --------------------------------------------------
   const tickSpacingX = Math.max(
     1,
     Math.round(globalDates.length / 7)
   );
 
-  // ==================================================
-  // KPI3 historical path (VISUAL ONLY, CLAMPED)
-  // ==================================================
-  const totalInvested = loans.reduce(
-    (s, l) => s + Number(l.userPurchasePrice || 0),
-    0
-  );
+// --------------------------------------------------
+// 🔑 FORCE KPI MONTH TO MATCH KPI TILE (AUTHORITATIVE)
+// --------------------------------------------------
+const kpiMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
 
-  const recoveryByMonth = new Map();
+const kpiPoint = portfolioSeries.find(p =>
+  p.date.getFullYear() === kpiMonth.getFullYear() &&
+  p.date.getMonth() === kpiMonth.getMonth()
+);
 
-  loans.forEach(l => {
-    const ownPct = getUserOwnedPct(l);
-    if (!ownPct) return;
+if (kpiPoint) {
+  kpiPoint.y = kpis.capitalRecoveryPct;
+}
 
-    l.amort?.schedule?.forEach(r => {
-      if (
-        r.isOwned &&
-        r.loanDate instanceof Date &&
-        r.loanDate <= asOfMonth
-      ) {
-        const k = normalizeToMonthStart(r.loanDate).getTime();
-        recoveryByMonth.set(
-          k,
-          (recoveryByMonth.get(k) || 0) +
-            (Number(r.principalPaid) || 0) * ownPct
-        );
-      }
-    });
+// DEV invariant: chart + tile must agree at KPI month
+if (
+  kpiPoint &&
+  Math.abs(kpiPoint.y - kpis.capitalRecoveryPct) > 1e-6
+) {
+  console.warn("[KPI3 INVARIANT VIOLATION]", {
+    chart: kpiPoint.y,
+    tile: kpis.capitalRecoveryPct
   });
+}
 
-  let running = 0;
+  
+// --------------------------------------------------
+// Render chart
+// --------------------------------------------------
+createMultiSeriesChart(
+  drawerChartArea,
+  loanSeriesList,
+  portfolioSeries,
+  {
+    dates: globalDates,
+    weightedColor: "#111827",
+    weightedWidth: 3,
+    tickSpacingX,
 
-  const portfolioSeries = globalDates.map(d => {
-    running += recoveryByMonth.get(d.getTime()) || 0;
+    // 🔑 KPI3 AUTHORITATIVE LABEL
+    weightedLabel: "Portfolio Recovered",
 
-    const pct =
-      totalInvested > 0 ? running / totalInvested : 0;
+    // 🔑 KPI3 HOVER — SINGLE SOURCE OF TRUTH
+    weightedLabelFn: (pt) => {
+      const capitalRecoveryPct = kpis.capitalRecoveryPct;
 
-    return {
-      date: d,
-      y: Math.min(pct, capitalRecoveryPct) // 🔒 KPI clamps the chart
-    };
-  });
-
-  // No per-loan chart lines (yet)
-  const loanSeriesList = [];
-
-  // ==================================================
-  // Render chart
-  // ==================================================
-  createMultiSeriesChart(
-    drawerChartArea,
-    loanSeriesList,
-    portfolioSeries,
-    {
-      dates: globalDates,
-      weightedColor: "#111827",
-      weightedWidth: 3,
-      tickSpacingX,
-      weightedLabel: "Portfolio Recovered",
-      useWeightedSeries: false // 🔒 prevent KPI1 bleed
+      return `
+        ${formatMonthYear(pt.date)}
+        • Portfolio Recovered ${(capitalRecoveryPct * 100).toFixed(2)}%
+      `;
     }
-  );
+  }
+);
 
   // ==================================================
-  // Drawer metrics (AUTHORITATIVE)
-  // ==================================================
-  drawerPrimaryTitle.textContent = "Capital Recovered";
-  drawerPrimary.textContent =
-    (capitalRecoveryPct * 100).toFixed(2) + "%";
+// 🔒 KPI3 HARD INVARIANT (DEV ONLY)
+// Chart, hover, and tile MUST agree
+// ==================================================
+const capitalRecoveryPct = kpis.capitalRecoveryPct;
 
-  drawerSecondaryTitle.textContent = "As of";
-  drawerSecondary.textContent =
-    formatMonthYear(KPI_CURRENT_MONTH);
+if (
+  !Number.isFinite(capitalRecoveryPct) ||
+  capitalRecoveryPct < 0 ||
+  capitalRecoveryPct > 1
+) {
+  throw new Error("[KPI3] Invalid capitalRecoveryPct value");
+}
 
-  // ==================================================
-  // Table (DETAIL VIEW — allowed to compute)
-  // ==================================================
+// Single authority check
+if (Math.abs(capitalRecoveryPct - kpis.capitalRecoveryPct) > 1e-9) {
+  throw new Error("[KPI3] Authority violation: hover vs KPI mismatch");
+}
+
+
+
+  // --------------------------------------------------
+  // Metrics (AUTHORITATIVE)
+  // --------------------------------------------------
+drawerPrimaryTitle.textContent = "Capital Recovered";
+drawerPrimary.textContent =
+  (kpis.capitalRecoveryPct * 100).toFixed(2) + "%";
+
+drawerSecondaryTitle.textContent = "As of";
+drawerSecondary.textContent = formatMonthYear(KPI_CURRENT_MONTH);
+
+  // --------------------------------------------------
+  // Table
+  // --------------------------------------------------
   let html = `
     <div class="amort-wrap">
       <table class="kpi-table" id="capitalRecoveryTable">
@@ -4790,53 +4904,62 @@ function renderCapitalRecoveredDrawer() {
         <tbody>
   `;
 
-  const asOfEnd = new Date(
-    asOfMonth.getFullYear(),
-    asOfMonth.getMonth() + 1,
-    0,
-    23, 59, 59, 999
-  );
+loans.forEach(l => {
+  const invested = Number(l.userPurchasePrice || 0);
+  const ownPct = Array.isArray(l.ownershipLots)
+  ? l.ownershipLots
+      .filter(t => t.user === PAGE_USER)
+      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+  : 0;
 
-  loans.forEach(l => {
-    const invested = Number(l.userPurchasePrice || 0);
-    const ownPct = getUserOwnedPct(l);
-    if (!invested || !ownPct) return;
+  if (!invested || !ownPct) return;
 
-    let recovered = 0;
+  let recovered = 0;
 
-    l.amort?.schedule?.forEach(r => {
-      if (
-        r.isOwned &&
-        r.loanDate instanceof Date &&
-        r.loanDate <= asOfEnd
-      ) {
-        recovered += (Number(r.principalPaid) || 0) * ownPct;
-      }
-    });
-
-    const pct = recovered / invested;
-
-    const last = l.cumSchedule
-      ?.filter(r => r.loanDate && r.loanDate <= asOfEnd)
-      .at(-1);
-
-    const remaining = last
-      ? Math.max(0, Number(last.balance || 0) * ownPct)
-      : 0;
-
-    const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
-
-    html += `
-      <tr>
-        <td>${l.name}</td>
-        <td style="color:${color};font-weight:600">
-          $${recovered.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-        </td>
-        <td>${(pct * 100).toFixed(2)}%</td>
-        <td>$${remaining.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
-      </tr>
-    `;
+  l.amort?.schedule?.forEach(r => {
+    if (
+      r.isOwned &&
+      r.loanDate instanceof Date &&
+      r.loanDate <= asOfEnd
+    ) {
+      recovered += (Number(r.principalPaid) || 0) * ownPct;
+    }
   });
+
+  const pct = recovered / invested;
+
+  // Remaining principal (ownership-scaled)
+  const last = l.cumSchedule
+    ?.filter(r => r.loanDate && r.loanDate <= asOfEnd)
+    .at(-1);
+
+  const remaining = last
+    ? Math.max(0, (Number(last.balance || 0)) * ownPct)
+    : 0;
+
+  const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
+
+  html += `
+    <tr data-loan-id="${l.id}">
+      <td>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="width:10px;height:10px;border-radius:2px;background:${color}"></span>
+          <div>
+            <div style="font-weight:500">${l.name}</div>
+            <div style="font-size:11px;color:#64748b">${l.school || ''}</div>
+          </div>
+        </div>
+      </td>
+      <td style="color:${color};font-weight:600">
+        $${recovered.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      </td>
+      <td>${(pct * 100).toFixed(2)}%</td>
+      <td>$${remaining.toLocaleString(undefined, { maximumFractionDigits: 2 })}</td>
+    </tr>
+  `;
+});
+
+
 
   html += `
         </tbody>
@@ -4846,16 +4969,73 @@ function renderCapitalRecoveredDrawer() {
 
   drawerExtra.innerHTML = html;
 
-  // ==================================================
-  // DEBUG — must never diverge from KPI
-  // ==================================================
-  console.log("[KPI3 FINAL]", {
-    tile: capitalRecoveryPct,
-    drawer: capitalRecoveryPct
+  const table = document.getElementById("capitalRecoveryTable");
+  if (table) {
+    table.querySelectorAll("tbody tr").forEach(row => {
+      const loanId = row.dataset.loanId;
+      if (!loanId) return;
+
+      row.addEventListener("mouseenter", () => {
+        window.__roiChartFocusLoan?.(loanId);
+      });
+
+      row.addEventListener("mouseleave", () => {
+        window.__roiChartClearFocus?.();
+      });
+    });
+  }
+
+// ==================================================
+// KPI3 DEBUG — portfolio consistency check
+// ==================================================
+try {
+  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+
+  let sumRecovered = 0;
+  let sumInvested = 0;
+
+  loans.forEach(l => {
+    const invested = Number(l.userPurchasePrice || 0);
+    const ownPct = Array.isArray(l.ownershipLots)
+  ? l.ownershipLots
+      .filter(t => t.user === PAGE_USER)
+      .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+  : 0;
+
+    if (!invested || !ownPct) return;
+
+    const row = l.cumSchedule?.filter(r => r.loanDate && r.loanDate <= asOfEnd).at(-1);
+    if (!row) return;
+
+    l.amort?.schedule?.forEach(r => {
+  if (
+    r.isOwned &&
+    r.loanDate instanceof Date &&
+    r.loanDate <= asOfEnd
+  ) {
+    sumRecovered += (Number(r.principalPaid) || 0) * ownPct;
+  }
+});
+
+    sumInvested += invested;
   });
+
+  const computed = sumInvested > 0 ? sumRecovered / sumInvested : 0;
+
+  console.log("[KPI3 PORTFOLIO CHECK]", {
+    asOf: formatMonthYear(KPI_CURRENT_MONTH),
+    computed,
+    tile: kpis.capitalRecoveryPct,
+    diff: computed - (kpis.capitalRecoveryPct || 0),
+    sumRecovered,
+    sumInvested
+  });
+} catch (e) {
+  console.warn("[KPI3 PORTFOLIO CHECK] failed", e);
 }
 
-
+  
+}
 
 
     
