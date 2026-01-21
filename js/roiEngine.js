@@ -179,47 +179,70 @@ console.groupEnd();
 
 // ==========================================================
 // KPI3: CAPITAL RECOVERY (SINGLE SOURCE OF TRUTH)
+//
 // Definition:
-//   recovered principal ÷ user purchase price
+//   "For the capital I have invested so far, what percentage
+//    has been returned to me as cash up to this month?"
+//
+// Formula:
+//   capitalRecoveryPct =
+//     ( Σ owned cash payments received through as-of month )
+//     ------------------------------------------------------
+//     ( Σ user invested capital )
+//
+// Where cash payments =
+//   principalPaid + interestPaid − feesPaid
+//
+// Notes:
+// - Includes PRINCIPAL + INTEREST − FEES
+// - Ownership-scaled (user-specific)
+// - As-of month inclusive
+// - Used by KPI tile, drawer primary, and chart hover
 // ==========================================================
 const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
 
-let recoveredPrincipalTotal = 0;
+let recoveredCashTotal = 0;
 let totalInvested = 0;
 
 loans.forEach(l => {
   const sched = l?.amort?.schedule;
   if (!Array.isArray(sched) || !sched.length) return;
 
+  // User-scoped ownership + invested capital
   const { ownershipPct, invested } = getOwnershipBasis(l);
   if (!ownershipPct || !invested) return;
 
+  // Denominator: total user invested capital
   totalInvested += invested;
 
+  // Numerator: cumulative owned cash received through asOf
   sched.forEach(r => {
     if (
       r?.isOwned &&
       r.loanDate instanceof Date &&
       r.loanDate <= asOf
     ) {
-      recoveredPrincipalTotal +=
-        safeNum(r.principalPaid) * ownershipPct;
+      recoveredCashTotal +=
+        (safeNum(r.principalPaid) +
+         safeNum(r.interestPaid) -
+         safeNum(r.feesPaid)) * ownershipPct;
     }
   });
 });
 
 const capitalRecoveryPct =
   totalInvested > 0
-    ? recoveredPrincipalTotal / totalInvested
+    ? recoveredCashTotal / totalInvested
     : 0;
 
 return {
-  totalInvested,                     // ← PURCHASE PRICE
+  totalInvested,                 // Σ user invested capital
   weightedROI,
   projectedWeightedROI,
-  capitalRecoveredAmount: recoveredPrincipalTotal,
-  capitalRecoveryPct                  // ← SINGLE KPI3 %
+  capitalRecoveredAmount: recoveredCashTotal,
+  capitalRecoveryPct              // KPI3 canonical value
 };
+
 
 }
 
