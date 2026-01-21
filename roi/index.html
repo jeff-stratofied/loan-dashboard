@@ -3763,58 +3763,7 @@ async function initROI() {
   // --------------------------------------------------
   applyLoanFilters();
 
-/* deley
-// --------------------------------------------------
-// UI: Render KPI tiles
-// --------------------------------------------------
 
-const kpisEl = document.getElementById("kpis");
-
-// 🟥 DEBUG: KPI TILE RENDER — KPI1
-window.__kpiTileRenderCount =
-  (window.__kpiTileRenderCount || 0) + 1;
-
-console.group(
-  "🟥 KPI TILE RENDER #" + window.__kpiTileRenderCount
-);
-console.log("kpis object:", kpis);
-console.log("kpis.weightedROI:", kpis.weightedROI);
-console.log(
-  "formatted KPI1:",
-  (kpis.weightedROI * 100).toFixed(2) + "%"
-);
-console.log(
-  "kpis.projectedWeightedROI:",
-  kpis.projectedWeightedROI
-);
-console.trace("KPI TILE RENDER STACK TRACE");
-console.groupEnd();
-
-// 🔴 END DEBUG
-
-kpisEl.innerHTML = `
-  
-  <div class="kpi" data-kpi="tpv">
-    <h3>Weighted ROI to Current Month</h3>
-    <p id="wroi">${(kpis.weightedROI * 100).toFixed(2)}%</p>
-  </div>
-
-  <div class="kpi" data-kpi="rates">
-    <h3>Projected Weighted ROI</h3>
-    <p id="wproj">${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
-  </div>
-
-  <div class="kpi" data-kpi="capitalRecovery">
-    <h3>Capital Recovered</h3>
-    <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
-  </div>
-
-  <div class="kpi" data-kpi="spread">
-    <h3>ROI Spread</h3>
-    <p id="roiSpread"></p>
-  </div>
-`;
-*/
 
   // --------------------------------------------------
   // KPI tile click (FULL ROI PAGE ONLY)
