@@ -1285,16 +1285,6 @@ tr.event-default td {
        Script (organized with sections)
        ==================================== -->
   <script type="module">
-
-// DEBUG: expose module state for console inspection
-window.__ROI_DEBUG__ = {
-  getCurrentLoans: () => currentLoans,
-  getAllLoans: () => allLoans,
-  getKpiMonth: () => KPI_CURRENT_MONTH,
-  computeKPIs
-};
-
-    
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
     
     import {
@@ -3773,7 +3763,58 @@ async function initROI() {
   // --------------------------------------------------
   applyLoanFilters();
 
+/* deley
+// --------------------------------------------------
+// UI: Render KPI tiles
+// --------------------------------------------------
 
+const kpisEl = document.getElementById("kpis");
+
+// 🟥 DEBUG: KPI TILE RENDER — KPI1
+window.__kpiTileRenderCount =
+  (window.__kpiTileRenderCount || 0) + 1;
+
+console.group(
+  "🟥 KPI TILE RENDER #" + window.__kpiTileRenderCount
+);
+console.log("kpis object:", kpis);
+console.log("kpis.weightedROI:", kpis.weightedROI);
+console.log(
+  "formatted KPI1:",
+  (kpis.weightedROI * 100).toFixed(2) + "%"
+);
+console.log(
+  "kpis.projectedWeightedROI:",
+  kpis.projectedWeightedROI
+);
+console.trace("KPI TILE RENDER STACK TRACE");
+console.groupEnd();
+
+// 🔴 END DEBUG
+
+kpisEl.innerHTML = `
+  
+  <div class="kpi" data-kpi="tpv">
+    <h3>Weighted ROI to Current Month</h3>
+    <p id="wroi">${(kpis.weightedROI * 100).toFixed(2)}%</p>
+  </div>
+
+  <div class="kpi" data-kpi="rates">
+    <h3>Projected Weighted ROI</h3>
+    <p id="wproj">${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
+  </div>
+
+  <div class="kpi" data-kpi="capitalRecovery">
+    <h3>Capital Recovered</h3>
+    <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
+  </div>
+
+  <div class="kpi" data-kpi="spread">
+    <h3>ROI Spread</h3>
+    <p id="roiSpread"></p>
+  </div>
+`;
+*/
 
   // --------------------------------------------------
   // KPI tile click (FULL ROI PAGE ONLY)
@@ -3788,6 +3829,13 @@ async function initROI() {
       if (!PAGE_CONTEXT.isEmbed) {
         openRoiKpiFromUrl(kpi);
       }
+
+console.group("🟥 KPI TILE VALUE SOURCE");
+console.log("loans.length:", loans?.length);
+console.log("asOf used:", someDate);
+console.log("weightedROI:", weightedRoi);
+console.trace("VALUE SOURCE TRACE");
+console.groupEnd();
 
       
     });
@@ -5455,19 +5503,10 @@ document.querySelectorAll("#loanTable th").forEach(th => {
 document.addEventListener("DOMContentLoaded", async () => {
   await loadLoans();
 
-// =========================================
-// DERIVE + INITIALIZE FILTER STATE (REQUIRED)
-// =========================================
-const derivedLoans = deriveLoansWithAmortAndRoi(loans);
-
-// 🔒 IMMUTABLE KPI LOAN UNIVERSE (DERIVED + OWNED)
-// KPIs must NEVER depend on UI-mutated loan arrays
-const KPI_LOANS = derivedLoans.filter(loan =>
-  Array.isArray(loan.ownershipLots) &&
-  loan.ownershipLots.some(
-    lot => lot.user === PAGE_USER && Number(lot.pct) > 0
-  )
-);
+  // =========================================
+  // DERIVE + INITIALIZE FILTER STATE (REQUIRED)
+  // =========================================
+  const derivedLoans = deriveLoansWithAmortAndRoi(loans);
 
 // 🔑 SOURCE OF TRUTH — MATCH AMORT & EARNINGS
 allLoans = derivedLoans;
@@ -5485,79 +5524,14 @@ currentLoans = allLoans.filter(loan => {
 // Filters & views operate on visible loans only
 filteredLoans = currentLoans.slice();
 
-// 🔑 KPI tiles render ONCE, after ownership is final
-renderKpiTiles();
-
-
-  function computeKpisFromRoiSeries(loans, asOfMonth) {
-  let invested = 0;
-  let loanValue = 0;
-  let finalLoanValue = 0;
-  let capitalRecovered = 0;
-
-  loans.forEach(loan => {
-    const entry = getRoiEntryAsOfMonth(loan, asOfMonth);
-    if (!entry) return;
-
-    invested += entry.invested;
-    loanValue += entry.loanValue;
-    capitalRecovered += entry.realized;
-
-    const last = loan.roiSeries?.[loan.roiSeries.length - 1];
-    if (last) {
-      finalLoanValue += last.loanValue;
-    }
-  });
-
-  return {
-    weightedROI: invested > 0 ? (loanValue - invested) / invested : 0,
-    projectedWeightedROI: invested > 0 ? (finalLoanValue - invested) / invested : 0,
-    capitalRecoveryPct: invested > 0 ? capitalRecovered / invested : 0
-  };
-}
-
-  
 // --------------------------------------------------
 // KPI TILE RENDER — AUTHORITATIVE
 // --------------------------------------------------
-function renderKpiTiles() {
-  // ============================
-  // DEBUG (can remove later)
-  // ============================
-  console.group("🧪 KPI TILE DEBUG");
-  console.log("KPI_CURRENT_MONTH:", KPI_CURRENT_MONTH);
-  console.log("KPI_LOANS.length:", KPI_LOANS.length);
-  console.log("KPI_LOANS ids:", KPI_LOANS.map(l => l.id));
-  console.log(
-    "ownership pcts:",
-    KPI_LOANS.map(l =>
-      l.ownershipLots
-        ?.filter(t => t.user === PAGE_USER)
-        .reduce((s, t) => s + Number(t.pct || 0), 0)
-    )
-  );
-  console.groupEnd();
+const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+const kpis = computeKPIs(currentLoans, asOfMonth);
 
-  const kpisEl = document.getElementById("kpis");
-  if (!kpisEl) return;
-
-  // 🔑 Use the SAME month anchor as the drawer
-  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-
-  // 🔑 Compute KPIs from ROI SERIES (authoritative)
-  const kpis = computeKpisFromRoiSeries(KPI_LOANS, asOfMonth);
-
-  console.log("KPI TILE (renderKpiTiles)", {
-    asOfMonth,
-    count: KPI_LOANS.length,
-    weightedROI: kpis.weightedROI,
-    projectedWeightedROI: kpis.projectedWeightedROI,
-    capitalRecoveryPct: kpis.capitalRecoveryPct
-  });
-
-  // ============================
-  // RENDER
-  // ============================
+const kpisEl = document.getElementById("kpis");
+if (kpisEl) {
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
       <h3>Weighted ROI to Current Month</h3>
@@ -5580,8 +5554,6 @@ function renderKpiTiles() {
     </div>
   `;
 }
-
-
 
   
   // =====================================================
@@ -5720,29 +5692,6 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// 🔥 FINAL KPI OVERWRITE DETECTOR
-const kpisEl = document.getElementById("kpis");
-
-if (kpisEl) {
-  const observer = new MutationObserver(muts => {
-    console.group("🚨 KPI DOM MUTATION DETECTED");
-    muts.forEach(m => {
-      console.log("Type:", m.type);
-      console.log("Target:", m.target);
-    });
-    console.log("Current KPI HTML:", kpisEl.innerHTML);
-    console.trace("Mutation stack trace");
-    console.groupEnd();
-  });
-
-  observer.observe(kpisEl, {
-    childList: true,
-    subtree: true,
-    characterData: true
-  });
-}
-
-    
 </script>
 
 <script src="/loan-dashboard/js/feedback.js"></script>
