@@ -1835,8 +1835,26 @@ function getLoansForTableView() {
 }
 
 function getLoansForKpis() {
-  return currentLoans;
+  const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+
+  return currentLoans.filter(l => {
+    // 1️⃣ must be owned by the user
+    const ownedPct = Array.isArray(l.ownershipLots)
+      ? l.ownershipLots
+          .filter(t => t.user === PAGE_USER)
+          .reduce((s, t) => s + (Number(t.pct) || 0), 0)
+      : 0;
+
+    if (ownedPct <= 0) return false;
+
+    // 2️⃣ must be purchased on or before asOfMonth
+    const purchase = parseISODateLocal(l.purchaseDate);
+    if (!purchase || purchase > asOfMonth) return false;
+
+    return true;
+  });
 }
+
     
 function compareForKey(a, b, key) {
 
