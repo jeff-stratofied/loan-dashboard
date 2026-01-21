@@ -3816,28 +3816,6 @@ async function initROI() {
 
 const kpisEl = document.getElementById("kpis");
 
-// 🟥 DEBUG: KPI TILE RENDER — KPI1
-window.__kpiTileRenderCount =
-  (window.__kpiTileRenderCount || 0) + 1;
-
-console.group(
-  "🟥 KPI TILE RENDER #" + window.__kpiTileRenderCount
-);
-console.log("kpis object:", kpis);
-console.log("kpis.weightedROI:", kpis.weightedROI);
-console.log(
-  "formatted KPI1:",
-  (kpis.weightedROI * 100).toFixed(2) + "%"
-);
-console.log(
-  "kpis.projectedWeightedROI:",
-  kpis.projectedWeightedROI
-);
-console.trace("KPI TILE RENDER STACK TRACE");
-console.groupEnd();
-
-// 🔴 END DEBUG
-
 kpisEl.innerHTML = `
   
   <div class="kpi" data-kpi="tpv">
@@ -3875,14 +3853,6 @@ kpisEl.innerHTML = `
       if (!PAGE_CONTEXT.isEmbed) {
         openRoiKpiFromUrl(kpi);
       }
-
-console.group("🟥 KPI TILE VALUE SOURCE");
-console.log("loans.length:", loans?.length);
-console.log("asOf used:", someDate);
-console.log("weightedROI:", weightedRoi);
-console.trace("VALUE SOURCE TRACE");
-console.groupEnd();
-
       
     });
   });
