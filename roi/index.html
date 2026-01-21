@@ -2517,8 +2517,15 @@ function createMiniSparkline(svg, series, opts = {}) {
     tooltip.style.display = "block";
     tooltip.style.left = (rect.left + cx) + "px";
     tooltip.style.top = (rect.top + cy - 28) + "px";
-    tooltip.innerHTML =
-      `${formatMonthYear(nearest.date)} • ROI ${(nearest.y * 100).toFixed(2)}%`;
+    // Use authoritative hover override if provided (KPI3)
+if (opts.hoverLabelFn) {
+  tooltip.innerHTML = opts.hoverLabelFn(nearest);
+} else {
+  const label = opts.label || "Value";
+  tooltip.innerHTML =
+    `${formatMonthYear(nearest.date)} • ${label} ${(nearest.y * 100).toFixed(2)}%`;
+}
+
   });
 
   svg.addEventListener("mouseleave", () => {
@@ -4860,16 +4867,20 @@ createMultiSeriesChart(
   drawerChartArea,
   loanSeriesList,
   portfolioSeries,
-  {
-    dates: globalDates,
-    weightedColor: "#111827",
-    weightedWidth: 3,
-    tickSpacingX,
+{
+  dates: globalDates,
+  weightedColor: "#111827",
+  weightedWidth: 3,
+  tickSpacingX,
 
-    // 🔑 KPI3 AUTHORITATIVE LABEL
-    weightedLabel: "Portfolio Recovered",
+  // 🔑 KPI3 AUTHORITATIVE LABEL
+  weightedLabel: "Portfolio Recovered",
 
-  }
+ // 🔑 KPI3 authoritative hover
+  hoverLabelFn: () =>
+    `${formatMonthYear(KPI_CURRENT_MONTH)} • Portfolio Recovered ${(kpis.capitalRecoveryPct * 100).toFixed(2)}%`
+}
+
 );
 
 
