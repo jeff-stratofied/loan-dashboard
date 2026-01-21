@@ -55,20 +55,27 @@ function monthDiff(d1, d2) {
 }
 
 function getOwnershipBasis(loan) {
+  // Prefer user-specific fields when present (ROI UI passes per-user loans)
+  const directPct = safeNum(loan?.ownershipPct);          // user ownership pct
+  const directInvested = safeNum(loan?.userPurchasePrice); // user purchase price
+
+  if (directPct > 0 || directInvested > 0) {
+    return {
+      ownershipPct: directPct > 0 ? directPct : 0,
+      invested: directInvested > 0 ? directInvested : 0,
+      lots: Array.isArray(loan?.ownershipLots) ? loan.ownershipLots : []
+    };
+  }
+
+  // Fallback: derive from lots (whole-loan basis)
   const lots = Array.isArray(loan?.ownershipLots) ? loan.ownershipLots : [];
 
-  const ownershipPct = lots.reduce(
-    (s, lot) => s + safeNum(lot?.pct),
-    0
-  );
-
-  const invested = lots.reduce(
-    (s, lot) => s + safeNum(lot?.pricePaid),
-    0
-  );
+  const ownershipPct = lots.reduce((s, lot) => s + safeNum(lot?.pct), 0);
+  const invested = lots.reduce((s, lot) => s + safeNum(lot?.pricePaid), 0);
 
   return { ownershipPct, invested, lots };
 }
+
 
 // =====================================================
 // PUBLIC API
