@@ -2536,6 +2536,12 @@ function createMiniSparkline(svg, series, opts = {}) {
    ============================================================ */
 
 function createMultiSeriesChart(containerEl, loanSeriesList, weightedSeries, opts = {}) {
+// 🔒 KPI3 isolation: do NOT reuse KPI1 weighted logic
+if (opts?.weightedLabel === "Portfolio Recovered") {
+  opts.useWeightedSeries = false;
+}
+
+  
   containerEl.innerHTML = "";
   const svgNS = "http://www.w3.org/2000/svg";
     // -----------------------------------
@@ -2842,25 +2848,35 @@ svg.addEventListener("mousemove", ev => {
     </div>
   `;
 
-// weighted series — USE CHART DATA, NOT RECOMPUTE
-// 🔑 AUTHORITATIVE hover value — SAME logic as KPI tile
-const monthAnchor = normalizeToMonthStart(date);
-const weightedAtDate = computeKPIs(
-  currentLoans,
-  monthAnchor
-).weightedROI;
+// -----------------------------------
+// Weighted hover (KPI1 ONLY)
+// -----------------------------------
+if (opts.useWeightedSeries !== false) {
+  const monthAnchor = normalizeToMonthStart(date);
+  const weightedAtDate = computeKPIs(
+    currentLoans,
+    monthAnchor
+  ).weightedROI;
 
+  if (Number.isFinite(weightedAtDate)) {
+    html += `
+      <div style="margin-bottom:6px">
+        <span style="font-weight:600">
+          ${opts.weightedLabel || "Weighted"}:
+        </span>
+        ${(weightedAtDate * 100).toFixed(2)}%
+      </div>
+    `;
+  }
 
-if (Number.isFinite(weightedAtDate)) {
-  html += `
-    <div style="margin-bottom:6px">
-      <span style="font-weight:600">
-  ${opts.weightedLabel || "Weighted"}:
-</span>
-      ${(weightedAtDate * 100).toFixed(2)}%
-    </div>
-  `;
+  console.log(
+    "[KPI1 HOVER CHECK]",
+    formatMonthYear(monthAnchor),
+    "hover:", weightedAtDate,
+    "tile:", computeKPIs(currentLoans, monthAnchor).weightedROI
+  );
 }
+
 console.log(
   "[KPI1 HOVER CHECK]",
   formatMonthYear(monthAnchor),
@@ -4750,22 +4766,23 @@ const portfolioSeries = globalDates.map(d => {
   // ==================================================
   // Render chart (NO per-loan series)
   // ==================================================
-  createMultiSeriesChart(
-    drawerChartArea,
-    [],                 // 🔑 NO loanSeriesList for KPI3
-    portfolioSeries,
-    {
-      dates: globalDates,
-      weightedColor: "#111827",
-      weightedWidth: 3,
-      tickSpacingX,
-      weightedLabel: "Portfolio Recovered",
-      weightedLabelFn: (pt) => `
-        ${formatMonthYear(pt.date)}
-        • Portfolio Recovered ${(capitalRecoveryPct * 100).toFixed(2)}%
-      `
-    }
-  );
+createMultiSeriesChart(
+  drawerChartArea,
+  loanSeriesList,
+  portfolioSeries,
+  {
+    dates: globalDates,
+    weightedColor: "#111827",
+    weightedWidth: 3,
+    tickSpacingX,
+
+    weightedLabel: "Portfolio Recovered",
+
+    // 🔒 CRITICAL: prevent KPI1 hover math
+    useWeightedSeries: false
+  }
+);
+
 
   // ==================================================
   // 🔒 HARD INVARIANT (DEV ONLY)
