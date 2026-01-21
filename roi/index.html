@@ -3813,9 +3813,6 @@ async function initROI() {
   // --------------------------------------------------
   // UI: Render KPI tiles
   // --------------------------------------------------
-  const kpisEl = document.getElementById("kpis");
-  kpisEl.innerHTML = `
-    
     console.group("🟥 KPI TILE RENDER — KPI1");
 console.log("value passed to tile:", value);
 console.log("value * 100:", value * 100);
@@ -3830,7 +3827,9 @@ console.log(
   "🟥 KPI TILE RENDER COUNT:",
   window.__kpiTileRenderCount
 );
-
+  
+  const kpisEl = document.getElementById("kpis");
+  kpisEl.innerHTML = `
     
     <div class="kpi" data-kpi="tpv">
       <h3>Weighted ROI to Current Month</h3>
