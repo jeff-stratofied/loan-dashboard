@@ -181,41 +181,48 @@ console.groupEnd();
 // KPI3: CAPITAL RECOVERY (SINGLE SOURCE OF TRUTH)
 //
 // Definition:
-//   "For the capital I have invested so far, what percentage
-//    has been returned to me as cash up to this month?"
+//   "As of this month, how much of the capital I have actually
+//    put at risk has been returned to me as cash?"
 //
 // Formula:
-//   capitalRecoveryPct =
-//     ( Σ owned cash payments received through as-of month )
-//     ------------------------------------------------------
-//     ( Σ user invested capital )
-//
-// Where cash payments =
-//   principalPaid + interestPaid − feesPaid
+//   capitalRecoveryPct(asOfMonth) =
+//     ( Σ owned cash received through as-of month )
+//     ------------------------------------------------
+//     ( Σ user capital invested through as-of month )
 //
 // Notes:
-// - Includes PRINCIPAL + INTEREST − FEES
+// - Time-bounded on BOTH numerator and denominator
 // - Ownership-scaled (user-specific)
-// - As-of month inclusive
+// - Cash = principal (+ interest − fees, if desired)
 // - Used by KPI tile, drawer primary, and chart hover
 // ==========================================================
+
 const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
 
 let recoveredCashTotal = 0;
-let totalInvested = 0;
+let investedToDateTotal = 0;
 
 loans.forEach(l => {
   const sched = l?.amort?.schedule;
   if (!Array.isArray(sched) || !sched.length) return;
 
-  // User-scoped ownership + invested capital
   const { ownershipPct, invested } = getOwnershipBasis(l);
   if (!ownershipPct || !invested) return;
 
-  // Denominator: total user invested capital
-  totalInvested += invested;
+  // --------------------------------------------
+  // Determine how much capital was actually
+  // deployed by the as-of month
+  // --------------------------------------------
+  const firstOwnedRow = sched.find(r => r?.isOwned && r.loanDate instanceof Date);
+  if (!firstOwnedRow) return;
 
-  // Numerator: cumulative owned cash received through asOf
+  if (firstOwnedRow.loanDate <= asOf) {
+    investedToDateTotal += invested;
+  }
+
+  // --------------------------------------------
+  // Sum cash received through as-of month
+  // --------------------------------------------
   sched.forEach(r => {
     if (
       r?.isOwned &&
@@ -223,25 +230,28 @@ loans.forEach(l => {
       r.loanDate <= asOf
     ) {
       recoveredCashTotal +=
-        (safeNum(r.principalPaid) +
-         safeNum(r.interestPaid) -
-         safeNum(r.feesPaid)) * ownershipPct;
+        (
+          safeNum(r.principalPaid) +
+          safeNum(r.interestPaid) -
+          safeNum(r.feesPaid)
+        ) * ownershipPct;
     }
   });
 });
 
 const capitalRecoveryPct =
-  totalInvested > 0
-    ? recoveredCashTotal / totalInvested
+  investedToDateTotal > 0
+    ? recoveredCashTotal / investedToDateTotal
     : 0;
 
 return {
-  totalInvested,                 // Σ user invested capital
+  totalInvested: investedToDateTotal,     // ← INVESTED THROUGH MONTH
   weightedROI,
   projectedWeightedROI,
   capitalRecoveredAmount: recoveredCashTotal,
-  capitalRecoveryPct              // KPI3 canonical value
+  capitalRecoveryPct                      // ← KPI3 CANONICAL %
 };
+
 
 
 }
