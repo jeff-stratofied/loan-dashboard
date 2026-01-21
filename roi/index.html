@@ -4625,6 +4625,13 @@ function renderRatesDrawer() {
   drawerPrimary.textContent =
     (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
 
+  // 🔑 FORCE KPI2 TILE TO MATCH DRAWER (AUTHORITATIVE)
+  const kpi2Tile = document.getElementById("wproj");
+  if (kpi2Tile) {
+    kpi2Tile.textContent =
+      (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
+  }
+
   // =====================================================
   // 2. Compute projected portfolio value
   // =====================================================
@@ -4729,6 +4736,7 @@ function renderRatesDrawer() {
   drawer.setAttribute("aria-hidden", "false");
   drawer.scrollTop = 0;
 }
+
 
     
   // =====================================================
