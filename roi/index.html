@@ -4996,11 +4996,11 @@ const remaining = Math.max(0, invested - recovered);
   }
 
 // ==================================================
-// KPI3 EXPLICIT HOVER (SCOPED)
+// KPI3 EXPLICIT HOVER (SCOPED + PER-LOAN BREAKDOWN)
 // ==================================================
 const tooltip = document.getElementById("tooltip");
 
-// Clean up any previous KPI3 handlers first
+// Clean up any previous KPI3 handlers
 if (drawerChartArea.__kpi3HoverHandlers) {
   const { move, leave } = drawerChartArea.__kpi3HoverHandlers;
   drawerChartArea.removeEventListener("mousemove", move);
@@ -5008,23 +5008,69 @@ if (drawerChartArea.__kpi3HoverHandlers) {
   drawerChartArea.__kpi3HoverHandlers = null;
 }
 
+// Cache chart bounds + dates for hit testing
+const chartRect = drawerChartArea.getBoundingClientRect();
+const dates = globalDates; // already month-start, sorted
+
 const moveHandler = e => {
-  // 🔒 HARD GATES — MUST be KPI3 AND in KPI mode
+  // 🔒 HARD GATES
   if (currentMode !== "kpi") return;
   if (window.__activeKpiId !== "kpi3") return;
   if (!tooltip) return;
 
-  const pct = (kpis.capitalRecoveryPct * 100).toFixed(2);
+  // ----------------------------------
+  // Find nearest month under cursor
+  // ----------------------------------
+  const x = e.clientX - chartRect.left;
+  const pctX = Math.max(0, Math.min(1, x / chartRect.width));
+  const idx = Math.round(pctX * (dates.length - 1));
+  const month = dates[idx];
+  if (!month) return;
 
-  tooltip.textContent =
-    `${formatMonthYear(KPI_CURRENT_MONTH)} • Portfolio Recovered ${pct}%`;
+  // ----------------------------------
+  // Build tooltip HTML
+  // ----------------------------------
+  let html = `
+    <div style="font-weight:600;margin-bottom:4px">
+      ${formatMonthYear(month)}
+    </div>
+    <div style="margin-bottom:6px">
+      <strong>Portfolio Recovered:</strong>
+      ${(kpis.capitalRecoveryPct * 100).toFixed(2)}%
+    </div>
+  `;
 
+  // ----------------------------------
+  // Per-loan rows (only if active by month)
+  // ----------------------------------
+  loanSeriesList.forEach(series => {
+    const pt = series.data.find(d =>
+      d.date.getFullYear() === month.getFullYear() &&
+      d.date.getMonth() === month.getMonth()
+    );
+
+    if (!pt) return;
+
+    html += `
+      <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
+        <span style="
+          width:10px;
+          height:10px;
+          border-radius:2px;
+          background:${series.color};
+          flex-shrink:0
+        "></span>
+        <span style="flex:1">${series.name}</span>
+        <span>${(pt.y * 100).toFixed(2)}%</span>
+      </div>
+    `;
+  });
+
+  tooltip.innerHTML = html;
   tooltip.style.display = "block";
-  tooltip.style.left = `${e.clientX + 8}px`;
+  tooltip.style.left = `${e.clientX + 10}px`;
   tooltip.style.top = `${e.clientY - 12}px`;
 };
-
-
 
 const leaveHandler = () => {
   if (!tooltip) return;
@@ -5034,7 +5080,7 @@ const leaveHandler = () => {
 drawerChartArea.addEventListener("mousemove", moveHandler);
 drawerChartArea.addEventListener("mouseleave", leaveHandler);
 
-// 🔑 remember handlers so we can remove them later
+// Remember handlers for cleanup
 drawerChartArea.__kpi3HoverHandlers = {
   move: moveHandler,
   leave: leaveHandler
