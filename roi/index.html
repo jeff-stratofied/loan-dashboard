@@ -2072,6 +2072,10 @@ async function loadLoans() {
 
 
 function openDrawerForLoan(loan){
+
+  // 🔑 Leaving KPI context — disable KPI-specific hover
+window.__activeKpiId = null;
+
   
   currentMode = 'loan';
   currentLoan = loan;
@@ -5005,7 +5009,8 @@ if (drawerChartArea.__kpi3HoverHandlers) {
 }
 
 const moveHandler = e => {
-  // 🔒 HARD GATE — only run for KPI3
+  // 🔒 HARD GATES — MUST be KPI3 AND in KPI mode
+  if (currentMode !== "kpi") return;
   if (window.__activeKpiId !== "kpi3") return;
   if (!tooltip) return;
 
@@ -5018,6 +5023,7 @@ const moveHandler = e => {
   tooltip.style.left = `${e.clientX + 8}px`;
   tooltip.style.top = `${e.clientY - 12}px`;
 };
+
 
 
 const leaveHandler = () => {
