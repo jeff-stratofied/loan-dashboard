@@ -1285,6 +1285,16 @@ tr.event-default td {
        Script (organized with sections)
        ==================================== -->
   <script type="module">
+
+// DEBUG: expose module state for console inspection
+window.__ROI_DEBUG__ = {
+  getCurrentLoans: () => currentLoans,
+  getAllLoans: () => allLoans,
+  getKpiMonth: () => KPI_CURRENT_MONTH,
+  computeKPIs
+};
+
+    
     import { buildAmortSchedule } from "../js/loanEngine.js?v=dev";
     
     import {
