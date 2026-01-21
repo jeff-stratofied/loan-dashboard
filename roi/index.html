@@ -4405,17 +4405,6 @@ function renderTPVDrawer() {
   drawerPrimary.textContent =
     (kpis.weightedROI * 100).toFixed(2) + "%";
 
-setTimeout(() => {
-  console.warn("🔴 FORCING KPI1 TILE TO DRAWER VALUE");
-  const tile = document.querySelector(
-    '.kpi:nth-child(1) p'
-  );
-  if (tile) {
-    tile.textContent =
-      (kpis.weightedROI * 100).toFixed(2) + "%";
-  }
-}, 0);
-
   
   // ===============================
   // 2. Portfolio value as of KPI month
