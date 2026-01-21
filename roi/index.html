@@ -145,10 +145,13 @@ html,body{
     /* =========================================
    Filter row: right-aligned actions
    ========================================= */
-.loan-filters {
+
+/* delete
+    .loan-filters {
   justify-content: space-between;
 }
-
+*/
+    
 .filter-actions {
   display: flex;
   align-items: center;
@@ -214,11 +217,12 @@ html, body {
   background: var(--surface);
 }
 
+    /* delete
 #app,
 .app {
   background: var(--surface);
 }
-
+*/
 
 
     
@@ -712,11 +716,11 @@ tr.event-default td {
              border-color .25s ease, box-shadow .25s ease;
     }
 
-/* MATCH EARNINGS TOOLTIP POSITIONING */
+/* delete
 .tooltip {
   transform: translate(-50%, -120%);
 }
-
+*/
     
     .small{ font-size:12px; color:var(--muted) }
 
@@ -751,7 +755,7 @@ tr.event-default td {
         /* ============================================================
    EMBED MODE — UNIFIED DRAWER LAYOUT (ALIGN ALL IFRAMES)
    ============================================================ */
-
+/* delete
 .embed-mode .drawer-head {
   padding: 20px !important;
   min-height: 64px;
@@ -759,46 +763,47 @@ tr.event-default td {
   background: var(--card);
 }
 
-/* Chart: same height everywhere */
+
 .embed-mode .drawer-chart {
   height: 220px !important;
   margin-bottom: 12px !important;
 }
 
-/* Stat boxes row */
+
 .embed-mode .stat-boxes,
 .embed-mode .drawer-info-row {
   margin-bottom: 12px !important;
   min-height: 56px;
 }
  
-/* Drawer body spacing */
+
 .embed-mode .drawer-body {
   gap: 12px !important;
   padding-left: 16px !important;
   padding-right: 16px !important;
 }
 
-/* Table container */
+
 .embed-mode .amort-wrap {
   max-height: 40vh !important;
 }
-
+*/
+    
     /* ============================================================
    EMBED MODE — ALIGN CHART START TO EARNINGS
    ============================================================ */
 
-/* Remove any spacer before the chart */
+/* delete
 .embed-mode .drawer-body {
   padding-top: 0 !important;
 }
 
-/* Kill gap stacking before first block */
+
 .embed-mode .drawer-body > * {
   margin-top: 0 !important;
 }
 
-/* Remove legend completely from flow */
+
 .embed-mode .legend,
 .embed-mode #drawerLegend {
   display: none !important;
@@ -806,14 +811,14 @@ tr.event-default td {
   margin: 0 !important;
 }
 
-    /* Chart must behave like earnings */
+  
 .embed-mode .drawer-chart {
   display: block !important;
   padding: 8px !important;
   margin-top: 0 !important;
 }
 
-    /* Ensure chart is always first */
+  
 .embed-mode .drawer-chart {
   order: 0;
 }
@@ -823,7 +828,8 @@ tr.event-default td {
 .embed-mode #drawerExtra {
   order: 1;
 }
-
+*/
+    
     /* ============================================================
    EMBED MODE — UNIFIED LAYOUT (ALIGN WITH EARNINGS & AMORT)
    ============================================================ */
@@ -871,18 +877,19 @@ tr.event-default td {
   margin-top: 0 !important;
 }
 
-
+/* delete
 .badge-tooltip {
-  position: fixed !important;  /* Change from absolute to fixed to avoid clipping */
-  z-index: 10000 !important;   /* Higher than .drawer (120) and other elements */
-  transform: none !important;  /* Remove translateY; we'll handle in JS */
-  white-space: pre-wrap;       /* Allow wrapping if text is long */
+  position: fixed !important;  
+  z-index: 10000 !important;   
+  transform: none !important;  
+  white-space: pre-wrap;       
 }
 
 .badge-tooltip.visible {
   opacity: 1 !important;
 }
-
+*/
+    
     #feedback-btn {
   position: fixed;
   bottom: 18px;
@@ -904,7 +911,7 @@ tr.event-default td {
 
 
     
-    /* ROI iframe: grid must size naturally below KPIs */
+    /* delete
 .embed-mode .grid {
   height: auto !important;
   max-height: none !important;
@@ -916,13 +923,14 @@ tr.event-default td {
   overflow-y: auto;
 }
 
-    /* 🔑 ROI iframe MUST allow page scroll */
+   
 .embed-mode html,
 .embed-mode body {
   overflow: auto !important;
   height: auto !important;
 }
-
+*/
+    
 .embed-mode .grid {
   height: auto !important;
   max-height: none !important;
