@@ -3798,31 +3798,6 @@ const loansForKpis = getLoansForKpis();
 const kpis = computeKPIs(loansForKpis, asOfMonth);
 
 
-// =======================================
-// 🧪 KPI1 INPUT TRACE — initROI (AUTHORITATIVE)
-// =======================================
-console.groupCollapsed("🧪 KPI1 INPUTS — initROI");
-
-console.log("asOfMonth:", asOfMonth);
-console.log("currentLoans count:", currentLoans.length);
-
-console.table(
-  currentLoans.map(l => {
-    const e = getRoiEntryAsOfMonth(l, asOfMonth);
-    return {
-      loanId: l.id,
-      purchaseDate: l.purchaseDate,
-      hasRoiEntry: !!e,
-      roiAtAsOf: e ? Number(e.roi.toFixed(6)) : null,
-      invested: e ? e.invested : null,
-      loanValue: e ? e.loanValue : null
-    };
-  })
-);
-
-console.groupEnd();
-
-
   // --------------------------------------------------
   // Initial render (grid / table via filters)
   // --------------------------------------------------
@@ -4356,31 +4331,6 @@ function renderTPVDrawer() {
   // 1. KPI tile number (CANONICAL)
   // ===============================
   const kpis = computeKPIs(loans, asOfMonth);
-
-// =======================================
-// 🧪 KPI1 INPUT TRACE — renderTPVDrawer
-// =======================================
-console.groupCollapsed("🧪 KPI1 INPUTS — renderTPVDrawer");
-
-console.log("asOfMonth:", asOfMonth);
-console.log("loans count:", loans.length);
-
-console.table(
-  loans.map(l => {
-    const e = getRoiEntryAsOfMonth(l, asOfMonth);
-    return {
-      loanId: l.id,
-      purchaseDate: l.purchaseDate,
-      hasRoiEntry: !!e,
-      roiAtAsOf: e ? Number(e.roi.toFixed(6)) : null,
-      invested: e ? e.invested : null,
-      loanValue: e ? e.loanValue : null
-    };
-  })
-);
-
-console.groupEnd();
-
   
 
   drawerPrimaryTitle.textContent = "Weighted ROI to Date";
