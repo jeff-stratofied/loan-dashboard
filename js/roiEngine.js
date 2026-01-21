@@ -230,11 +230,12 @@ loans.forEach(l => {
       r.loanDate <= asOf
     ) {
       recoveredCashTotal +=
-        (
-          safeNum(r.principalPaid) +
-          safeNum(r.interestPaid) -
-          safeNum(r.feesPaid)
-        ) * ownershipPct;
+  (
+    safeNum(r.principalPaid) +
+    safeNum(r.interest) -
+    safeNum(r.feeThisMonth)
+  ) * ownershipPct;
+
     }
   });
 });
