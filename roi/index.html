@@ -2691,25 +2691,6 @@ loanSeriesList.forEach(ls => {
   
 });
 
-// ================================
-// DEBUG: detect stroke mutations
-// ================================
-const strokeObserver = new MutationObserver(mutations => {
-  mutations.forEach(m => {
-    if (m.type === "attributes" && m.attributeName === "stroke") {
-      console.warn(
-        "[STROKE MUTATED]",
-        "loanId:", m.target.dataset.loanId,
-        "new stroke:", m.target.getAttribute("stroke")
-      );
-    }
-  });
-});
-
-loanPaths.forEach(p => {
-  strokeObserver.observe(p, { attributes: true });
-});
-
 
 // -----------------------------------
 // Weighted line (OPTIONAL) — LINEAR ONLY
@@ -2968,14 +2949,6 @@ svg.addEventListener("mouseleave", () => {
 
   svg.appendChild(axis);
   containerEl.appendChild(svg);
-
-  setTimeout(() => {
-  console.group("%c[POST-RENDER STROKES]", "color:#ef4444;font-weight:bold");
-  svg.querySelectorAll('path[data-type="loan"]').forEach(p => {
-
-  });
-  console.groupEnd();
-}, 0);
 
 }
     
@@ -4319,11 +4292,6 @@ function renderTPVDrawer() {
   // 🔑 SINGLE AUTHORITATIVE KPI ANCHOR
   const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
 
-  console.groupCollapsed(
-    "🟦 renderTPVDrawer() KPI1 — month-anchored",
-    Date.now()
-  );
-
   currentMode = "kpi";
   currentLoan = null;
 
@@ -4483,8 +4451,6 @@ createMultiSeriesChart(
   }
 );
 
-console.groupEnd();
-
 
   // ===============================
   // 5. ROI-to-Date Table
@@ -4539,7 +4505,6 @@ function renderRatesDrawer() {
     loans.length === 0 ||
     loans.some(l => !l || !l.purchaseDate)
   ) {
-    console.warn("[Rates Drawer] aborted — loans not ready");
     return;
   }
 
@@ -4885,24 +4850,6 @@ cumulativeRecovered += totalPaidThisMonth * ownPct;
 return { date: d, y };
 
   });
-
-console.group("🟦 KPI3 ALIGNMENT DEBUG (POST-SERIES)");
-
-console.log(
-  "KPI engine value:",
-  (kpis.capitalRecoveryPct * 100).toFixed(6) + "%"
-);
-
-if (portfolioSeries.length) {
-  const last = portfolioSeries.at(-1);
-  console.log(
-    "Portfolio series last point:",
-    (last.y * 100).toFixed(6) + "%",
-    "date:", formatMonthYear(last.date)
-  );
-}
-
-console.groupEnd();
 
   
 // --------------------------------------------------
@@ -5566,23 +5513,19 @@ filteredLoans = currentLoans.slice();
 // =====================================================
 allLoans.forEach(l => {
   if (!Array.isArray(l.ownershipLots) || l.ownershipLots.length === 0) {
-    console.error("[INVARIANT] missing ownershipLots", l);
     throw new Error("ROI invariant failed: ownershipLots missing");
   }
 
   if (!Array.isArray(l.roiSeries) || l.roiSeries.length === 0) {
-    console.error("[INVARIANT] missing roiSeries", l);
     throw new Error("ROI invariant failed: roiSeries missing");
   }
 
   l.roiSeries.forEach(r => {
     if (!Number.isFinite(r.invested) || r.invested <= 0) {
-      console.error("[INVARIANT] invalid invested", l, r);
       throw new Error("ROI invariant failed: invalid invested");
     }
 
     if (!Number.isFinite(r.roi)) {
-      console.error("[INVARIANT] invalid roi", l, r);
       throw new Error("ROI invariant failed: invalid roi");
     }
   });
@@ -5596,9 +5539,6 @@ populateSortDropdown();
 
 // =========================================
 // APPLY DEFERRED VIEW MODE (CANONICAL)
-// =========================================
-// =========================================
-// APPLY DEFERRED VIEW MODE (WITH DEBUG)
 // =========================================
 if (PAGE_CONTEXT.isEmbed) {
   // 🔒 EMBED MODE: KPIs + drawer only
