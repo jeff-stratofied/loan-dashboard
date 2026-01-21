@@ -4656,29 +4656,6 @@ function getUserOwnedPct(loan) {
   // 🔑 AUTHORITATIVE KPI VALUES
   const kpis = computeKPIs(loans, KPI_CURRENT_MONTH);
 
-  console.group("🟦 KPI3 ALIGNMENT DEBUG");
-
-console.log(
-  "KPI engine value:",
-  (kpis.capitalRecoveryPct * 100).toFixed(6) + "%"
-);
-
-if (portfolioSeries?.length) {
-  const last = portfolioSeries.at(-1);
-  console.log(
-    "Portfolio series last point:",
-    (last.y * 100).toFixed(6) + "%",
-    "date:", formatMonthYear(last.date)
-  );
-}
-
-console.log(
-  "As-of month:",
-  formatMonthYear(KPI_CURRENT_MONTH)
-);
-
-console.groupEnd();
-
 
   // --------------------------------------------------
 // Shared containers (AUTHORITATIVE)
@@ -4842,6 +4819,25 @@ return { date: d, y };
 
   });
 
+console.group("🟦 KPI3 ALIGNMENT DEBUG (POST-SERIES)");
+
+console.log(
+  "KPI engine value:",
+  (kpis.capitalRecoveryPct * 100).toFixed(6) + "%"
+);
+
+if (portfolioSeries.length) {
+  const last = portfolioSeries.at(-1);
+  console.log(
+    "Portfolio series last point:",
+    (last.y * 100).toFixed(6) + "%",
+    "date:", formatMonthYear(last.date)
+  );
+}
+
+console.groupEnd();
+
+  
 // --------------------------------------------------
 // Dynamic x-axis spacing (match other KPI charts)
 // --------------------------------------------------
