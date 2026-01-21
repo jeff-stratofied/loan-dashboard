@@ -197,12 +197,13 @@ html,body{
 }
 
     
-/* Force layout to match Amort: body does NOT scroll */
+/* delete
 html, body {
   height: 100%;
   overflow: hidden;
 }
-
+*/
+    
 /* ROI matches Earnings:
    Page does NOT scroll; grid owns scrolling */
 .app {
@@ -222,19 +223,21 @@ html[data-theme="dark"] body {
   background: linear-gradient(180deg,#0b1224 0%, #0f172a 100%);
 }
 
+    /* delete
     .app{
       max-width:1200px;
       margin:20px auto 0 auto;
       padding:16px 16px 0 16px;
     }
-
-    /* Match amort layout */
+*/
+    
+    /* delete
     body > .app {
        background: transparent;
       padding-top: 16px;
       margin-top: 0;
     }
-
+*/
 
     header {
       display:flex;
@@ -519,11 +522,12 @@ html[data-theme="dark"] body {
   transform-origin: 50% 50%;
 }
 
+    /* delete
     .ownership-pie:hover {
   transform: scale(1.5);
   filter: brightness(1.05);
 }
-    
+ */   
     
 /* MATCH AMORT TILE HOVER BEHAVIOR */
 .tile {
@@ -622,7 +626,7 @@ html[data-theme="dark"] body {
   box-shadow:0 6px 18px rgba(15,23,42,0.06);
 }
 
-/* Legend same as amort */
+/* delete
 .legend{
   display:flex;
   gap:10px;
@@ -630,7 +634,8 @@ html[data-theme="dark"] body {
   font-size:12px;
   margin-top:6px;
 }
-
+*/
+    
 /* Dark theme behavior */
 html[data-theme="dark"] .drawer{
   background:var(--drawer-bg);
@@ -949,11 +954,12 @@ tr.event-default td {
 /* =================================================
    FORCE checkbox checkmark to match AMORT (ROI FIX)
    ================================================= */
-.compact-toggle input[type="checkbox"] {
+/* delete
+    .compact-toggle input[type="checkbox"] {
   accent-color: var(--brand);
   color-scheme: light !important;  /* 🔑 override html[data-theme] */
 }
-
+*/
     
 #feedback-btn:hover {
   transform: scale(1.05);
