@@ -5658,6 +5658,29 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// 🔥 FINAL KPI OVERWRITE DETECTOR
+const kpisEl = document.getElementById("kpis");
+
+if (kpisEl) {
+  const observer = new MutationObserver(muts => {
+    console.group("🚨 KPI DOM MUTATION DETECTED");
+    muts.forEach(m => {
+      console.log("Type:", m.type);
+      console.log("Target:", m.target);
+    });
+    console.log("Current KPI HTML:", kpisEl.innerHTML);
+    console.trace("Mutation stack trace");
+    console.groupEnd();
+  });
+
+  observer.observe(kpisEl, {
+    childList: true,
+    subtree: true,
+    characterData: true
+  });
+}
+
+    
 </script>
 
 <script src="/loan-dashboard/js/feedback.js"></script>
