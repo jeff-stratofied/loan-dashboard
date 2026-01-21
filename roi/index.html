@@ -199,6 +199,35 @@ html,body{
   border-color: var(--brand);
 }
 
+
+  /* Compact view toggle */
+/* delete
+.compact-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+*/
+/* =========================================
+   Compact / Table toggle checkbox (Amort)
+   ========================================= */
+/* delete
+    .compact-toggle input[type="checkbox"] {
+  accent-color: var(--brand);
+  color-scheme: light;  
+  cursor: pointer;
+}
+
+
+    
+    .compact-toggle span {
+  font-weight: 500;   /* match Amort */
+}
+*/
     
 /* Force layout to match Amort: body does NOT scroll */
 html, body {
@@ -218,6 +247,8 @@ html, body {
 .app {
   background: var(--surface);
 }
+
+
 
     
 body{
@@ -2894,6 +2925,9 @@ loanSeriesList.forEach(ls => {
   `;
 });
 
+
+
+
   tooltip.innerHTML = html;
   tooltip.style.display = "block";
 
@@ -2934,6 +2968,14 @@ svg.addEventListener("mouseleave", () => {
 
   svg.appendChild(axis);
   containerEl.appendChild(svg);
+
+  setTimeout(() => {
+  console.group("%c[POST-RENDER STROKES]", "color:#ef4444;font-weight:bold");
+  svg.querySelectorAll('path[data-type="loan"]').forEach(p => {
+
+  });
+  console.groupEnd();
+}, 0);
 
 }
     
@@ -3757,13 +3799,17 @@ async function initROI() {
   // --------------------------------------------------
   window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
+  // --------------------------------------------------
+  // Compute KPIs
+  // --------------------------------------------------
+  const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
+
 
   // --------------------------------------------------
   // Initial render (grid / table via filters)
   // --------------------------------------------------
   applyLoanFilters();
 
-/* deley
 // --------------------------------------------------
 // UI: Render KPI tiles
 // --------------------------------------------------
@@ -3814,7 +3860,7 @@ kpisEl.innerHTML = `
     <p id="roiSpread"></p>
   </div>
 `;
-*/
+
 
   // --------------------------------------------------
   // KPI tile click (FULL ROI PAGE ONLY)
@@ -4332,6 +4378,17 @@ function renderTPVDrawer() {
   drawerPrimary.textContent =
     (kpis.weightedROI * 100).toFixed(2) + "%";
 
+setTimeout(() => {
+  console.warn("🔴 FORCING KPI1 TILE TO DRAWER VALUE");
+  const tile = document.querySelector(
+    '.kpi:nth-child(1) p'
+  );
+  if (tile) {
+    tile.textContent =
+      (kpis.weightedROI * 100).toFixed(2) + "%";
+  }
+}, 0);
+
   
   // ===============================
   // 2. Portfolio value as of KPI month
@@ -4568,6 +4625,12 @@ function renderRatesDrawer() {
   drawerPrimary.textContent =
     (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
 
+  // 🔑 FORCE KPI2 TILE TO MATCH DRAWER (AUTHORITATIVE)
+  const kpi2Tile = document.getElementById("wproj");
+  if (kpi2Tile) {
+    kpi2Tile.textContent =
+      (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
+  }
 
   // =====================================================
   // 2. Compute projected portfolio value
@@ -5524,37 +5587,6 @@ currentLoans = allLoans.filter(loan => {
 // Filters & views operate on visible loans only
 filteredLoans = currentLoans.slice();
 
-// --------------------------------------------------
-// KPI TILE RENDER — AUTHORITATIVE
-// --------------------------------------------------
-const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-const kpis = computeKPIs(currentLoans, asOfMonth);
-
-const kpisEl = document.getElementById("kpis");
-if (kpisEl) {
-  kpisEl.innerHTML = `
-    <div class="kpi" data-kpi="tpv">
-      <h3>Weighted ROI to Current Month</h3>
-      <p>${(kpis.weightedROI * 100).toFixed(2)}%</p>
-    </div>
-
-    <div class="kpi" data-kpi="rates">
-      <h3>Projected Weighted ROI</h3>
-      <p>${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
-    </div>
-
-    <div class="kpi" data-kpi="capitalRecovery">
-      <h3>Capital Recovered</h3>
-      <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
-    </div>
-
-    <div class="kpi" data-kpi="spread">
-      <h3>ROI Spread</h3>
-      <p id="roiSpread"></p>
-    </div>
-  `;
-}
-
   
   // =====================================================
   // 🔒 INVARIANT: ROI must exist for current KPI month
@@ -5568,6 +5600,7 @@ if (kpisEl) {
     }
   });
 
+  // 🔑 SOURCE OF TRUTH
   // ============================================
   // 🔑 STEP 3 (SAFE): OWNERSHIP-BASED VISIBILITY
   // ============================================
