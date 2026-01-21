@@ -5493,10 +5493,24 @@ console.groupEnd();
   const kpisEl = document.getElementById("kpis");
   if (!kpisEl) return;
 
-  const asOfMonth = KPI_CURRENT_MONTH;
+const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
 
-  const kpis = computeKPIs(currentLoans, asOfMonth);
+// Use the SAME loan-set the KPI drawer uses (if available)
+const loansForKpis =
+  typeof getLoansForKpis === "function"
+    ? getLoansForKpis()
+    : currentLoans;
 
+const kpis = computeKPIs(loansForKpis, asOfMonth);
+h);
+
+console.log("KPI TILE (renderKpiTiles)", {
+  asOfMonth,
+  count: loansForKpis.length,
+  weightedROI: kpis.weightedROI
+});
+
+  
   kpisEl.innerHTML = `
     <div class="kpi" data-kpi="tpv">
       <h3>Weighted ROI to Current Month</h3>
