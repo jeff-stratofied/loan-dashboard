@@ -199,35 +199,6 @@ html,body{
   border-color: var(--brand);
 }
 
-
-  /* Compact view toggle */
-/* delete
-.compact-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  user-select: none;
-}
-*/
-/* =========================================
-   Compact / Table toggle checkbox (Amort)
-   ========================================= */
-/* delete
-    .compact-toggle input[type="checkbox"] {
-  accent-color: var(--brand);
-  color-scheme: light;  
-  cursor: pointer;
-}
-
-
-    
-    .compact-toggle span {
-  font-weight: 500;   /* match Amort */
-}
-*/
     
 /* Force layout to match Amort: body does NOT scroll */
 html, body {
@@ -247,8 +218,6 @@ html, body {
 .app {
   background: var(--surface);
 }
-
-
 
     
 body{
@@ -2969,12 +2938,6 @@ svg.addEventListener("mouseleave", () => {
   svg.appendChild(axis);
   containerEl.appendChild(svg);
 
-  setTimeout(() => {
-  console.group("%c[POST-RENDER STROKES]", "color:#ef4444;font-weight:bold");
-  svg.querySelectorAll('path[data-type="loan"]').forEach(p => {
-
-  });
-  console.groupEnd();
 }, 0);
 
 }
@@ -4610,12 +4573,6 @@ function renderRatesDrawer() {
   drawerPrimary.textContent =
     (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
 
-  // 🔑 FORCE KPI2 TILE TO MATCH DRAWER (AUTHORITATIVE)
-  const kpi2Tile = document.getElementById("wproj");
-  if (kpi2Tile) {
-    kpi2Tile.textContent =
-      (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
-  }
 
   // =====================================================
   // 2. Compute projected portfolio value
@@ -5575,7 +5532,8 @@ filteredLoans = currentLoans.slice();
 // --------------------------------------------------
 // KPI TILE RENDER — AUTHORITATIVE
 // --------------------------------------------------
-const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
+const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
+const kpis = computeKPIs(currentLoans, asOfMonth);
 
 const kpisEl = document.getElementById("kpis");
 if (kpisEl) {
