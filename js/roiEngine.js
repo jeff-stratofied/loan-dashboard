@@ -125,24 +125,6 @@ export function computeWeightedRoiAsOfMonth(loans, monthDate) {
 
 export function computeKPIs(loans, asOfMonth) {
   if (!Array.isArray(loans) || !(asOfMonth instanceof Date)) {
-
-// ================================
-// KPI3 AUDIT — MUST MATCH TABLE
-// ================================
-console.group("🔍 KPI3 AUDIT");
-console.log("Recovered principal (engine):", recoveredPrincipalTotal);
-console.log("Remaining principal (engine):", remainingPrincipalTotal);
-console.log(
-  "Total basis (engine):",
-  recoveredPrincipalTotal + remainingPrincipalTotal
-);
-console.log(
-  "Recovery % (engine):",
-  (recoveredPrincipalTotal /
-    (recoveredPrincipalTotal + remainingPrincipalTotal || 1)) * 100
-);
-console.groupEnd();
-
     
     return {
       totalInvested: 0,
@@ -255,21 +237,6 @@ return {
 
 
 export function buildProjectedRoiTimeline(loans, opts = {}) {
-
-console.group("🧪 ROI ENGINE — PROJECTED TIMELINE");
-
-loans.forEach(l => {
-  console.log({
-    loan: l.name,
-    purchaseDate: l.purchaseDate,
-    roiSeriesLength: l.roiSeries?.length,
-    firstRoiDate: l.roiSeries?.[0]?.date,
-    lastRoiDate: l.roiSeries?.slice(-1)[0]?.date,
-    investedLast: l.roiSeries?.slice(-1)[0]?.invested
-  });
-});
-
-console.groupEnd();
 
   
   if (!Array.isArray(loans) || loans.length === 0) {
