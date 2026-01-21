@@ -4866,21 +4866,14 @@ createMultiSeriesChart(
     // 🔑 KPI3 AUTHORITATIVE LABEL
     weightedLabel: "Portfolio Recovered",
 
-    // 🔑 FORCE HOVER VALUE TO MATCH KPI TILE
-    weightedLabelFn: (pt) => {
-      const isKpiMonth =
-        pt.date.getFullYear() === kpiMonth.getFullYear() &&
-        pt.date.getMonth() === kpiMonth.getMonth();
+// 🔑 KPI3 AUTHORITATIVE HOVER — chart owns its value
+weightedLabelFn: (pt) => {
+  return `
+    ${formatMonthYear(pt.date)}
+    • Portfolio Recovered ${(pt.y * 100).toFixed(2)}%
+  `;
+}
 
-      const value = isKpiMonth
-        ? kpis.capitalRecoveryPct
-        : pt.y;
-
-      return `
-        ${formatMonthYear(pt.date)}
-        • Portfolio Recovered ${(value * 100).toFixed(2)}%
-      `;
-    }
   }
 );
 
