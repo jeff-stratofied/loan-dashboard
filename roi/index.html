@@ -1889,10 +1889,7 @@ function openLoanDrawerSafe(loan) {
 // KPI DRAWER OPEN — ROI (KPI-SPECIFIC)
 // =====================================================
 function openRoiKpiDrawer(kpiId) {
-// Clear KPI-specific hover gates
-window.__activeKpiId = null;
 
-  
   currentMode = "kpi";
   currentLoan = null;
 
@@ -2072,11 +2069,7 @@ async function loadLoans() {
 
 
 function openDrawerForLoan(loan){
-
-  // 🔑 Leaving KPI context — disable KPI-specific hover
-window.__activeKpiId = null;
-
-  
+ 
   currentMode = 'loan';
   currentLoan = loan;
   drawerAmortContainer.style.display = '';
@@ -2857,28 +2850,37 @@ svg.addEventListener("mousemove", ev => {
     </div>
   `;
 
-// 🔑 Weighted hover MUST come from weighted series data
-const weightedPoint = weightedSeries
-  ?.filter(p => p.date && p.date <= date)
-  .slice(-1)[0];
+// ----------------------------------
+// Weighted / Portfolio line hover
+// ----------------------------------
+let weightedAtDate = null;
 
-const weightedAtDate =
-  weightedPoint && Number.isFinite(weightedPoint.y)
-    ? weightedPoint.y
-    : null;
+// 🔑 KPI3: force engine-authoritative value
+if (opts.forceWeightedValueFn) {
+  weightedAtDate = opts.forceWeightedValueFn(date);
+} else {
+  // default behavior (ROI, other KPIs)
+  const weightedPoint = weightedSeries
+    ?.filter(p => p.date && p.date <= date)
+    .slice(-1)[0];
 
-
+  weightedAtDate =
+    weightedPoint && Number.isFinite(weightedPoint.y)
+      ? weightedPoint.y
+      : null;
+}
 
 if (Number.isFinite(weightedAtDate)) {
   html += `
     <div style="margin-bottom:6px">
       <span style="font-weight:600">
-  ${opts.weightedLabel || "Weighted"}:
-</span>
+        ${opts.weightedLabel || "Weighted"}:
+      </span>
       ${(weightedAtDate * 100).toFixed(2)}%
     </div>
   `;
 }
+
 
 
   // per-loan series (SQUARE swatches)
@@ -4626,10 +4628,6 @@ function renderRatesDrawer() {
     
 function renderCapitalRecoveredDrawer() {
 
-  // 🔑 mark active KPI for hover gating
-window.__activeKpiId = "kpi3";
-
-
 function getUserOwnedPct(loan) {
   return Array.isArray(loan.ownershipLots)
     ? loan.ownershipLots
@@ -4866,21 +4864,18 @@ createMultiSeriesChart(
   drawerChartArea,
   loanSeriesList,
   portfolioSeries,
-{
-  dates: globalDates,
-  weightedColor: "#111827",
-  weightedWidth: 3,
-  tickSpacingX,
+  {
+    dates: globalDates,
+    weightedColor: "#111827",
+    weightedWidth: 3,
+    tickSpacingX,
+    weightedLabel: "Portfolio Recovered",
 
-  // 🔑 KPI3 AUTHORITATIVE LABEL
-  weightedLabel: "Portfolio Recovered",
-
- // 🔑 KPI3 authoritative hover
-  hoverLabelFn: () =>
-    `${formatMonthYear(KPI_CURRENT_MONTH)} • Portfolio Recovered ${(kpis.capitalRecoveryPct * 100).toFixed(2)}%`
-}
-
+    // 🔑 KPI3: authoritative portfolio value
+    forceWeightedValueFn: () => kpis.capitalRecoveryPct
+  }
 );
+
 
 
   // --------------------------------------------------
@@ -4994,100 +4989,6 @@ const remaining = Math.max(0, invested - recovered);
       });
     });
   }
-
-// ==================================================
-// KPI3 EXPLICIT HOVER (SCOPED + PER-LOAN BREAKDOWN)
-// ==================================================
-const tooltip = document.getElementById("tooltip");
-
-// Clean up any previous KPI3 handlers
-if (drawerChartArea.__kpi3HoverHandlers) {
-  const { move, leave } = drawerChartArea.__kpi3HoverHandlers;
-  drawerChartArea.removeEventListener("mousemove", move);
-  drawerChartArea.removeEventListener("mouseleave", leave);
-  drawerChartArea.__kpi3HoverHandlers = null;
-}
-
-// Cache chart bounds + dates for hit testing
-const chartRect = drawerChartArea.getBoundingClientRect();
-const dates = globalDates; // already month-start, sorted
-
-const moveHandler = e => {
-  // 🔒 HARD GATES
-  if (currentMode !== "kpi") return;
-  if (window.__activeKpiId !== "kpi3") return;
-  if (!tooltip) return;
-
-  // ----------------------------------
-  // Find nearest month under cursor
-  // ----------------------------------
-  const x = e.clientX - chartRect.left;
-  const pctX = Math.max(0, Math.min(1, x / chartRect.width));
-  const idx = Math.round(pctX * (dates.length - 1));
-  const month = dates[idx];
-  if (!month) return;
-
-  // ----------------------------------
-  // Build tooltip HTML
-  // ----------------------------------
-  let html = `
-    <div style="font-weight:600;margin-bottom:4px">
-      ${formatMonthYear(month)}
-    </div>
-    <div style="margin-bottom:6px">
-      <strong>Portfolio Recovered:</strong>
-      ${(kpis.capitalRecoveryPct * 100).toFixed(2)}%
-    </div>
-  `;
-
-  // ----------------------------------
-  // Per-loan rows (only if active by month)
-  // ----------------------------------
-  loanSeriesList.forEach(series => {
-    // Find latest point ON OR BEFORE hovered month
-const pt = [...series.data]
-  .filter(d => d.date <= month)
-  .at(-1);
-
-if (!pt) return;
-
-
-    html += `
-      <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
-        <span style="
-          width:10px;
-          height:10px;
-          border-radius:2px;
-          background:${series.color};
-          flex-shrink:0
-        "></span>
-        <span style="flex:1">${series.name}</span>
-        <span>${(pt.y * 100).toFixed(2)}%</span>
-      </div>
-    `;
-  });
-
-  tooltip.innerHTML = html;
-  tooltip.style.display = "block";
-  tooltip.style.left = `${e.clientX + 10}px`;
-  tooltip.style.top = `${e.clientY - 12}px`;
-};
-
-const leaveHandler = () => {
-  if (!tooltip) return;
-  tooltip.style.display = "none";
-};
-
-drawerChartArea.addEventListener("mousemove", moveHandler);
-drawerChartArea.addEventListener("mouseleave", leaveHandler);
-
-// Remember handlers for cleanup
-drawerChartArea.__kpi3HoverHandlers = {
-  move: moveHandler,
-  leave: leaveHandler
-};
-
-
   
 }
 
