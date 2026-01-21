@@ -1376,8 +1376,41 @@ if (!PAGE_CONTEXT.isEmbed) {
     localStorage.getItem("roiViewMode") || "full";
 }
 
-    
     const viewButtons = document.querySelectorAll(".view-btn");
+
+    function renderRoiKpiTiles() {
+  if (!Array.isArray(currentLoans) || currentLoans.length === 0) return;
+
+  const kpis = computeKPIs(currentLoans, KPI_CURRENT_MONTH);
+
+  // KPI 1 — Weighted ROI to Date
+  const wroi = document.getElementById("wroi");
+  if (wroi) {
+    wroi.textContent = (kpis.weightedROI * 100).toFixed(2) + "%";
+  }
+
+  // KPI 2 — Projected Weighted ROI
+  const wproj = document.getElementById("wproj");
+  if (wproj) {
+    wproj.textContent =
+      (kpis.projectedWeightedROI * 100).toFixed(2) + "%";
+  }
+
+  // KPI 3 — Capital Recovered
+  const cap = document.getElementById("capitalRecovered");
+  if (cap) {
+    cap.textContent =
+      (kpis.capitalRecoveredPct * 100).toFixed(2) + "%";
+  }
+
+  // KPI 4 — ROI Spread
+  const spread = document.getElementById("roiSpread");
+  if (spread) {
+    spread.textContent =
+      (kpis.roiSpread * 100).toFixed(2) + "%";
+  }
+}
+
 
 function setViewMode(mode) {
   // Persist (unless embed)
