@@ -4725,11 +4725,18 @@ loans.forEach(l => {
       r.loanDate instanceof Date &&
       r.loanDate <= KPI_CURRENT_MONTH
     ) {
-      recoveredOwned += (
-  (Number(r.principalPaid) || 0) +
+      const scheduledPrincipalThisMonth = Math.max(
+  0,
+  (Number(r.principalPaid) || 0) - (Number(r.prepayment) || 0)
+);
+
+const totalPaidThisMonth =
+  scheduledPrincipalThisMonth +
   (Number(r.interest) || 0) -
-  (Number(r.feeThisMonth) || 0)
-) * ownPct;
+  (Number(r.feeThisMonth) || 0);
+
+recoveredOwned += totalPaidThisMonth * ownPct;
+
 
     }
 
@@ -4813,12 +4820,18 @@ const portfolioSeries = globalDates
           r.loanDate.getFullYear() === d.getFullYear() &&
           r.loanDate.getMonth() === d.getMonth()
         ) {
-          cumulativeRecovered +=
-            (
-              Number(r.principalPaid || 0) +
-              Number(r.interest || 0) -
-              Number(r.feeThisMonth || 0)
-            ) * ownPct;
+          const scheduledPrincipalThisMonth = Math.max(
+  0,
+  (Number(r.principalPaid) || 0) - (Number(r.prepayment) || 0)
+);
+
+const totalPaidThisMonth =
+  scheduledPrincipalThisMonth +
+  (Number(r.interest) || 0) -
+  (Number(r.feeThisMonth) || 0);
+
+cumulativeRecovered += totalPaidThisMonth * ownPct;
+
         }
       });
     });
@@ -4855,12 +4868,6 @@ createMultiSeriesChart(
 
     // 🔑 KPI3 AUTHORITATIVE LABEL
     weightedLabel: "Portfolio Recovered",
-
-// 🔑 KPI3 AUTHORITATIVE HOVER — engine owns the value
-weightedLabelFn: () => `
-  ${formatMonthYear(KPI_CURRENT_MONTH)}
-  • Portfolio Recovered ${(kpis.capitalRecoveryPct * 100).toFixed(2)}%
-`
 
   }
 );
@@ -4903,28 +4910,32 @@ loans.forEach(l => {
 
   if (!invested || !ownPct) return;
 
-  let recovered = 0;
+let recovered = 0;
 
-  l.amort?.schedule?.forEach(r => {
-    if (
-      r.isOwned &&
-      r.loanDate instanceof Date &&
-      r.loanDate <= asOfEnd
-    ) {
-      recovered += (Number(r.principalPaid) || 0) * ownPct;
-    }
-  });
+l.amort?.schedule?.forEach(r => {
+  if (
+    r.isOwned &&
+    r.loanDate instanceof Date &&
+    r.loanDate <= asOfEnd
+  ) {
+    const scheduledPrincipalThisMonth = Math.max(
+      0,
+      (Number(r.principalPaid) || 0) - (Number(r.prepayment) || 0)
+    );
 
-  const pct = recovered / invested;
+    const totalPaidThisMonth =
+      scheduledPrincipalThisMonth +
+      (Number(r.interest) || 0) -
+      (Number(r.feeThisMonth) || 0);
 
-  // Remaining principal (ownership-scaled)
-  const last = l.cumSchedule
-    ?.filter(r => r.loanDate && r.loanDate <= asOfEnd)
-    .at(-1);
+    recovered += totalPaidThisMonth * ownPct;
+  }
+});
 
-  const remaining = last
-    ? Math.max(0, (Number(last.balance || 0)) * ownPct)
-    : 0;
+const pct = invested > 0 ? (recovered / invested) : 0;
+
+// Remaining capital per KPI3 definition
+const remaining = Math.max(0, invested - recovered);
 
   const color = window.KPI_COLOR_MAP?.[l.id] || '#64748b';
 
