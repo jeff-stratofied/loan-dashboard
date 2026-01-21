@@ -5044,12 +5044,13 @@ const moveHandler = e => {
   // Per-loan rows (only if active by month)
   // ----------------------------------
   loanSeriesList.forEach(series => {
-    const pt = series.data.find(d =>
-      d.date.getFullYear() === month.getFullYear() &&
-      d.date.getMonth() === month.getMonth()
-    );
+    // Find latest point ON OR BEFORE hovered month
+const pt = [...series.data]
+  .filter(d => d.date <= month)
+  .at(-1);
 
-    if (!pt) return;
+if (!pt) return;
+
 
     html += `
       <div style="display:flex;align-items:center;gap:6px;margin-top:2px">
