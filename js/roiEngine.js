@@ -56,7 +56,7 @@ function monthDiff(d1, d2) {
 
 function getOwnershipBasis(loan) {
   // Prefer user-specific fields when present (ROI UI passes per-user loans)
-  const directPct = safeNum(loan?.ownershipPct);          // user ownership pct
+  const directPct = safeNum(loan?.ownershipPct ?? loan?.userOwnershipPct);          // user ownership pct
   const directInvested = safeNum(loan?.userPurchasePrice); // user purchase price
 
   if (directPct > 0 || directInvested > 0) {
@@ -134,93 +134,90 @@ export function computeKPIs(loans, asOfMonth) {
     };
   }
 
-  // ==========================================================
-  // KPI3 denominator: USER PURCHASE PRICE (matches ROI index UI)
-  // ==========================================================
-  const totalInvested = loans.reduce((s, l) => {
-    return s + safeNum(l?.userPurchasePrice);
-  }, 0);
+  // ----------------------------------
+  // KPI1 / KPI2: Weighted ROI logic
+  // (leave unchanged — ROI is correct)
+  // ----------------------------------
+  const weightedROI = computeWeightedRoiAsOfMonth(loans, asOfMonth);
 
-  if (!totalInvested) {
-    return {
-      totalInvested: 0,
-      weightedROI: 0,
-      projectedWeightedROI: 0,
-      capitalRecoveredAmount: 0,
-      capitalRecoveryPct: 0
-    };
-  }
-
-  // ==========================================================
-  // KPI1 / KPI2 weighting basis (keep existing ROI behavior)
-  // Uses roiSeries[-1].invested (may differ from purchase price)
-  // ==========================================================
   const totalInvestedForRoi = loans.reduce((s, l) => {
     const last =
       Array.isArray(l?.roiSeries) && l.roiSeries.length
         ? l.roiSeries[l.roiSeries.length - 1]
         : null;
     return s + safeNum(last?.invested);
-  }, 0) || totalInvested;
+  }, 0) || 0;
 
-  // ----------------------------------
-  // Weighted ROI to date
-  // ----------------------------------
-  const weightedROI = computeWeightedRoiAsOfMonth(loans, asOfMonth);
-
-  // ----------------------------------
-  // Projected weighted ROI (terminal)
-  // ----------------------------------
   const projectedWeightedROI =
     loans.reduce((sum, l) => {
       const last =
         Array.isArray(l?.roiSeries) && l.roiSeries.length
           ? l.roiSeries[l.roiSeries.length - 1]
           : null;
-
       if (!last) return sum;
       return sum + safeNum(last.roi) * safeNum(last.invested);
     }, 0) / (totalInvestedForRoi || 1);
 
   // ==========================================================
-  // KPI3 numerator: cumulative PRINCIPAL paid through asOfMonth
-  // (matches KPI3 drawer chart/table logic in index.html)
+  // KPI3: CAPITAL RECOVERY (MATCHES TABLE EXACTLY)
+  //
+  // Numerator   = cumulative owned principal paid
+  // Denominator = cumulative owned principal paid
+  //               + owned remaining principal
   // ==========================================================
   const asOf = clampToMonthEnd(asOfMonth) || new Date(asOfMonth);
 
   let recoveredPrincipalTotal = 0;
+  let remainingPrincipalTotal = 0;
 
   loans.forEach(l => {
     const sched = l?.amort?.schedule;
-    if (!Array.isArray(sched)) return;
+    if (!Array.isArray(sched) || !sched.length) return;
 
+    // 🔑 MUST be user ownership (not whole-loan)
     const { ownershipPct } = getOwnershipBasis(l);
-
     if (!ownershipPct) return;
+
+    let lastOwnedRow = null;
 
     sched.forEach(r => {
       if (
-        r?.isOwned &&
-        r?.loanDate instanceof Date &&
-        r.loanDate <= asOf
+        !r?.isOwned ||
+        !(r.loanDate instanceof Date) ||
+        r.loanDate > asOf
       ) {
-        recoveredPrincipalTotal += safeNum(r.principalPaid) * ownershipPct;
+        return;
       }
+
+      recoveredPrincipalTotal += safeNum(r.principalPaid) * ownershipPct;
+      lastOwnedRow = r;
     });
+
+    // Remaining principal = balance at last owned row <= asOf
+    if (lastOwnedRow) {
+      remainingPrincipalTotal +=
+        safeNum(lastOwnedRow.balance) * ownershipPct;
+    }
   });
 
+  const totalCapitalBasis =
+    recoveredPrincipalTotal + remainingPrincipalTotal;
+
   const capitalRecoveryPct =
-    totalInvested > 0 ? recoveredPrincipalTotal / totalInvested : 0;
+    totalCapitalBasis > 0
+      ? recoveredPrincipalTotal / totalCapitalBasis
+      : 0;
 
   return {
-    // IMPORTANT: totalInvested is now PURCHASE PRICE (matches KPI3 UI)
-    totalInvested,
+    // KPI3 uses recovered + remaining (NOT purchase price)
+    totalInvested: totalCapitalBasis,
     weightedROI,
     projectedWeightedROI,
     capitalRecoveredAmount: recoveredPrincipalTotal,
     capitalRecoveryPct
   };
 }
+
 
 
 
