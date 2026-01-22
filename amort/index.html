@@ -2865,7 +2865,7 @@ tr.innerHTML = `
   <td>${(loan.nominalRate * 100).toFixed(2)}%</td>
   <td>${loan.termYears}</td>
   <td>${loan.graceYears ?? 0}</td>
-  <td>${Math.round(loan.ownershipPct * 100)}%</td>
+  <td>${Math.round(getUserOwnershipPct(loan, PAGE_CONTEXT.user) * 100)}%</td>
   <td>${formatCurrency(getCurrentLoanBalance(loan))}</td>
 `;
 
