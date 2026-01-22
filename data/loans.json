@@ -27,15 +27,9 @@
         },
         {
           "user": "john",
-          "pct": 0.7,
+          "pct": 0.8,
           "purchaseDate": "2026-03-11",
-          "pricePaid": "7700"
-        },
-        {
-          "user": "jeff",
-          "pct": 0.1,
-          "purchaseDate": "2025-06-22",
-          "pricePaid": "1100"
+          "pricePaid": "8800"
         }
       ]
     },
