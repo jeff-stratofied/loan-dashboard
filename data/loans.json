@@ -60,9 +60,15 @@
       "ownershipLots": [
         {
           "user": "jeff",
-          "pct": 1,
-          "pricePaid": 7000,
+          "pct": 0.5,
+          "pricePaid": "3500",
           "purchaseDate": "2024-02-01"
+        },
+        {
+          "user": "john",
+          "pct": 0.5,
+          "purchaseDate": "2025-01-08",
+          "pricePaid": "3500"
         }
       ]
     },
