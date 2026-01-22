@@ -564,6 +564,13 @@
     .btn{ padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; cursor:pointer; font-weight:600; transition:background-color .25s ease, color .25s ease, border-color .25s ease; }
     .btn.primary{ background:linear-gradient(90deg,var(--brand),var(--accent2)); color:white; border:none; box-shadow:var(--shadow); }
 
+.btn.active {
+  border-color: var(--brand);
+  background: rgba(14,165,233,0.12);
+  color: var(--brand-strong);
+}
+
+    
     .tpv-swatch.dimmed {
   opacity: 0.25;
 }
@@ -1091,7 +1098,17 @@ html[data-theme="dark"] .close-btn {
       <div id="drawerExtra"></div>
 
       <div id="drawerAmortContainer">
-        <h3 style="margin-top:8px">Amortization</h3>
+  <div id="amortViewToggle" style="display:flex;gap:6px;margin:8px 0">
+    <button class="btn active" id="amortLoanViewBtn">
+      Loan Schedule
+    </button>
+    <button class="btn" id="amortUserViewBtn">
+      My Investment
+    </button>
+  </div>
+
+  <h3 style="margin-top:4px">Amortization</h3>
+
         <!-- Purchase marker note -->
         <div class="small" style="margin:4px 0 8px 0;">
           <span style="
@@ -1211,6 +1228,7 @@ let currentLoans = [];
 let allLoans = [];
 let filteredLoans = [];
 
+    let amortViewMode = "loan"; // "loan" | "investment"
 
 let currentLoan = null;
 let currentMode = null;
@@ -1302,6 +1320,16 @@ if (CAME_FROM_REPORTING) {
     window.location.href =
       "/loan-dashboard/reporting?user=" + PAGE_CONTEXT.user;
   });
+}
+
+    function updateAmortViewButtons() {
+  const loanBtn = document.getElementById("amortLoanViewBtn");
+  const userBtn = document.getElementById("amortUserViewBtn");
+
+  if (!loanBtn || !userBtn) return;
+
+  loanBtn.classList.toggle("active", amortViewMode === "loan");
+  userBtn.classList.toggle("active", amortViewMode === "investment");
 }
 
 
@@ -1606,7 +1634,70 @@ if (
 /* =========================================================
    STEP 5 — DERIVED DATA (PURE, READ-ONLY)
    ========================================================= */
-function derivePortfolioData(loans) {
+
+    /* =========================================================
+   STEP 5A — Investor amort derivation (PURE)
+   ========================================================= */
+
+/**
+ * Builds a user-investment–scaled amort view from a canonical loan schedule.
+ * - Does NOT mutate base schedule
+ * - Ownership changes over time via lots
+ * - Purchase dates respected
+ */
+function buildInvestorAmortView(baseSchedule, loan, user) {
+  if (!Array.isArray(baseSchedule) || !baseSchedule.length) return [];
+
+  const lots = (loan.ownershipLots || [])
+    .filter(l => l.user === user)
+    .map(l => ({
+      pct: Number(l.pct) || 0,
+      purchaseDate: new Date(l.purchaseDate + "T00:00:00")
+    }));
+
+  if (!lots.length) return [];
+
+  let cumP = 0;
+  let cumI = 0;
+  let cumT = 0;
+
+  return baseSchedule.map(row => {
+    const rowDate = row.loanDate
+      ? new Date(row.loanDate)
+      : null;
+
+    let activePct = 0;
+
+    lots.forEach(lot => {
+      if (!rowDate || rowDate >= lot.purchaseDate) {
+        activePct += lot.pct;
+      }
+    });
+
+    const p = row.principalPaid * activePct;
+    const i = row.interest * activePct;
+    const t = row.payment * activePct;
+
+    cumP += p;
+    cumI += i;
+    cumT += t;
+
+    return {
+      ...row,
+      payment: t,
+      principalPaid: p,
+      interest: i,
+      balance: row.balance * activePct,
+      cumPrincipal: cumP,
+      cumInterest: cumI,
+      cumTotal: cumT
+    };
+  });
+}
+
+    
+    
+    function derivePortfolioData(loans) {
   // --- KPIs ---
   const kpis = computeKPIs(loans);
 
@@ -2286,6 +2377,27 @@ viewBtns.forEach(btn => {
   });
 });
 
+  (function wireAmortToggle() {
+  const loanBtn = document.getElementById("amortLoanViewBtn");
+  const userBtn = document.getElementById("amortUserViewBtn");
+
+  if (!loanBtn || !userBtn) return;
+
+  loanBtn.onclick = () => {
+    if (amortViewMode === "loan") return;
+    amortViewMode = "loan";
+    updateAmortViewButtons();
+    if (currentLoan) openDrawerForLoan(currentLoan);
+  };
+
+  userBtn.onclick = () => {
+    if (amortViewMode === "investment") return;
+    amortViewMode = "investment";
+    updateAmortViewButtons();
+    if (currentLoan) openDrawerForLoan(currentLoan);
+  };
+})();
+
   
 // ✅ Wire table column sorting (table-only)
 wireLoanTableColumnSort();
@@ -2936,6 +3048,9 @@ function openDrawerForKPI() {
 
   currentLoan = null;
   currentMode = "kpi";
+
+    const amortToggle = document.getElementById("amortViewToggle");
+  if (amortToggle) amortToggle.hidden = true;
 }
   
     document.getElementById('closeBtn').addEventListener('click', () => closeDrawer());
@@ -3050,6 +3165,13 @@ assert(loan, "openDrawerForLoan called with null loan");
   currentMode = "loan";
   currentLoan = loan;
 
+// 🔑 reset amort view every time
+amortViewMode = "loan";
+updateAmortViewButtons();
+
+const amortToggle = document.getElementById("amortViewToggle");
+if (amortToggle) amortToggle.hidden = false;
+
 
   // ------------------------------------
   // ROI / Earnings–style amort header
@@ -3099,10 +3221,13 @@ const monthAnchor = new Date(
 // 🔑 Ownership-aware schedule (single source)
 // Prefer user-scoped schedule if present
 // =====================================
+const baseSchedule = loan.amort?.schedule || [];
+
 const schedule =
-  Array.isArray(loan.cumSchedule) && loan.cumSchedule.length
-    ? loan.cumSchedule
-    : (loan.amort?.schedule || []);
+  amortViewMode === "investment"
+    ? buildInvestorAmortView(baseSchedule, loan, PAGE_CONTEXT.user)
+    : baseSchedule;
+
 
 if (!schedule.length) {
   drawerChartArea.innerHTML = "<p>No schedule data available</p>";
