@@ -1168,6 +1168,7 @@ if (PAGE_CONTEXT.isEmbed) {
   // Table view is a full-page feature ONLY
   localStorage.removeItem("roiTableView");
 
+/* delete
   // ============================================================
 // EMBED MODE — REDIRECT CONTRACT (MATCH AMORT / EARNINGS)
 // ============================================================
@@ -1193,7 +1194,7 @@ if (PAGE_CONTEXT.isEmbed) {
     window.location.href = url.toString();
   });
 }
-
+*/
 
   const toggle = document.getElementById("toggleTableView");
   if (toggle) toggle.checked = false;
@@ -3848,11 +3849,17 @@ const uniqueSchools = [
   // ==================================================
   DATA_READY = true;
 
-  if (PAGE_CONTEXT.open) {
-    requestAnimationFrame(() => {
-      openRoiKpiFromUrl();
-    });
-  }
+  // ==================================================
+// FINAL STEP — open KPI from URL (FULL PAGE ONLY)
+// ==================================================
+DATA_READY = true;
+
+if (!PAGE_CONTEXT.isEmbed && PAGE_CONTEXT.open) {
+  requestAnimationFrame(() => {
+    openRoiKpiFromUrl();
+  });
+}
+
   
 }
 
