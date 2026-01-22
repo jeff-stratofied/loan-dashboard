@@ -1669,7 +1669,51 @@ function buildInvestorAmortView(baseSchedule, loan, user) {
   });
 }
 
-    
+    function renderAmortForLoan(loan) {
+  assert(loan, "renderAmortForLoan called with null loan");
+
+  // -------------------------------------
+  // Schedule selection (DRAWER ONLY)
+  // -------------------------------------
+  const baseSchedule = loan.amort?.schedule || [];
+
+  const schedule =
+    amortViewMode === "investment"
+      ? buildInvestorAmortView(baseSchedule, loan, PAGE_CONTEXT.user)
+      : baseSchedule;
+
+  // -------------------------------------
+  // TABLE
+  // -------------------------------------
+  const amortBody = document.getElementById("amortBody");
+  amortBody.innerHTML = "";
+
+  if (!schedule.length) {
+    amortBody.innerHTML =
+      "<tr><td colspan='5'>No amortization data available</td></tr>";
+    return;
+  }
+
+  schedule.forEach(row => {
+    const tr = document.createElement("tr");
+
+    tr.innerHTML = `
+      <td>${formatMonthYear(row.loanDate)}</td>
+      <td style="text-align:right">${formatCurrency(row.payment)}</td>
+      <td style="text-align:right">${formatCurrency(row.principalPaid)}</td>
+      <td style="text-align:right">${formatCurrency(row.interest)}</td>
+      <td style="text-align:right">${formatCurrency(row.balance)}</td>
+    `;
+
+    amortBody.appendChild(tr);
+  });
+
+  // -------------------------------------
+  // CHART
+  // -------------------------------------
+  renderAmortChart(schedule, loan);
+}
+
     
     function derivePortfolioData(loans) {
   // --- KPIs ---
@@ -3179,11 +3223,15 @@ drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
   /* render amort rows */
   drawerAmortContainer.style.display = 'block';
   amortBody.innerHTML = '';
-                              
+
+  // 🔑 render amort table + chart (single source of truth)
+renderAmortForLoan(loan);
+
 
   // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
   // Standardize all month math to FIRST OF PURCHASE MONTH
-const loanStartDate = new Date(loan.loanStartDate + "T00:00:00");
+/* delete
+  const loanStartDate = new Date(loan.loanStartDate + "T00:00:00");
 const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
 
 const monthAnchor = new Date(
@@ -3303,7 +3351,7 @@ if (eventType) {
 });
 
 
-  /* build drawer chart (multi-line with legend & current date marker) */
+  // build drawer chart (multi-line with legend & current date marker)
   drawerChartArea.innerHTML = '';
   drawerLegend.style.display = 'flex';
   drawerLegend.innerHTML = `
@@ -3577,6 +3625,7 @@ svg.addEventListener('mouseleave', () => {
 });
 
   drawerChartArea.appendChild(svg);
+  */
 
 // FINAL DRAWER OPEN — embed-safe
 drawer.style.display = "flex";
