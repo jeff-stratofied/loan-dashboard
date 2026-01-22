@@ -1610,6 +1610,10 @@ if (
    ========================================================= */
 
 function renderAmortChart(schedule, loan) {
+    if (!Array.isArray(schedule) || !schedule.length) {
+    drawerChartArea.innerHTML = "<p>No schedule data available</p>";
+    return;
+  }
   const loanStartDate = new Date(loan.loanStartDate + "T00:00:00");
 const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
 
@@ -1618,25 +1622,6 @@ const monthAnchor = new Date(
   loanStartDate.getMonth(),
   1
 );
-
-// =====================================
-// 🔑 Ownership-aware schedule (single source)
-// Prefer user-scoped schedule if present
-// =====================================
-const baseSchedule = loan.amort?.schedule || [];
-
-const schedule =
-  amortViewMode === "investment"
-    ? buildInvestorAmortView(baseSchedule, loan, PAGE_CONTEXT.user)
-    : baseSchedule;
-
-
-if (!schedule.length) {
-  drawerChartArea.innerHTML = "<p>No schedule data available</p>";
-  return;
-}
-
-
 
 // =====================================
 // Build event lookup (READ-ONLY)
@@ -2811,8 +2796,6 @@ viewBtns.forEach(btn => {
     if (currentLoan) renderAmortForLoan(currentLoan);
   };
 })();
-
-
   
 // ✅ Wire table column sorting (table-only)
 wireLoanTableColumnSort();
@@ -3564,15 +3547,14 @@ function loansToCSV(loans) {
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
   claimTooltip("drawer");
-assert(loan, "openDrawerForLoan called with null loan");
-  
+  assert(loan, "openDrawerForLoan called with null loan");
+
   // =====================================================
   // HARD RESET KPI-ONLY STATE (restore loan mode)
   // =====================================================
-  drawer.classList.remove('kpi-interactive');
-  drawerExtra.innerHTML = '';
-  drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'none';
+  drawer.classList.remove("kpi-interactive");
+  drawerExtra.innerHTML = "";
+  drawerLegend.style.display = "none";
 
   // =====================================================
   // FORCE STATE FOR PROGRAMMATIC OPEN (URL / embed)
@@ -3580,456 +3562,59 @@ assert(loan, "openDrawerForLoan called with null loan");
   currentMode = "loan";
   currentLoan = loan;
 
-// 🔑 reset amort view every time
-amortViewMode = "loan";
-updateAmortViewButtons();
+  // 🔑 reset amort view every time
+  amortViewMode = "loan";
+  updateAmortViewButtons();
 
-const amortToggle = document.getElementById("amortViewToggle");
-if (amortToggle) amortToggle.hidden = false;
-
+  const amortToggle = document.getElementById("amortViewToggle");
+  if (amortToggle) amortToggle.hidden = false;
 
   // ------------------------------------
-  // ROI / Earnings–style amort header
+  // Header
   // ------------------------------------
   drawerTitle.textContent = loan.name || loan.loanName;
- 
+
   drawerSub.innerHTML = `
     <div>${loan.school || ""}</div>
     <div>
       Purchased ${loan.purchaseDate}
-      • Orig Loan Amt ${formatCurrency(loan.purchasePrice || loan.origLoanAmt || 0)}
+      • Orig Loan Amt ${formatCurrency(
+        loan.purchasePrice || loan.origLoanAmt || 0
+      )}
     </div>
   `;
-// ----------------------------------
-// Primary / Secondary stat boxes
-// ----------------------------------
 
-// User-specific invested capital
-const investedCapital = (loan.ownershipLots || [])
-  .filter(l => l.user === PAGE_CONTEXT.user)
-  .reduce((sum, l) => sum + (Number(l.pricePaid) || 0), 0);
+  // ----------------------------------
+  // Primary / Secondary stat boxes
+  // ----------------------------------
+  const investedCapital = (loan.ownershipLots || [])
+    .filter(l => l.user === PAGE_CONTEXT.user)
+    .reduce((sum, l) => sum + (Number(l.pricePaid) || 0), 0);
 
-drawerPrimaryTitle.textContent = "Invested Capital";
-drawerPrimary.textContent = `$${Math.round(investedCapital).toLocaleString()}`;
+  drawerPrimaryTitle.textContent = "Invested Capital";
+  drawerPrimary.textContent = `$${Math.round(investedCapital).toLocaleString()}`;
 
-drawerSecondaryTitle.textContent = "Rate";
-drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
+  drawerSecondaryTitle.textContent = "Rate";
+  drawerSecondary.textContent = `${(loan.nominalRate * 100).toFixed(2)}%`;
 
+  // ----------------------------------
+  // Amort
+  // ----------------------------------
+  drawerAmortContainer.style.display = "block";
+  amortBody.innerHTML = "";
 
-  /* render amort rows */
-  drawerAmortContainer.style.display = 'block';
-  amortBody.innerHTML = '';
+  // 🔑 single source of truth
+  renderAmortForLoan(loan);
 
-  // 🔑 render amort table + chart (single source of truth)
-renderAmortForLoan(loan);
-
-
-  // *** THIS WAS MISSING — MUST EXIST BEFORE ANY DATE CHECKS ***
-  // Standardize all month math to FIRST OF PURCHASE MONTH
-/* delete
-  const loanStartDate = new Date(loan.loanStartDate + "T00:00:00");
-const purchaseDate = new Date(loan.purchaseDate + "T00:00:00");
-
-const monthAnchor = new Date(
-  loanStartDate.getFullYear(),
-  loanStartDate.getMonth(),
-  1
-);
-
-// =====================================
-// 🔑 Ownership-aware schedule (single source)
-// Prefer user-scoped schedule if present
-// =====================================
-const baseSchedule = loan.amort?.schedule || [];
-
-const schedule =
-  amortViewMode === "investment"
-    ? buildInvestorAmortView(baseSchedule, loan, PAGE_CONTEXT.user)
-    : baseSchedule;
-
-
-if (!schedule.length) {
-  drawerChartArea.innerHTML = "<p>No schedule data available</p>";
+  // ----------------------------------
+  // Open drawer
+  // ----------------------------------
+  drawer.style.display = "flex";
   drawer.classList.add("open");
   drawer.setAttribute("aria-hidden", "false");
-  return;
+  drawerBody.scrollTop = 0;
 }
 
-
-
-// =====================================
-// Build event lookup (READ-ONLY)
-// =====================================
-const eventByMonth = {};
-
-// 2️⃣ Overlay non-terminal events from loan.events
-(loan.events || []).forEach(e => {
-  if (!e.type) return;
-
-  // DEFERRAL
-  if (e.type === "deferral" && (e.startDate || e.date) && e.months) {
-    const startIdx = monthIndexFromDate(
-  e.startDate || e.date,
-  schedule
-);
-
-    if (startIdx !== null) {
-      for (let i = 0; i < e.months; i++) {
-        eventByMonth[startIdx + i] = "deferral";
-      }
-    }
-    return;
-  }
-
-  // PREPAYMENT
-  if (e.type === "prepayment") {
-    const row = schedule.find(
-  r => r.prepayment && r.prepayment > 0
-);
-
-    if (row) eventByMonth[row.monthIndex] = "prepayment";
-    return;
-  }
-});
-
-// DEFAULT — anchor highlight strictly to event date
-const defaultEvent = (loan.events || []).find(e => e.type === "default" && e.date);
-
-if (defaultEvent) {
-  const idx = monthIndexFromDate(
-  defaultEvent.date,
-  schedule
-);
-
-  if (idx !== null) {
-    eventByMonth[idx] = "default";
-  }
-}
-
-  
-schedule.forEach((r) => {
-
-  const rowDate = displayDateForMonthIndex(r.monthIndex, monthAnchor);
-
-  const isBeforePurchase = rowDate < purchaseDate;
-
-  // purchase month = same calendar month as purchaseDate
-  const isPurchaseMonth =
-    rowDate.getFullYear() === purchaseDate.getFullYear() &&
-    rowDate.getMonth() === purchaseDate.getMonth();
-
-  const tr = document.createElement("tr");
-tr.innerHTML = `
-  <td style="text-align:left">${formatDate(rowDate)}</td>
-  <td style="text-align:right">${formatCurrency(r.payment)}</td>
-  <td style="text-align:right">${formatCurrency(r.principalPaid)}</td>
-  <td style="text-align:right">${formatCurrency(r.interest)}</td>
-  <td style="text-align:right">${formatCurrency(r.balance)}</td>
-`;
-
-
-// Apply event highlight (if any)
-const eventType = eventByMonth[r.monthIndex];
-if (eventType) {
-  tr.classList.add(`event-${eventType}`);
-}
-
-  
-  if (isBeforePurchase) tr.style.opacity = "0.45";
-
-  if (isPurchaseMonth) {
-    tr.querySelectorAll("td").forEach((td) => {
-      td.style.borderTop = "2px solid #22c55e";
-    });
-  }
-
-  amortBody.appendChild(tr);
-});
-
-
-  // build drawer chart (multi-line with legend & current date marker)
-  drawerChartArea.innerHTML = '';
-  drawerLegend.style.display = 'flex';
-  drawerLegend.innerHTML = `
-    <div class="item"><span class="sw" style="background:#0f172a"></span>Balance</div>
-    <div class="item"><span class="sw" style="background:#06b6d4"></span>Cum Principal</div>
-    <div class="item"><span class="sw" style="background:#a78bfa"></span>Cum Interest</div>
-    <div class="item"><span class="sw" style="background:#fb7185"></span>Total</div>
-  `;
-
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const w = 480, h = 240, pad = 28;
-  const svg = document.createElementNS(svgNS, 'svg');
-  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-  svg.setAttribute('width', '100%');
-  svg.setAttribute('height', '100%');
-
-  // NEW: Compute cumulative fields on the fly (since they're not in the base schedule)
-  let cumInterest = 0;
-  let cumPrincipal = 0;
-  let cumTotal = 0;
-  schedule.forEach(s => {
-    cumInterest += s.interest;
-    cumPrincipal += s.principalPaid;
-    cumTotal += s.payment;
-    s.cumInterest = Math.round(cumInterest * 100) / 100;  // Round for precision
-    s.cumPrincipal = Math.round(cumPrincipal * 100) / 100;
-    s.cumTotal = Math.round(cumTotal * 100) / 100;
-  });
-
-  // Build series
-  const balances = schedule.map(s => ({ x: s.monthIndex, y: s.balance }));
-  const cumP = schedule.map(s => ({ x: s.monthIndex, y: s.cumPrincipal }));
-  const cumI = schedule.map(s => ({ x: s.monthIndex, y: s.cumInterest }));
-  const cumT = schedule.map(s => ({ x: s.monthIndex, y: s.cumTotal }));
-
-  // global Y range for consistent scaling
-  const allYs = [
-    ...balances.map(p => p.y),
-    ...cumP.map(p => p.y),
-    ...cumI.map(p => p.y),
-    ...cumT.map(p => p.y)
-  ];
-  // Scale chart to user's invested capital (not full loan)
-const investedCap = Math.max(
-  1,
-  (loan.ownershipLots || [])
-    .filter(l => l.user === PAGE_CONTEXT.user)
-    .reduce((s, l) => s + (Number(l.pricePaid) || 0), 0)
-);
-
-// Allow slight headroom so lines don’t pin top
-const maxY = Math.max(...allYs, investedCap * 1.1);
-
-  const minY = Math.min(...allYs);
-  const range = Math.max(1, maxY - minY);
-  const stepX = (w - pad * 2) / Math.max(1, schedule.length - 1);
-
-  function toXY(point, i) {
-    const x = pad + i * stepX;
-    const y = pad + (h - pad * 2) - ((point.y - minY) / range) * (h - pad * 2);
-    return [x, y];
-  }
-
-  function buildPath(arr) {
-    return arr.map((p, i) => {
-      const [x, y] = toXY(p, i);
-      return (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
-    }).join(' ');
-  }
-
-  // subtle grid lines
-  for (let gy = 0; gy < 5; gy++) {
-    const y = pad + gy * ((h - pad * 2) / 4);
-    const line = document.createElementNS(svgNS, 'line');
-    line.setAttribute('x1', pad);
-    line.setAttribute('x2', w - pad);
-    line.setAttribute('y1', y);
-    line.setAttribute('y2', y);
-    line.setAttribute('stroke', '#eef2f7');
-    line.setAttribute('stroke-width', '1');
-    svg.appendChild(line);
-  }
-
-// =====================================
-// AXES (X + Y)
-// =====================================
-
-// --- Y AXIS ---
-
-// Y-axis labels (5 ticks)
-for (let i = 0; i <= 4; i++) {
-  const val = minY + ((4 - i) / 4) * range;
-  const y = pad + i * ((h - pad * 2) / 4);
-
-  const t = document.createElementNS(svgNS, 'text');
-  t.setAttribute('x', pad - 6);
-  t.setAttribute('y', y + 4);
-  t.setAttribute('text-anchor', 'end');
-  t.setAttribute('font-size', '11');
-  t.setAttribute('fill', 'var(--muted)');
-  t.textContent = `$${Math.round(val).toLocaleString()}`;
-  svg.appendChild(t);
-}
-
-// --- X AXIS ---
-
-// X-axis labels (every ~25%)
-const xTickCount = 4;
-for (let i = 0; i <= xTickCount; i++) {
-  const idx = Math.round((i / xTickCount) * (schedule.length - 1));
-  const monthIndex = schedule[idx].monthIndex;
-
-  const d = new Date(loan.loanStartDate + "T00:00:00");
-  d.setMonth(d.getMonth() + (monthIndex - 1));
-
-  const x = pad + idx * stepX;
-
-  const t = document.createElementNS(svgNS, 'text');
-  t.setAttribute('x', x);
-  t.setAttribute('y', h - pad + 16);
-  t.setAttribute('text-anchor', 'middle');
-  t.setAttribute('font-size', '11');
-  t.setAttribute('fill', 'var(--muted)');
-  t.textContent = d.toLocaleDateString(undefined, {
-    month: 'short',
-    year: 'numeric'
-  });
-
-  svg.appendChild(t);
-}
-
-  
-  const pathBal = buildPath(balances);
-  const pathP = buildPath(cumP);
-  const pathI = buildPath(cumI);
-  const pathT = buildPath(cumT);
-
-  const elBal = document.createElementNS(svgNS, 'path');
-  elBal.setAttribute('d', pathBal);
-  elBal.setAttribute('fill', 'none');
-  elBal.setAttribute('stroke', '#0f172a');
-  elBal.setAttribute('stroke-width', '2');
-  svg.appendChild(elBal);
-
-  const elP = document.createElementNS(svgNS, 'path');
-  elP.setAttribute('d', pathP);
-  elP.setAttribute('fill', 'none');
-  elP.setAttribute('stroke', '#06b6d4');
-  elP.setAttribute('stroke-width', '1.6');
-  svg.appendChild(elP);
-
-  const elI = document.createElementNS(svgNS, 'path');
-  elI.setAttribute('d', pathI);
-  elI.setAttribute('fill', 'none');
-  elI.setAttribute('stroke', '#a78bfa');
-  elI.setAttribute('stroke-width', '1.6');
-  svg.appendChild(elI);
-
-  const elT = document.createElementNS(svgNS, 'path');
-  elT.setAttribute('d', pathT);
-  elT.setAttribute('fill', 'none');
-  elT.setAttribute('stroke', '#fb7185');
-  elT.setAttribute('stroke-width', '1.4');
-  svg.appendChild(elT);
-
-// current date marker — calendar-based, aligned with schedule index
-const todayIdx = getCalendarMonthIndexForLoan(loan);
-
-// shared X mapping (must match plotted points)
-const xForIndex = idx => {
-  const clamped = Math.min(Math.max(idx, 0), schedule.length - 1);
-  return pad + clamped * stepX;
-};
-
-const curX = xForIndex(todayIdx);
-
-const curLine = document.createElementNS(svgNS, 'line');
-curLine.setAttribute('x1', curX);
-curLine.setAttribute('x2', curX);
-curLine.setAttribute('y1', pad);
-curLine.setAttribute('y2', h - pad);
-curLine.setAttribute('stroke', '#111827');
-curLine.setAttribute('stroke-dasharray', '3 4');
-curLine.setAttribute('stroke-opacity', '0.6');
-svg.appendChild(curLine);
-
-// hover overlay (vertical line and circles)
-const vLine = document.createElementNS(svgNS, 'line');
-vLine.setAttribute('stroke', '#0f172a');
-vLine.setAttribute('stroke-width', '1');
-vLine.setAttribute('stroke-dasharray', '3 4');
-vLine.setAttribute('opacity', '0.6');
-svg.appendChild(vLine);
-
-
-  const circles = document.createElementNS(svgNS, 'g');
-  svg.appendChild(circles);
-
-// Drawer hover interactions
-svg.addEventListener('mousemove', (ev) => {
-  const rect = svg.getBoundingClientRect();
-  const mouseX = ((ev.clientX - rect.left) / rect.width) * w;
-
-  let idx = 0;
-  let best = Infinity;
-  for (let i = 0; i < schedule.length; i++) {
-    const xAtI = pad + i * stepX;
-    const d = Math.abs(mouseX - xAtI);
-    if (d < best) {
-      best = d;
-      idx = i;
-    }
-  }
-
-  const px = pad + idx * stepX;
-  const row = schedule[idx];
-
-  vLine.setAttribute('x1', px);
-  vLine.setAttribute('x2', px);
-  vLine.setAttribute('y1', pad);
-  vLine.setAttribute('y2', h - pad);
-
-  circles.innerHTML = '';
-
-  const series = [
-    { val: balances[idx].y, color: '#0f172a' },
-    { val: cumP[idx].y, color: '#06b6d4' },
-    { val: cumI[idx].y, color: '#a78bfa' },
-    { val: cumT[idx].y, color: '#fb7185' }
-  ];
-
-  series.forEach(s => {
-    const [cx, cy] = toXY({ y: s.val }, idx);
-    const dot = document.createElementNS(svgNS, 'circle');
-    dot.setAttribute('cx', cx);
-    dot.setAttribute('cy', cy);
-    dot.setAttribute('r', 4);
-    dot.setAttribute('fill', s.color);
-    dot.setAttribute('stroke', '#fff');
-    dot.setAttribute('stroke-width', '1.2');
-    circles.appendChild(dot);
-  });
-
-  const hoverDate = displayDateForMonthIndex(row.monthIndex, monthAnchor);
-  const dateLabel = formatMonthYear(hoverDate);
-
-  const lineScreenX = rect.left + (px / w) * rect.width;
-
-  tooltip.style.display = 'block';
-  tooltip.style.left = `${lineScreenX}px`;
-  tooltip.style.top = `${ev.clientY - 12}px`;
-
- tooltip.innerHTML = `
-  ${dateLabel}<br>
-  <span style="opacity:0.85">Remaining Balance</span>
-  $${row.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
-  <span style="opacity:0.85">Scheduled Principal</span>
-  $${row.cumPrincipal.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
-  <span style="opacity:0.85">Accrued Interest</span>
-  $${row.cumInterest.toLocaleString(undefined, { minimumFractionDigits: 2 })}<br>
-  <span style="opacity:0.85">Total Scheduled</span>
-  $${row.cumTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-`;
-});
-
-svg.addEventListener('mouseleave', () => {
-  vLine.setAttribute('x1', 0);
-  vLine.setAttribute('x2', 0);
-  circles.innerHTML = '';
-  tooltip.style.display = 'none';
-});
-
-  drawerChartArea.appendChild(svg);
-  */
-
-// FINAL DRAWER OPEN — embed-safe
-drawer.style.display = "flex";
-drawer.classList.add("open");
-drawer.setAttribute("aria-hidden", "false");
-drawerBody.scrollTop = 0;
-
-}
 
 
     /* ============================
