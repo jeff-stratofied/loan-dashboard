@@ -1648,6 +1648,17 @@ function buildInvestorAmortView(schedule, loan, user) {
   });
 }
 
+function updateAmortViewButtons() {
+  const loanBtn = document.getElementById("amortLoanViewBtn");
+  const userBtn = document.getElementById("amortUserViewBtn");
+
+  if (!loanBtn || !userBtn) return;
+
+  loanBtn.classList.toggle("active", amortViewMode === "loan");
+  userBtn.classList.toggle("active", amortViewMode === "investment");
+}
+
+    
 /* =========================================================
    AMORT RENDER WRAPPER (VIEW-AWARE)
    ========================================================= */
@@ -3140,20 +3151,19 @@ assert(loan, "openDrawerForLoan called with null loan");
   // =====================================================
   // FORCE STATE FOR PROGRAMMATIC OPEN (URL / embed)
   // =====================================================
-  currentMode = "loan";
-  currentLoan = loan;
+currentMode = "loan";
+currentLoan = loan;
 
-  // Show amort toggle + default to Loan Amort
-amortViewMode = "loan";
-document.getElementById("amortViewToggle").hidden = false;
-updateAmortViewButtons();
+// -------------------------------------
+// Amort view toggle (loan drawer only)
+// -------------------------------------
+amortViewMode = "loan"; // default on open
 
-  
-  // Show amort view toggle (loan drawer only)
 const amortToggle = document.getElementById("amortViewToggle");
 if (amortToggle) amortToggle.hidden = false;
 
-  document.getElementById("amortViewToggle").hidden = true;
+updateAmortViewButtons();
+
 
   // ------------------------------------
   // ROI / Earnings–style amort header
