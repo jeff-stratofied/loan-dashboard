@@ -2351,7 +2351,7 @@ viewBtns.forEach(btn => {
   });
 });
 
-  (function wireAmortToggle() {
+(function wireAmortToggle() {
   const loanBtn = document.getElementById("amortLoanViewBtn");
   const userBtn = document.getElementById("amortUserViewBtn");
 
@@ -2361,16 +2361,17 @@ viewBtns.forEach(btn => {
     if (amortViewMode === "loan") return;
     amortViewMode = "loan";
     updateAmortViewButtons();
-    if (currentLoan) openDrawerForLoan(currentLoan);
+    if (currentLoan) renderAmortForLoan(currentLoan);
   };
 
   userBtn.onclick = () => {
     if (amortViewMode === "investment") return;
     amortViewMode = "investment";
     updateAmortViewButtons();
-    if (currentLoan) openDrawerForLoan(currentLoan);
+    if (currentLoan) renderAmortForLoan(currentLoan);
   };
 })();
+
 
   
 // ✅ Wire table column sorting (table-only)
