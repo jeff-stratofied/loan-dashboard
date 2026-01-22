@@ -1802,9 +1802,27 @@ function openRoiKpiFromUrl(kpiOverride = null) {
     kpi = KPI_ALIAS_MAP[kpi];
   }
 
-  // 🔑 SINGLE ENTRY POINT — SAME AS CLICK HANDLERS
+  // -----------------------------------------------------
+  // Guard: only allow valid ROI drawer keys
+  // -----------------------------------------------------
+  const VALID_KPIS = new Set([
+    "tpv",
+    "rates",
+    "capitalRecovery",
+    "spread"
+  ]);
+
+  if (!VALID_KPIS.has(kpi)) {
+    console.warn("[ROI] Ignoring invalid open KPI:", kpi);
+    return;
+  }
+
+  // -----------------------------------------------------
+  // SINGLE ENTRY POINT — SAME AS CLICK HANDLERS
+  // -----------------------------------------------------
   openRoiKpiDrawer(kpi);
 }
+
 
 
 function deriveLoanPurchaseDate(loan) {
