@@ -86,9 +86,21 @@
       "ownershipLots": [
         {
           "user": "jeff",
-          "pct": 1,
-          "pricePaid": 12000,
+          "pct": 0.5,
+          "pricePaid": "6000",
           "purchaseDate": "2024-06-15"
+        },
+        {
+          "user": "nick",
+          "pct": 0.3,
+          "purchaseDate": "2024-06-15",
+          "pricePaid": "3600"
+        },
+        {
+          "user": "john",
+          "pct": 0.2,
+          "purchaseDate": "2024-06-15",
+          "pricePaid": "2400"
         }
       ]
     },
@@ -607,7 +619,7 @@
       "school": "Ohio State",
       "loanStartDate": "2026-01-01",
       "principal": 12000,
-      "rate": 0.089,
+      "rate": 0.08900000000000001,
       "termYears": 10,
       "graceYears": 1,
       "loanId": "6RVT87YOBY",
