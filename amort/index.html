@@ -1639,6 +1639,15 @@ function buildInvestorAmortView(schedule, loan, user) {
   });
 }
 
+/* =========================================================
+   AMORT RENDER WRAPPER (VIEW-AWARE)
+   ========================================================= */
+function renderAmortForLoan(loan) {
+  if (!loan) return;
+
+  // Re-open drawer in-place with current amortViewMode
+  openDrawerForLoan(loan);
+}
 
     
 function derivePortfolioData(loans) {
