@@ -2342,27 +2342,20 @@ viewBtns.forEach(btn => {
   // =========================================
 // AMORT VIEW TOGGLE (Loan vs Investment)
 // =========================================
-const amortLoanBtn = document.getElementById("amortLoanViewBtn");
-const amortUserBtn = document.getElementById("amortUserViewBtn");
-  
+
 if (amortLoanBtn && amortUserBtn) {
   amortLoanBtn.addEventListener("click", () => {
-    if (amortViewMode === "loan") return;
-
     amortViewMode = "loan";
     updateAmortViewButtons();
     if (currentLoan) renderAmortForLoan(currentLoan);
   });
 
   amortUserBtn.addEventListener("click", () => {
-    if (amortViewMode === "investment") return;
-
     amortViewMode = "investment";
     updateAmortViewButtons();
     if (currentLoan) renderAmortForLoan(currentLoan);
   });
 }
-
 
 
   
@@ -3153,7 +3146,6 @@ updateAmortViewButtons();
 const amortToggle = document.getElementById("amortViewToggle");
 if (amortToggle) amortToggle.hidden = false;
 
-  document.getElementById("amortViewToggle").hidden = true;
 
   // ------------------------------------
   // ROI / Earnings–style amort header
