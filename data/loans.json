@@ -185,9 +185,15 @@
       "ownershipLots": [
         {
           "user": "jeff",
-          "pct": 1,
-          "pricePaid": 8200,
+          "pct": 0.5,
+          "pricePaid": "4100",
           "purchaseDate": "2025-09-05"
+        },
+        {
+          "user": "nick",
+          "pct": 0.5,
+          "purchaseDate": "2025-11-19",
+          "pricePaid": "4100"
         }
       ]
     },
@@ -319,9 +325,21 @@
       "ownershipLots": [
         {
           "user": "john",
-          "pct": 1,
-          "pricePaid": 5000,
+          "pct": 0.5,
+          "pricePaid": "2500",
           "purchaseDate": "2024-12-31"
+        },
+        {
+          "user": "nick",
+          "pct": 0.25,
+          "purchaseDate": "2025-06-10",
+          "pricePaid": "1250"
+        },
+        {
+          "user": "jeff",
+          "pct": 0.25,
+          "purchaseDate": "2025-11-19",
+          "pricePaid": "1250"
         }
       ]
     },
@@ -373,9 +391,15 @@
       "ownershipLots": [
         {
           "user": "john",
-          "pct": 1,
-          "pricePaid": 8200,
+          "pct": 0.5,
+          "pricePaid": "4100",
           "purchaseDate": "2025-09-05"
+        },
+        {
+          "user": "nick",
+          "pct": 0.5,
+          "purchaseDate": "2026-01-01",
+          "pricePaid": "4100"
         }
       ]
     },
@@ -393,9 +417,15 @@
       "ownershipLots": [
         {
           "user": "john",
-          "pct": 1,
-          "pricePaid": 6000,
+          "pct": 0.5,
+          "pricePaid": "3000",
           "purchaseDate": "2025-06-03"
+        },
+        {
+          "user": "nick",
+          "pct": 0.5,
+          "purchaseDate": "2025-10-07",
+          "pricePaid": "3000"
         }
       ]
     },
@@ -547,9 +577,15 @@
       "ownershipLots": [
         {
           "user": "john",
-          "pct": 1,
-          "pricePaid": 9000,
+          "pct": 0.5,
+          "pricePaid": "4500",
           "purchaseDate": "2026-01-01"
+        },
+        {
+          "user": "nick",
+          "pct": 0.5,
+          "purchaseDate": "2026-01-07",
+          "pricePaid": "4500"
         }
       ]
     },
@@ -587,9 +623,15 @@
       "ownershipLots": [
         {
           "user": "john",
-          "pct": 1,
-          "pricePaid": 5400,
+          "pct": 0.5,
+          "pricePaid": "2600",
           "purchaseDate": "2026-01-01"
+        },
+        {
+          "user": "nick",
+          "pct": 0.5,
+          "purchaseDate": "2026-01-15",
+          "pricePaid": "2600"
         }
       ]
     },
