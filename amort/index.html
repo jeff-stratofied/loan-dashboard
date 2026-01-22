@@ -564,15 +564,6 @@
     .btn{ padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; cursor:pointer; font-weight:600; transition:background-color .25s ease, color .25s ease, border-color .25s ease; }
     .btn.primary{ background:linear-gradient(90deg,var(--brand),var(--accent2)); color:white; border:none; box-shadow:var(--shadow); }
 
-/* Amort view toggle active state */
-#amortViewToggle .btn.active {
-  background: linear-gradient(90deg, var(--brand), var(--accent2));
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow);
-}
-
-    
     .tpv-swatch.dimmed {
   opacity: 0.25;
 }
@@ -1648,15 +1639,6 @@ function buildInvestorAmortView(schedule, loan, user) {
   });
 }
 
-/* =========================================================
-   AMORT RENDER WRAPPER (VIEW-AWARE)
-   ========================================================= */
-function renderAmortForLoan(loan) {
-  if (!loan) return;
-
-  // Re-open drawer in-place with current amortViewMode
-  openDrawerForLoan(loan);
-}
 
     
 function derivePortfolioData(loans) {
@@ -2694,15 +2676,6 @@ function applyLoanSort() {
   });
 }
 
-function updateAmortViewButtons() {
-  const loanBtn = document.getElementById("amortLoanViewBtn");
-  const userBtn = document.getElementById("amortUserViewBtn");
-
-  if (!loanBtn || !userBtn) return;
-
-  loanBtn.classList.toggle("active", amortViewMode === "loan");
-  userBtn.classList.toggle("active", amortViewMode === "investment");
-}
 
 
 
@@ -3313,37 +3286,18 @@ if (eventType) {
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
 
-let cumInterest = 0;
-let cumPrincipal = 0;
-let cumTotal = 0;
-
-schedule.forEach(s => {
-  // Only accumulate when user actually owns something this month
-  const interest = Number(s.interest || 0);
-  const principal = Number(s.principalPaid || 0);
-  const payment = Number(s.payment || 0);
-
-  cumInterest += interest;
-  cumPrincipal += principal;
-  cumTotal += payment;
-
-  s.cumInterest = Math.round(cumInterest * 100) / 100;
-  s.cumPrincipal = Math.round(cumPrincipal * 100) / 100;
-  s.cumTotal = Math.round(cumTotal * 100) / 100;
-});
-
-  if (amortViewMode === "investment") {
-  console.log(
-    "[AMORT INVESTMENT CHECK]",
-    schedule.slice(0, 6).map(s => ({
-      month: s.monthIndex,
-      p: s.principalPaid,
-      i: s.interest,
-      cumP: s.cumPrincipal
-    }))
-  );
-}
-
+  // NEW: Compute cumulative fields on the fly (since they're not in the base schedule)
+  let cumInterest = 0;
+  let cumPrincipal = 0;
+  let cumTotal = 0;
+  schedule.forEach(s => {
+    cumInterest += s.interest;
+    cumPrincipal += s.principalPaid;
+    cumTotal += s.payment;
+    s.cumInterest = Math.round(cumInterest * 100) / 100;  // Round for precision
+    s.cumPrincipal = Math.round(cumPrincipal * 100) / 100;
+    s.cumTotal = Math.round(cumTotal * 100) / 100;
+  });
 
   // Build series
   const balances = schedule.map(s => ({ x: s.monthIndex, y: s.balance }));
