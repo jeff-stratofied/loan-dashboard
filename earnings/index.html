@@ -2131,10 +2131,12 @@ const amortSchedule = buildAmortSchedule({
 const earningsScheduleRaw = buildEarningsSchedule({
   amortSchedule,
   loanStartDate: normalizedLoan.loanStartDate,
-  purchaseDate: normalizedLoan.purchaseDate,
+  ownershipLots: raw.ownershipLots,
+  user: PAGE_USER,
   events: raw.events || [],
   today: TODAY
 });
+
 
 // =====================================================
 // 🔑 APPLY USER OWNERSHIP (EARNINGS)
