@@ -1712,6 +1712,13 @@ function getLoansForKpis() {
     
 function compareForKey(a, b, key) {
 
+// % Owned (lot-based, user-specific)
+if (key === "ownershipPct") {
+  const pa = getUserOwnershipPct(a, PAGE_CONTEXT.user);
+  const pb = getUserOwnershipPct(b, PAGE_CONTEXT.user);
+  return pa - pb;
+}
+  
   // Helper: ROI to-date (single source of truth)
   const roiToDate = (loan) => {
     const e = getRoiEntryAsOfMonth(loan, KPI_CURRENT_MONTH);
