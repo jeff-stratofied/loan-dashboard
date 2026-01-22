@@ -1712,10 +1712,13 @@ function getLoansForKpis() {
     
 function compareForKey(a, b, key) {
 
-// % Owned (lot-based, user-specific)
-if (key === "ownershipPct") {
-  return (a.ownershipPct || 0) - (b.ownershipPct || 0);
+// % Owned — lot-based, user-specific (ROI)
+if (key === "ownedPct") {
+  const pa = getUserOwnershipPct(a, PAGE_USER);
+  const pb = getUserOwnershipPct(b, PAGE_USER);
+  return pa - pb;
 }
+
   
   // Helper: ROI to-date (single source of truth)
   const roiToDate = (loan) => {
