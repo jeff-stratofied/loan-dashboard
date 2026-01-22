@@ -954,10 +954,6 @@ function renderTable() {
         <input type="date" value="${loan.loanStartDate}" data-field="loanStartDate">
       </td>
 
-      <td>
-        <input type="date" value="${loan.purchaseDate}" data-field="purchaseDate">
-      </td>
-
       <td class="col-money">
         <input type="number" step="0.01" value="${loan.principal}" data-field="principal">
       </td>
@@ -967,8 +963,14 @@ function renderTable() {
       </td>
 
       <td class="col-rate">
-        <input type="number" step="0.0001" value="${loan.rate}" data-field="rate">
-      </td>
+  <input
+    type="number"
+    step="0.01"
+    value="${(loan.rate * 100).toFixed(2)}"
+    data-field="rate"
+  >
+</td>
+
 
       <td class="col-years">
         <input type="number" step="1" value="${loan.termYears}" data-field="termYears">
@@ -1030,9 +1032,12 @@ inputs.forEach(inp => {
     v = inp.value;
   }
 
-  if (["principal","rate","termYears","graceYears"].includes(k)) {
-    v = Number(v);
-  }
+  if (k === "rate") {
+  v = Number(v) / 100; // convert % back to decimal
+} else if (["principal","termYears","graceYears"].includes(k)) {
+  v = Number(v);
+}
+
 
   obj[k] = v;
 });
