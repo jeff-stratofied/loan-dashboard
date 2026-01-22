@@ -2695,13 +2695,13 @@ function applyLoanSort() {
 }
 
 function updateAmortViewButtons() {
-  const loanBtn = document.getElementById("amortLoanViewBtn");
-  const userBtn = document.getElementById("amortUserViewBtn");
+  const amortLoanBtn = document.getElementById("amortLoanViewBtn");
+  const amortUserBtn = document.getElementById("amortUserViewBtn");
 
-  if (!loanBtn || !userBtn) return;
+  if (!amortLoanBtn || !amortUserBtn) return;
 
-  loanBtn.classList.toggle("active", amortViewMode === "loan");
-  userBtn.classList.toggle("active", amortViewMode === "investment");
+  amortLoanBtn.classList.toggle("active", amortViewMode === "loan");
+  amortUserBtn.classList.toggle("active", amortViewMode === "investment");
 }
 
 
