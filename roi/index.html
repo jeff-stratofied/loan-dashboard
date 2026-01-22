@@ -2899,6 +2899,10 @@ function applyLoanFilters() {
     return lots.some(lot => lot.user === PAGE_USER && (Number(lot.pct) || 0) > 0);
   });
 
+populateLoanFilters(baseLoans);
+populateRateBuckets();
+
+  
   filteredLoans = baseLoans.filter(loan => {
     const loanName = (loan.name || "").toLowerCase();
 
@@ -5414,9 +5418,13 @@ allLoans.forEach(l => {
    
 
 // 🔑 Populate filter dropdowns from real data
-populateLoanFilters(allLoans);
-populateRateBuckets();       
-populateSortDropdown();  
+// 🔑 Populate sort dropdown ONCE
+populateSortDropdown();
+
+// 🔑 Populate filters from OWNED loans only
+populateLoanFilters(currentLoans);
+populateRateBuckets();
+ 
 
 // =========================================
 // APPLY DEFERRED VIEW MODE (CANONICAL)
