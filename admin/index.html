@@ -823,7 +823,14 @@ function normalizeLoan(l, idx) {
     school: l.school ?? "",
     loanStartDate: l.loanStartDate ?? "",
     principal: Number(l.principal ?? 0),
-    rate: Number(l.rate ?? 0),
+    rate: (() => {
+  if (typeof l.rate === "string") {
+    const cleaned = l.rate.replace("%", "").trim();
+    return Number(cleaned) / 100;
+  }
+  return Number(l.rate ?? 0);
+})(),
+
     termYears: Number(l.termYears ?? 10),
     graceYears: Number(l.graceYears ?? 0),
 
