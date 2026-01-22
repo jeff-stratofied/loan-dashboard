@@ -3295,18 +3295,37 @@ if (eventType) {
   svg.setAttribute('width', '100%');
   svg.setAttribute('height', '100%');
 
-  // NEW: Compute cumulative fields on the fly (since they're not in the base schedule)
-  let cumInterest = 0;
-  let cumPrincipal = 0;
-  let cumTotal = 0;
-  schedule.forEach(s => {
-    cumInterest += s.interest;
-    cumPrincipal += s.principalPaid;
-    cumTotal += s.payment;
-    s.cumInterest = Math.round(cumInterest * 100) / 100;  // Round for precision
-    s.cumPrincipal = Math.round(cumPrincipal * 100) / 100;
-    s.cumTotal = Math.round(cumTotal * 100) / 100;
-  });
+let cumInterest = 0;
+let cumPrincipal = 0;
+let cumTotal = 0;
+
+schedule.forEach(s => {
+  // Only accumulate when user actually owns something this month
+  const interest = Number(s.interest || 0);
+  const principal = Number(s.principalPaid || 0);
+  const payment = Number(s.payment || 0);
+
+  cumInterest += interest;
+  cumPrincipal += principal;
+  cumTotal += payment;
+
+  s.cumInterest = Math.round(cumInterest * 100) / 100;
+  s.cumPrincipal = Math.round(cumPrincipal * 100) / 100;
+  s.cumTotal = Math.round(cumTotal * 100) / 100;
+});
+
+  if (amortViewMode === "investment") {
+  console.log(
+    "[AMORT INVESTMENT CHECK]",
+    schedule.slice(0, 6).map(s => ({
+      month: s.monthIndex,
+      p: s.principalPaid,
+      i: s.interest,
+      cumP: s.cumPrincipal
+    }))
+  );
+}
+
 
   // Build series
   const balances = schedule.map(s => ({ x: s.monthIndex, y: s.balance }));
