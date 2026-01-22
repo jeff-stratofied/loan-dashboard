@@ -5449,7 +5449,23 @@ if (params.get("embed") === "true" && params.get("open")) {
   openRoiKpiDrawer(params.get("open"));
 }
 */
-      
+
+// =====================================================
+// EMBED MODE — LAYOUT ENFORCEMENT ONLY (SAFE)
+// =====================================================
+if (PAGE_CONTEXT.isEmbed) {
+  // Table view is FULL-PAGE ONLY — never iframe
+  localStorage.removeItem("roiTableView");
+
+  const tableToggle = document.getElementById("toggleTableView");
+  if (tableToggle) tableToggle.checked = false;
+
+  // 🔒 IMPORTANT:
+  // Do NOT open drawers here.
+  // Drawer opening is handled ONLY after init via openRoiKpiFromUrl().
+}
+
+  
       document.getElementById("currentDate").textContent =
   formatMonthYear(new Date());
 
