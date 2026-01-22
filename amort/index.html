@@ -2343,20 +2343,20 @@ viewBtns.forEach(btn => {
 // AMORT VIEW TOGGLE (Loan vs Investment)
 // =========================================
 
-const amortLoanBtn = document.getElementById("amortLoanViewBtn");
-const amortUserBtn = document.getElementById("amortUserViewBtn");
-
 if (amortLoanBtn && amortUserBtn) {
   amortLoanBtn.addEventListener("click", () => {
     amortViewMode = "loan";
+    updateAmortViewButtons();
     if (currentLoan) renderAmortForLoan(currentLoan);
   });
 
   amortUserBtn.addEventListener("click", () => {
     amortViewMode = "investment";
+    updateAmortViewButtons();
     if (currentLoan) renderAmortForLoan(currentLoan);
   });
 }
+
 
   
 // ✅ Wire table column sorting (table-only)
@@ -3136,6 +3136,12 @@ assert(loan, "openDrawerForLoan called with null loan");
   currentMode = "loan";
   currentLoan = loan;
 
+  // Show amort toggle + default to Loan Amort
+amortViewMode = "loan";
+document.getElementById("amortViewToggle").hidden = false;
+updateAmortViewButtons();
+
+  
   // Show amort view toggle (loan drawer only)
 const amortToggle = document.getElementById("amortViewToggle");
 if (amortToggle) amortToggle.hidden = false;
