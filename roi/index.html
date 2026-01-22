@@ -87,28 +87,6 @@ html[data-theme="dark"] {
   border-color: var(--text);
 }
 
-    
-    /* delete
-    html, body,
-    .app,
-    header,
-    .kpi, .tile,
-    .drawer, .drawer-head, .drawer-body, .drawer-footer,
-    .info-card, .drawer-chart,
-    table, thead th, td,
-    .tooltip,
-    .theme-icon,
-    svg text {
-      transition:
-    background-color .25s ease,
-    color .25s ease,
-    border-color .25s ease,
-    box-shadow .25s ease,
-    fill .25s ease;
-    }
-*/
-
-
 html,body{
   height:100%;
   margin:0;
@@ -1189,6 +1167,33 @@ if (!PAGE_CONTEXT.isEmbed) {
 if (PAGE_CONTEXT.isEmbed) {
   // Table view is a full-page feature ONLY
   localStorage.removeItem("roiTableView");
+
+  // ============================================================
+// EMBED MODE — REDIRECT CONTRACT (MATCH AMORT / EARNINGS)
+// ============================================================
+if (PAGE_CONTEXT.isEmbed) {
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented) return;
+
+    // KPI tile click → open that KPI
+    const kpiEl = e.target.closest(".kpi");
+    let openKpi = "kpi2"; // default fallback
+
+    if (kpiEl?.dataset?.kpi) {
+      openKpi = kpiEl.dataset.kpi;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const user = params.get("user") || "jeff";
+
+    const url = new URL("/loan-dashboard/roi", window.location.origin);
+    url.searchParams.set("user", user);
+    url.searchParams.set("open", openKpi);
+
+    window.location.href = url.toString();
+  });
+}
+
 
   const toggle = document.getElementById("toggleTableView");
   if (toggle) toggle.checked = false;
@@ -5098,7 +5103,6 @@ if (EMBED_MODE) {
   );
 }
 
-/* from GROK */
 // Apply embed mode layout
 if (EMBED_MODE) {
   document.body.classList.add('embed-mode'); // Trigger CSS (optional, but keep for any other styles)
