@@ -2718,6 +2718,18 @@ function applyLoanSort() {
   });
 }
 
+function updateAmortViewButtons() {
+  const amortLoanBtn = document.getElementById("amortLoanViewBtn");
+  const amortUserBtn = document.getElementById("amortUserViewBtn");
+
+  if (!amortLoanBtn || !amortUserBtn) return;
+
+  amortLoanBtn.classList.toggle("active", amortViewMode === "loan");
+  amortUserBtn.classList.toggle("active", amortViewMode === "investment");
+}
+
+
+
 
 // ---------- Date helpers (replace CURRENT_MONTH usage) ----------
 function monthsBetween(startDateStr, endDate = new Date()) {
