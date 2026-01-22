@@ -564,15 +564,6 @@
     .btn{ padding:8px 10px; border-radius:8px; border:1px solid rgba(15,23,42,0.06); background:transparent; cursor:pointer; font-weight:600; transition:background-color .25s ease, color .25s ease, border-color .25s ease; }
     .btn.primary{ background:linear-gradient(90deg,var(--brand),var(--accent2)); color:white; border:none; box-shadow:var(--shadow); }
 
-/* Amort view toggle active state */
-#amortViewToggle .btn.active {
-  background: linear-gradient(90deg, var(--brand), var(--accent2));
-  color: white;
-  border-color: transparent;
-  box-shadow: var(--shadow);
-}
-
-    
     .tpv-swatch.dimmed {
   opacity: 0.25;
 }
@@ -2343,20 +2334,20 @@ viewBtns.forEach(btn => {
 // AMORT VIEW TOGGLE (Loan vs Investment)
 // =========================================
 
+const amortLoanBtn = document.getElementById("amortLoanViewBtn");
+const amortUserBtn = document.getElementById("amortUserViewBtn");
+
 if (amortLoanBtn && amortUserBtn) {
   amortLoanBtn.addEventListener("click", () => {
     amortViewMode = "loan";
-    updateAmortViewButtons();
     if (currentLoan) renderAmortForLoan(currentLoan);
   });
 
   amortUserBtn.addEventListener("click", () => {
     amortViewMode = "investment";
-    updateAmortViewButtons();
     if (currentLoan) renderAmortForLoan(currentLoan);
   });
 }
-
 
   
 // ✅ Wire table column sorting (table-only)
@@ -2694,15 +2685,6 @@ function applyLoanSort() {
   });
 }
 
-function updateAmortViewButtons() {
-  const amortLoanBtn = document.getElementById("amortLoanViewBtn");
-  const amortUserBtn = document.getElementById("amortUserViewBtn");
-
-  if (!amortLoanBtn || !amortUserBtn) return;
-
-  amortLoanBtn.classList.toggle("active", amortViewMode === "loan");
-  amortUserBtn.classList.toggle("active", amortViewMode === "investment");
-}
 
 
 
@@ -3136,12 +3118,6 @@ assert(loan, "openDrawerForLoan called with null loan");
   currentMode = "loan";
   currentLoan = loan;
 
-  // Show amort toggle + default to Loan Amort
-amortViewMode = "loan";
-document.getElementById("amortViewToggle").hidden = false;
-updateAmortViewButtons();
-
-  
   // Show amort view toggle (loan drawer only)
 const amortToggle = document.getElementById("amortViewToggle");
 if (amortToggle) amortToggle.hidden = false;
