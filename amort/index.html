@@ -277,20 +277,31 @@
       .kpis{ grid-template-columns:repeat(2,1fr) }
     }
 
-    .tile{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:10px 12px;
-      border-radius:12px;
-      background:var(--card);
-      min-height:110px;
-      cursor:pointer;
-      overflow:hidden;
-      border:1px solid var(--border);
-      transition: transform .18s ease, box-shadow .18s ease, background-color .25s ease, color .25s ease, border-color .25s ease;
-    }
-    .tile:hover{ transform:translateY(-6px); box-shadow:var(--shadow) }
+    .tile {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+  min-height: 110px;
+  cursor: pointer;
+  overflow: hidden;
+  border: 1px solid var(--border);
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    background-color .25s ease,
+    color .25s ease,
+    border-color .25s ease;
+}
+
+.tile:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow);
+}
+
 
     .tile-left{ flex:1; padding-right:10px }
 .loan-name {
