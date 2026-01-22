@@ -3132,8 +3132,8 @@ function loansToCSV(loans) {
 /* ---------- Open drawer for loan ---------- */
 function openDrawerForLoan(loan) {
   claimTooltip("drawer");
-  assert(loan, "openDrawerForLoan called with null loan");
-
+assert(loan, "openDrawerForLoan called with null loan");
+  
   // =====================================================
   // HARD RESET KPI-ONLY STATE (restore loan mode)
   // =====================================================
@@ -3145,17 +3145,18 @@ function openDrawerForLoan(loan) {
   // =====================================================
   // FORCE STATE FOR PROGRAMMATIC OPEN (URL / embed)
   // =====================================================
-  currentMode = "loan";
-  currentLoan = loan;
+currentMode = "loan";
+currentLoan = loan;
 
-  // -------------------------------------
-  // Amort view toggle (loan drawer only)
-  // -------------------------------------
-  const amortToggle = document.getElementById("amortViewToggle");
-  if (amortToggle) amortToggle.hidden = false;
+// -------------------------------------
+// Amort view toggle (loan drawer only)
+// -------------------------------------
+amortViewMode = "loan"; // default on open
 
-  updateAmortViewButtons();
+const amortToggle = document.getElementById("amortViewToggle");
+if (amortToggle) amortToggle.hidden = false;
 
+updateAmortViewButtons();
 
 
   // ------------------------------------
