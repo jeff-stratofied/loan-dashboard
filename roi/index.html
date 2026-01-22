@@ -724,92 +724,49 @@ tr.event-default td {
     }
 
 
-    /* ============================================================
-   EMBED MODE — UNIFIED LAYOUT (ALIGN WITH EARNINGS & AMORT)
+/* ============================================================
+   EMBED MODE — UNIFIED & AUTHORITATIVE LAYOUT
+   Aligns ROI perfectly with Earnings & Amort
    ============================================================ */
 
-.embed-mode .drawer-head {
-  padding: 20px !important;
-  min-height: 64px !important;
-  border-bottom: 1px solid var(--border) !important;
-  background: var(--card) !important;
-  flex-shrink: 0 !important;
-}
-
-.embed-mode .drawer-body {
-  padding: 0 20px 20px !important;
+/* --------------------------------------------
+   APP — hard reset, no chrome influence
+   -------------------------------------------- */
+.embed-mode .app {
   display: flex !important;
   flex-direction: column !important;
-  gap: 20px !important;
-  flex: 1 1 auto !important;
-  overflow-y: auto !important;
-}
 
-.embed-mode .drawer-chart {
-  height: 240px !important;
   margin: 0 !important;
-  padding: 8px !important;
-  order: 0 !important;
-  background: var(--chart-bg) !important;
+  padding: 0 !important;
+
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
 }
 
-.embed-mode .drawer-info-row {
-  margin: 0 !important;
-  min-height: 56px !important;
-  order: 1 !important;
-}
-
-    
-.embed-mode .drawer-footer {
+/* Hide header / filters entirely in embed */
+.embed-mode header {
   display: none !important;
 }
 
-.embed-mode .drawer-body > * {
-  margin-top: 0 !important;
-}
-
-    
-    #feedback-btn {
-  position: fixed;
-  bottom: 18px;
-  right: 18px;
-  z-index: 9999;
-
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--text);
-
-  box-shadow: var(--shadow);
-  cursor: pointer;
-  font-size: 20px;
-}
-   
-.embed-mode .grid {
-  height: auto !important;
-  max-height: none !important;
-  overflow-y: visible !important;
-}
-
-/* ============================================================
-   EMBED MODE — KPI + DRAWER STACK (CANONICAL)
-   ============================================================ */
-
-/* KPIs must be visible and above drawer */
+/* --------------------------------------------
+   KPI ROW — canonical vertical rhythm
+   -------------------------------------------- */
 .embed-mode .kpis {
   display: grid !important;
   order: 0 !important;
-  margin-top: 8px !important;
+
+  margin-top: 12px !important;
   margin-bottom: 12px !important;
-  flex-shrink: 0;
-  position: relative;
-  z-index: 1;
+
+  flex-shrink: 0 !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-/* Drawer follows KPIs and re-enters document flow */
+/* --------------------------------------------
+   DRAWER — re-enter document flow
+   -------------------------------------------- */
 .embed-mode .drawer {
   order: 1 !important;
 
@@ -828,42 +785,89 @@ tr.event-default td {
   transform: none !important;
 }
 
-/* App becomes vertical stack that sizes to content */
-.embed-mode .app {
-  display: flex !important;
-  flex-direction: column !important;
+/* --------------------------------------------
+   DRAWER HEADER — identical across all pages
+   -------------------------------------------- */
+.embed-mode .drawer-head {
+  padding: 20px !important;
+  min-height: 64px !important;
 
-  height: auto !important;
-  min-height: 0 !important;
-  overflow: visible !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--card) !important;
+
+  flex-shrink: 0 !important;
 }
 
-    
-/* Hide entire header in embed mode to remove filters, title, and date */
-.embed-mode header {
+/* --------------------------------------------
+   DRAWER BODY — MATCH EARNINGS & AMORT EXACTLY
+   -------------------------------------------- */
+.embed-mode .drawer-body {
+  padding: 0 20px 20px !important;
+
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+}
+
+/* Normalize child spacing */
+.embed-mode .drawer-body > * {
+  margin-top: 0 !important;
+}
+
+/* --------------------------------------------
+   DRAWER CONTENT NORMALIZATION
+   -------------------------------------------- */
+.embed-mode .drawer-chart {
+  height: 240px !important;
+  margin: 0 !important;
+  padding: 8px !important;
+  background: var(--chart-bg) !important;
+}
+
+.embed-mode .drawer-info-row {
+  margin: 0 !important;
+  min-height: 56px !important;
+}
+
+.embed-mode .drawer-footer {
   display: none !important;
 }
 
-/* APP */
-.embed-mode .app {
-  margin: 0;
-  padding: 0;
+/* --------------------------------------------
+   GRID — allow natural height in embed
+   -------------------------------------------- */
+.embed-mode .grid {
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: visible !important;
 }
 
-/* KPIs */
-.embed-mode .kpis {
-  margin-top: 12px;
-  margin-bottom: 12px;
+/* --------------------------------------------
+   Feedback button (non-layout affecting)
+   -------------------------------------------- */
+#feedback-btn {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 9999;
+
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-size: 20px;
 }
 
-/* DRAWER */
-.embed-mode .drawer-head {
-  padding: 20px;
-}
 
-.embed-mode .drawer-body {
-  padding: 20px;
-}
 
     
     
