@@ -44,6 +44,21 @@ function parseISODateLocal(iso) {
   throw new Error(`[parseISODateLocal] Unsupported date input: ${String(iso)}`);
 }
 
+function getOwnershipPctForMonth(ownershipLots, loanDate, user) {
+  if (!Array.isArray(ownershipLots)) return 0;
+
+  return ownershipLots.reduce((sum, lot) => {
+    if (lot.user !== user) return sum;
+
+    const start = parseISODateLocal(lot.purchaseDate);
+    if (!start || loanDate < start) return sum;
+
+    return sum + Number(lot.pct || 0);
+  }, 0);
+}
+
+
+
 /* ============================================================
    Core: Build Earnings Schedule
    ============================================================ */
@@ -64,7 +79,8 @@ function parseISODateLocal(iso) {
 export function buildEarningsSchedule({
   amortSchedule,
   loanStartDate,
-  purchaseDate,
+  ownershipLots = [],
+  user,
   events = [],
   today
 }) {
@@ -78,22 +94,11 @@ export function buildEarningsSchedule({
     throw new Error(`Invalid loanStartDate in earnings engine: ${loanStartDate}`);
   }
 
-  const purchaseDt = parseISODateLocal(purchaseDate);
-  if (!Number.isFinite(purchaseDt.getTime())) {
-    throw new Error(`Invalid purchaseDate in earnings engine: ${purchaseDate}`);
-  }
-
-  const monthsSinceStartRaw = monthDiff(loanStart, purchaseDt);
-  const monthsSinceStart = Number.isFinite(monthsSinceStartRaw)
-    ? monthsSinceStartRaw
-    : 0;
-
   // ----------------------------------------------------------
   // Normalize amort rows with ownership + calendar dates
+  // (LOT-AWARE: ownership can change over time)
   // ----------------------------------------------------------
   const normalized = amortSchedule.map(row => {
-    const ownershipMonthIndex = row.monthIndex - monthsSinceStart;
-
     const loanDateRaw = addMonths(loanStart, row.monthIndex - 1);
     const loanDate = new Date(
       loanDateRaw.getFullYear(),
@@ -101,21 +106,27 @@ export function buildEarningsSchedule({
       1
     );
 
-    const ownershipDate =
-      ownershipMonthIndex >= 1
-        ? new Date(
-            purchaseDt.getFullYear(),
-            purchaseDt.getMonth() + (ownershipMonthIndex - 1),
-            1
-          )
-        : null;
+    // Ownership pct active for this calendar month
+    const ownershipPct = Array.isArray(ownershipLots)
+      ? ownershipLots.reduce((sum, lot) => {
+          if (!lot || lot.user !== user) return sum;
+
+          const start = parseISODateLocal(lot.purchaseDate);
+          if (!(start instanceof Date) || !Number.isFinite(start.getTime())) return sum;
+
+          // lot becomes active starting its purchase month
+          const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+          return loanDate >= startMonth ? sum + Number(lot.pct || 0) : sum;
+        }, 0)
+      : 0;
+
+    const isOwned = ownershipPct > 0;
 
     return {
       ...row,
-      ownershipMonthIndex,
-      isOwned: ownershipMonthIndex >= 1,
       loanDate,
-      ownershipDate
+      ownershipPct,
+      isOwned
     };
   });
 
@@ -134,14 +145,32 @@ export function buildEarningsSchedule({
     const deferred = isDeferredMonth(row);
 
     // ---- fees ----
-    const upfrontFeeThisMonth =
-      row.isOwned && row.ownershipMonthIndex === 1 ? 150 : 0;
+    // Upfront fee applies ONCE when ownership first becomes active.
+    // We implement this per-lot by charging $150 for each lot in its start month,
+    // and scaling by that lot's pct.
+    let upfrontFeeThisMonth = 0;
+
+    if (row.isOwned && Array.isArray(ownershipLots)) {
+      upfrontFeeThisMonth = ownershipLots.reduce((sum, lot) => {
+        if (!lot || lot.user !== user) return sum;
+
+        const start = parseISODateLocal(lot.purchaseDate);
+        if (!(start instanceof Date) || !Number.isFinite(start.getTime())) return sum;
+
+        const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+        if (row.loanDate.getTime() !== startMonth.getTime()) return sum;
+
+        // $150 per lot, scaled by pct
+        return sum + 150 * Number(lot.pct || 0);
+      }, 0);
+    }
 
     const balance = Number(row.balance ?? 0);
 
+    // Monthly balance fee scales by active ownership pct
     const monthlyBalanceFee =
       row.isOwned && balance > 0
-        ? +(balance * 0.00125).toFixed(2)
+        ? +((balance * 0.00125) * Number(row.ownershipPct || 0)).toFixed(2)
         : 0;
 
     const feeThisMonth = upfrontFeeThisMonth + monthlyBalanceFee;
@@ -151,69 +180,70 @@ export function buildEarningsSchedule({
     let interestThisMonth = 0;
     let feesThisMonth = 0;
 
-if (row.isOwned && !deferred) {
-  principalThisMonth = Math.max(
-    0,
-    row.principalPaid - (row.prepayment || 0)
-  );
+    if (row.isOwned && !deferred) {
+      const scale = Number(row.ownershipPct || 0);
 
-  // 🔑 PAID INTEREST = amort interest AFTER grace only
-  interestThisMonth =
-  Number(row.payment || 0) > 0
-    ? Number(row.interest || 0)
-    : 0;
+      principalThisMonth = Math.max(
+        0,
+        (Number(row.principalPaid || 0) - Number(row.prepayment || 0))
+      ) * scale;
 
+      // 🔑 PAID INTEREST = amort interest AFTER grace only
+      interestThisMonth =
+        (Number(row.payment || 0) > 0 ? Number(row.interest || 0) : 0) * scale;
 
-  feesThisMonth = feeThisMonth;
-}
-
-// 🔒 DEV INVARIANT: only warn if it's a repayment month (payment > 0)
-if (
-  row.isOwned &&
-  !deferred &&
-  Number(row.payment || 0) > 0 &&
-  Number(row.interest || 0) > 0 &&
-  interestThisMonth === 0
-) {
-  console.warn(
-    "[EARNINGS] Interest unexpectedly zero in repayment month",
-    {
-      loanId: row.loanId,
-      monthIndex: row.monthIndex,
-      payment: row.payment,
-      interest: row.interest,
-      interestThisMonth,
-      row
+      feesThisMonth = feeThisMonth;
     }
-  );
-}
 
+    // 🔒 DEV INVARIANT: only warn if it's a repayment month (payment > 0)
+    if (
+      row.isOwned &&
+      !deferred &&
+      Number(row.payment || 0) > 0 &&
+      Number(row.interest || 0) > 0 &&
+      interestThisMonth === 0
+    ) {
+      console.warn(
+        "[EARNINGS] Interest unexpectedly zero in repayment month",
+        {
+          loanId: row.loanId,
+          monthIndex: row.monthIndex,
+          payment: row.payment,
+          interest: row.interest,
+          interestThisMonth,
+          row
+        }
+      );
+    }
 
+    // 🔒 EXPLICIT GRACE RULE (defensive)
+    if (deferred) {
+      principalThisMonth = 0;
+      interestThisMonth = 0;
+      feesThisMonth = feeThisMonth; // fees may still apply
+    }
 
-// 🔒 EXPLICIT GRACE RULE (defensive)
-if (deferred) {
-  principalThisMonth = 0;
-  interestThisMonth = 0;
-  feesThisMonth = feeThisMonth; // fees may still apply
-}
-
+    // ---- normalize cents ----
+    principalThisMonth = +Number(principalThisMonth || 0).toFixed(2);
+    interestThisMonth  = +Number(interestThisMonth  || 0).toFixed(2);
+    feesThisMonth      = +Number(feesThisMonth      || 0).toFixed(2);
 
     // ---- accumulate ONCE ----
     cumPrincipal = +(cumPrincipal + principalThisMonth).toFixed(2);
-    cumInterest = +(cumInterest + interestThisMonth).toFixed(2);
-    cumFees = +(cumFees + feesThisMonth).toFixed(2);
+    cumInterest  = +(cumInterest  + interestThisMonth).toFixed(2);
+    cumFees      = +(cumFees      + feesThisMonth).toFixed(2);
 
     const netEarnings = +(cumPrincipal + cumInterest - cumFees).toFixed(2);
 
     // ---- monthly deltas ----
     const monthlyPrincipal = +(cumPrincipal - prevCumPrincipal).toFixed(2);
-    const monthlyInterest = +(cumInterest - prevCumInterest).toFixed(2);
-    const monthlyFees = +(cumFees - prevCumFees).toFixed(2);
-    const monthlyNet = +(monthlyPrincipal + monthlyInterest - monthlyFees).toFixed(2);
+    const monthlyInterest  = +(cumInterest  - prevCumInterest ).toFixed(2);
+    const monthlyFees      = +(cumFees      - prevCumFees     ).toFixed(2);
+    const monthlyNet       = +(monthlyPrincipal + monthlyInterest - monthlyFees).toFixed(2);
 
     prevCumPrincipal = cumPrincipal;
-    prevCumInterest = cumInterest;
-    prevCumFees = cumFees;
+    prevCumInterest  = cumInterest;
+    prevCumFees      = cumFees;
 
     return {
       ...row,
@@ -236,7 +266,9 @@ if (deferred) {
   });
 
   // 🔑 IMPORTANT FIX: Only return owned rows
-  const ownedEarnings = earnings.filter(r => r.isOwned === true);
+  const ownedEarnings = earnings.filter(
+    r => r.isOwned === true && Number(r.ownershipPct || 0) > 0
+  );
 
   if (ownedEarnings.length === 0) {
     return [];
@@ -248,17 +280,11 @@ if (deferred) {
       if (!(r.loanDate instanceof Date) || !Number.isFinite(r.loanDate.getTime())) {
         throw new Error("Invalid loanDate generated in earnings engine");
       }
-      if (
-        r.ownershipDate === null ||
-        !(r.ownershipDate instanceof Date) ||
-        !Number.isFinite(r.ownershipDate.getTime())
-      ) {
-        throw new Error(`Ownership date became invalid for owned row: ${r.monthIndex}`);
-      }
       return r;
     })
     .sort((a, b) => a.loanDate - b.loanDate);
 }
+
 
 
 /* ============================================================
