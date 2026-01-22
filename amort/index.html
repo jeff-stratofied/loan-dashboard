@@ -1400,7 +1400,13 @@ if (DEV_MODE) {
       l.ownershipLots.forEach((lot, i) => {
         if (!lot.user) problems.push(`lot[${i}].user`);
         if (!lot.purchaseDate) problems.push(`lot[${i}].purchaseDate`);
-        if (!Number.isFinite(lot.pricePaid)) problems.push(`lot[${i}].pricePaid`);
+        if (!Number.isFinite(lot.pricePaid)) {
+  // optional for amort; required for earnings
+  if (location.pathname.includes("earnings")) {
+    problems.push(`lot[${i}].pricePaid`);
+  }
+}
+
       });
     }
 
