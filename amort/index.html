@@ -824,19 +824,33 @@ html[data-theme="dark"] .close-btn {
   overflow: visible !important;
 }
 
-    /* EMBED MODE — ROI TOP ALIGNMENT (MATCH EARNINGS) */
-.embed-mode body > .app,
-.embed-mode .app {
-  margin: 0 !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
     /* EMBED MODE — restore drawer-body top padding (MATCH EARNINGS) */
 .embed-mode .drawer-body {
   padding-top: 0px !important;
 }
 
+/* APP */
+.embed-mode .app {
+  margin: 0;
+  padding: 0;
+}
+
+/* KPIs */
+.embed-mode .kpis {
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* DRAWER */
+.embed-mode .drawer-head {
+  padding: 20px;
+}
+
+.embed-mode .drawer-body {
+  padding: 20px;
+}
+
+    
 
     #feedback-btn {
   position: fixed;
