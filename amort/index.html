@@ -1363,6 +1363,14 @@ async function loadAndNormalizeLoans() {
   rawLoans.forEach(l => normalizeOwnership(l));
 
 // =========================================
+// 🔑 FILTER TO USER-OWNED LOANS ONLY
+// =========================================
+const ownedLoans = rawLoans.filter(l =>
+  isOwnedByUser(l, PAGE_CONTEXT.user)
+);
+
+  
+// =========================================
 // 🔑 AMORT COMPATIBILITY FIX
 // -----------------------------------------
 // Amort engine still requires loan.purchaseDate.
@@ -1424,10 +1432,9 @@ if (DEV_MODE) {
   });
 }
 
-
-  const enrichedLoans = attachSchedules(
-    rawLoans.map(normalizeLoan)
-  );
+const enrichedLoans = attachSchedules(
+  ownedLoans.map(normalizeLoan)
+);
 
 allLoans = enrichedLoans.map(loan => ({
   ...loan,
@@ -1765,7 +1772,18 @@ const investedCap = Math.max(
 );
 
 // Allow slight headroom so lines don’t pin top
-const maxY = Math.max(...allYs, investedCap * 1.1);
+// ----------------------------------
+// 🔑 Mode-aware Y scaling
+// ----------------------------------
+
+const rawMaxY = Math.max(...allYs);
+
+// Use invested-cap-based scaling ONLY in investment view
+const maxY =
+  amortViewMode === "investment"
+    ? Math.max(rawMaxY * 1.15, 1)  // zoom in for small ownership
+    : rawMaxY;                    // full loan scale
+
 
   const minY = Math.min(...allYs);
   const range = Math.max(1, maxY - minY);
