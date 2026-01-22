@@ -2978,7 +2978,18 @@ function buildEventBadges(events = []) {
 }
 
 function buildOwnershipPie(loan) {
-  const pct = Math.max(0, Math.min(1, loan.ownershipPct || 0));
+  const pct = Math.max(
+  0,
+  Math.min(
+    1,
+    Array.isArray(loan.ownershipLots)
+      ? loan.ownershipLots
+          .filter(l => l.user === PAGE_CONTEXT.user)
+          .reduce((s, l) => s + (Number(l.pct) || 0), 0)
+      : 0
+  )
+);
+
   const slices = Math.round(pct * 20); // 5% per slice
 
   if (slices === 0) return "";
