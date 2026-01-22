@@ -2807,17 +2807,33 @@ svg.addEventListener("mouseleave", () => {
    - NO rendering
    ============================================================ */
 
+// -----------------------------------------
+// Ownership helper (MATCH AMORT / EARNINGS)
+// -----------------------------------------
+function getUserOwnedLoans(loans) {
+  return loans.filter(loan => {
+    const lots = Array.isArray(loan?.ownershipLots) ? loan.ownershipLots : [];
+    return lots.some(
+      lot => lot.user === PAGE_USER && (Number(lot.pct) || 0) > 0
+    );
+  });
+}
+
+// -----------------------------------------
+// Sorting
+// -----------------------------------------
 function sortLoansForUI(loans, sortVal) {
   if (!sortVal) return loans;
 
   const [field, dir] = String(sortVal).split("_");
   const sign = dir === "desc" ? -1 : 1;
 
-  const safeNum = (v) => Number(v) || 0;
-  const safeTime = (d) => {
-    // prefer your local ISO parser if present; fall back safely
+  const safeNum = v => Number(v) || 0;
+  const safeTime = d => {
     const dt =
-      (typeof parseISODateLocal === "function" ? parseISODateLocal(d) : new Date(d));
+      typeof parseISODateLocal === "function"
+        ? parseISODateLocal(d)
+        : new Date(d);
     const t = dt instanceof Date ? dt.getTime() : NaN;
     return Number.isFinite(t) ? t : 0;
   };
@@ -2826,50 +2842,41 @@ function sortLoansForUI(loans, sortVal) {
     switch (field) {
       case "purchase":
         return sign * (safeTime(a.purchaseDate) - safeTime(b.purchaseDate));
-
       case "start":
         return sign * (safeTime(a.loanStartDate) - safeTime(b.loanStartDate));
-
       case "amount":
         return sign * (
           safeNum(a.originalLoanAmount ?? a.origLoanAmount ?? a.loanAmount) -
           safeNum(b.originalLoanAmount ?? b.origLoanAmount ?? b.loanAmount)
         );
-
       case "rate":
         return sign * (safeNum(a.nominalRate) - safeNum(b.nominalRate));
-
       default:
         return 0;
     }
   });
 }
 
-    
+// -----------------------------------------
+// Apply filters + sort (NO rendering logic)
+// -----------------------------------------
 function applyLoanFilters() {
-  if (!Array.isArray(allLoans) || !allLoans.length) {
-    console.warn("applyLoanFilters called before loans initialized");
-    return;
-  }
+  if (!Array.isArray(allLoans) || !allLoans.length) return;
 
   const nameVal   = document.getElementById("filterName")?.value || "";
   const schoolVal = document.getElementById("filterSchool")?.value || "";
   const rateVal   = document.getElementById("filterRate")?.value || "";
   const sortVal   = document.getElementById("sortLoans")?.value || "";
 
-  // -------------------------
-  // FILTER (ownership + UI)
-  // -------------------------
-  const baseLoans = allLoans.filter(loan => {
-    const lots = Array.isArray(loan?.ownershipLots) ? loan.ownershipLots : [];
-    return lots.some(lot => lot.user === PAGE_USER && (Number(lot.pct) || 0) > 0);
-  });
+  // 🔑 BASE SET — USER-OWNED LOANS ONLY
+  const baseLoans = getUserOwnedLoans(allLoans);
 
   filteredLoans = baseLoans.filter(loan => {
     const loanName = (loan.name || "").toLowerCase();
+    const loanSchool = (loan.school || "").toLowerCase();
 
-    if (nameVal && !loanName.includes(nameVal.toLowerCase())) return false;
-    if (schoolVal && loan.school !== schoolVal) return false;
+    if (nameVal && !loanName.includes(nameVal)) return false;
+    if (schoolVal && loanSchool !== schoolVal) return false;
 
     if (rateVal === "low"  && loan.nominalRate >= 0.05) return false;
     if (rateVal === "mid"  && (loan.nominalRate < 0.05 || loan.nominalRate > 0.08)) return false;
@@ -2878,18 +2885,13 @@ function applyLoanFilters() {
     return true;
   });
 
-  // -------------------------
-  // SORT (dropdown only)
-  // -------------------------
+  // SORT
   currentLoans = sortLoansForUI(filteredLoans, sortVal);
 
-  // -------------------------
   // RENDER
-  // -------------------------
   if (PAGE_CONTEXT.isEmbed) return;
 
   const viewMode = localStorage.getItem("roiViewMode") || "full";
-
   if (viewMode === "table") {
     renderLoanTableROI(getLoansForTableView());
   } else {
@@ -2897,64 +2899,63 @@ function applyLoanFilters() {
   }
 }
 
-
-
-
-function populateLoanFilters(loans) {
-
+// -----------------------------------------
+// Populate filter dropdowns (ONCE)
+// -----------------------------------------
+function populateLoanFilters() {
   const schoolSel = document.getElementById("filterSchool");
   const nameSel   = document.getElementById("filterName");
-
   if (!schoolSel || !nameSel) return;
 
-  // Reset (keep first "All" option)
+  // Reset (keep first placeholder)
   schoolSel.length = 1;
   nameSel.length = 1;
 
+  const loans = getUserOwnedLoans(allLoans);
   const schools = new Set();
-  const names   = new Set();
+  const names = new Set();
 
   loans.forEach(l => {
-  if (!l) return;               // 🔑 REQUIRED GUARD
-  if (l.school) schools.add(l.school);
-  if (l.name)   names.add(l.name);
-});
-
+    if (l.school) schools.add(l.school);
+    if (l.name)   names.add(l.name);
+  });
 
   [...schools].sort().forEach(s => {
     const opt = document.createElement("option");
-    opt.value = s;
+    opt.value = s.toLowerCase();
     opt.textContent = s;
     schoolSel.appendChild(opt);
   });
 
   [...names].sort().forEach(n => {
     const opt = document.createElement("option");
-    opt.value = n;
+    opt.value = n.toLowerCase();
     opt.textContent = n;
     nameSel.appendChild(opt);
   });
 }
 
-    function populateRateBuckets() {
+// -----------------------------------------
+// Filter UI setup
+// -----------------------------------------
+function populateRateBuckets() {
   const sel = document.getElementById("filterRate");
   if (!sel) return;
 
   sel.innerHTML = `
-    <option value="" disabled selected>Rate</option>
+    <option value="">Rate</option>
     <option value="low">Below 5%</option>
     <option value="mid">5% – 8%</option>
     <option value="high">Above 8%</option>
   `;
 }
 
-
-    function populateSortDropdown() {
+function populateSortDropdown() {
   const sel = document.getElementById("sortLoans");
   if (!sel) return;
 
   sel.innerHTML = `
-    <option value="" disabled selected>Sort</option>
+    <option value="">Sort</option>
     <option value="purchase_desc">Purchase Date ↓</option>
     <option value="purchase_asc">Purchase Date ↑</option>
     <option value="start_desc">Loan Start ↓</option>
@@ -2966,34 +2967,29 @@ function populateLoanFilters(loans) {
   `;
 }
 
-    
-// =====================================================
-// FILTER UI EVENT WIRING (ROI PAGE)
-// =====================================================
+// -----------------------------------------
+// Filter UI event wiring
+// -----------------------------------------
 ["filterName", "filterSchool", "filterRate", "sortLoans"].forEach(id => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.addEventListener("change", applyLoanFilters);
+  document.getElementById(id)?.addEventListener("change", applyLoanFilters);
 });
 
 document.getElementById("resetFilters")?.addEventListener("click", () => {
   document.getElementById("filterName").value = "";
   document.getElementById("filterSchool").value = "";
   document.getElementById("filterRate").value = "";
-  document.getElementById("sortLoans").value = "purchase_asc";
+  document.getElementById("sortLoans").value = "";
   applyLoanFilters();
 });
 
-// =====================================================
-// TABLE VIEW TOGGLE — SINGLE SOURCE OF TRUTH
-// =====================================================
-document.getElementById("toggleTableView")?.addEventListener("change", (e) => {
-  localStorage.setItem(
-    "roiTableView",
-    e.target.checked ? "1" : "0"
-  );
+// -----------------------------------------
+// Table view toggle
+// -----------------------------------------
+document.getElementById("toggleTableView")?.addEventListener("change", e => {
+  localStorage.setItem("roiTableView", e.target.checked ? "1" : "0");
   applyLoanFilters();
 });
+
 
 
 
@@ -5391,7 +5387,7 @@ allLoans.forEach(l => {
    
 
 // 🔑 Populate filter dropdowns from real data
-populateLoanFilters(allLoans);
+populateLoanFilters();
 populateRateBuckets();       
 populateSortDropdown();  
 
