@@ -3732,12 +3732,17 @@ kpisEl.innerHTML = `
   const nameSelect = document.getElementById("filterName");
   const schoolSelect = document.getElementById("filterSchool");
 
-  const uniqueNames = [
-    ...new Set(currentLoans.map(l => l.name).filter(Boolean))
-  ];
-  const uniqueSchools = [
-    ...new Set(currentLoans.map(l => l.school).filter(Boolean))
-  ];
+  // 🔑 FILTER OPTIONS — USER-OWNED LOANS ONLY (MATCH AMORT / EARNINGS)
+const loansForFilters = getLoansForKpis();
+
+const uniqueNames = [
+  ...new Set(loansForFilters.map(l => l.name).filter(Boolean))
+];
+
+const uniqueSchools = [
+  ...new Set(loansForFilters.map(l => l.school).filter(Boolean))
+];
+
 
   uniqueNames.forEach(n => {
     const opt = document.createElement("option");
