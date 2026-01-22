@@ -1265,7 +1265,14 @@ function getLoanPrimaryEventType(loan) {
 
     
 function compareForKey(a, b, key) {
- // event column (custom order)
+// % Owned (lot-based, user-specific)
+if (key === "ownershipPct") {
+  const pa = getUserOwnershipPct(a, PAGE_CONTEXT.user);
+  const pb = getUserOwnershipPct(b, PAGE_CONTEXT.user);
+  return pa - pb;
+}
+
+  // event column (custom order)
 if (key === "event") {
   const ea = EVENT_SORT_ORDER[getLoanPrimaryEventType(a)] || 99;
   const eb = EVENT_SORT_ORDER[getLoanPrimaryEventType(b)] || 99;
