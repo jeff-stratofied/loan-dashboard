@@ -1429,38 +1429,12 @@ if (DEV_MODE) {
     rawLoans.map(normalizeLoan)
   );
 
-// =========================================
-// BUILD USER-SCOPED AMORT FROM OWNERSHIP LOTS
-// =========================================
-const USER = PAGE_CONTEXT.user;
-
-allLoans = enrichedLoans
-  .map(loan => {
-    const userPct = getUserOwnershipPct(loan, USER);
-    if (userPct <= 0) return null;
-
-    const scaledSchedule = loan.amort.schedule.map(r => ({
-  ...r,
-  payment:        r.payment        * userPct,
-  principalPaid:  r.principalPaid  * userPct,
-  interest:       r.interest       * userPct,
-  balance:        r.balance        * userPct,
-  cumPrincipal:   r.cumPrincipal   * userPct,
-  cumInterest:    r.cumInterest    * userPct
+allLoans = enrichedLoans.map(loan => ({
+  ...loan,
+  // canonical schedules only
+  cumSchedule: loan.amort.schedule
 }));
 
-
-    return {
-      ...loan,
-      amort: {
-        ...loan.amort,
-        schedule: scaledSchedule
-      },
-      cumSchedule: scaledSchedule,
-      ownershipPct: userPct
-    };
-  })
-  .filter(Boolean);
 
 
 // =========================================
