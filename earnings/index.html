@@ -534,12 +534,20 @@
   cursor: pointer;
   overflow: hidden;
   border: 1px solid var(--border);
-  transition: transform .18s ease, box-shadow .24s ease, background .28s ease;
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    background-color .25s ease,
+    color .25s ease,
+    border-color .25s ease;
 }
 
 .tile:hover {
+  transform: translateY(-6px);
   box-shadow: var(--shadow);
 }
+
 
 
 /* left side */
