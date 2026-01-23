@@ -2880,18 +2880,11 @@ function sortLoansForUI(loans, sortVal) {
 }
 
     
-if (!Array.isArray(allLoans)) {
-  console.warn("applyLoanFilters called before loans initialized");
-  return;
-}
-
-// ✅ Valid state: no loans for this user
-if (allLoans.length === 0) {
-  filteredLoans = [];
-  renderLoanGrid([]);
-  renderLoanTableROI([]);
-  return;
-}
+function applyLoanFilters() {
+  if (!Array.isArray(allLoans) || !allLoans.length) {
+    console.warn("applyLoanFilters called before loans initialized");
+    return;
+  }
 
   const nameVal   = document.getElementById("filterName")?.value || "";
   const schoolVal = document.getElementById("filterSchool")?.value || "";
