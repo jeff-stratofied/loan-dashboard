@@ -394,7 +394,6 @@ input:focus, select:focus {
       <th data-field="loanId" class="sortable">ID</th>
       <th data-field="loanName" class="sortable">Loan Name</th>
       <th>Ownership</th>
-      <th data-field="visible" class="sortable">Show</th>
       <th data-field="school" class="sortable">School</th>
       <th data-field="loanStartDate" class="sortable">Loan Start Date</th>
       <th data-field="principal" class="sortable col-money">Orig Loan Amt</th>
@@ -839,8 +838,6 @@ function normalizeLoan(l, idx) {
     purchaseDate: l.purchaseDate ?? "",
     purchasePrice: Number(l.purchasePrice ?? 0),
 
-    visible: l.visible !== false,
-
     events: Array.isArray(l.events)
       ? l.events.map(e => {
           if (e.type === "default") {
@@ -874,19 +871,31 @@ function sortLoans() {
     let va = a[sortColumn];
     let vb = b[sortColumn];
 
-    if (sortColumn === 'visible') {
-      va = a.visible ? 1 : 0;
-      vb = b.visible ? 1 : 0;
-    } else if (['loanStartDate', 'purchaseDate'].includes(sortColumn)) {
-      va = va ? new Date(va) : new Date(0);
-      vb = vb ? new Date(vb) : new Date(0);
-    } else if (typeof va === 'string') {
-      va = va.toLowerCase();
-      vb = vb.toLowerCase();
-    } else if (isNaN(va)) {
-      va = 0;
-    } else if (isNaN(vb)) {
-      vb = 0;
+    // -------------------------
+    // Date fields
+    // -------------------------
+    if (['loanStartDate', 'purchaseDate'].includes(sortColumn)) {
+      va = va ? new Date(va).getTime() : 0;
+      vb = vb ? new Date(vb).getTime() : 0;
+    }
+
+    // -------------------------
+    // String fields
+    // -------------------------
+    else if (typeof va === 'string' || typeof vb === 'string') {
+      va = (va ?? '').toString().toLowerCase();
+      vb = (vb ?? '').toString().toLowerCase();
+    }
+
+    // -------------------------
+    // Numeric fallback
+    // -------------------------
+    else {
+      va = Number(va);
+      vb = Number(vb);
+
+      if (Number.isNaN(va)) va = 0;
+      if (Number.isNaN(vb)) vb = 0;
     }
 
     if (va < vb) return -sortDirection;
@@ -894,6 +903,7 @@ function sortLoans() {
     return 0;
   });
 }
+
 
 function renderOwnershipCell(loan) {
   const byUser = {};
@@ -939,15 +949,6 @@ function renderTable() {
       <td data-action="ownership" style="cursor:pointer">
   ${renderOwnershipCell(loan)}
 </td>
-
-
-      <td style="text-align:center">
-        <input
-          type="checkbox"
-          data-field="visible"
-          ${loan.visible !== false ? "checked" : ""}
-        />
-      </td>
 
       <td>
         <select data-field="school">
@@ -1015,7 +1016,6 @@ function collectLoans() {
 
     const ALLOWED_FIELDS = new Set([
   "loanName",
-  "visible",
   "school",
   "loanStartDate",
   "principal",
@@ -1027,13 +1027,6 @@ function collectLoans() {
 inputs.forEach(inp => {
   const k = inp.dataset.field;
   if (!ALLOWED_FIELDS.has(k)) return;
-
-  let v;
-  if (inp.type === "checkbox") {
-    v = inp.checked;
-  } else {
-    v = inp.value;
-  }
 
   if (k === "rate") {
   v = Number(v) / 100; // convert % back to decimal
@@ -1229,7 +1222,7 @@ loanTable.addEventListener("input", (e) => {
   }
 });
 
-// Fires on blur / dropdown / checkbox changes
+// Fires on blur / dropdown changes
 loanTable.addEventListener("change", (e) => {
   if (e.target.matches("[data-field]")) {
     markDirty();
