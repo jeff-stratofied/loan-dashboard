@@ -3622,9 +3622,9 @@ async function initROI() {
   const formatLoanLabel = (loan) =>
     `Loan ${loan.id} — ${loan.name} (${loan.school})`;
 
-  // --------------------------------------------------
-  // FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
-  // --------------------------------------------------
+  // ==================================================
+  // 1️⃣ FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
+  // ==================================================
   const userLoans = loans
     .map(l => ({
       ...l,
@@ -3633,92 +3633,86 @@ async function initROI() {
     }))
     .filter(l => l.user === PAGE_USER && l.visible === true);
 
-  // --------------------------------------------------
-  // Normalize numeric fields (ONLY user loans)
-  // --------------------------------------------------
+  // ==================================================
+  // 2️⃣ NORMALIZE NUMERIC FIELDS (USER LOANS ONLY)
+  // ==================================================
   const formattedLoans = userLoans.map(l => ({
     ...l,
     purchasePrice: Number(l.purchasePrice ?? 0),
     nominalRate: Number(l.rate ?? l.nominalRate ?? 0)
   }));
 
-  // --------------------------------------------------
-  // Derive amort + ROI (DATA CREATION POINT)
-  // --------------------------------------------------
+  // ==================================================
+  // 3️⃣ DERIVE AMORT + ROI (AUTHORITATIVE DATA CREATION)
+  // ==================================================
   const loansWithAmort = deriveLoansWithAmortAndRoi(formattedLoans);
 
-  allLoans = loansWithAmort;        // 🔑 master list
+  allLoans = loansWithAmort;            // 🔑 master list
   currentLoans = loansWithAmort;
   filteredLoans = loansWithAmort.slice();
 
-  // --------------------------------------------------
-  // KPI color map (must exist before drawers open)
-  // --------------------------------------------------
+  // ==================================================
+  // 4️⃣ KPI COLOR MAP (REQUIRED BEFORE ANY RENDER)
+  // ==================================================
   window.KPI_COLOR_MAP = buildKpiColorMap(currentLoans);
 
-  // --------------------------------------------------
-  // Compute KPIs
-  // --------------------------------------------------
+  // ==================================================
+  // 5️⃣ COMPUTE KPIs (AFTER DATA EXISTS)
+  // ==================================================
   const asOfMonth = normalizeToMonthStart(KPI_CURRENT_MONTH);
-const loansForKpis = getLoansForKpis();
-const kpis = computeKPIs(loansForKpis, asOfMonth);
+  const loansForKpis = getLoansForKpis();
+  const kpis = computeKPIs(loansForKpis, asOfMonth);
 
-
-  // --------------------------------------------------
-  // Initial render (grid / table via filters)
-  // --------------------------------------------------
+  // ==================================================
+  // 6️⃣ INITIAL FILTERED RENDER (NOW SAFE)
+  // ==================================================
   applyLoanFilters();
 
-// --------------------------------------------------
-// UI: Render KPI tiles
-// --------------------------------------------------
+  // ==================================================
+  // 7️⃣ UI — RENDER KPI TILES
+  // ==================================================
+  const kpisEl = document.getElementById("kpis");
 
-const kpisEl = document.getElementById("kpis");
+  kpisEl.innerHTML = `
+    <div class="kpi" data-kpi="tpv">
+      <h3>Weighted ROI to Current Month</h3>
+      <p id="wroi">${(kpis.weightedROI * 100).toFixed(2)}%</p>
+    </div>
 
-kpisEl.innerHTML = `
-  
-  <div class="kpi" data-kpi="tpv">
-    <h3>Weighted ROI to Current Month</h3>
-    <p id="wroi">${(kpis.weightedROI * 100).toFixed(2)}%</p>
-  </div>
+    <div class="kpi" data-kpi="rates">
+      <h3>Projected Weighted ROI</h3>
+      <p id="wproj">${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
+    </div>
 
-  <div class="kpi" data-kpi="rates">
-    <h3>Projected Weighted ROI</h3>
-    <p id="wproj">${(kpis.projectedWeightedROI * 100).toFixed(2)}%</p>
-  </div>
+    <div class="kpi" data-kpi="capitalRecovery">
+      <h3>Capital Recovered</h3>
+      <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
+    </div>
 
-  <div class="kpi" data-kpi="capitalRecovery">
-    <h3>Capital Recovered</h3>
-    <p>${(kpis.capitalRecoveryPct * 100).toFixed(2)}%</p>
-  </div>
+    <div class="kpi" data-kpi="spread">
+      <h3>ROI Spread</h3>
+      <p id="roiSpread"></p>
+    </div>
+  `;
 
-  <div class="kpi" data-kpi="spread">
-    <h3>ROI Spread</h3>
-    <p id="roiSpread"></p>
-  </div>
-`;
-
-
-  // --------------------------------------------------
-  // KPI tile click (FULL ROI PAGE ONLY)
-  // --------------------------------------------------
+  // ==================================================
+  // 8️⃣ KPI TILE CLICK — FULL ROI PAGE
+  // ==================================================
   document.querySelectorAll("#kpis .kpi").forEach(tile => {
     tile.addEventListener("click", e => {
       e.preventDefault();
-      
       const kpi = tile.dataset.kpi;
       if (!kpi) return;
 
       if (!PAGE_CONTEXT.isEmbed) {
         openRoiKpiFromUrl(kpi);
       }
-      
     });
   });
 
-  // --------------------------------------------------
-  // KPI tile click (IFRAME → redirect to full ROI)
-  // --------------------------------------------------
+  // ==================================================
+  // 9️⃣ KPI TILE CLICK — IFRAME → REDIRECT
+  // ==================================================
   if (PAGE_CONTEXT.isEmbed) {
     document.querySelectorAll("#kpis .kpi").forEach(tile => {
       tile.addEventListener(
@@ -3744,14 +3738,13 @@ kpisEl.innerHTML = `
     });
   }
 
-  // --------------------------------------------------
-  // KPI4 — ROI Spread (SAFE)
-  // --------------------------------------------------
+  // ==================================================
+  // 🔟 KPI4 — ROI SPREAD (SAFE, DATA READY)
+  // ==================================================
   const roiValues = currentLoans.map(l => {
     const e =
-  getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
-  { roi: 0, loanValue: l.purchasePrice };
-
+      getRoiEntryAsOfMonth(l, KPI_CURRENT_MONTH) ??
+      { roi: 0, loanValue: l.purchasePrice };
     return e?.roi ?? 0;
   });
 
@@ -3764,9 +3757,9 @@ kpisEl.innerHTML = `
     spreadEl.textContent = (roiSpread * 100).toFixed(2) + "%";
   }
 
-  // --------------------------------------------------
-  // Populate filter dropdowns
-  // --------------------------------------------------
+  // ==================================================
+  // 1️⃣1️⃣ POPULATE FILTER SELECTIONS
+  // ==================================================
   const nameSelect = document.getElementById("filterName");
   const schoolSelect = document.getElementById("filterSchool");
 
@@ -3791,9 +3784,9 @@ kpisEl.innerHTML = `
     schoolSelect.appendChild(opt);
   });
 
-  // --------------------------------------------------
-  // Filters / sorting
-  // --------------------------------------------------
+  // ==================================================
+  // 1️⃣2️⃣ FILTER / SORT EVENT WIRING
+  // ==================================================
   document.getElementById("filterName")
     .addEventListener("change", applyLoanFilters);
   document.getElementById("filterSchool")
@@ -3809,9 +3802,9 @@ kpisEl.innerHTML = `
       applyLoanFilters();
     });
 
-  // --------------------------------------------------
-  // Compact view toggle (FULL PAGE ONLY)
-  // --------------------------------------------------
+  // ==================================================
+  // 1️⃣3️⃣ COMPACT VIEW TOGGLE (FULL PAGE)
+  // ==================================================
   if (!PAGE_CONTEXT.isEmbed) {
     const compactToggle = document.getElementById("toggleCompact");
     const loanGrid = document.getElementById("loanGrid");
@@ -3834,9 +3827,9 @@ kpisEl.innerHTML = `
     }
   }
 
-  // --------------------------------------------------
-  // Table view toggle (FULL PAGE ONLY)
-  // --------------------------------------------------
+  // ==================================================
+  // 1️⃣4️⃣ TABLE VIEW TOGGLE (FULL PAGE)
+  // ==================================================
   const tableToggle = document.getElementById("toggleTableView");
   if (tableToggle) {
     tableToggle.checked =
@@ -3852,7 +3845,7 @@ kpisEl.innerHTML = `
   }
 
   // ==================================================
-  // FINAL STEP — mark ready & open KPI (iframe-safe)
+  // 1️⃣5️⃣ FINALIZE — MARK READY & OPEN KPI
   // ==================================================
   DATA_READY = true;
 
@@ -3861,8 +3854,8 @@ kpisEl.innerHTML = `
       openRoiKpiFromUrl();
     });
   }
-  
 }
+
 
 window.__roi = {
   get allLoans() { return allLoans; },
