@@ -3634,13 +3634,20 @@ async function initROI() {
   // ==================================================
   // 1️⃣ FILTER TO CURRENT USER — SINGLE SOURCE OF TRUTH
   // ==================================================
-  const userLoans = loans
-    .map(l => ({
-      ...l,
-      user: l.user ?? "jeff",
-      visible: l.visible !== false
-    }))
-    .filter(l => l.user === PAGE_USER && l.visible === true);
+  const userLoans = loans.filter(loan => {
+  const lots = Array.isArray(loan.ownershipLots)
+    ? loan.ownershipLots
+    : [];
+
+  return (
+    lots.some(
+      lot =>
+        lot.user === PAGE_USER &&
+        Number(lot.pct) > 0
+    ) &&
+    loan.visible !== false
+  );
+});
 
   // ==================================================
   // 2️⃣ NORMALIZE NUMERIC FIELDS (USER LOANS ONLY)
