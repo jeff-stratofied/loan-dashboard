@@ -93,10 +93,6 @@
             margin-right: 16px;
         }
 
-        .drawer-logo {
-            display: none;
-            height: 30px;
-        }
 
         .sidebar.expanded .drawer-logo {
             display: block;
@@ -171,10 +167,22 @@ color: var(--brand);
             gap: 20px;
         }
 
-        .header-logo {
-            height: 42px;
-            margin-right: auto;
-        }
+/* Sidebar (expanded) logo */
+.drawer-logo {
+  height: 22px;
+  max-width: 180px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Top header logo */
+.header-logo {
+  height: 28px;
+  max-width: 220px;
+  width: auto;
+  object-fit: contain;
+}
+        
 
         .right-section {
             display: flex;
@@ -409,7 +417,7 @@ font-size: 13px;
         <nav class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-bars hamburger" id="hamburger"></i>
-                <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="drawer-logo">
+                <img src="https://jeff-stratofied.github.io/loan-dashboard/assets/Full_Color.png" alt="STRATOFIED" class="drawer-logo">
             </div>
             <a
   class="menu-item"
@@ -428,7 +436,7 @@ font-size: 13px;
 
         <div class="main-container">
             <header class="top-header">
-                <img src="https://stratofied.io/wp-content/uploads/2025/05/Logo_7-scaled-e1750538031495-2048x316.png" alt="STRATOFIED" class="header-logo">
+                <img src="https://jeff-stratofied.github.io/loan-dashboard/assets/Full_Color.png" alt="STRATOFIED" class="header-logo">
                 <div class="right-section">
                     <div class="user-selector">
                         <span>User:</span>
