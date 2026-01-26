@@ -7,17 +7,32 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
-        :root {
-            --bg: #f8fafc;
-            --surface: #f1f5f9;
-            --card: #ffffff;
-            --border: #e2e8f0;
-            --text: #0f172a;
-            --muted: #64748b;
-            --brand: #0ea5e9;
-            --shadow: 0 12px 30px rgba(15,23,42,0.06);
-        }
 
+:root {
+  /* Backgrounds */
+  --bg: #f5f7fa;              /* slightly cooler gray */
+  --surface: #eef2f6;         /* sidebar background */
+  --card: #ffffff;
+
+  /* Borders & dividers */
+  --border: #e5e7eb;
+
+  /* Text */
+  --text: #111827;            /* darker for table-style contrast */
+  --muted: #6b7280;
+
+  /* Brand (matches screenshot teal) */
+  --brand: #0f766e;           /* primary teal */
+  --brand-soft: #e6f4f1;      /* subtle active bg */
+
+  /* Status */
+  --success: #16a34a;
+
+  /* Shadow (flatter, more enterprise) */
+  --shadow: 0 6px 18px rgba(0,0,0,0.06);
+}
+
+        
         body, html {
             margin: 0;
             padding: 0;
@@ -94,7 +109,7 @@
             padding: 16px 0;
             cursor: pointer;
             transition: background 0.2s;
-            color: var(--text);
+            color: var(--muted);
         }
 
         .sidebar:not(.expanded) .menu-item {
@@ -107,14 +122,19 @@
         }
 
         .menu-item:hover {
-            background: var(--bg);
+            background: #e9eef3;
         }
 
         .menu-item.active {
-            color: var(--brand);
-            font-weight: 600;
+            background: var(--brand-soft);
+color: var(--brand);
+font-weight: 600;
         }
 
+.menu-item.active i {
+color: var(--brand);
+}
+        
         .menu-item i {
             font-size: 24px;
             width: 40px;
@@ -147,7 +167,7 @@
             align-items: center;
             justify-content: flex-end;
             padding: 0 30px;
-            box-shadow: var(--shadow);
+            box-shadow: none;
             gap: 20px;
         }
 
@@ -202,9 +222,9 @@
         }
 
         .connected {
-            color: #10b981;
-            font-weight: 600;
-            font-size: 14px;
+color: var(--success);
+font-weight: 600;
+font-size: 13px;
         }
 
         .logout {
@@ -253,7 +273,7 @@
         }
         
         .reporting-tab.active {
-          color: var(--text);
+          color: var(--muted);
         }
         
         .reporting-tab.active::after {
@@ -262,9 +282,9 @@
           left: 0;
           right: 0;
           bottom: -1px;
-          height: 2px;
+          height: 3px;
           background: var(--brand);
-          border-radius: 2px;
+          border-radius: 2px;            
         }
         
         .reporting-tab.inactive:hover {
